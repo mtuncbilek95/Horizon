@@ -82,24 +82,6 @@ namespace Horizon
 		vkGetDescriptorEXT(VkDevice(Root()->Device()), &getInfo, payloadSize, pTarget);
 	}
 
-	void GfxVkDescriptorBuffer::WriteDescriptor(usize offsetInBytes, const void* pDescriptorData, usize descriptorSize)
-	{
-		if (m_allocationInfo.pMappedData)
-		{
-			u8* dst = static_cast<u8*>(m_allocationInfo.pMappedData) + offsetInBytes;
-			std::memcpy(dst, pDescriptorData, descriptorSize);
-			return;
-		}
-
-		void* mapped = nullptr;
-		VDebug::VkAssert(vmaMapMemory(VmaAllocator(Root()->Allocator()), m_allocation, &mapped), "GfxVkDescriptorBuffer::WriteDescriptor");
-
-		u8* dst = static_cast<u8*>(mapped) + offsetInBytes;
-		std::memcpy(dst, pDescriptorData, descriptorSize);
-
-		vmaUnmapMemory(VmaAllocator(Root()->Allocator()), m_allocation);
-	}
-
 	u64 GfxVkDescriptorBuffer::DeviceAddress() const
 	{
 		return m_deviceAddress;

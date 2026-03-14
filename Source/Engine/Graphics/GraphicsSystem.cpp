@@ -217,9 +217,6 @@ namespace Horizon
 		m_meshDescriptorBuffer->RequestPayload(m_cubeVertexBuffer.get(), m_meshDescriptorLayout->BindingOffset(0));
 		m_meshDescriptorBuffer->RequestPayload(m_cubeIndexBuffer.get(), m_meshDescriptorLayout->BindingOffset(1));
 
-		//m_meshDescriptorBuffer->WriteDescriptor(m_meshDescriptorLayout->BindingOffset(0), m_cubeVertexBuffer->MappedData(), m_cubeVertexBuffer->MappedSize());
-		//m_meshDescriptorBuffer->WriteDescriptor(m_meshDescriptorLayout->BindingOffset(1), m_cubeIndexBuffer->MappedData(), m_cubeIndexBuffer->MappedSize());
-
 		std::string meshCode = DataReader::ReadToTextFile("../shaders/Meshlet.mesh");
 		std::string fragCode = DataReader::ReadToTextFile("../shaders/Meshlet.frag");
 

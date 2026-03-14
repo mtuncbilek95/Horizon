@@ -12,7 +12,6 @@ namespace Horizon
 		virtual ~GfxDescriptorBuffer() override = default;
 
 		virtual void RequestPayload(GfxObject* pObject, usize offsetInBytes) = 0;
-		virtual void WriteDescriptor(usize offsetInBytes, const void* pDescriptorData, usize descriptorSize) = 0;
 		virtual u64 DeviceAddress() const = 0;
 		virtual void* MappedData() const = 0;
 		

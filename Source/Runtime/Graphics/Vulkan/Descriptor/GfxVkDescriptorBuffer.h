@@ -13,7 +13,6 @@ namespace Horizon
 		~GfxVkDescriptorBuffer() override final;
 
 		void RequestPayload(GfxObject* pObject, usize offsetInBytes) final;
-		void WriteDescriptor(usize offsetInBytes, const void* pDescriptorData, usize descriptorSize) final;
 		u64 DeviceAddress() const final;
 		void* MappedData() const final;
 
