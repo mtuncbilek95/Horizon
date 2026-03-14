@@ -1,0 +1,191 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(set = 0, binding = 0, rgba8) uniform writeonly image2D cloudImage;
+
+layout(push_constant) uniform PC {
+    float time;
+    float resX;
+    float resY;
+    float frame;
+    vec4  camRight;
+    vec4  camUp;
+    vec4  camForward;
+} pc;
+
+layout(set = 1, binding = 0) uniform CloudConfig {
+    float cloudBase;
+    float cloudTop;
+    float fbmFrequency;
+    float warpStrength;
+    float densityMultiplier;
+    float densityThreshold;
+    float absorption;
+    float scatteringG;
+    vec4  cloudLitColor;
+    vec4  cloudShadowColor;
+    vec4  sunColorCloud;
+    vec4  ambientColor;
+    vec4  zenithColor;
+    vec4  upperMid;
+    vec4  lowerMid;
+    vec4  horizonColor;
+    vec4  groundColor;
+    vec4  sunColorSky;
+    float sunAngularRadius;
+    float glowIntensity;
+    float horizonBloom;
+    float steps;
+    float lightSteps;
+    float windSpeed;
+    float windDirX;
+    float windDirZ;
+} cfg;
+
+const float PI          = 3.14159265359;
+
+// ── Hash / Noise ──────────────────────────────────────────────────────────────
+
+float hash(vec3 p)
+{
+    p  = fract(p * vec3(0.1031, 0.1030, 0.0973));
+    p += dot(p, p.yxz + 33.33);
+    return fract((p.x + p.y) * p.z);
+}
+
+float noise(vec3 p)
+{
+    vec3 i = floor(p);
+    vec3 f = fract(p);
+    vec3 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    return mix(
+        mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), u.x),
+            mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), u.x), u.y),
+        mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), u.x),
+            mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), u.x), u.y), u.z);
+}
+
+float fbmLow(vec3 p)
+{
+    vec3  q      = p + pc.time * cfg.windSpeed * vec3(cfg.windDirX, -0.2, cfg.windDirZ);
+    float f      = 0.0, scale = 0.5, factor = 2.02;
+    for (int i = 0; i < 3; i++)
+    {
+        f += scale * noise(q);
+        q *= factor; factor += 0.21; scale *= 0.5;
+    }
+    return f;
+}
+
+float fbmHigh(vec3 p)
+{
+    vec3  q = p + pc.time * cfg.windSpeed * vec3(cfg.windDirX, -0.2, cfg.windDirZ);
+    float w = fbmLow(q * 0.6 + vec3(3.2, 1.5, 0.8));
+    q      += vec3(w) * cfg.warpStrength;
+
+    float f = 0.0, scale = 0.5, factor = 2.02;
+    for (int i = 0; i < 6; i++)
+    {
+        f += scale * noise(q);
+        q *= factor; factor += 0.21; scale *= 0.5;
+    }
+    return f;
+}
+
+float getHeightMask(float py)
+{
+    float h = (py - cfg.cloudBase) / (cfg.cloudTop - cfg.cloudBase);
+    if (h < 0.0 || h > 1.0) return -1.0;
+    return smoothstep(0.0, 0.15, h) * smoothstep(1.0, 0.4, h);
+}
+
+float cloudDensityHigh(vec3 p)
+{
+    float hm = getHeightMask(p.y);
+    if (hm < 0.0) return 0.0;
+    return clamp(fbmHigh(p * cfg.fbmFrequency) * hm * cfg.densityMultiplier - cfg.densityThreshold, 0.0, 1.0);
+}
+
+float cloudDensityLow(vec3 p)
+{
+    float hm = getHeightMask(p.y);
+    if (hm < 0.0) return 0.0;
+    return clamp(fbmLow(p * cfg.fbmFrequency) * hm * cfg.densityMultiplier - cfg.densityThreshold, 0.0, 1.0);
+}
+
+float ign(vec2 coord)
+{
+    return fract(52.9829189 * fract(dot(coord, vec2(0.06711056, 0.00583715))));
+}
+
+float henyeyGreenstein(float g, float cosTheta)
+{
+    float gg = g * g;
+    return (1.0 / (4.0 * PI)) * ((1.0 - gg) / pow(1.0 + gg - 2.0 * g * cosTheta, 1.5));
+}
+
+float lightMarch(vec3 pos, vec3 sunDir)
+{
+    float totalDensity = 0.0;
+    for (int s = 0; s < int(cfg.lightSteps); s++)
+    {
+        pos          += sunDir * 0.04 * float(s + 1);
+        totalDensity += max(0.0, cloudDensityLow(pos));
+    }
+    return exp(-totalDensity * cfg.absorption);
+}
+
+vec4 raymarch(vec3 rd, vec3 sunDir, vec2 pixelCoord)
+{
+    if (rd.y < 0.005) return vec4(0.0);
+
+    float t0 = cfg.cloudBase / rd.y;
+    float t1 = cfg.cloudTop  / rd.y;
+    float dt = (t1 - t0) / float(cfg.steps);
+
+    float frameOff      = fract(float(uint(pc.frame) % 32u) * 0.618033988);
+    float jitter        = fract(ign(pixelCoord) + frameOff);
+    float sunVis        = clamp(sunDir.y + 0.3, 0.0, 1.0);
+    float phase         = henyeyGreenstein(cfg.scatteringG, dot(rd, sunDir));
+    float totalTransmit = 1.0;
+    float lightEnergy   = 0.0;
+
+    for (int i = 0; i < int(cfg.steps); i++)
+    {
+        vec3  p       = rd * (t0 + (float(i) + jitter) * dt);
+        float density = cloudDensityHigh(p);
+        if (density < 0.002) continue;
+
+        totalTransmit *= lightMarch(p, sunDir);
+        lightEnergy   += totalTransmit * (0.025 + density * phase * sunVis);
+        if (totalTransmit < 0.01) break;
+    }
+
+    lightEnergy     = clamp(lightEnergy, 0.0, 1.0);
+    float alpha     = clamp(1.0 - totalTransmit, 0.0, 1.0);
+    vec3  cloudCol  = mix(cfg.cloudLitColor.rgb, cfg.cloudShadowColor.rgb, alpha);
+    vec3  lit       = cloudCol * (cfg.ambientColor.rgb + cfg.sunColorCloud.rgb * lightEnergy);
+
+    return vec4(lit, alpha);
+}
+
+void main()
+{
+    ivec2 cloudSize = imageSize(cloudImage);
+    ivec2 coord     = ivec2(gl_GlobalInvocationID.xy);
+    if (coord.x >= cloudSize.x || coord.y >= cloudSize.y) return;
+
+    vec2  uv     = (vec2(coord) + 0.5) / vec2(cloudSize);
+    float aspect = pc.resX / pc.resY;
+    vec2  ndc    = (uv * 2.0 - 1.0) * vec2(aspect, -1.0);
+
+    vec3 rd = normalize(ndc.x * pc.camRight.xyz
+                      + ndc.y * pc.camUp.xyz
+                      + 1.8  * pc.camForward.xyz);
+
+    float a      = pc.time * 0.04;
+    vec3  sunDir = normalize(vec3(sin(a), 0.4 + sin(a * 0.4) * 0.2, -cos(a)));
+
+    imageStore(cloudImage, coord, clamp(raymarch(rd, sunDir, vec2(coord)), 0.0, 1.0));
+}

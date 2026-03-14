@@ -1,0 +1,7 @@
+function(SetupGLFW TARGET)
+	target_compile_definitions(${TARGET} PUBLIC GLFW_INCLUDE_NONE)
+	target_link_libraries(${TARGET} PRIVATE glfw)
+	if(WIN32)
+		target_compile_definitions(${TARGET} PUBLIC GLFW_EXPOSE_NATIVE_WIN32)
+	endif()
+endfunction()
