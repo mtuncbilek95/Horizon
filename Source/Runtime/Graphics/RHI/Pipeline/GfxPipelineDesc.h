@@ -162,6 +162,17 @@ namespace Horizon
 		DepthStencilState& setMaxDepth(f32 max) { maxDepth = max; return *this; }
 	};
 
+	struct DynamicRendering
+	{
+		std::vector<ImageFormat> colorAttachmentFormats;
+		ImageFormat depthAttachmentFormat;
+		ImageFormat stencilAttachmentFormat;
+
+		DynamicRendering& addColorAttachmentFormat(ImageFormat format) { colorAttachmentFormats.push_back(format); return *this; }
+		DynamicRendering& setDepthAttachmentFormat(ImageFormat format) { depthAttachmentFormat = format; return *this; }
+		DynamicRendering& setStencilAttachmentFormat(ImageFormat format) { stencilAttachmentFormat = format; return *this; }
+	};
+
 	struct GfxGraphicsPipelineDesc 
 	{
 		std::vector<GfxDescriptorLayout*> layouts;
@@ -175,6 +186,7 @@ namespace Horizon
 		Scissor scissor;
 		std::vector<DynamicState> dynamicStates;
 		GfxRenderPass* pass;
+		DynamicRendering dynamicRendering;
 		PipelineFlags flags;
 
 		GfxGraphicsPipelineDesc& addLayout(GfxDescriptorLayout* layout) { layouts.push_back(layout); return *this; }
@@ -188,6 +200,7 @@ namespace Horizon
 		GfxGraphicsPipelineDesc& setScissor(const Scissor& sc) { scissor = sc; return *this; }
 		GfxGraphicsPipelineDesc& addDynamicState(DynamicState state) { dynamicStates.push_back(state); return *this; }
 		GfxGraphicsPipelineDesc& setRenderPass(GfxRenderPass* rp) { pass = rp; return *this; }
+		GfxGraphicsPipelineDesc& setDynamicRendering(const DynamicRendering& dr) { dynamicRendering = dr; return *this; }
 		GfxGraphicsPipelineDesc& setFlags(PipelineFlags f) { flags = f; return *this; }
 	};
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/System/System.h>
+#include <Engine/Graphics/RenderRequest.h>
 
 namespace Horizon
 {
@@ -46,6 +47,7 @@ namespace Horizon
 		void OnFinalize() override;
 
 		void AdvanceFrame();
+		void Submit(RenderRequest request) { m_renderRequests.push_back(std::move(request)); }
 
 	private:
 		std::shared_ptr<GfxInstance> m_instance;
@@ -65,6 +67,8 @@ namespace Horizon
 		std::vector<std::shared_ptr<GfxSemaphore>> m_sceneFinishedSems;
 
 		std::shared_ptr<EditorRenderer> m_editor;
+
+		std::vector<RenderRequest> m_renderRequests;
 
 		u32 m_currentFrame;
 		u32 m_currentImageIndex;

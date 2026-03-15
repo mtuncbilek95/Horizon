@@ -198,10 +198,13 @@ namespace Horizon
 		vkCmdCopyBuffer(m_buffer, VkBuffer(desc.src->Buffer()), VkBuffer(desc.dst->Buffer()), 1, &copyInfo);
 	}
 
-	void GfxVkCommandBuffer::BindPushConstants(const GfxPipeline* pipeline, ShaderStage stage, u32 offset, u32 size, const void* data) const
+	void GfxVkCommandBuffer::BindPushConstants(ShaderStage stage, u32 offset, u32 size, const void* data) const
 	{
+		if (!m_boundPipeline)
+			return;
+
 		vkCmdPushConstants(m_buffer,
-			VkPipelineLayout(pipeline->PipelineLayout()),
+			VkPipelineLayout(m_boundPipeline->PipelineLayout()),
 			VkPipelineUtils::GetShaderType(stage),
 			offset, size, data);
 	}

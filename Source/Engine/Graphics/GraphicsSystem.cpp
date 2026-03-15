@@ -23,77 +23,6 @@
 
 namespace Horizon
 {
-	struct Vertex {
-		Math::Vec4f position;
-		Math::Vec4f normal;
-		Math::Vec4f tangent;
-		Math::Vec2f uv;
-		Math::Vec2f padding; // Padding to ensure 16-byte alignment
-	};
-
-	struct MeshPushConstants
-	{
-		alignas(16) Math::Mat4f model;
-		alignas(16) Math::Mat4f viewProj;
-		alignas(4) u32 triangleCount;
-	};
-
-	std::shared_ptr<GfxBuffer> m_cubeVertexBuffer;
-	std::shared_ptr<GfxBuffer> m_cubeIndexBuffer;
-	std::shared_ptr<GfxDescriptorLayout> m_meshDescriptorLayout;
-	std::shared_ptr<GfxDescriptorBuffer> m_meshDescriptorBuffer;
-	std::shared_ptr<GfxPipeline> m_meshPipeline;
-
-	std::shared_ptr<GfxShader> m_meshShader;
-	std::shared_ptr<GfxShader> m_fragShader;
-
-	std::vector<Vertex> cubeVertices = {
-		// Face -Z - Normal: {0, 0, -1}
-		{{-0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-		{{-0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-		{{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{ 0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, 0.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-
-		// Face +Z  - Normal: {0, 0, 1}
-		{{-0.5f, -0.5f,  0.5f, 1.0f}, {0.0f, 0.0f,  1.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-		{{ 0.5f, -0.5f,  0.5f, 1.0f}, {0.0f, 0.0f,  1.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-		{{ 0.5f,  0.5f,  0.5f, 1.0f}, {0.0f, 0.0f,  1.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{-0.5f,  0.5f,  0.5f, 1.0f}, {0.0f, 0.0f,  1.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-
-		// Face -X - Normal: {-1, 0, 0}
-		{{-0.5f, -0.5f, -0.5f, 1.0f}, {-1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-		{{-0.5f, -0.5f,  0.5f, 1.0f}, {-1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
-		{{-0.5f,  0.5f,  0.5f, 1.0f}, {-1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
-		{{-0.5f,  0.5f, -0.5f, 1.0f}, {-1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-		// Face +X  - Normal: {1, 0, 0}
-		{{ 0.5f, -0.5f, -0.5f, 1.0f}, { 1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f, 1.0f}, {1.0f, 1.0f}},
-		{{ 0.5f,  0.5f, -0.5f, 1.0f}, { 1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f, 1.0f}, {1.0f, 0.0f}},
-		{{ 0.5f,  0.5f,  0.5f, 1.0f}, { 1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f, 1.0f}, {0.0f, 0.0f}},
-		{{ 0.5f, -0.5f,  0.5f, 1.0f}, { 1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f, 1.0f}, {0.0f, 1.0f}},
-
-		// Face -Y  - Normal: {0, -1, 0}
-		{{-0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, -1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-		{{ 0.5f, -0.5f, -0.5f, 1.0f}, {0.0f, -1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-		{{ 0.5f, -0.5f,  0.5f, 1.0f}, {0.0f, -1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{-0.5f, -0.5f,  0.5f, 1.0f}, {0.0f, -1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-
-		// Face +Y - Normal: {0, 1, 0}
-		{{-0.5f,  0.5f, -0.5f, 1.0f}, {0.0f,  1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-		{{-0.5f,  0.5f,  0.5f, 1.0f}, {0.0f,  1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-		{{ 0.5f,  0.5f,  0.5f, 1.0f}, {0.0f,  1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-		{{ 0.5f,  0.5f, -0.5f, 1.0f}, {0.0f,  1.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}}
-	};
-
-	std::vector<uint32_t> cubeIndices = {
-	0,  1,  2,  2,  3,  0,
-	4,  5,  6,  6,  7,  4,
-	8,  9,  10, 10, 11, 8,
-	12, 13, 14, 14, 15, 12,
-	16, 17, 18, 18, 19, 16,
-	20, 21, 22, 22, 23, 20
-	};
-
 	GraphicsSystem::GraphicsSystem() : m_currentFrame(0), m_currentImageIndex(0)
 	{
 	}
@@ -173,104 +102,6 @@ namespace Horizon
 		if (!m_editor->Initialize(this))
 			return SystemReport(GetObjectType(), "Failed to initialize editor renderer.");
 
-		m_cubeVertexBuffer = m_device->CreateBuffer(
-			GfxBufferDesc()
-			.setMemoryUsage(MemoryUsage::Auto)
-			.setAllocationFlags(MemoryAllocation::Mapped | MemoryAllocation::SequentialWrite)
-			.setSize(cubeVertices.size() * sizeof(Vertex))
-			.setUsage(BufferUsage::Storage | BufferUsage::ShaderDeviceAddress)
-		);
-		m_cubeVertexBuffer->Update(cubeVertices.data(), cubeVertices.size() * sizeof(Vertex));
-
-		m_cubeIndexBuffer = m_device->CreateBuffer(
-			GfxBufferDesc()
-			.setMemoryUsage(MemoryUsage::Auto)
-			.setAllocationFlags(MemoryAllocation::Mapped | MemoryAllocation::SequentialWrite)
-			.setSize(cubeIndices.size() * sizeof(uint32_t))
-			.setUsage(BufferUsage::Storage | BufferUsage::ShaderDeviceAddress)
-		);
-		m_cubeIndexBuffer->Update(cubeIndices.data(), cubeIndices.size() * sizeof(uint32_t));
-
-		m_meshDescriptorLayout = m_device->CreateDescriptorLayout(
-			GfxDescriptorLayoutDesc()
-			.addBinding(DescriptorBinding()
-				.setBinding(0)
-				.setType(DescriptorType::Storage)
-				.setStage(ShaderStage::Mesh)
-				.setCount(1))
-			.addBinding(DescriptorBinding()
-				.setBinding(1)
-				.setType(DescriptorType::Storage)
-				.setStage(ShaderStage::Mesh)
-				.setCount(1))
-			.setFlags(DescriptorLayoutFlags::Buffer)
-		);
-
-		m_meshDescriptorBuffer = m_device->CreateDescriptorBuffer(
-			GfxDescriptorBufferDesc()
-			.setAllocationFlags(MemoryAllocation::Mapped | MemoryAllocation::SequentialWrite)
-			.setMemoryUsage(MemoryUsage::AutoPreferDevice)
-			.setSize(m_meshDescriptorLayout->SizeInBytes())
-			.setType(DescriptorBufferType::Resource)
-			.setUsage(DescriptorType::Storage)
-		);
-		m_meshDescriptorBuffer->RequestPayload(m_cubeVertexBuffer.get(), m_meshDescriptorLayout->BindingOffset(0));
-		m_meshDescriptorBuffer->RequestPayload(m_cubeIndexBuffer.get(), m_meshDescriptorLayout->BindingOffset(1));
-
-		std::string meshCode = DataReader::ReadToTextFile("../shaders/Meshlet.mesh");
-		std::string fragCode = DataReader::ReadToTextFile("../shaders/Meshlet.frag");
-
-		ReadArray<u32> meshSpirv = ShaderCompiler::GenerateSpirv(meshCode, "main", ShaderStage::Mesh);
-		ReadArray<u32> fragSpirv = ShaderCompiler::GenerateSpirv(fragCode, "main", ShaderStage::Fragment);
-
-		m_meshShader = m_device->CreateShader(
-			GfxShaderDesc()
-			.setStage(ShaderStage::Mesh)
-			.setByteCode(*meshSpirv)
-		);
-		m_fragShader = m_device->CreateShader(
-			GfxShaderDesc()
-			.setStage(ShaderStage::Fragment)
-			.setByteCode(*fragSpirv)
-		);
-
-		m_meshPipeline = m_device->CreateGraphicsPipeline(
-			GfxGraphicsPipelineDesc()
-			.addLayout(m_meshDescriptorLayout.get())
-			.addShader(m_meshShader.get())
-			.addShader(m_fragShader.get())
-			.setRasterizer(
-				RasterizerState()
-				.setCullMode(CullMode::Back)
-				.setFaceOrientation(FaceOrientation::CCW)
-				.setPolygonMode(PolygonMode::Fill)
-				.setDepthBiasEnable(false))
-			.setPushConstants(
-				PushConstants()
-				.addRange(
-					PushConstantRange()
-					.setSizeOfData(sizeof(MeshPushConstants))
-					.setStage(ShaderStage::Mesh)))
-			.setInput(
-				InputAssembler()
-				.setTopology(PrimitiveTopology::TriangleList))
-			.setBlend(
-				BlendState()
-				.setLogicEnable(false)
-				.addAttachment(
-					BlendAttachment()
-					.setBlendEnable(false)
-					.setColorMask(ColorComponent::All)))
-			.setDepthStencil(
-				DepthStencilState()
-				.setDepthTestEnable(false)
-				.setDepthWriteEnable(false)
-				.setDepthOp(CompareOp::Less))
-			.setViewport(Viewport().setSize({ 1920.f, 1080.f }))
-			.setScissor(Scissor().setExtent({ 1920, 1080 }))
-			.setRenderPass(m_presentationPass.get())
-			.setFlags(PipelineFlags::DescriptorBuffer));
-
 		return SystemReport();
 	}
 
@@ -290,32 +121,9 @@ namespace Horizon
 			.setClearColor(true)
 		);
 
-		static glm::mat4 model = glm::mat4(1.0f);
-		model = glm::rotate(model, 0.006f, glm::vec3(1.0f, 0.0f, 0.0f));
-		model = glm::rotate(model, 0.008f, glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::rotate(model, 0.003f, glm::vec3(0.0f, 0.0f, 1.0f));
-
-		glm::mat4 view = glm::lookAt(
-			glm::vec3(0.0f, 30.0f, 0.0f),
-			glm::vec3(0.0f, 0.0f, 0.0f),
-			glm::vec3(0.0f, 0.0f, -1.0f)
-		);
-		glm::mat4 proj = glm::perspective(glm::radians(45.0f),
-			1920.f / 1080.f,
-			0.1f, 100.0f);
-		proj[1][1] *= -1;
-		glm::mat4 viewProj = proj * view;
-
-		auto pushData = MeshPushConstants{
-			.model = model,
-			.viewProj = viewProj,
-			.triangleCount = 12
-		};
-
-		m_graphicsCmds[m_currentFrame]->BindPipeline(m_meshPipeline.get());
-		m_graphicsCmds[m_currentFrame]->BindDescriptorBuffer(m_meshPipeline.get(), ShaderStage::Mesh, 0, m_meshDescriptorBuffer.get());
-		m_graphicsCmds[m_currentFrame]->BindPushConstants(m_meshPipeline.get(), ShaderStage::Mesh, 0, sizeof(MeshPushConstants), &pushData);
-		m_graphicsCmds[m_currentFrame]->DrawMeshTask(10000, 1, 1);
+		for (auto& request : m_renderRequests)
+			request.command(m_graphicsCmds[m_currentFrame].get());
+		m_renderRequests.clear();
 
 		m_editor->Render(m_graphicsCmds[m_currentFrame].get());
 

@@ -16,14 +16,22 @@ struct Vertex
     vec2 padding;
 };
 
-layout(set = 0, binding = 0) readonly buffer VertexBuffer { Vertex vertices[]; };
-layout(set = 0, binding = 1) readonly buffer IndexBuffer { uint indices[]; };
+struct Meshlet
+{
+	uint vertexOffset;
+	uint vertexCount;
+	uint indexOffset;
+	uint indexCount;
+};
+
+layout(set = 0, binding = 0) readonly buffer MeshletBuffer { Meshlet meshlets[]; };
+layout(set = 0, binding = 1) readonly buffer VertexBuffer { Vertex vertices[]; };
+layout(set = 0, binding = 2) readonly buffer IndexBuffer { uint indices[]; };
 
 layout(push_constant) uniform PushData
 {
     mat4 model;
     mat4 viewProj;
-    uint triangleCount;
 } pushConst;
 
 layout(location = 0) flat out uint outMeshletID[];
@@ -33,15 +41,21 @@ void main()
     uint cubeID = gl_WorkGroupID.x;
     uint localTriIndex = gl_LocalInvocationID.x;
 
-    if(localTriIndex == 0) {
-        SetMeshOutputsEXT(pushConst.triangleCount * 2, pushConst.triangleCount);
-    }
+    Meshlet currentMeshlet = meshlets[0]; 
 
-    if(localTriIndex < pushConst.triangleCount)
+    uint triCount = currentMeshlet.indexCount / 3;
+    uint idxOffset = currentMeshlet.indexOffset;
+    uint vtxOffset = currentMeshlet.vertexOffset;
+
+    if(localTriIndex == 0) 
+        SetMeshOutputsEXT(triCount * 3, triCount);
+
+    if(localTriIndex < triCount)
     {
-        uint i0 = indices[localTriIndex * 3 + 0];
-        uint i1 = indices[localTriIndex * 3 + 1];
-        uint i2 = indices[localTriIndex * 3 + 2];
+        uint globalIndex = idxOffset + (localTriIndex * 3);
+        uint i0 = indices[globalIndex + 0];
+        uint i1 = indices[globalIndex + 1];
+        uint i2 = indices[globalIndex + 2];
 
         uint v0 = localTriIndex * 3 + 0;
         uint v1 = localTriIndex * 3 + 1;
@@ -51,15 +65,15 @@ void main()
         float gridZ = float(cubeID / 100) * 2.5;
         vec3 instanceOffset = vec3(gridX - 125.0, 0.0, gridZ - 125.0);
 
-        vec4 localPos0 = pushConst.model * vec4(vertices[i0].position.xyz, 1.0);
-        vec4 localPos1 = pushConst.model * vec4(vertices[i1].position.xyz, 1.0);
-        vec4 localPos2 = pushConst.model * vec4(vertices[i2].position.xyz, 1.0);
+        vec4 localPos0 = pushConst.model * vec4(vertices[vtxOffset + i0].position.xyz, 1.0);
+        vec4 localPos1 = pushConst.model * vec4(vertices[vtxOffset + i1].position.xyz, 1.0);
+        vec4 localPos2 = pushConst.model * vec4(vertices[vtxOffset + i2].position.xyz, 1.0);
 
         gl_MeshVerticesEXT[v0].gl_Position = pushConst.viewProj * vec4(localPos0.xyz + instanceOffset, 1.0);
         gl_MeshVerticesEXT[v1].gl_Position = pushConst.viewProj * vec4(localPos1.xyz + instanceOffset, 1.0);
         gl_MeshVerticesEXT[v2].gl_Position = pushConst.viewProj * vec4(localPos2.xyz + instanceOffset, 1.0);
 
-        uint uniqueID = (cubeID * pushConst.triangleCount) + localTriIndex;
+        uint uniqueID = (cubeID * triCount) + localTriIndex;
         outMeshletID[v0] = uniqueID;
         outMeshletID[v1] = uniqueID;
         outMeshletID[v2] = uniqueID;

@@ -24,7 +24,7 @@ namespace Horizon
 		void EndRenderPass() const final;
 
 		void BindPipeline(GfxPipeline* pipeline) const final;
-		void BindPushConstants(const GfxPipeline* pipeline, ShaderStage stage, u32 offset, u32 size, const void* data) const final;
+		void BindPushConstants(ShaderStage stage, u32 offset, u32 size, const void* data) const final;
 
 		void BindVertices(const std::vector<GfxBuffer*> buffers) const final;
 		void BindIndex(const GfxBuffer* buffer, usize offset) const final;

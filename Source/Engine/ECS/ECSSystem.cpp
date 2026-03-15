@@ -18,15 +18,15 @@ namespace Horizon
 		mesh->SetScene(nullptr);
 		m_ecsSystems.push_back(mesh);
 
-		auto camera = std::make_shared<CameraComponentSystem>();
-		camera->SetEngine(GetEngine());
-		camera->SetScene(nullptr);
-		m_ecsSystems.push_back(camera);
-
 		auto transform = std::make_shared<TransformComponentSystem>();
 		transform->SetEngine(GetEngine());
 		transform->SetScene(nullptr);
 		m_ecsSystems.push_back(transform);
+
+		auto camera = std::make_shared<CameraComponentSystem>();
+		camera->SetEngine(GetEngine());
+		camera->SetScene(nullptr);
+		m_ecsSystems.push_back(camera);
 
 		return SystemReport();
 	}

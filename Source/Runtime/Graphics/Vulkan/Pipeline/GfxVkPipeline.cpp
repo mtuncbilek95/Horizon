@@ -176,6 +176,18 @@ namespace Horizon
 		depthstencil.front = {};
 		depthstencil.back = {};
 
+		std::vector<VkFormat> colorFormats(desc.dynamicRendering.colorAttachmentFormats.size());
+		for(u32 i = 0; i < desc.dynamicRendering.colorAttachmentFormats.size(); i++)
+			colorFormats[i] = VkImageUtils::GetVkImgFormat(desc.dynamicRendering.colorAttachmentFormats[i]);
+
+		VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {};
+		pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+		pipelineRenderingCreateInfo.pNext = nullptr;
+		pipelineRenderingCreateInfo.colorAttachmentCount = colorFormats.size();
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
+		pipelineRenderingCreateInfo.depthAttachmentFormat = VkImageUtils::GetVkImgFormat(desc.dynamicRendering.depthAttachmentFormat);
+		pipelineRenderingCreateInfo.stencilAttachmentFormat = VkImageUtils::GetVkImgFormat(desc.dynamicRendering.stencilAttachmentFormat);
+
 		VkGraphicsPipelineCreateInfo pipelineInfo{ VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
 		pipelineInfo.stageCount = static_cast<u32>(sStages.size());
 		pipelineInfo.pStages = sStages.data();
@@ -188,7 +200,7 @@ namespace Horizon
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = dStates.size() > 0 ? &dynamicState : nullptr;
 		pipelineInfo.layout = m_layout;
-		pipelineInfo.renderPass = VkRenderPass(desc.pass->Pass());
+		pipelineInfo.renderPass = desc.pass->Pass() ? VkRenderPass(desc.pass->Pass()) : VK_NULL_HANDLE;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.flags = VkPipelineUtils::GetVkPipelineFlags(desc.flags);
 		pipelineInfo.pNext = nullptr;
