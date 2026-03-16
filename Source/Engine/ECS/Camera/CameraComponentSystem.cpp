@@ -3,17 +3,28 @@
 #include <Runtime/Graphics/RHI/Command/GfxCommandBuffer.h>
 #include <Engine/Graphics/GraphicsSystem.h>
 
+#include <imgui.h>
+
+#include <print>
+
 namespace Horizon
 {
-	struct MeshPushConstants
+	struct PushData
 	{
-		alignas(16) Math::Mat4f model;
-		alignas(16) Math::Mat4f viewProj;
+		Math::Mat4f model;
+		Math::Mat4f viewProj;
+		Math::Vec4f cameraPos;
+		float lodDistance0;
+		float lodDistance1;
+		float lodDistance2;
+		float padding;
 	};
+
+	Math::Vec3f cameraPos = { 0.0f, 0.0f, 0.0f };
+	bool moveBack = false;
 
 	SystemReport CameraComponentSystem::OnStart()
 	{
-		// Log::Terminal(LogType::Success, GetObjectType(), "CameraComponentSystem started.");
 		return SystemReport();
 	}
 
@@ -24,8 +35,16 @@ namespace Horizon
 		model = glm::rotate(model, 0.008f, glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::rotate(model, 0.003f, glm::vec3(0.0f, 0.0f, 1.0f));
 
+		if (cameraPos.y > 35.0f) 
+			moveBack = false;
+
+		if (cameraPos.y < -35.0f) 
+			moveBack = true;
+
+		cameraPos.y += moveBack ? 0.01f : -0.01f;
+
 		glm::mat4 view = glm::lookAt(
-			glm::vec3(0.0f, 30.0f, 0.0f),
+			cameraPos,
 			glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(0.0f, 0.0f, -1.0f)
 		);
@@ -35,16 +54,19 @@ namespace Horizon
 		proj[1][1] *= -1;
 		glm::mat4 viewProj = proj * view;
 
-		auto pushData = MeshPushConstants{
-			.model = model,
-			.viewProj = viewProj
-		};
+		PushData push = {};
+		push.model = model;
+		push.viewProj = viewProj;
+		push.cameraPos = Math::Vec4f(cameraPos.x, cameraPos.y, cameraPos.z, 1.0f);
+		push.lodDistance0 = 5.0f;
+		push.lodDistance1 = 15.0f;
+		push.lodDistance2 = 30.0f;
 
 		auto& graphicsSystem = RequestSystem<GraphicsSystem>();
 
-		graphicsSystem.Submit({[pushData](GfxCommandBuffer* cmd)
+		graphicsSystem.Submit({[push](GfxCommandBuffer* cmd)
 			{
-				cmd->BindPushConstants(ShaderStage::Mesh, 0, sizeof(MeshPushConstants), &pushData);
+				cmd->BindPushConstants(ShaderStage::Mesh | ShaderStage::Task, 0, sizeof(PushData), &push);
 			}});
 	}
 
