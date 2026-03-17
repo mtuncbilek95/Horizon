@@ -3,7 +3,7 @@
 #include <Runtime/Graphics/RHI/Image/GfxImage.h>
 
 #include <vulkan/vulkan.h>
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 #include <memory>
 

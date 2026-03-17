@@ -2,29 +2,25 @@
   "version": 3,
   "configurePresets": [
     {
+      "name": "linux-base",
       "binaryDir": "${sourceDir}/Build/${presetName}",
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "cl.exe",
-        "CMAKE_CXX_COMPILER": "cl.exe"
-      },
+      "installDir": "${sourceDir}/Install/${presetName}",
+      "generator": "Ninja",
+      "hidden": true,
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
-        "rhs": "Windows"
+        "rhs": "Linux"
       },
-      "generator": "Ninja",
-      "hidden": true,
-      "installDir": "${sourceDir}/Install/${presetName}",
-      "name": "windows-base"
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
     },
     {
       "name": "Debug",
       "displayName": "Debug",
-      "inherits": "windows-base",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
+      "inherits": "linux-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
@@ -32,11 +28,7 @@
     {
       "name": "Release",
       "displayName": "Release",
-      "inherits": "windows-base",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
+      "inherits": "linux-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
@@ -44,11 +36,7 @@
     {
       "name": "RelWithDebInfo",
       "displayName": "RelWithDebInfo",
-      "inherits": "windows-base",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
+      "inherits": "linux-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }

@@ -3,8 +3,8 @@
 #include <Runtime/Graphics/RHI/Device/GfxDevice.h>
 
 #include <vulkan/vulkan.h>
-#include <vma/vk_mem_alloc.h>
-#include <Volk/volk.h>
+#include <vk_mem_alloc.h>
+#include <volk.h>
 
 #include <memory>
 #include <vector>

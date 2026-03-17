@@ -2,7 +2,7 @@
 
 #include <Runtime/Graphics/RHI/Descriptor/GfxDescriptorBuffer.h>
 
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 namespace Horizon
 {
