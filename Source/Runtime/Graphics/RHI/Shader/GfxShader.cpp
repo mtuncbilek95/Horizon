@@ -2,8 +2,8 @@
 
 namespace Horizon
 {
-	GfxShader::GfxShader(const GfxShaderDesc& desc, GfxDevice* pDevice) : GfxObject(pDevice), 
-		m_desc(desc)
-	{
-	}
+    GfxShader::GfxShader(const GfxShaderDesc& desc, GfxDevice* pDevice) : GfxObject(pDevice), 
+        m_desc(desc)
+    {
+    }
 }

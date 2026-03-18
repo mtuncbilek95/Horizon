@@ -6,11 +6,11 @@
 
 namespace Horizon
 {
-	struct VkCommandUtils
-	{
-		static VkCommandPoolCreateFlags GetVkPoolFlags(CommandPoolFlags flag);
-		static VkCommandBufferLevel GetVkLevel(CommandLevel lvl);
-		static VkCommandBufferUsageFlags GetVkCmdUsage(CommandBufferUsage usage);
-		static VkSubpassContents GetVkContent(SubpassContent ctx);
-	};
+    struct VkCommandUtils
+    {
+        static VkCommandPoolCreateFlags GetVkPoolFlags(CommandPoolFlags flag);
+        static VkCommandBufferLevel GetVkLevel(CommandLevel lvl);
+        static VkCommandBufferUsageFlags GetVkCmdUsage(CommandBufferUsage usage);
+        static VkSubpassContents GetVkContent(SubpassContent ctx);
+    };
 }

@@ -5,8 +5,8 @@
 
 namespace Horizon
 {
-	struct DataReader
-	{
-		static std::string ReadToTextFile(const std::filesystem::path& path);
-	};
+    struct DataReader
+    {
+        static std::string ReadToTextFile(const std::filesystem::path& path);
+    };
 }

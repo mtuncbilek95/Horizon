@@ -4,14 +4,14 @@
 
 namespace Horizon
 {
-	class GfxQueue;
+    class GfxQueue;
 
-	struct GfxCommandPoolDesc
-	{
-		GfxQueue* queue = nullptr;
-		CommandPoolFlags flags;
+    struct GfxCommandPoolDesc
+    {
+        GfxQueue* queue = nullptr;
+        CommandPoolFlags flags;
 
-		GfxCommandPoolDesc& setQueue(GfxQueue* q) { queue = q; return *this; }
-		GfxCommandPoolDesc& setFlags(CommandPoolFlags flag) { flags = flag; return *this; }
-	};
+        GfxCommandPoolDesc& setQueue(GfxQueue* q) { queue = q; return *this; }
+        GfxCommandPoolDesc& setFlags(CommandPoolFlags flag) { flags = flag; return *this; }
+    };
 }

@@ -8,16 +8,16 @@
 
 namespace Horizon
 {
-	class GfxVkCommandPool : public GfxCommandPool
-	{
-	public:
-		GfxVkCommandPool(const GfxCommandPoolDesc& desc, GfxDevice* pDevice);
-		~GfxVkCommandPool() override final;
+    class GfxVkCommandPool : public GfxCommandPool
+    {
+    public:
+        GfxVkCommandPool(const GfxCommandPoolDesc& desc, GfxDevice* pDevice);
+        ~GfxVkCommandPool() override;
 
-		void* Pool() const override final;
-		std::shared_ptr<GfxCommandBuffer> CreateBuffer(CommandLevel lvl) override final;
+        void* Pool() const override final;
+        std::shared_ptr<GfxCommandBuffer> CreateBuffer(CommandLevel lvl) final;
 
-	private:
-		VkCommandPool m_pool;
-	};
+    private:
+        VkCommandPool m_pool;
+    };
 }

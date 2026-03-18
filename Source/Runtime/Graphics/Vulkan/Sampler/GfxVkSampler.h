@@ -6,15 +6,15 @@
 
 namespace Horizon
 {
-	class GfxVkSampler : public GfxSampler
-	{
-	public:
-		GfxVkSampler(const GfxSamplerDesc& desc, GfxDevice* pDevice);
-		~GfxVkSampler() override final;
+    class GfxVkSampler : public GfxSampler
+    {
+    public:
+        GfxVkSampler(const GfxSamplerDesc& desc, GfxDevice* pDevice);
+        ~GfxVkSampler() override;
 
-		void* Sampler() const override final;
+        void* Sampler() const final;
 
-	private:
-		VkSampler m_sampler;
-	};
+    private:
+        VkSampler m_sampler;
+    };
 }

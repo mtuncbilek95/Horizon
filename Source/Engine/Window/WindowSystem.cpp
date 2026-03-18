@@ -2,32 +2,32 @@
 
 namespace Horizon
 {
-	SystemReport WindowSystem::OnInitialize()
-	{
-		m_window = std::make_unique<BasicWindow>(
-			WindowProps()
-				.setWindowName("Horizon")
-				.setWindowSize({ 1920, 1080 })
-				.setWindowMode(WindowMode::Windowed)
-		);
+    EngineReport WindowSystem::OnInitialize()
+    {
+        m_window = std::make_unique<BasicWindow>(
+            WindowProps()
+            .setWindowName("Horizon")
+            .setWindowSize({ 1920, 1080 })
+            .setWindowMode(WindowMode::Windowed)
+        );
 
-		if(!m_window)
-			return SystemReport(GetObjectType(), "Failed to create window");
+        if (!m_window)
+            return EngineReport(GetObjectType(), "Failed to create window");
 
-		m_window->Show();
-		return SystemReport();
-	}
+        m_window->Show();
+        return EngineReport();
+    }
 
-	void WindowSystem::OnSync()
-	{
-		m_window->ProcessEvents();
+    void WindowSystem::OnSync()
+    {
+        m_window->ProcessEvents();
 
-		if(!m_window->IsActive())
-			GetEngine()->RequestExit("Window closed");
-	}
+        if (!m_window->IsActive())
+            GetEngine()->RequestExit("Window closed");
+    }
 
-	void WindowSystem::OnFinalize()
-	{
-		m_window.reset();
-	}
+    void WindowSystem::OnFinalize()
+    {
+        m_window.reset();
+    }
 }

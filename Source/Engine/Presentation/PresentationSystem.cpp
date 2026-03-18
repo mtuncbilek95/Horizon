@@ -1,47 +1,42 @@
 #include "PresentationSystem.h"
 
+#include <Runtime/Graphics/RHI/Device/GfxDevice.h>
 #include <Runtime/Graphics/RHI/Swapchain/GfxSwapchain.h>
-#include <Runtime/Graphics/RHI/Sync/GfxSemaphore.h>
-#include <Runtime/Graphics/RHI/Sync/GfxFence.h>
-#include <Runtime/Graphics/RHI/Queue/GfxQueue.h>
 
+#include <Engine/Window/WindowSystem.h>
 #include <Engine/Graphics/GraphicsSystem.h>
 
 namespace Horizon
 {
-	SystemReport PresentationSystem::OnInitialize()
-	{
-		auto& graphicsSystem = RequestSystem<GraphicsSystem>();
-		m_swapchain = graphicsSystem.Swapchain();
-		m_presentationQueue = graphicsSystem.GraphicsQueue();
+    PresentationSystem::PresentationSystem()
+    {
+    }
 
-		return SystemReport();
-	}
+    EngineReport PresentationSystem::OnInitialize()
+    {
+        auto& windowSystem = RequestSystem<WindowSystem>();
+        auto& graphicsSystem = RequestSystem<GraphicsSystem>();
 
-	void PresentationSystem::OnSync()
-	{
-		auto& graphicsSystem = RequestSystem<GraphicsSystem>();
+        m_swapchain = graphicsSystem.Device().CreateSwapchain(
+            GfxSwapchainDesc()
+            .setImageSize(windowSystem.WindowSize())
+            .setImageCount(2)
+            .setFormat(ImageFormat::B8G8R8A8_UNorm)
+            .setPresentMode(PresentMode::Fifo)
+            .setGraphicsQueue(&graphicsSystem.GraphicsQueue())
+            .setWindowHandler(windowSystem.Handle())
+            .setWindowInstance(windowSystem.Instance())
+            .setWindowAPI(windowSystem.APIWindow())
+        );
 
-		std::vector<GfxCommandBuffer*> cmdBuffers;
-		for (const auto& request : m_pendingPresentRequests)
-			cmdBuffers.push_back(request.cmdBuffer);
+        return EngineReport();
+    }
 
-		GfxSemaphore* currRenderSemaphore = graphicsSystem.CurrentRenderFinishedSem();
+    void PresentationSystem::OnSync()
+    {
+    }
 
-		m_presentationQueue->Submit(cmdBuffers, {}, { currRenderSemaphore }, nullptr, PipelineStageFlags::ColorAttachment);
-
-		m_swapchain->Present({ currRenderSemaphore });
-		graphicsSystem.AdvanceFrame();
-
-		m_pendingPresentRequests.clear();
-	}
-
-	void PresentationSystem::OnFinalize()
-	{
-	}
-
-	void PresentationSystem::RequestPresent(const PresentRequest& request)
-	{
-		m_pendingPresentRequests.push_back(request);
-	}
+    void PresentationSystem::OnFinalize()
+    {
+    }
 }

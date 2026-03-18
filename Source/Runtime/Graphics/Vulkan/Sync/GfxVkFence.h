@@ -7,17 +7,17 @@
 
 namespace Horizon
 {
-	class GfxVkFence : public GfxFence
-	{
-	public:
-		GfxVkFence(const GfxFenceDesc& desc, GfxDevice* pDevice);
-		~GfxVkFence() override final;
+    class GfxVkFence : public GfxFence
+    {
+    public:
+        GfxVkFence(const GfxFenceDesc& desc, GfxDevice* pDevice);
+        ~GfxVkFence() override;
 
-		void* Fence() const override final;
-		void WaitIdle() const override final;
-		void Reset() const override final;
+        void* Fence() const final;
+        void WaitIdle() const final;
+        void Reset() const final;
 
-	private:
-		VkFence m_fence;
-	};
+    private:
+        VkFence m_fence;
+    };
 }

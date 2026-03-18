@@ -7,23 +7,23 @@
 
 namespace Horizon
 {
-	class GfxCommandBuffer;
+    class GfxCommandBuffer;
 
-	/**
-	 * @class GfxCommandPool
-	 * @brief All purpose command pool for RHI. CommandPool a.k.a
-	 * CommandAllocator is being used for pooling the commandbuffers.
-	 */
-	class GfxCommandPool : public GfxObject
-	{
-	public:
-		GfxCommandPool(const GfxCommandPoolDesc& desc, GfxDevice* pDevice);
-		virtual ~GfxCommandPool() override = default;
+    /**
+     * @class GfxCommandPool
+     * @brief All purpose command pool for RHI. CommandPool a.k.a
+     * CommandAllocator is being used for pooling the commandbuffers.
+     */
+    class GfxCommandPool : public GfxObject
+    {
+    public:
+        GfxCommandPool(const GfxCommandPoolDesc& desc, GfxDevice* pDevice);
+        virtual ~GfxCommandPool() override = default;
 
-		virtual void* Pool() const = 0;
-		virtual std::shared_ptr<GfxCommandBuffer> CreateBuffer(CommandLevel lvl) = 0;
+        virtual void* Pool() const = 0;
+        virtual std::shared_ptr<GfxCommandBuffer> CreateBuffer(CommandLevel lvl) = 0;
 
-	private:
-		GfxCommandPoolDesc m_desc;
-	};
+    private:
+        GfxCommandPoolDesc m_desc;
+    };
 }

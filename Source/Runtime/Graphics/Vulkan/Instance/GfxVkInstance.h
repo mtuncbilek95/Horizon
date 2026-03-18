@@ -12,11 +12,11 @@ namespace Horizon
     {
     public:
         GfxVkInstance(const GfxInstanceDesc& desc);
-        ~GfxVkInstance() override final;
+        ~GfxVkInstance() override;
 
-        std::shared_ptr<GfxDevice> CreateDevice(const GfxDeviceDesc& desc) override final;
-        void* Instance() const override final;
-        void* Adapter() const override final;
+        std::shared_ptr<GfxDevice> CreateDevice(const GfxDeviceDesc& desc) final;
+        void* Instance() const final;
+        void* Adapter() const final;
         
     private:
         VkInstance m_instance;

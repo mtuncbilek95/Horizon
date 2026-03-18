@@ -2,10 +2,10 @@
 
 namespace Horizon
 {
-	struct GfxFenceDesc
-	{
-		b8 signalled = false;
+    struct GfxFenceDesc
+    {
+        b8 signalled = false;
 
-		GfxFenceDesc& setSignal(b8 val) { signalled = val; return *this; }
-	};
+        GfxFenceDesc& setSignal(b8 val) { signalled = val; return *this; }
+    };
 }

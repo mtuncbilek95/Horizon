@@ -2,8 +2,8 @@
 
 namespace Horizon
 {
-	GfxDescriptorLayout::GfxDescriptorLayout(const GfxDescriptorLayoutDesc& desc, GfxDevice* pDevice) : GfxObject(pDevice),
-		m_desc(desc), m_sizeInBytes(0)
-	{
-	}
+    GfxDescriptorLayout::GfxDescriptorLayout(const GfxDescriptorLayoutDesc& desc, GfxDevice* pDevice) : GfxObject(pDevice),
+        m_desc(desc), m_sizeInBytes(0)
+    {
+    }
 }

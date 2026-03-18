@@ -2,8 +2,8 @@
 
 namespace Horizon
 {
-	GfxDescriptorBuffer::GfxDescriptorBuffer(const GfxDescriptorBufferDesc& desc, GfxDevice* pDevice) : GfxObject(pDevice),
-		m_desc(desc)
-	{
-	}
+    GfxDescriptorBuffer::GfxDescriptorBuffer(const GfxDescriptorBufferDesc& desc, GfxDevice* pDevice) : GfxObject(pDevice),
+        m_desc(desc)
+    {
+    }
 }

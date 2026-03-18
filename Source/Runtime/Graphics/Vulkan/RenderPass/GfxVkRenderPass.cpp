@@ -9,8 +9,8 @@
 
 namespace Horizon
 {
-	GfxVkRenderPass::GfxVkRenderPass(const GfxRenderPassDesc& desc, GfxDevice* pDevice) : GfxRenderPass(desc, pDevice)
-	{
+    GfxVkRenderPass::GfxVkRenderPass(const GfxRenderPassDesc& desc, GfxDevice* pDevice) : GfxRenderPass(desc, pDevice)
+    {
         std::vector<VkAttachmentDescription> attachmentDescs;
         for (const auto& att : desc.attachments)
         {
@@ -85,16 +85,16 @@ namespace Horizon
         info.pDependencies = &dependency;
 
         VDebug::VkAssert(vkCreateRenderPass(VkDevice(Root()->Device()), &info, nullptr, &m_pass), "GfxVkRenderPass");
-	}
+    }
 
-	GfxVkRenderPass::~GfxVkRenderPass()
-	{
+    GfxVkRenderPass::~GfxVkRenderPass()
+    {
         if (m_pass)
         {
             vkDestroyRenderPass(VkDevice(Root()->Device()), m_pass, nullptr);
             m_pass = VK_NULL_HANDLE;
         }
-	}
+    }
 
-	void* GfxVkRenderPass::Pass() const { return static_cast<void*>(m_pass); }
+    void* GfxVkRenderPass::Pass() const { return static_cast<void*>(m_pass); }
 }

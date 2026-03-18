@@ -6,15 +6,15 @@
 
 namespace Horizon
 {
-	class GfxVkDescriptorLayout : public GfxDescriptorLayout
-	{
-	public:
-		GfxVkDescriptorLayout(const GfxDescriptorLayoutDesc& desc, GfxDevice* pDevice);
-		~GfxVkDescriptorLayout() override final;
+    class GfxVkDescriptorLayout : public GfxDescriptorLayout
+    {
+    public:
+        GfxVkDescriptorLayout(const GfxDescriptorLayoutDesc& desc, GfxDevice* pDevice);
+        ~GfxVkDescriptorLayout() override;
 
-		void* DescLayout() const override final;
+        void* DescLayout() const final;
 
-	private:
-		VkDescriptorSetLayout m_layout;
-	};
+    private:
+        VkDescriptorSetLayout m_layout;
+    };
 }

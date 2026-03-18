@@ -2,7 +2,7 @@
 
 namespace Horizon
 {
-	struct GfxSemaphoreDesc
-	{
-	};
+    struct GfxSemaphoreDesc
+    {
+    };
 }

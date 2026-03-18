@@ -1,10 +1,10 @@
 #include "GfxVkImage.h"
 
 #include <Runtime/Graphics/Vulkan/Debug/VDebug.h>
-#include <Runtime/Graphics/Vulkan/Device/GfxVkDevice.h>
 #include <Runtime/Graphics/Vulkan/Image/GfxVkImageView.h>
 #include <Runtime/Graphics/Vulkan/Util/VkImageUtils.h>
 #include <Runtime/Graphics/Vulkan/Util/VkMemoryUtils.h>
+#include <Runtime/Graphics/Vulkan/Device/GfxVkDevice.h>
 
 #include <memory>
 
@@ -36,8 +36,8 @@ namespace Horizon
         return ImageViewType::View2D;
     }
 
-	GfxVkImage::GfxVkImage(const GfxImageDesc& desc, GfxDevice* pDevice) : GfxImage(desc, pDevice)
-	{
+    GfxVkImage::GfxVkImage(const GfxImageDesc& desc, GfxDevice* pDevice) : GfxImage(desc, pDevice)
+    {
         VkImageCreateInfo imageInfo = {};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VkImageUtils::GetVkImgType(desc.type);
@@ -57,24 +57,24 @@ namespace Horizon
 
         VDebug::VkAssert(vmaCreateImage(VmaAllocator(Root()->Allocator()), &imageInfo, &allocInfo,
             &m_image, &m_allocation, &m_allocationInfo), "GfxVkImage");
-	}
+    }
 
     GfxVkImage::GfxVkImage(const GfxImageDesc& desc, GfxDevice* pDevice, void* apiImage) : GfxImage(desc, pDevice, apiImage), 
         m_image(static_cast<VkImage>(apiImage)), m_allocation(VK_NULL_HANDLE), m_allocationInfo(VmaAllocationInfo())
     {
     }
 
-	GfxVkImage::~GfxVkImage()
-	{
+    GfxVkImage::~GfxVkImage()
+    {
         if (m_allocation && !IsSwapchain())
         {
             vmaDestroyImage(VmaAllocator(Root()->Allocator()), m_image, m_allocation);
             m_allocation = nullptr;
         }
-	}
+    }
 
-	std::shared_ptr<GfxImageView> GfxVkImage::CreateView(const GfxViewDesc& desc)
-	{
+    std::shared_ptr<GfxImageView> GfxVkImage::CreateView(const GfxViewDesc& desc)
+    {
         GfxImageViewDesc viewProp = GfxImageViewDesc().setImage(this)
             .setViewType(CastType(ImageType(), ArrayLayers()))
             .setAspect(desc.aspect)
@@ -82,7 +82,7 @@ namespace Horizon
             .setBaseArray(desc.baseArray);
 
         return std::make_shared<GfxVkImageView>(viewProp, Root());
-	}
+    }
 
     void* GfxVkImage::Image() const { return static_cast<void*>(m_image); }
 }

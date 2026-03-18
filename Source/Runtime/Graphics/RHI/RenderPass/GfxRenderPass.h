@@ -5,15 +5,15 @@
 
 namespace Horizon
 {
-	class GfxRenderPass : public GfxObject
-	{
-	public:
-		GfxRenderPass(const GfxRenderPassDesc& desc, GfxDevice* pDevice);
-		virtual ~GfxRenderPass() override = default;
+    class GfxRenderPass : public GfxObject
+    {
+    public:
+        GfxRenderPass(const GfxRenderPassDesc& desc, GfxDevice* pDevice);
+        virtual ~GfxRenderPass() override = default;
 
-		virtual void* Pass() const = 0;
+        virtual void* Pass() const = 0;
 
-	private:
-		GfxRenderPassDesc m_desc;
-	};
+    private:
+        GfxRenderPassDesc m_desc;
+    };
 }

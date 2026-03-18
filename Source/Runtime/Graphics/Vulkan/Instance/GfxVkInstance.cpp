@@ -13,10 +13,10 @@
 
 namespace Horizon
 {
-	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData)
-	{
+    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData)
+    {
         switch (messageSeverity)
         {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
@@ -33,11 +33,11 @@ namespace Horizon
         }
 
         return false;
-	}
+    }
 
-	GfxVkInstance::GfxVkInstance(const GfxInstanceDesc& desc) : GfxInstance(desc), m_instance(VK_NULL_HANDLE),
+    GfxVkInstance::GfxVkInstance(const GfxInstanceDesc& desc) : GfxInstance(desc), m_instance(VK_NULL_HANDLE),
         m_physicalDevice(VK_NULL_HANDLE)
-	{
+    {
         VDebug::VkAssert(volkInitialize(), "GfxVkInstance");
 
 #if defined(HORIZON_DEBUG)
@@ -60,6 +60,10 @@ namespace Horizon
         extensions.push_back({ VK_KHR_WIN32_SURFACE_EXTENSION_NAME, false });
 #endif
 
+#if defined(HORIZON_LINUX)
+        extensions.push_back({ VK_KHR_XCB_SURFACE_EXTENSION_NAME, false });
+#endif
+
 #if defined(HORIZON_DEBUG)
         extensions.push_back({ VK_EXT_DEBUG_UTILS_EXTENSION_NAME, false });
         extensions.push_back({ VK_EXT_DEBUG_REPORT_EXTENSION_NAME, false });
@@ -71,11 +75,11 @@ namespace Horizon
         std::vector<VkExtensionProperties> allExtensions(extensionCount);
         VDebug::VkAssert(vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, allExtensions.data()), "GfxVkInstance");
 
-        for (usize i = 0; i < extensions.size(); ++i) 
+        for (usize i = 0; i < extensions.size(); ++i)
         {
-            for (auto& extension : allExtensions) 
+            for (auto& extension : allExtensions)
             {
-                if (strcmp(extensions[i].name, extension.extensionName) == 0) 
+                if (strcmp(extensions[i].name, extension.extensionName) == 0)
                 {
                     extensions[i].supported = true;
                     workingExtensions.push_back(extensions[i].name);
@@ -85,7 +89,7 @@ namespace Horizon
         }
 
         // Print unsupported extensions
-        for (auto& extension : extensions) 
+        for (auto& extension : extensions)
         {
             if (!extension.supported)
                 Log::Terminal(LogType::Warning, "GfxVkInstance::GfxVkInstance", "Extension not supported: {}", extension.name);
@@ -125,16 +129,16 @@ namespace Horizon
         }
 
 #if defined(HORIZON_DEBUG)
-		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
-		debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-		debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-		debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-		debugCreateInfo.pfnUserCallback = DebugCallback;
-		debugCreateInfo.pUserData = nullptr;
+        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
+        debugCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        debugCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+            VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+            VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+        debugCreateInfo.pfnUserCallback = DebugCallback;
+        debugCreateInfo.pUserData = nullptr;
 #endif
 
         VkApplicationInfo appInfo = {};
@@ -153,11 +157,11 @@ namespace Horizon
         createInfo.enabledLayerCount = static_cast<u32>(workingLayers.size());
         createInfo.ppEnabledLayerNames = workingLayers.data();
 #if defined(HORIZON_DEBUG)
-		createInfo.pNext = &debugCreateInfo;
+        createInfo.pNext = &debugCreateInfo;
 #endif
 
         VDebug::VkAssert(vkCreateInstance(&createInfo, nullptr, &m_instance), "GfxVkInstance::GfxVkInstance");
-        
+
         volkLoadInstance(m_instance);
 
 #if defined(HORIZON_DEBUG)
@@ -195,23 +199,23 @@ namespace Horizon
             std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
             vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyProperties.data());
 
-			VkPhysicalDeviceMeshShaderFeaturesEXT meshFeatures = {};
-			meshFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
+            VkPhysicalDeviceMeshShaderFeaturesEXT meshFeatures = {};
+            meshFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT;
 
-			VkPhysicalDeviceDescriptorBufferFeaturesEXT descBufFeatures = {};
-			descBufFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT;
-			descBufFeatures.pNext = &meshFeatures;
+            VkPhysicalDeviceDescriptorBufferFeaturesEXT descBufFeatures = {};
+            descBufFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT;
+            descBufFeatures.pNext = &meshFeatures;
 
-			VkPhysicalDeviceFeatures2 features2 = {};
-			features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-			features2.pNext = &descBufFeatures;
+            VkPhysicalDeviceFeatures2 features2 = {};
+            features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+            features2.pNext = &descBufFeatures;
 
-			vkGetPhysicalDeviceFeatures2(device, &features2);
+            vkGetPhysicalDeviceFeatures2(device, &features2);
 
-			if (meshFeatures.meshShader && meshFeatures.taskShader)
-				allDevices[deviceProperties.deviceName].second += 500;
-			else
-				continue;
+            if (meshFeatures.meshShader && meshFeatures.taskShader)
+                allDevices[deviceProperties.deviceName].second += 500;
+            else
+                continue;
 
             // Hold device on allDevices
             allDevices[deviceProperties.deviceName] = { device, 0 };
@@ -239,10 +243,10 @@ namespace Horizon
 
         Log::Terminal(LogType::Success, "GfxVkInstance::GfxVkInstance", "Best device found: {}", bestDevice->first.c_str());
         m_physicalDevice = bestDevice->second.first;
-	}
+    }
 
-	GfxVkInstance::~GfxVkInstance()
-	{
+    GfxVkInstance::~GfxVkInstance()
+    {
 #if defined(HORIZON_DEBUG)
         if (m_debugMessenger != VK_NULL_HANDLE)
         {
@@ -256,7 +260,7 @@ namespace Horizon
             vkDestroyInstance(m_instance, nullptr);
             m_instance = VK_NULL_HANDLE;
         }
-	}
+    }
 
     std::shared_ptr<GfxDevice> GfxVkInstance::CreateDevice(const GfxDeviceDesc& desc)
     {

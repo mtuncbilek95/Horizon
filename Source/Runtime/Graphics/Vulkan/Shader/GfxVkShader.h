@@ -6,15 +6,15 @@
 
 namespace Horizon
 {
-	class GfxVkShader final : public GfxShader
-	{
-	public:
-		GfxVkShader(const GfxShaderDesc& desc, GfxDevice* pDevice);
-		~GfxVkShader() override final;
+    class GfxVkShader final : public GfxShader
+    {
+    public:
+        GfxVkShader(const GfxShaderDesc& desc, GfxDevice* pDevice);
+        ~GfxVkShader() override;
 
-		void* Shader() const override final;
+        void* Shader() const final;
 
-	private:
-		VkShaderModule m_shader;
-	};
+    private:
+        VkShaderModule m_shader;
+    };
 }

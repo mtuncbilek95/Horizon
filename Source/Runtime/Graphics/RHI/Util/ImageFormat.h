@@ -45,7 +45,7 @@ namespace Horizon
         Undefined,
         General,
         ColorAttachmentOptimal,
-		DepthStencilAttachmentOptimal,
+        DepthStencilAttachmentOptimal,
         DepthStencilReadOnlyOptimal,
         ShaderReadOnlyOptimal,
         TransferSrcOptimal,
@@ -65,7 +65,7 @@ namespace Horizon
         Load,
         Clear,
         DontCare
-	};
+    };
 
     enum class ImageUsage
     {
@@ -113,6 +113,12 @@ namespace Horizon
         R8G8B8A8_UInt,
         R8G8B8A8_SInt,
         R8G8B8A8_SRGB,
+
+        B8G8R8A8_UNorm,
+        B8G8R8A8_SNorm,
+        B8G8R8A8_UInt,
+        B8G8R8A8_SInt,
+        B8G8R8A8_SRGB,
 
         R16_SFloat,
         R16G16_SFloat,

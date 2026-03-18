@@ -5,17 +5,17 @@
 
 namespace Horizon
 {
-	class GfxShader : public GfxObject
-	{
-	public:
-		GfxShader(const GfxShaderDesc& desc, GfxDevice* pDevice);
-		virtual ~GfxShader() override = default;
+    class GfxShader : public GfxObject
+    {
+    public:
+        GfxShader(const GfxShaderDesc& desc, GfxDevice* pDevice);
+        virtual ~GfxShader() override = default;
 
-		virtual void* Shader() const = 0;
+        virtual void* Shader() const = 0;
 
-		ShaderStage Type() const { return m_desc.stage; }
+        ShaderStage Type() const { return m_desc.stage; }
 
-	private:
-		GfxShaderDesc m_desc;
-	};
+    private:
+        GfxShaderDesc m_desc;
+    };
 }

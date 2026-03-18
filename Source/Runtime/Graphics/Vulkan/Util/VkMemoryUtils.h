@@ -7,9 +7,9 @@
 
 namespace Horizon
 {
-	struct VmaUtils
-	{
-		static VmaMemoryUsage GetVmaUsage(MemoryUsage usage);
-		static VmaAllocationCreateFlags GetVmaFlags(MemoryAllocation alloc);
-	};
+    struct VmaUtils
+    {
+        static VmaMemoryUsage GetVmaUsage(MemoryUsage usage);
+        static VmaAllocationCreateFlags GetVmaFlags(MemoryAllocation alloc);
+    };
 }

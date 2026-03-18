@@ -7,17 +7,17 @@
 
 namespace Horizon
 {
-	class GfxVkImageView : public GfxImageView
-	{
-	public:
-		GfxVkImageView(const GfxImageViewDesc& desc, GfxDevice* pDevice);
-		~GfxVkImageView() override final;
+    class GfxVkImageView : public GfxImageView
+    {
+    public:
+        GfxVkImageView(const GfxImageViewDesc& desc, GfxDevice* pDevice);
+        ~GfxVkImageView() override;
 
-		void* Image() const override final;
-		void* View() const override final;
+        void* Image() const final;
+        void* View() const final;
 
-	private:
-		VkImage m_image;
-		VkImageView m_view;
-	};
+    private:
+        VkImage m_image;
+        VkImageView m_view;
+    };
 }

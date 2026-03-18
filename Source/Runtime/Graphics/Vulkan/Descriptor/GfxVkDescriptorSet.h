@@ -2,20 +2,20 @@
 
 #include <Runtime/Graphics/RHI/Descriptor/GfxDescriptorSet.h>
 
-#include <vulkan/vulkan.h >
+#include <vulkan/vulkan.h>
 
 namespace Horizon
 {
-	class GfxVkDescriptorSet : public GfxDescriptorSet
-	{
-	public:
-		GfxVkDescriptorSet(const GfxDescriptorSetDesc& desc, GfxDevice* pDevice);
-		~GfxVkDescriptorSet() override final;
+    class GfxVkDescriptorSet : public GfxDescriptorSet
+    {
+    public:
+        GfxVkDescriptorSet(const GfxDescriptorSetDesc& desc, GfxDevice* pDevice);
+        ~GfxVkDescriptorSet() override;
 
-		void* DescSet() const override final;
-		void Update(const GfxSetUpdateDesc& update) const override final;
+        void* DescSet() const final;
+        void Update(const GfxSetUpdateDesc& update) const final;
 
-	private:
-		VkDescriptorSet m_set;
-	};
+    private:
+        VkDescriptorSet m_set;
+    };
 }

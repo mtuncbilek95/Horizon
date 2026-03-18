@@ -5,15 +5,15 @@
 
 namespace Horizon
 {
-	class GfxSampler : public GfxObject
-	{
-	public:
-		GfxSampler(const GfxSamplerDesc& desc, GfxDevice* pDevice);
-		virtual ~GfxSampler() override = default;
+    class GfxSampler : public GfxObject
+    {
+    public:
+        GfxSampler(const GfxSamplerDesc& desc, GfxDevice* pDevice);
+        virtual ~GfxSampler() override = default;
 
-		virtual void* Sampler() const = 0;
+        virtual void* Sampler() const = 0;
 
-	private:
-		GfxSamplerDesc m_desc;
-	};
+    private:
+        GfxSamplerDesc m_desc;
+    };
 }

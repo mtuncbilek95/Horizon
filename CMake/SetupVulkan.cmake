@@ -1,25 +1,24 @@
 function(SetupVulkan TARGET)
     find_package(Vulkan REQUIRED)
-
-    target_link_libraries(${TARGET} PRIVATE Vulkan::Headers volk::volk GPUOpen::VulkanMemoryAllocator)
-
+    target_link_libraries(${TARGET} PRIVATE Vulkan::Vulkan volk::volk GPUOpen::VulkanMemoryAllocator)
     find_package(Vulkan OPTIONAL_COMPONENTS shaderc_combined)
     if(Vulkan_shaderc_combined_FOUND)
         target_link_libraries(${TARGET} PRIVATE Vulkan::shaderc_combined)
+    else()
+        message(STATUS "Could not find shaderc_combined")
     endif()
-
+    
     target_include_directories(${TARGET} PUBLIC ${Vulkan_INCLUDE_DIR})
-
-    target_compile_definitions(${TARGET} PUBLIC VK_NO_PROTOTYPES)
 
     if(WIN32)
         target_compile_definitions(${TARGET} PUBLIC VK_USE_PLATFORM_WIN32_KHR)
-    elseif(UNIX AND NOT APPLE)
-        if(DEFINED ENV{WAYLAND_DISPLAY})
-            target_compile_definitions(${TARGET} PUBLIC VK_USE_PLATFORM_WAYLAND_KHR)
-        else()
-            target_compile_definitions(${TARGET} PUBLIC VK_USE_PLATFORM_XLIB_KHR)
-        endif()
+        target_compile_definitions(${TARGET} PUBLIC VK_NO_PROTOTYPES)
+        set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
+    elseif(UNIX)
+        find_package(XCB REQUIRED)
+        target_link_libraries(${TARGET} PRIVATE ${XCB_LIBRARIES})
+        target_compile_definitions(${TARGET} PUBLIC VK_USE_PLATFORM_XCB_KHR)
+        target_compile_definitions(${TARGET} PUBLIC VK_NO_PROTOTYPES)
+        set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XCB_KHR)
     endif()
-
 endfunction()

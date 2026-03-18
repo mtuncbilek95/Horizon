@@ -2,7 +2,6 @@
 
 #include <Engine/Engine/Engine.h>
 #include <Engine/System/ISystem.h>
-#include <Engine/System/SystemReport.h>
 
 namespace Horizon
 {

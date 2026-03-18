@@ -5,22 +5,26 @@
 
 namespace Horizon
 {
-	class GfxQueue;
+    class GfxQueue;
 
-	struct GfxSwapchainDesc
-	{
-		Math::Vec2u imageSize = { 1280, 720 };
-		u8 imageCount = 2;
-		ImageFormat format = ImageFormat::R8G8B8A8_UNorm;
-		PresentMode presentMode = PresentMode::Fifo;
-		GfxQueue* graphicsQueue = nullptr;
-		void* windowHandler = nullptr;
+    struct GfxSwapchainDesc
+    {
+        Math::Vec2u imageSize = { 1280, 720 };
+        u8 imageCount = 2;
+        ImageFormat format = ImageFormat::R8G8B8A8_UNorm;
+        PresentMode presentMode = PresentMode::Fifo;
+        GfxQueue* graphicsQueue = nullptr;
+        void* windowHandler = nullptr;
+        void* windowInstance = nullptr;
+        void* windowAPI = nullptr;
 
-		GfxSwapchainDesc& setImageSize(const Math::Vec2u& size) { imageSize = size; return *this; }
-		GfxSwapchainDesc& setImageCount(u8 count) { imageCount = count; return *this; }
-		GfxSwapchainDesc& setFormat(ImageFormat fmt) { format = fmt; return *this; }
-		GfxSwapchainDesc& setPresentMode(PresentMode mode) { presentMode = mode; return *this; }
-		GfxSwapchainDesc& setGraphicsQueue(GfxQueue* queue) { graphicsQueue = queue; return *this; }
-		GfxSwapchainDesc& setWindowHandler(void* handler) { windowHandler = handler; return *this; }
-	};
+        GfxSwapchainDesc& setImageSize(const Math::Vec2u& size) { imageSize = size; return *this; }
+        GfxSwapchainDesc& setImageCount(u8 count) { imageCount = count; return *this; }
+        GfxSwapchainDesc& setFormat(ImageFormat fmt) { format = fmt; return *this; }
+        GfxSwapchainDesc& setPresentMode(PresentMode mode) { presentMode = mode; return *this; }
+        GfxSwapchainDesc& setGraphicsQueue(GfxQueue* queue) { graphicsQueue = queue; return *this; }
+        GfxSwapchainDesc& setWindowHandler(void* handler) { windowHandler = handler; return *this; }
+        GfxSwapchainDesc& setWindowInstance(void* inst) {  windowInstance = inst; return *this; }
+        GfxSwapchainDesc& setWindowAPI(void* api) { windowAPI = api; return *this; }
+    };
 }

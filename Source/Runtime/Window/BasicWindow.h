@@ -48,7 +48,7 @@ namespace Horizon
 
         void* GetHandle() const { return m_windowHandle; }
         void* GetInstance() const { return m_windowInstance; }
-		void* GetNativeWindow() const;
+        void* GetNativeWindow() const;
 
         InputDispatcher& GetInputDispatcher() { return *m_inputDispatcher; }
 

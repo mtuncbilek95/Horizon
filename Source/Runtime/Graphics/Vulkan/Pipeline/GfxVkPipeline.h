@@ -6,20 +6,20 @@
 
 namespace Horizon
 {
-	class GfxVkPipeline : public GfxPipeline
-	{
-	public:
-		GfxVkPipeline(const GfxGraphicsPipelineDesc& desc, GfxDevice* pDevice);
-		GfxVkPipeline(const GfxComputePipelineDesc& desc, GfxDevice* pDevice);
-		~GfxVkPipeline() override final;
+    class GfxVkPipeline : public GfxPipeline
+    {
+    public:
+        GfxVkPipeline(const GfxGraphicsPipelineDesc& desc, GfxDevice* pDevice);
+        GfxVkPipeline(const GfxComputePipelineDesc& desc, GfxDevice* pDevice);
+        ~GfxVkPipeline() override;
 
-		void* Pipeline() const override final;
-		void* PipelineLayout() const override final;
-		void* PipelineCache() const override final;
+        void* Pipeline() const final;
+        void* PipelineLayout() const final;
+        void* PipelineCache() const final;
 
-	private:
-		VkPipeline m_pipeline;
-		VkPipelineLayout m_layout;
-		VkPipelineCache m_cache;
-	};
+    private:
+        VkPipeline m_pipeline;
+        VkPipelineLayout m_layout;
+        VkPipelineCache m_cache;
+    };
 }

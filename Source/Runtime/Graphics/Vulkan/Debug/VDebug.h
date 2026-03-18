@@ -6,8 +6,8 @@
 
 namespace Horizon
 {
-	struct VDebug final
-	{
-		static void VkAssert(VkResult result, const std::string& objectTitle);
-	};
+    struct VDebug final
+    {
+        static void VkAssert(VkResult result, const std::string& objectTitle);
+    };
 }

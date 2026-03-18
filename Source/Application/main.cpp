@@ -1,27 +1,26 @@
 #include <Engine/Engine/Engine.h>
 
+#include <Engine/Job/JobSystem.h>
 #include <Engine/Window/WindowSystem.h>
-#include <Engine/ECS/ECSSystem.h>
-#include <Engine/Game/GameSystem.h>
+#include <Engine/VirtualFile/VirtualFileSystem.h>
+#include <Engine/Asset/AssetSystem.h>
 #include <Engine/Graphics/GraphicsSystem.h>
 #include <Engine/Presentation/PresentationSystem.h>
-#include <Engine/Asset/AssetSystem.h>
 
-#include <Runtime/Data/DataReader.h>
-#include <Runtime/ShaderCompiler/ShaderCompiler.h>
+using namespace Horizon;
 
 int main(int argc, char* argv[])
 {
-	Horizon::Engine newEngine;
+    Engine newEngine;
 
-	newEngine.AddSystem<Horizon::WindowSystem>();
-	newEngine.AddSystem<Horizon::ECSSystem>();
-	newEngine.AddSystem<Horizon::GameSystem>();
-	newEngine.AddSystem<Horizon::GraphicsSystem>();
-	newEngine.AddSystem<Horizon::PresentationSystem>();
-	newEngine.AddSystem<Horizon::AssetSystem>();
+    newEngine.AddSystem<JobSystem>();
+    newEngine.AddSystem<WindowSystem>();
+    newEngine.AddSystem<VirtualFileSystem>();
+    newEngine.AddSystem<AssetSystem>();
+    newEngine.AddSystem<GraphicsSystem>();
+    newEngine.AddSystem<PresentationSystem>();
 
-	newEngine.Run();
+    newEngine.Run();
 
     return 0;
 }

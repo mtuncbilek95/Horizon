@@ -2,12 +2,12 @@
 
 namespace Horizon
 {
-	enum class PresentMode
-	{
-		Immediate,
-		Mailbox,
-		Fifo,
-		FifoRelaxed,
-		Undefined
-	};
+    enum class PresentMode
+    {
+        Immediate,
+        Mailbox,
+        Fifo,
+        FifoRelaxed,
+        Undefined
+    };
 }

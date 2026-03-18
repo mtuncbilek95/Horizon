@@ -7,10 +7,10 @@
 
 namespace Horizon
 {
-	struct VkBufferUtils
-	{
-		static VkBufferUsageFlags GetVkBufferUsage(BufferUsage usage);
-		static VkBufferUsageFlags GetVkDescBufferUsage(DescriptorBufferType type);
-		static VkBufferUsageFlags2KHR GetVkDescBufferUsage2(DescriptorBufferType type);
-	};
+    struct VkBufferUtils
+    {
+        static VkBufferUsageFlags GetVkBufferUsage(BufferUsage usage);
+        static VkBufferUsageFlags GetVkDescBufferUsage(DescriptorBufferType type);
+        static VkBufferUsageFlags2KHR GetVkDescBufferUsage2(DescriptorBufferType type);
+    };
 }

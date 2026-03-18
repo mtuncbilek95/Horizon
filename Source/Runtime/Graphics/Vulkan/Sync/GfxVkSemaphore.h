@@ -7,17 +7,17 @@
 
 namespace Horizon
 {
-	class GfxVkSemaphore final : public GfxSemaphore
-	{
-	public:
-		GfxVkSemaphore(const GfxSemaphoreDesc& desc, GfxDevice* pDevice);
-		~GfxVkSemaphore() override final;
+    class GfxVkSemaphore final : public GfxSemaphore
+    {
+    public:
+        GfxVkSemaphore(const GfxSemaphoreDesc& desc, GfxDevice* pDevice);
+        ~GfxVkSemaphore() override;
 
-		void* Semaphore() const override final;
-		void WaitIdle() const override final;
-		void Reset() const override final;
-		
-	private:
-		VkSemaphore m_semaphore;
-	};
+        void* Semaphore() const final;
+        void WaitIdle() const final;
+        void Reset() const final;
+        
+    private:
+        VkSemaphore m_semaphore;
+    };
 }

@@ -8,6 +8,9 @@ add_library(Engine STATIC ${SUBDIRECTORIES})
 target_include_directories(Engine PRIVATE "${CMAKE_SOURCE_DIR}/Source")
 target_link_libraries(Engine PUBLIC Runtime Imgui EnTT::EnTT assimp::assimp)
 
+include(SetupVulkan)
+SetupVulkan(Engine)
+
 install(TARGETS Engine
     ARCHIVE DESTINATION "lib"
 )

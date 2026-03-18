@@ -6,15 +6,15 @@
 
 namespace Horizon
 {
-	class GfxVkDescriptorPool final : public GfxDescriptorPool
-	{
-	public:
-		GfxVkDescriptorPool(const GfxDescriptorPoolDesc& desc, GfxDevice* pDevice);
-		~GfxVkDescriptorPool() override final;
+    class GfxVkDescriptorPool final : public GfxDescriptorPool
+    {
+    public:
+        GfxVkDescriptorPool(const GfxDescriptorPoolDesc& desc, GfxDevice* pDevice);
+        ~GfxVkDescriptorPool() override;
 
-		void* DescPool() const override final;
+        void* DescPool() const final;
 
-	private:
-		VkDescriptorPool m_pool;
-	};
+    private:
+        VkDescriptorPool m_pool;
+    };
 }

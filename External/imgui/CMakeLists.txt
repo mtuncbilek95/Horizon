@@ -31,3 +31,9 @@ SetupVulkan(Imgui)
 
 include(SetupGLFW)
 SetupGLFW(Imgui)
+target_link_libraries(Imgui PRIVATE glfw)
+
+if(UNIX AND NOT APPLE)
+	target_compile_options(Imgui PRIVATE -include dlfcn.h)
+	target_link_libraries(Imgui PRIVATE dl)
+endif()

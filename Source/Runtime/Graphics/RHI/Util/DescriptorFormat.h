@@ -2,14 +2,14 @@
 
 namespace Horizon
 {
-	enum class DescriptorBufferType
-	{
-		Resource,
-		Sampler
-	};
+    enum class DescriptorBufferType
+    {
+        Resource,
+        Sampler
+    };
 
-	enum class DescriptorType
-	{
+    enum class DescriptorType
+    {
         Sampler = 0,
         CombinedSamplerImage = 1,
         SampledImage = 2,
@@ -21,7 +21,7 @@ namespace Horizon
         DynamicUniform = 8,
         DynamicStorage = 9,
         InputAttachment = 10,
-	};
+    };
 
     enum class DescriptorLayoutFlags
     {

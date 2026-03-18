@@ -2,7 +2,7 @@
 
 namespace Horizon
 {
-	GfxSampler::GfxSampler(const GfxSamplerDesc& desc, GfxDevice* pDevice) : GfxObject(pDevice), m_desc(desc)
-	{
-	}
+    GfxSampler::GfxSampler(const GfxSamplerDesc& desc, GfxDevice* pDevice) : GfxObject(pDevice), m_desc(desc)
+    {
+    }
 }

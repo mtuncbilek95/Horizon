@@ -6,18 +6,18 @@
 
 namespace Horizon
 {
-	struct GfxDescriptorBufferDesc
-	{
-		usize sizeInBytes = 0;
-		DescriptorType usage = DescriptorType::Storage;
-		DescriptorBufferType type = DescriptorBufferType::Resource;
-		MemoryUsage memUsage = MemoryUsage::AutoPreferDevice;
-		MemoryAllocation allocFlags = MemoryAllocation::Mapped;
+    struct GfxDescriptorBufferDesc
+    {
+        usize sizeInBytes = 0;
+        DescriptorType usage = DescriptorType::Storage;
+        DescriptorBufferType type = DescriptorBufferType::Resource;
+        MemoryUsage memUsage = MemoryUsage::AutoPreferDevice;
+        MemoryAllocation allocFlags = MemoryAllocation::Mapped;
 
-		GfxDescriptorBufferDesc& setSize(usize size) { sizeInBytes = size; return *this; }
-		GfxDescriptorBufferDesc& setUsage(DescriptorType u) { usage = u; return *this; }
-		GfxDescriptorBufferDesc& setType(DescriptorBufferType t) { type = t; return *this; }
-		GfxDescriptorBufferDesc& setMemoryUsage(MemoryUsage mem) { memUsage = mem; return *this; }
-		GfxDescriptorBufferDesc& setAllocationFlags(MemoryAllocation flags) { allocFlags = flags; return *this; }
-	};
+        GfxDescriptorBufferDesc& setSize(usize size) { sizeInBytes = size; return *this; }
+        GfxDescriptorBufferDesc& setUsage(DescriptorType u) { usage = u; return *this; }
+        GfxDescriptorBufferDesc& setType(DescriptorBufferType t) { type = t; return *this; }
+        GfxDescriptorBufferDesc& setMemoryUsage(MemoryUsage mem) { memUsage = mem; return *this; }
+        GfxDescriptorBufferDesc& setAllocationFlags(MemoryAllocation flags) { allocFlags = flags; return *this; }
+    };
 }
