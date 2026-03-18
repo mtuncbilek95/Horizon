@@ -1,0 +1,27 @@
+{
+    "entities": [
+        {
+            "transform": {
+                "position": [0.0, 0.0, 0.0],
+                "rotation": [1.0, 0.0, 0.0, 0.0],
+                "scale":    [1.0, 1.0, 1.0]
+            },
+            "mesh": {
+                "meshPath":     "Assets://Meshes/Cube.mesh",
+                "materialPath": "Assets://Materials/Default.mat"
+            }
+        },
+        {
+            "transform": {
+                "position": [0.0, 5.0, -10.0],
+                "rotation": [1.0, 0.0, 0.0, 0.0],
+                "scale":    [1.0, 1.0, 1.0]
+            },
+            "camera": {
+                "fov":  60.0,
+                "near": 0.1,
+                "far":  1000.0
+            }
+        }
+    ]
+}

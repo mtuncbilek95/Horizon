@@ -6,7 +6,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${SUBDIRECTORIES})
 add_library(Engine STATIC ${SUBDIRECTORIES})
 
 target_include_directories(Engine PRIVATE "${CMAKE_SOURCE_DIR}/Source")
-target_link_libraries(Engine PUBLIC Runtime Imgui EnTT::EnTT assimp::assimp)
+target_link_libraries(Engine PUBLIC Runtime Imgui EnTT::EnTT assimp::assimp nlohmann_json)
 
 include(SetupVulkan)
 SetupVulkan(Engine)

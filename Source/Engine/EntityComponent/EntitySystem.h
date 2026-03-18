@@ -1,25 +1,19 @@
 #pragma once
 
 #include <Engine/Engine/Engine.h>
-#include <Engine/System/ISystem.h>
 
 namespace Horizon
 {
-    template<typename T>
-    class System : public ISystem
+    class EntitySystem
     {
-        friend class Engine;
     public:
-        System() = default;
-        virtual ~System() = default;
+        EntitySystem() = default;
+        virtual ~EntitySystem() = default;
 
         Engine* GetEngine() const { return m_mainEngine; }
         void SetEngine(Engine* pEngine) { m_mainEngine = pEngine; }
 
-        std::string_view GetObjectType() const final { return TypeName<T>(); }
-        std::type_index GetObjectIndex() const final { return std::type_index(typeid(T)); }
-
-        template<typename U, typename = std::enable_if_t<std::derived_from<U, ISystem>>>
+        template<typename U>
         U& RequestSystem()
         {
             if (!m_mainEngine)
@@ -27,6 +21,10 @@ namespace Horizon
 
             return m_mainEngine->GetSystem<U>();
         }
+
+        virtual void OnStart() = 0;
+        virtual void OnTick() = 0;
+        virtual void OnStop() = 0;
 
     private:
         Engine* m_mainEngine = nullptr;

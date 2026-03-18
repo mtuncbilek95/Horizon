@@ -4,6 +4,10 @@
 
 namespace Horizon
 {
+    ShaderAsset::ShaderAsset(const std::string& virtualPath, const std::filesystem::path& physicalPath) : Asset(virtualPath, physicalPath)
+    {
+    }
+    
     void ShaderAsset::Import()
     {
         ShaderData data = ShaderCompiler::ReadShaderData(m_physicalPath);

@@ -42,5 +42,6 @@ namespace Horizon
 
     void PresentationSystem::OnFinalize()
     {
+        m_swapchain.reset();
     }
 }

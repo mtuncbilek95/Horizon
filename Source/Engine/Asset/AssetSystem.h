@@ -18,11 +18,19 @@ namespace Horizon
         template<typename T>
         T* GetAsset(const std::string& virtualPath)
         {
-            auto it = m_assets.find(virtualPath);
-            if (it == m_assets.end())
-                return nullptr;
+            return static_cast<T*>(GetAsset(virtualPath));
+        }
 
-            return static_cast<T*>(it->second.get());
+        Asset* GetAsset(const std::string& virtualPath)
+        {
+            auto it = m_assets.find(virtualPath);
+            if(it == m_assets.end())
+            {
+                Log::Terminal(LogType::Error, GetObjectType(), "Failed to get {}", virtualPath);
+                return nullptr;
+            }
+
+            return it->second.get();
         }
 
     private:

@@ -44,5 +44,11 @@ namespace Horizon
 
     void GraphicsSystem::OnFinalize()
     {
+        m_graphicsQueue.reset();
+        m_computeQueue.reset();
+        m_transferQueue.reset();
+
+        m_device.reset();
+        m_instance.reset();
     }
 }

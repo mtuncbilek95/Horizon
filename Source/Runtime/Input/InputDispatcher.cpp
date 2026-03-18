@@ -5,10 +5,10 @@ namespace Horizon
     InputMessage InputDispatcher::BuildBase(InputType type) const
     {
         InputMessage msg;
-        msg.type      = type;
+        msg.type = type;
         msg.modifiers = m_modifiers;
-        msg.mouseX    = m_mouseX;
-        msg.mouseY    = m_mouseY;
+        msg.mouseX = m_mouseX;
+        msg.mouseY = m_mouseY;
         return msg;
     }
 
@@ -22,15 +22,13 @@ namespace Horizon
         m_mouseCallbacks.push_back(std::move(callback));
     }
 
-    // ── Dispatch ──────────────────────────────────────────────────────────────
-
     void InputDispatcher::DispatchKey(KeyCode key, i32 scancode, InputAction action, InputModifiers modifiers)
     {
         m_modifiers = modifiers;
 
         InputMessage msg = BuildBase(InputType::Key);
-        msg.key       = key;
-        msg.scancode  = scancode;
+        msg.key = key;
+        msg.scancode = scancode;
         msg.keyAction = action;
 
         for (const auto& cb : m_keyCallbacks)
@@ -42,7 +40,7 @@ namespace Horizon
         m_modifiers = modifiers;
 
         InputMessage msg = BuildBase(InputType::MouseButton);
-        msg.button      = button;
+        msg.button = button;
         msg.mouseAction = action;
 
         for (const auto& cb : m_mouseCallbacks)
@@ -82,7 +80,7 @@ namespace Horizon
     void InputDispatcher::DispatchResize(i32 width, i32 height)
     {
         InputMessage msg = BuildBase(InputType::Resize);
-        msg.resizeWidth  = width;
+        msg.resizeWidth = width;
         msg.resizeHeight = height;
 
         for (const auto& cb : m_mouseCallbacks)

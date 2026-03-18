@@ -10,13 +10,11 @@ namespace Horizon
     class ShaderAsset final : public Asset
     {
     public:
-        ShaderAsset(const std::string& virtualPath, const std::filesystem::path& physicalPath)
-            : Asset(virtualPath, physicalPath) {}
-
+        ShaderAsset(const std::string& virtualPath, const std::filesystem::path& physicalPath);
         ~ShaderAsset() override = default;
 
-        void Import() override;
-        void Release() override;
+        void Import() final;
+        void Release() final;
 
         ShaderStage Stage() const { return m_stage; }
         const std::string& EntryPoint() const { return m_entryPoint; }

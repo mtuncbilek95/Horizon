@@ -1,6 +1,7 @@
 #include "AssetSystem.h"
 
 #include <Engine/Asset/Builtin/Shader/ShaderAsset.h>
+#include <Engine/Asset/Builtin/Scene/SceneAsset.h>
 #include <Engine/Job/JobSystem.h>
 #include <Engine/VirtualFile/VirtualFileSystem.h>
 
@@ -31,6 +32,20 @@ namespace Horizon
         }
 
         jobs.Submit([this] { Log::Terminal(LogType::Success, GetObjectType(), "All shaders imported"); }, handles);
+
+        auto sceneFiles = vfs.ScanFiles("Assets://", ".hscene");
+        std::vector<JobHandle> sceneHandles;
+
+        for (const auto& physicalPath : sceneFiles)
+        {
+            std::string virtualPath = "Assets://" + physicalPath.filename().string();
+            auto asset = std::make_shared<SceneAsset>(virtualPath, physicalPath);
+            m_assets[virtualPath] = asset;
+
+            sceneHandles.push_back(jobs.Submit([asset] { asset->Import(); }));
+        }
+
+        jobs.Submit([this] { Log::Terminal(LogType::Success, GetObjectType(), "All scenes imported"); }, sceneHandles);
 
         return EngineReport();
     }

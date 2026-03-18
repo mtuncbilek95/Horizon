@@ -15,6 +15,20 @@ namespace Horizon
 {
     class JobSystem final : public System<JobSystem>
     {
+        struct JobEntry
+        {
+            std::unique_ptr<IJob> job;
+            JobHandle handle;
+            std::vector<JobHandle> dependencies;
+
+            bool IsReady() const
+            {
+                for (const auto& dep : dependencies)
+                    if (!dep.IsComplete()) return false;
+                return true;
+            }
+        };
+
     public:
         JobSystem();
         ~JobSystem() = default;
@@ -43,19 +57,6 @@ namespace Horizon
         void WorkerLoop();
         void PromotePending();
 
-        struct JobEntry
-        {
-            std::unique_ptr<IJob> job;
-            JobHandle handle;
-            std::vector<JobHandle> dependencies;
-
-            bool IsReady() const
-            {
-                for (const auto& dep : dependencies)
-                    if (!dep.IsComplete()) return false;
-                return true;
-            }
-        };
 
         std::vector<std::thread> m_workers;
         std::deque<JobEntry> m_readyQueue;

@@ -20,7 +20,7 @@
 namespace Horizon
 {
     GfxVkSwapchain::GfxVkSwapchain(const GfxSwapchainDesc& desc, GfxDevice* pDevice) : GfxSwapchain(desc, pDevice),
-        m_swapchain(VK_NULL_HANDLE)
+        m_swapchain(VK_NULL_HANDLE), m_barrierFence(VK_NULL_HANDLE), m_barrierPool(VK_NULL_HANDLE)
     {
         VkCommandPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
         poolInfo.queueFamilyIndex = desc.graphicsQueue->FamilyIndex();
