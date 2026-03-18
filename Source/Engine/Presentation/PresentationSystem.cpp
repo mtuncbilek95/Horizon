@@ -21,7 +21,11 @@ namespace Horizon
             GfxSwapchainDesc()
             .setImageSize(windowSystem.WindowSize())
             .setImageCount(2)
+#if defined(HORIZON_LINUX)
             .setFormat(ImageFormat::B8G8R8A8_UNorm)
+#elif defined(HORIZON_WINDOWS)
+            .setFormat(ImageFormat::R8G8B8A8_UNorm)
+#endif
             .setPresentMode(PresentMode::Fifo)
             .setGraphicsQueue(&graphicsSystem.GraphicsQueue())
             .setWindowHandler(windowSystem.Handle())

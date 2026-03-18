@@ -89,6 +89,11 @@ namespace Horizon
 
         glfwSetWindowUserPointer(gWindow, m_inputDispatcher.get());
 
+#if defined(HORIZON_WINDOWS)
+        m_windowHandle = (void*)glfwGetWin32Handle();
+        m_windowInstance = nullptr;
+#endif
+
         glfwSetCursorPosCallback(gWindow, MouseMoveCallback);
         glfwSetMouseButtonCallback(gWindow, MouseButtonCallback);
         glfwSetScrollCallback(gWindow, MouseWheelScrollCallback);
