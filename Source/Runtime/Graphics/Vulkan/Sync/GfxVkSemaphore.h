@@ -3,7 +3,7 @@
 #include <Runtime/Graphics/RHI/Object/GfxObject.h>
 #include <Runtime/Graphics/RHI/Sync/GfxSemaphore.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 
 namespace Horizon
 {

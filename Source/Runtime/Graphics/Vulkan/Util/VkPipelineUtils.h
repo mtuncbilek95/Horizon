@@ -5,7 +5,7 @@
 #include <Runtime/Graphics/RHI/Util/PipelineStageFlags.h>
 #include <Runtime/Graphics/RHI/Util/ShaderStage.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 
 namespace Horizon
 {

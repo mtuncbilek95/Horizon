@@ -2,7 +2,7 @@
 
 #include <Runtime/Graphics/RHI/Command/GfxCommandPool.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 
 #include <memory>
 

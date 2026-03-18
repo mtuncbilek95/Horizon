@@ -1,8 +1,12 @@
 #include "VDebug.h"
 
 #define VMA_IMPLEMENTATION
+#if defined(HORIZON_LINUX)
 #include <vk_mem_alloc.h>
-#include <volk.h>
+#elif defined(HORIZON_WINDOWS)
+#include <vma/vk_mem_alloc.h>
+#endif
+
 #include <magic_enum/magic_enum.hpp>
 
 #include <string>

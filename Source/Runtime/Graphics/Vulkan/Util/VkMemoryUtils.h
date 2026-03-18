@@ -2,7 +2,7 @@
 
 #include <Runtime/Graphics/RHI/Util/MemoryFormat.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 #include <vk_mem_alloc.h>
 
 namespace Horizon

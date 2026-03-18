@@ -2,7 +2,7 @@
 
 #include <Runtime/Graphics/RHI/Device/GfxDevice.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 #include <vk_mem_alloc.h>
 #include <volk.h>
 

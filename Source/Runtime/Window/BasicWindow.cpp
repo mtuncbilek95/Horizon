@@ -3,10 +3,9 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-#if defined(STRAND_LINUX)
+#if defined(HORIZON_LINUX)
 #include <X11/Xlib-xcb.h>
 #endif
-
 
 #include <memory>
 #include <string>
@@ -90,7 +89,7 @@ namespace Horizon
         glfwSetWindowUserPointer(gWindow, m_inputDispatcher.get());
 
 #if defined(HORIZON_WINDOWS)
-        m_windowHandle = (void*)glfwGetWin32Handle();
+        m_windowHandle = (void*)glfwGetWin32Window(gWindow);
         m_windowInstance = nullptr;
 #endif
 

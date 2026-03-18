@@ -3,7 +3,7 @@
 #include <Runtime/Graphics/RHI/Util/BufferFormat.h>
 #include <Runtime/Graphics/RHI/Util/DescriptorFormat.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 
 namespace Horizon
 {

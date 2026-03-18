@@ -15,6 +15,7 @@
 #endif
 
 #include <vector>
+#include <algorithm>
 
 namespace Horizon
 {
@@ -139,10 +140,12 @@ namespace Horizon
         VDebug::VkAssert(vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice(Root()->Adapter()), m_surface, &presentCount, presentModes.data()), "GfxVkSwapchain");
 
         u32 imageCount = ImageCount();
+#if defined(HORIZON_LINUX)
         imageCount = std::max(imageCount, surfaceCap.minImageCount);
         if(surfaceCap.minImageCount > 0)
             imageCount = std::min(imageCount, surfaceCap.maxImageCount);
         SetImageCount(imageCount);
+#endif
 
         VkSwapchainCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
         createInfo.surface = m_surface;

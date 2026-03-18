@@ -2,7 +2,7 @@
 
 #include <Runtime/Graphics/RHI/Util/CommandFormat.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 
 namespace Horizon
 {

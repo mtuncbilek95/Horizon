@@ -2,7 +2,7 @@
 
 #include <Runtime/Graphics/RHI/Queue/GfxQueue.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 
 #include <vector>
 

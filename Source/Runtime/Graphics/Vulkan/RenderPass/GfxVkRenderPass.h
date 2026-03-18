@@ -2,7 +2,7 @@
 
 #include <Runtime/Graphics/RHI/RenderPass/GfxRenderPass.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 
 namespace Horizon
 {

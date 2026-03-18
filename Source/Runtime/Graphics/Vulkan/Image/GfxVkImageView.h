@@ -3,7 +3,7 @@
 #include <Runtime/Graphics/RHI/Image/GfxImageView.h>
 #include <Runtime/Graphics/RHI/Image/GfxImageViewDesc.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 
 namespace Horizon
 {

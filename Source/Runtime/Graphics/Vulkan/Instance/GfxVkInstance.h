@@ -2,7 +2,7 @@
 
 #include <Runtime/Graphics/RHI/Instance/GfxInstance.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 
 #include <memory>
 

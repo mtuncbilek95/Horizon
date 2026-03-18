@@ -3,7 +3,7 @@
 #include <Runtime/Graphics/RHI/Util/ImageFormat.h>
 #include <Runtime/Graphics/RHI/Util/PresentMode.h>
 
-#include <vulkan/vulkan.h>
+#include <Runtime/Graphics/Vulkan/VkIncludes.h>
 
 namespace Horizon
 {
