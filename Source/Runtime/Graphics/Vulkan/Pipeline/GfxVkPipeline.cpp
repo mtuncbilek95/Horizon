@@ -200,7 +200,7 @@ namespace Horizon
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDynamicState = dStates.size() > 0 ? &dynamicState : nullptr;
         pipelineInfo.layout = m_layout;
-        pipelineInfo.renderPass = desc.pass->Pass() ? VkRenderPass(desc.pass->Pass()) : VK_NULL_HANDLE;
+        pipelineInfo.renderPass = desc.pass ? VkRenderPass(desc.pass->Pass()) : VK_NULL_HANDLE;
         pipelineInfo.subpass = 0;
         pipelineInfo.flags = VkPipelineUtils::GetVkPipelineFlags(desc.flags);
         pipelineInfo.pNext = nullptr;

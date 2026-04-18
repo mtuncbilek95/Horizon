@@ -20,6 +20,9 @@ namespace Horizon
         void BeginRecord(const InheritanceDesc& desc, CommandBufferUsage usage = CommandBufferUsage::OneTimeSubmit) const final;
         void EndRecord() const final;
 
+		void BeginRendering(const RenderingInfo& info) final;
+		void EndRendering() final;
+
         void BeginRenderPass(const BeginRenderDesc& desc) const final;
         void EndRenderPass() const final;
 

@@ -15,3 +15,7 @@ set_target_properties(Application PROPERTIES
 install(TARGETS Application
     RUNTIME DESTINATION "bin"
 )
+
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/Shaders"
+    DESTINATION "bin"
+)

@@ -2,6 +2,7 @@
 
 #include <Runtime/Graphics/RHI/Command/GfxCommandBufferDesc.h>
 #include <Runtime/Graphics/RHI/Object/GfxObject.h>
+#include <Runtime/Graphics/RHI/Util/RenderingInfo.h>
 #include <Runtime/Graphics/RHI/Util/ShaderStage.h>
 
 #include <vector>
@@ -27,6 +28,9 @@ namespace Horizon
         virtual void BeginRecord(CommandBufferUsage usage = CommandBufferUsage::OneTimeSubmit) const = 0;
         virtual void BeginRecord(const InheritanceDesc& desc, CommandBufferUsage usage = CommandBufferUsage::OneTimeSubmit) const = 0;
         virtual void EndRecord() const = 0;
+
+		virtual void BeginRendering(const RenderingInfo& info) = 0;
+		virtual void EndRendering() = 0;
 
         virtual void BeginRenderPass(const BeginRenderDesc& desc) const = 0;
         virtual void EndRenderPass() const = 0;
