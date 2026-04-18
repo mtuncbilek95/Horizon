@@ -1,32 +1,43 @@
-#include <Engine/Engine/Engine.h>
+#include <Runtime/Window/Window.h>
 
-#include <Engine/Job/JobSystem.h>
-#include <Engine/Window/WindowSystem.h>
-#include <Engine/Input/InputSystem.h>
-#include <Engine/VirtualFile/VirtualFileSystem.h>
-#include <Engine/Asset/AssetSystem.h>
-#include <Engine/Graphics/GraphicsSystem.h>
-#include <Engine/Presentation/PresentationSystem.h>
-#include <Engine/EntityComponent/EntityComponentSystem.h>
-#include <Engine/Game/GameSystem.h>
+#include <Runtime/Graphics/RHI/Instance/GfxInstance.h>
+#include <Runtime/Graphics/RHI/Device/GfxDevice.h>
 
 using namespace Horizon;
 
 int main(int argc, char* argv[])
 {
-    Engine newEngine;
+	auto window = Window(WindowDesc()
+		.setWindowMode(WindowMode::Windowed)
+		.setWindowName("Test")
+		.setWindowSize({ 1920u, 1080u }));
+	window.Show();
 
-    newEngine.AddSystem<JobSystem>();
-    newEngine.AddSystem<WindowSystem>();
-    newEngine.AddSystem<InputSystem>();
-    newEngine.AddSystem<VirtualFileSystem>();
-    newEngine.AddSystem<AssetSystem>();
-    newEngine.AddSystem<GraphicsSystem>();
-    newEngine.AddSystem<PresentationSystem>();
-    newEngine.AddSystem<EntityComponentSystem>();
-    newEngine.AddSystem<GameSystem>();
+	auto instance = GfxInstance::Create(GfxInstanceDesc()
+		.setAPIType(GfxType::Vulkan)
+		.setAppName("Test")
+		.setAppVersion({ 1, 0, 0 }));
 
-    newEngine.Run();
+	auto device = instance->CreateDevice(GfxDeviceDesc()
+		.setComputeQueueCount(1)
+		.setGraphicsQueueCount(1)
+		.setTransferQueueCount(1));
+	auto gQueue = device->CreateQueue(QueueType::Graphics);
+	auto tQueue = device->CreateQueue(QueueType::Transfer);
 
-    return 0;
+	auto swapchain = device->CreateSwapchain(GfxSwapchainDesc()
+		.setFormat(ImageFormat::R8G8B8A8_UNorm)
+		.setGraphicsQueue(gQueue.get())
+		.setImageCount(2)
+		.setImageSize(window.GetSize())
+		.setPresentMode(PresentMode::Mailbox)
+		.setWindowHandler(window.GetHandle())
+		.setWindowInstance(window.GetInstance())
+		.setWindowAPI(window.GetNativeWindow()));
+
+	while (window.IsActive())
+	{
+		window.ProcessEvents();
+	}
+
 }

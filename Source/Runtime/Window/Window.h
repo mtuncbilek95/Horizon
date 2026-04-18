@@ -14,22 +14,22 @@ namespace Horizon
         Borderless
     };
 
-    struct WindowProps final
+    struct WindowDesc final
     {
         std::string windowName = "Horizon";
         Math::Vec2u windowSize = { 1920, 1080 };
         WindowMode  windowMode = WindowMode::Windowed;
 
-        WindowProps& setWindowName(const std::string& name) { windowName = name; return *this; }
-        WindowProps& setWindowSize(const Math::Vec2u& size) { windowSize = size; return *this; }
-        WindowProps& setWindowMode(WindowMode mode) { windowMode = mode; return *this; }
+        WindowDesc& setWindowName(const std::string& name) { windowName = name; return *this; }
+        WindowDesc& setWindowSize(const Math::Vec2u& size) { windowSize = size; return *this; }
+        WindowDesc& setWindowMode(WindowMode mode) { windowMode = mode; return *this; }
     };
 
-    class BasicWindow
+    class Window
     {
     public:
-        BasicWindow(const WindowProps& desc);
-        ~BasicWindow();
+        Window(const WindowDesc& desc);
+        ~Window();
 
         void Show();
         void Hide();
@@ -39,9 +39,9 @@ namespace Horizon
         void SetSize(const Math::Vec2u& size);
         void SetWindowMode(WindowMode mode);
 
-        const std::string& GetTitle() const { return m_props.windowName; }
-        const Math::Vec2u& GetSize() const { return m_props.windowSize; }
-        WindowMode GetWindowMode() const { return m_props.windowMode; }
+        const std::string& GetTitle() const { return m_desc.windowName; }
+        const Math::Vec2u& GetSize() const { return m_desc.windowSize; }
+        WindowMode GetWindowMode() const { return m_desc.windowMode; }
 
         b8 IsHidden() const { return m_hidden; }
         b8 IsActive() const;
@@ -53,7 +53,7 @@ namespace Horizon
         InputDispatcher& GetInputDispatcher() { return *m_inputDispatcher; }
 
     private:
-        WindowProps m_props;
+        WindowDesc m_desc;
 
         void* m_windowHandle   = nullptr;
         void* m_windowInstance = nullptr;

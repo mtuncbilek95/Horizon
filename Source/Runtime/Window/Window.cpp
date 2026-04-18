@@ -1,11 +1,7 @@
-#include "BasicWindow.h"
+#include "Window.h"
 
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
-
-#if defined(HORIZON_LINUX)
-#include <X11/Xlib-xcb.h>
-#endif
 
 #include <memory>
 #include <string>
@@ -63,7 +59,7 @@ namespace Horizon
             dispatcher->DispatchChar(codepoint);
     }
 
-    BasicWindow::BasicWindow(const WindowProps& desc) : m_props(desc)
+    Window::Window(const WindowDesc& desc) : m_desc(desc)
     {
         m_inputDispatcher = std::make_shared<InputDispatcher>();
 
@@ -78,7 +74,7 @@ namespace Horizon
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
 
-        gWindow = glfwCreateWindow(m_props.windowSize.x, m_props.windowSize.y, m_props.windowName.data(), nullptr, nullptr);
+        gWindow = glfwCreateWindow(m_desc.windowSize.x, m_desc.windowSize.y, m_desc.windowName.data(), nullptr, nullptr);
         if (!gWindow)
         {
             Log::Terminal(LogType::Fatal, "Window", "Failed to create GLFW window");
@@ -88,10 +84,8 @@ namespace Horizon
 
         glfwSetWindowUserPointer(gWindow, m_inputDispatcher.get());
 
-#if defined(HORIZON_WINDOWS)
         m_windowHandle = (void*)glfwGetWin32Window(gWindow);
         m_windowInstance = nullptr;
-#endif
 
         glfwSetCursorPosCallback(gWindow, MouseMoveCallback);
         glfwSetMouseButtonCallback(gWindow, MouseButtonCallback);
@@ -101,7 +95,7 @@ namespace Horizon
         glfwSetCharCallback(gWindow, CharCallback);
     }
 
-    BasicWindow::~BasicWindow()
+    Window::~Window()
     {
         if (gWindow)
         {
@@ -112,7 +106,7 @@ namespace Horizon
         }
     }
 
-    void BasicWindow::Show()
+    void Window::Show()
     {
         if (gWindow)
             glfwShowWindow(gWindow);
@@ -120,7 +114,7 @@ namespace Horizon
         m_hidden = false;
     }
 
-    void BasicWindow::Hide()
+    void Window::Hide()
     {
         if (gWindow)
             glfwHideWindow(gWindow);
@@ -128,36 +122,36 @@ namespace Horizon
         m_hidden = true;
     }
 
-    void BasicWindow::ProcessEvents()
+    void Window::ProcessEvents()
     {
         glfwPollEvents();
     }
 
-    void BasicWindow::SetTitle(const std::string& title)
+    void Window::SetTitle(const std::string& title)
     {
         if (gWindow)
             glfwSetWindowTitle(gWindow, title.data());
-        m_props.windowName = title;
+        m_desc.windowName = title;
     }
 
-    void BasicWindow::SetSize(const Math::Vec2u& size)
+    void Window::SetSize(const Math::Vec2u& size)
     {
         if (gWindow)
             glfwSetWindowSize(gWindow, size.x, size.y);
 
-        m_props.windowSize = size;
+        m_desc.windowSize = size;
     }
 
-    void BasicWindow::SetWindowMode(WindowMode mode)
+    void Window::SetWindowMode(WindowMode mode)
     {
     }
 
-    b8 BasicWindow::IsActive() const
+    b8 Window::IsActive() const
     {
         return !glfwWindowShouldClose(gWindow);
     }
 
-    void* BasicWindow::GetNativeWindow() const
+    void* Window::GetNativeWindow() const
     {
         return gWindow;
     }
