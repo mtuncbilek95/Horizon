@@ -16,6 +16,11 @@
 
 #include <filesystem>
 
+// https://vkguide.dev/
+// https://vulkan-tutorial.com/
+// Dynamic Rendering
+
+
 using namespace Horizon;
 
 static const std::filesystem::path gVertexShaderPath = "";
@@ -29,8 +34,16 @@ int main(int argc, char* argv[])
 		.setWindowSize({ 1920u, 1080u }));
 	window.Show();
 
+	// Instance
+
+	// Device
+
+	// GraphicsQueue
+
+	// Swapchain
+
 	while (window.IsActive())
 	{
-
+		window.ProcessEvents();
 	}
 }
