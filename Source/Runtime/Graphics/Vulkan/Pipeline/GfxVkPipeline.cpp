@@ -203,7 +203,7 @@ namespace Horizon
         pipelineInfo.renderPass = desc.pass ? VkRenderPass(desc.pass->Pass()) : VK_NULL_HANDLE;
         pipelineInfo.subpass = 0;
         pipelineInfo.flags = VkPipelineUtils::GetVkPipelineFlags(desc.flags);
-        pipelineInfo.pNext = nullptr;
+        pipelineInfo.pNext = desc.pass ? nullptr : &pipelineRenderingCreateInfo;
 
         VDebug::VkAssert(vkCreateGraphicsPipelines(VkDevice(Root()->Device()), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline), "GfxVkPipeline::Graphics");
     }
