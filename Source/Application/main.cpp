@@ -14,60 +14,13 @@
 #include <Runtime/ShaderCompiler/ShaderCompiler.h>
 #include <Runtime/Data/Geometry.h>
 #include <Runtime/Camera/Camera.h>
+#include <Runtime/MeshLoader/MeshLoader.h>
 
 #include <filesystem>
 #include <print>
 #include <chrono>
 
 using namespace Horizon;
-
-static Geometry CreateDonut(f32 majorRadius, f32 minorRadius, u32 majorSegments, u32 minorSegments)
-{
-    Geometry geo;
-
-    for (u32 i = 0; i < majorSegments; i++)
-    {
-        f32 u = static_cast<f32>(i) / static_cast<f32>(majorSegments) * 2.f * Math::Pi;
-        for (u32 j = 0; j < minorSegments; j++)
-        {
-            f32 v = static_cast<f32>(j) / static_cast<f32>(minorSegments) * 2.f * Math::Pi;
-
-            f32 x = (majorRadius + minorRadius * glm::cos(v)) * glm::cos(u);
-            f32 y = (majorRadius + minorRadius * glm::cos(v)) * glm::sin(u);
-            f32 z = minorRadius * glm::sin(v);
-
-            f32 nx = glm::cos(v) * glm::cos(u);
-            f32 ny = glm::cos(v) * glm::sin(u);
-            f32 nz = glm::sin(v);
-
-            u32 vIdx = i * minorSegments + j;
-            geo.AddPosition({ x, y, z }, vIdx);
-            geo.AddNormal({ nx, ny, nz }, vIdx);
-            geo.AddColor({ nx * 0.5f + 0.5f, ny * 0.5f + 0.5f, nz * 0.5f + 0.5f, 1.f }, vIdx);
-        }
-    }
-
-    std::vector<u32> indices;
-    indices.reserve(majorSegments * minorSegments * 6);
-    for (u32 i = 0; i < majorSegments; i++)
-    {
-        u32 ni = (i + 1) % majorSegments;
-        for (u32 j = 0; j < minorSegments; j++)
-        {
-            u32 nj = (j + 1) % minorSegments;
-
-            u32 a = i  * minorSegments + j;
-            u32 b = ni * minorSegments + j;
-            u32 c = ni * minorSegments + nj;
-            u32 d = i  * minorSegments + nj;
-
-            indices.insert(indices.end(), { a, b, c, a, c, d });
-        }
-    }
-    geo.AddIndex(indices);
-
-    return geo;
-}
 
 static const std::string gVertexShader = R"(
 #version 450
@@ -141,26 +94,53 @@ int main(int argc, char* argv[])
 		.setViewType(ImageViewType::View2D)
 		.setAspect(ImageAspect::Depth));
 
-	auto geo = CreateDonut(0.5f, 0.2f, 64, 32);
+	// --- Scene load ---
+	auto scene = MeshLoader::Load("Scenes/SciFiHelmet.gltf");
 
-	auto rawVerts   = geo.GenerateRawVertex(VertexRawDataFlags::Position | VertexRawDataFlags::Color);
-	auto rawIndices = geo.GenerateRawIndex();
+	struct GpuMesh
+	{
+		std::shared_ptr<GfxBuffer> vBuffer;
+		std::shared_ptr<GfxBuffer> iBuffer;
+		u32 indexCount;
+	};
 
-	auto vBuffer = device->CreateBuffer(GfxBufferDesc()
-		.setSize(rawVerts.size())
-		.setUsage(BufferUsage::Vertex)
-		.setMemoryUsage(MemoryUsage::AutoPreferHost)
-		.setAllocationFlags(MemoryAllocation::Mapped | MemoryAllocation::HostAccessRandom));
-	vBuffer->Update(rawVerts.data(), rawVerts.size());
+	std::vector<GpuMesh> gpuMeshes;
+	gpuMeshes.reserve(scene.meshes.size());
 
-	auto iBuffer = device->CreateBuffer(GfxBufferDesc()
-		.setSize(rawIndices.size())
-		.setUsage(BufferUsage::Index)
-		.setMemoryUsage(MemoryUsage::AutoPreferHost)
-		.setAllocationFlags(MemoryAllocation::Mapped | MemoryAllocation::HostAccessRandom));
-	iBuffer->Update(rawIndices.data(), rawIndices.size());
+	for (auto& mesh : scene.meshes)
+	{
+		auto rawVerts   = mesh.geometry.GenerateRawVertex(VertexRawDataFlags::Position | VertexRawDataFlags::Color);
+		auto rawIndices = mesh.geometry.GenerateRawIndex();
 
-	// --- Shaders ---
+		auto vBuf = device->CreateBuffer(GfxBufferDesc()
+			.setSize(rawVerts.size())
+			.setUsage(BufferUsage::Vertex)
+			.setMemoryUsage(MemoryUsage::AutoPreferHost)
+			.setAllocationFlags(MemoryAllocation::Mapped | MemoryAllocation::HostAccessRandom));
+		vBuf->Update(rawVerts.data(), rawVerts.size());
+
+		auto iBuf = device->CreateBuffer(GfxBufferDesc()
+			.setSize(rawIndices.size())
+			.setUsage(BufferUsage::Index)
+			.setMemoryUsage(MemoryUsage::AutoPreferHost)
+			.setAllocationFlags(MemoryAllocation::Mapped | MemoryAllocation::HostAccessRandom));
+		iBuf->Update(rawIndices.data(), rawIndices.size());
+
+		gpuMeshes.push_back({ vBuf, iBuf, static_cast<u32>(mesh.geometry.GetIndexCount()) });
+	}
+
+	struct DrawItem { u32 meshIndex; Math::Mat4f worldTransform; };
+	std::vector<DrawItem> drawList;
+
+	std::function<void(const NodeData&)> buildDrawList = [&](const NodeData& node)
+	{
+		for (u32 idx : node.meshIndices)
+			drawList.push_back({ idx, node.worldTransform });
+		for (auto& child : node.children)
+			buildDrawList(child);
+	};
+	buildDrawList(scene.rootNode);
+
 	auto vertSpirv = ShaderCompiler::GenerateSpirv(gVertexShader, "main", ShaderStage::Vertex);
 	auto fragSpirv = ShaderCompiler::GenerateSpirv(gFragmentShader, "main", ShaderStage::Fragment);
 
@@ -283,14 +263,21 @@ int main(int argc, char* argv[])
 				.setClearValue(ClearValue().setColor({ 1.f, 1.f, 0.f, 1.f })))
 			.setDepthAttachment(&depthAttachment));
 
-		auto mvp = camera.GetProjectionMatrix(60.f, static_cast<f32>(size.x) / static_cast<f32>(size.y), 0.01f, 1000.f)
-		         * camera.GetViewMatrix();
+		auto proj = camera.GetProjectionMatrix(60.f, static_cast<f32>(size.x) / static_cast<f32>(size.y), 0.01f, 1000.f);
+		auto view = camera.GetViewMatrix();
 
 		cBuffers[frameIndex]->BindPipeline(pipeline.get());
-		cBuffers[frameIndex]->BindPushConstants(ShaderStage::Vertex, 0, sizeof(Math::Mat4f), &mvp);
-		cBuffers[frameIndex]->BindVertices({ vBuffer.get() });
-		cBuffers[frameIndex]->BindIndex(iBuffer.get(), 0);
-		cBuffers[frameIndex]->DrawIndexed(static_cast<u32>(geo.GetIndexCount()), 0, 0, 0, 1);
+
+		for (auto& item : drawList)
+		{
+			auto mvp = proj * view * item.worldTransform;
+			auto& gm = gpuMeshes[item.meshIndex];
+
+			cBuffers[frameIndex]->BindPushConstants(ShaderStage::Vertex, 0, sizeof(Math::Mat4f), &mvp);
+			cBuffers[frameIndex]->BindVertices({ gm.vBuffer.get() });
+			cBuffers[frameIndex]->BindIndex(gm.iBuffer.get(), 0);
+			cBuffers[frameIndex]->DrawIndexed(gm.indexCount, 0, 0, 0, 1);
+		}
 
 		cBuffers[frameIndex]->EndRendering();
 
