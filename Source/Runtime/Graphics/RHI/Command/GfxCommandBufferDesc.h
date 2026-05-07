@@ -50,7 +50,6 @@ namespace Horizon
 
     };
 
-
     struct InheritanceDesc
     {
         GfxRenderPass* renderPass = nullptr;
@@ -62,6 +61,15 @@ namespace Horizon
         InheritanceDesc& setFramebuffer(GfxFramebuffer* fb) { framebuffer = fb; return *this; }
         InheritanceDesc& setFrameIndex(u32 index) { frameIndex = index; return *this; }
     };
+
+	struct DynamicInheritanceDesc
+	{
+		std::vector<ImageFormat> colorFormats;
+		ImageFormat depthFormat = ImageFormat::Undefined;
+
+		DynamicInheritanceDesc& addColorFormat(ImageFormat format) { colorFormats.push_back(format); return *this; }
+		DynamicInheritanceDesc& setDepthFormat(ImageFormat format) { depthFormat = format; return *this; }
+	};
 
     struct BlitImageDesc
     {

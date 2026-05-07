@@ -16,6 +16,6 @@ install(TARGETS Application
     RUNTIME DESTINATION "bin"
 )
 
-install(DIRECTORY "${CMAKE_SOURCE_DIR}/Shaders"
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/Shaders" "${CMAKE_SOURCE_DIR}/Resources"
     DESTINATION "bin"
 )

@@ -72,6 +72,38 @@ namespace Horizon
 		VDebug::VkAssert(vkBeginCommandBuffer(m_buffer, &info), "GfxVkCommandBuffer::BeginRecord_Inheritance");
 	}
 
+	void GfxVkCommandBuffer::BeginRecord(const DynamicInheritanceDesc& desc, CommandBufferUsage usage) const
+	{
+		vkResetCommandBuffer(m_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+		VkCommandBufferBeginInfo info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+		info.flags = VkCommandUtils::GetVkCmdUsage(usage);
+
+		std::vector<VkFormat> formats;
+		VkCommandBufferInheritanceRenderingInfo inheritanceRendering = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO };
+		VkCommandBufferInheritanceInfo inheritanceInfo = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO };
+		if (info.flags & VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT || info.flags & VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT)
+		{
+			for (auto f : desc.colorFormats)
+				formats.push_back(VkImageUtils::GetVkImgFormat(f));
+
+			inheritanceRendering.colorAttachmentCount = formats.size();
+			inheritanceRendering.pColorAttachmentFormats = formats.data();
+			inheritanceRendering.depthAttachmentFormat = VkImageUtils::GetVkImgFormat(desc.depthFormat);
+			inheritanceRendering.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+			inheritanceRendering.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+			inheritanceInfo.renderPass = VK_NULL_HANDLE;
+			inheritanceInfo.subpass = 0;
+			inheritanceInfo.framebuffer = VK_NULL_HANDLE;
+			inheritanceInfo.pNext = &inheritanceRendering;
+
+			info.pInheritanceInfo = &inheritanceInfo;
+		}
+
+		VDebug::VkAssert(vkBeginCommandBuffer(m_buffer, &info), "GfxVkCommandBuffer::BeginRecord_Inheritance");
+	}
+
 	void GfxVkCommandBuffer::EndRecord() const
 	{
 		vkEndCommandBuffer(m_buffer);

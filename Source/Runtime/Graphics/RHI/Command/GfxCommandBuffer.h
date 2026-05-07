@@ -27,6 +27,7 @@ namespace Horizon
 
         virtual void BeginRecord(CommandBufferUsage usage = CommandBufferUsage::OneTimeSubmit) const = 0;
         virtual void BeginRecord(const InheritanceDesc& desc, CommandBufferUsage usage = CommandBufferUsage::OneTimeSubmit) const = 0;
+        virtual void BeginRecord(const DynamicInheritanceDesc& desc, CommandBufferUsage usage = CommandBufferUsage::OneTimeSubmit) const = 0;
         virtual void EndRecord() const = 0;
 
 		virtual void BeginRendering(const RenderingInfo& info) = 0;
