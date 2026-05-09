@@ -307,10 +307,32 @@ namespace Horizon
 		if (!m_boundPipeline)
 			return;
 
-		vkCmdPushConstants(m_buffer,
-			VkPipelineLayout(m_boundPipeline->PipelineLayout()),
-			VkPipelineUtils::GetShaderType(stage),
-			offset, size, data);
+		vkCmdPushConstants(m_buffer, VkPipelineLayout(m_boundPipeline->PipelineLayout()),
+			VkPipelineUtils::GetShaderType(stage), offset, size, data);
+	}
+
+	void GfxVkCommandBuffer::BindViewport(const Math::Vec2f& xy, const Math::Vec2f& size, const Math::Vec2f& depth) const
+	{
+		VkViewport vp = {};
+		vp.x = xy.x;
+		vp.y = xy.y;
+		vp.width = size.x;
+		vp.height = size.y;
+		vp.minDepth = depth.x;
+		vp.maxDepth = depth.y;
+
+		vkCmdSetViewport(m_buffer, 0, 1, &vp);
+	}
+
+	void GfxVkCommandBuffer::BindScissor(const Math::Vec2i& offset, const Math::Vec2u& extent) const
+	{
+		VkRect2D scissor = {};
+		scissor.offset.x = offset.x;
+		scissor.offset.y = offset.y;
+		scissor.extent.width = extent.x;
+		scissor.extent.height = extent.y;
+
+		vkCmdSetScissor(m_buffer, 0, 1, &scissor);
 	}
 
 	void GfxVkCommandBuffer::BlitImage(const BlitImageDesc& desc) const
@@ -339,8 +361,8 @@ namespace Horizon
 	void GfxVkCommandBuffer::ImageBarrier(const ImageBarrierDesc& desc) const
 	{
 		// Deduce access masks and pipeline stages from the layout transition.
-		VkAccessFlags        srcAccess = 0;
-		VkAccessFlags        dstAccess = 0;
+		VkAccessFlags srcAccess = 0;
+		VkAccessFlags dstAccess = 0;
 		VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
@@ -426,11 +448,7 @@ namespace Horizon
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
 
-		vkCmdPipelineBarrier(m_buffer,
-			srcStage, dstStage,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &barrier);
+		vkCmdPipelineBarrier(m_buffer, srcStage, dstStage, 0,
+			0, nullptr, 0, nullptr, 1, &barrier);
 	}
 }

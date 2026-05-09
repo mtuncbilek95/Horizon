@@ -38,15 +38,16 @@ namespace Horizon
 
         virtual void BindPipeline(GfxPipeline* pipeline) const;
         virtual void BindPushConstants(ShaderStage stage, u32 offset, u32 size, const void* data) const = 0;
+		virtual void BindViewport(const Math::Vec2f& xy, const Math::Vec2f& size, const Math::Vec2f& depth) const = 0;
+		virtual void BindScissor(const Math::Vec2i& offset, const Math::Vec2u& extent) const = 0;
 
         virtual void BindVertices(const std::vector<GfxBuffer*> buffers) const = 0;
         virtual void BindIndex(const GfxBuffer* buffer, usize offset) const = 0;
 
         virtual void DrawVertexed(u32 vertexCount, u32 firstVertex, u32 firstInstance, u32 instanceCount) const = 0;
         virtual void DrawIndexed(u32 indexCount, u32 indexOffset, u32 vertexOffset, u32 instanceOffset, u32 instanceCount) const = 0;
-        virtual void ExecuteCommands(const std::vector<GfxCommandBuffer*> buffers) const = 0;
-
         virtual void DrawMeshTask(u32 groupCountX, u32 groupCountY, u32 groupCountZ) const = 0;
+        virtual void ExecuteCommands(const std::vector<GfxCommandBuffer*> buffers) const = 0;
 
         virtual void DispatchCompute(u32 x, u32 y, u32 z) const = 0;
         virtual void BindDescriptorBuffer(const GfxPipeline* pipeline, ShaderStage stage, u32 binding, GfxDescriptorBuffer* buffer) const = 0;

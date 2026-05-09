@@ -6,7 +6,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${SUBDIRECTORIES})
 add_executable(Application ${SUBDIRECTORIES})
 
 target_include_directories(Application PRIVATE "${CMAKE_SOURCE_DIR}/Source")
-target_link_libraries(Application PRIVATE Runtime)
+target_link_libraries(Application PRIVATE Runtime Engine)
 
 set_target_properties(Application PROPERTIES
     OUTPUT_NAME "Horizon - Game"
