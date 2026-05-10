@@ -9,10 +9,13 @@
 #include <Engine/Graphics/GfxContext.h>
 #include <Engine/Presentation/PresentationSystem.h>
 #include <Engine/World/EntityComponentSystem.h>
+#include <Engine/World/FrameGraph/FrameGraph.h>
+#include <Engine/World/FrameGraph/FrameGraphCache.h>
 
 namespace Horizon
 {
-	EntityRenderSystem::EntityRenderSystem() : m_graph(nullptr)
+	EntityRenderSystem::EntityRenderSystem() : m_graph(nullptr), m_device(nullptr),
+		m_gQueue(nullptr)
 	{}
 
 	EntityRenderSystem::~EntityRenderSystem()
@@ -23,6 +26,7 @@ namespace Horizon
 		auto& presentSystem = GetECS()->RequestSystem<PresentationSystem>();
 
 		CompositePresentObject presentObj = presentSystem.AcquireNextImage();
+		m_graph->ResolveCompositePass(presentObj);
 
 		// Start recording and change image layout
 		m_cmdBuffers[presentObj.frameIndex]->BeginRecord();
@@ -60,6 +64,11 @@ namespace Horizon
 			m_cmdBuffers.push_back(m_device->CreateCommandBuffer(GfxCommandBufferDesc()
 				.setLevel(CommandLevel::Primary)
 				.setPool(m_pool.get())));
+
+		// Generate cache without telling graph anything about GfxDevice
+		auto graphCache = std::make_unique<FrameGraphCache>(m_device);
+		m_graph = std::make_unique<FrameGraph>();
+		m_graph->SetGraphCache(std::move(graphCache));
 
 		return true;
 	}

@@ -26,10 +26,10 @@ namespace Horizon
 		void OnFinalize() final;
 
 	private:
-		FrameGraph* m_graph;
 		GfxDevice* m_device;
 		GfxQueue* m_gQueue;
 
+		std::unique_ptr<FrameGraph> m_graph;
 		std::shared_ptr<GfxCommandPool> m_pool;
 		std::vector<std::shared_ptr<GfxCommandBuffer>> m_cmdBuffers;
 	};

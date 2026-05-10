@@ -21,6 +21,7 @@ namespace Horizon
 		auto* swapImageView = m_swapchain->ImageView(imageIndex);
 
 		return CompositePresentObject()
+			.setImageCount(m_swapchain->ImageCount())
 			.setFrameIndex(m_frameIndex)
 			.setImageIndex(imageIndex)
 			.setImageView(swapImageView);
