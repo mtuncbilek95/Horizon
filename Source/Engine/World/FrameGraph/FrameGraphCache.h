@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/World/FrameGraph/RenderTargetDesc.h>
+#include <Engine/World/FrameGraph/RenderTargetEntry.h>
 #include <unordered_map>
 
 namespace Horizon

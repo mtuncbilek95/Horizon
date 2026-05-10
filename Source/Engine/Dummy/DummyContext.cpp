@@ -4,7 +4,6 @@ namespace Horizon
 {
 	EngineReport DummyContext::OnInitialize()
 	{
-
 		return EngineReport();
 	}
 

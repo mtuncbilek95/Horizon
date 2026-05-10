@@ -1,34 +1,64 @@
 #pragma once
 
+#include <Engine/World/FrameGraph/ResourceHandle.h>
+#include <Engine/World/FrameGraph/RenderTargetDesc.h>
+#include <Engine/World/FrameGraph/RenderTargetEntry.h>
+#include <Engine/World/FrameGraph/PassBuilder.h>
+#include <Engine/World/FrameGraph/PassResources.h>
+#include <Engine/World/FrameGraph/FrameGraphCache.h>
 #include <Engine/Presentation/PresentationObjects.h>
+
+#include <functional>
+#include <string>
 
 namespace Horizon
 {
-	class FrameGraphCache;
+	class GfxCommandBuffer;
 
-	template<typename Tag>
-	struct ResourceHandle
+	struct ResourceEntry
 	{
-		u32 idx = 0;
-		u32 version = 0;
-
-		b8 isValid() const { return idx != std::numeric_limits<u32>(); }
-		b8 operator==(const ResourceHandle& other) { return idx == other.idx; }
-		b8 operator!=(const ResourceHandle& other) { return idx != other.idx; }
+		RenderTargetDesc desc;
+		u32 writer = u32_max;
+		std::vector<u32> readers;
+		RenderTargetEntry* resource = nullptr;
+		b8 imported = false;
 	};
-
-	struct RenderTargetTag;
-	using RenderTargetHandle = ResourceHandle<RenderTargetTag>;
 
 	class FrameGraph
 	{
 	public:
-		
-		void ResolveCompositePass(const CompositePresentObject& passObj);
 		void SetGraphCache(std::unique_ptr<FrameGraphCache> cache);
 
+		RenderTargetHandle Import(const CompositePresentObject& presentObj);
+
+		void AddPass(const std::string& name,
+			std::function<void(PassBuilder&)> setup,
+			std::function<void(GfxCommandBuffer*, const PassResources&)> execute);
+
+		void Compile();
+		void Execute(GfxCommandBuffer* cmd);
+		void Reset();
+
 	private:
+		friend class PassBuilder;
+
+		RenderTargetHandle CreateResource(const RenderTargetDesc& desc);
+		void RegisterRead(u32 passIndex, RenderTargetHandle handle);
+		void RegisterWrite(u32 passIndex, RenderTargetHandle handle);
+
+		struct PassEntry
+		{
+			std::string name;
+			std::function<void(GfxCommandBuffer*, const PassResources&)> execute;
+			std::vector<RenderTargetHandle> reads;
+			std::vector<RenderTargetHandle> writes;
+			std::vector<RenderTargetHandle> creates;
+		};
+
+		std::vector<ResourceEntry> m_resources;
+		std::vector<PassEntry> m_passes;
+		std::vector<u32> m_executionOrder;
 		std::unique_ptr<FrameGraphCache> m_cache;
-		CompositePresentObject m_composite;
+		std::vector<RenderTargetEntry> m_importedResources;
 	};
 }

@@ -45,7 +45,7 @@ namespace Horizon
 			.setArrayLayers(1)
 			.setType(ImageType::Image2D)
 			.setFormat(desc.format)
-			.setUsage(desc.usage)
+			.setUsage(desc.usage | ImageUsage::TransferSrc)
 			.setMemoryUsage(MemoryUsage::AutoPreferDevice)
 			.setMemoryFlags(MemoryAllocation::DedicatedMemory));
 

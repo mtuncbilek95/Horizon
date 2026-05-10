@@ -18,13 +18,6 @@ namespace Horizon
 			return size == other.size && usage == other.usage && format == other.format;
 		}
 	};
-
-	struct RenderTargetEntry
-	{
-		b8 isInUse;
-		std::shared_ptr<GfxImage> img;
-		std::shared_ptr<GfxImageView> view;
-	};
 }
 
 namespace std
