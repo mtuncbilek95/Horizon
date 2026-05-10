@@ -13,28 +13,10 @@
 namespace Horizon
 {
 	EntityRenderSystem::EntityRenderSystem() : m_graph(nullptr)
-	{
-	}
+	{}
 
 	EntityRenderSystem::~EntityRenderSystem()
-	{
-	}
-
-	void EntityRenderSystem::OnInitialize()
-	{
-		auto& gfxCtx = GetECS()->RequestContext<GfxContext>();
-		m_device = &gfxCtx.Device();
-		m_gQueue = &gfxCtx.GraphicsQueue();
-
-		m_pool = m_device->CreateCommandPool(GfxCommandPoolDesc()
-			.setQueue(&gfxCtx.GraphicsQueue())
-			.setFlags(CommandPoolFlags::ResetCommandBuffer));
-
-		for (size_t i = 0; i < PresentationSystem::MaxFramesInFlight; i++)
-			m_cmdBuffers.push_back(m_device->CreateCommandBuffer(GfxCommandBufferDesc()
-				.setLevel(CommandLevel::Primary)
-				.setPool(m_pool.get())));
-	}
+	{}
 
 	void EntityRenderSystem::OnTick()
 	{
@@ -63,4 +45,28 @@ namespace Horizon
 			.setFrameIndex(presentObj.frameIndex)
 			.setImageIndex(presentObj.imageIndex));
 	}
+
+	b8 EntityRenderSystem::OnInitialize()
+	{
+		auto& gfxCtx = GetECS()->RequestContext<GfxContext>();
+		m_device = &gfxCtx.Device();
+		m_gQueue = &gfxCtx.GraphicsQueue();
+
+		m_pool = m_device->CreateCommandPool(GfxCommandPoolDesc()
+			.setQueue(&gfxCtx.GraphicsQueue())
+			.setFlags(CommandPoolFlags::ResetCommandBuffer));
+
+		for (size_t i = 0; i < PresentationSystem::MaxFramesInFlight; i++)
+			m_cmdBuffers.push_back(m_device->CreateCommandBuffer(GfxCommandBufferDesc()
+				.setLevel(CommandLevel::Primary)
+				.setPool(m_pool.get())));
+
+		return true;
+	}
+
+	void EntityRenderSystem::OnSync()
+	{}
+
+	void EntityRenderSystem::OnFinalize()
+	{}
 }

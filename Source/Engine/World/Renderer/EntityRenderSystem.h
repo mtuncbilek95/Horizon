@@ -18,8 +18,12 @@ namespace Horizon
 		EntityRenderSystem();
 		~EntityRenderSystem();
 
-		void OnInitialize();
 		void OnTick() final;
+
+	private:
+		b8 OnInitialize() final;
+		void OnSync() final;
+		void OnFinalize() final;
 
 	private:
 		FrameGraph* m_graph;

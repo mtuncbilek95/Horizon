@@ -10,6 +10,10 @@ namespace Horizon
 	public:
 		virtual ~IEntitySystem() = default;
 
+		virtual b8 OnInitialize() = 0;
+		virtual void OnSync() = 0;
+		virtual void OnFinalize() = 0;
+
 		virtual void OnTick() = 0;
 
 		virtual std::string GetObjectType() const = 0;
