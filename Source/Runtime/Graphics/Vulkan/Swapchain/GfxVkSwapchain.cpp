@@ -140,12 +140,10 @@ namespace Horizon
         VDebug::VkAssert(vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice(Root()->Adapter()), m_surface, &presentCount, presentModes.data()), "GfxVkSwapchain");
 
         u32 imageCount = ImageCount();
-#if defined(HORIZON_LINUX)
         imageCount = std::max(imageCount, surfaceCap.minImageCount);
         if(surfaceCap.minImageCount > 0)
             imageCount = std::min(imageCount, surfaceCap.maxImageCount);
         SetImageCount(imageCount);
-#endif
 
         VkSwapchainCreateInfoKHR createInfo = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
         createInfo.surface = m_surface;
@@ -158,7 +156,7 @@ namespace Horizon
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         createInfo.preTransform = surfaceCap.currentTransform;
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        createInfo.presentMode = VkImageUtils::GetVkPresentMode(PresentMode());
+        createInfo.presentMode = VkImageUtils::GetVkPresentMode(PresentationMode());
         createInfo.clipped = VK_FALSE;
         createInfo.oldSwapchain = VK_NULL_HANDLE;
         VDebug::VkAssert(vkCreateSwapchainKHR(VkDevice(Root()->Device()), &createInfo, nullptr, &m_swapchain), "GfxVkSwapchain");

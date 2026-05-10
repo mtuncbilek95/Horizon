@@ -22,6 +22,9 @@ namespace Horizon
         GfxInstance(const GfxInstanceDesc& desc); 
         virtual ~GfxInstance() = default;
 
+		GfxType Backend() const { return m_desc.type; }
+		std::string AppName() const { return m_desc.appName; }
+
         virtual std::shared_ptr<GfxDevice> CreateDevice(const GfxDeviceDesc& desc) = 0;
         virtual void* Instance() const = 0;
         virtual void* Adapter() const = 0;

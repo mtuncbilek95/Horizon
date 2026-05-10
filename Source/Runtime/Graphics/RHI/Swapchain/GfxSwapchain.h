@@ -32,7 +32,7 @@ namespace Horizon
         const Math::Vec2u& ImageSize() const { return m_desc.imageSize; }
         u8 ImageCount() const { return m_desc.imageCount; }
         ImageFormat ImageFormat() const { return m_desc.format; }
-        PresentMode PresentMode() const { return m_desc.presentMode; }
+        PresentMode PresentationMode() const { return m_desc.presentMode; }
         GfxQueue* GraphicsQueue() const { return m_desc.graphicsQueue; }
 
         GfxImage* Image(usize index) const { return m_images.at(index).get(); }

@@ -23,3 +23,7 @@ constexpr u64 u64_max = 0xFFFFFFFFFFFFFFFF;
 constexpr u32 u32_max = 0xFFFFFFFF;
 constexpr u16 u16_max = 0xFFFF;
 constexpr u8 u8_max = 0xFF;
+
+#if defined(HORIZON_WINDOWS)
+#define NOMINMAX // Be better windows
+#endif
