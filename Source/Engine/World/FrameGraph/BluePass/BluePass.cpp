@@ -37,7 +37,9 @@ namespace Horizon
 			.setImage(color->ImageOwner())
 			.setOldLayout(ImageLayout::Undefined)
 			.setNewLayout(ImageLayout::ColorAttachmentOptimal)
-			.setAspect(ImageAspect::Color));
+			.setAspect(ImageAspect::Color)
+			.setOldStage(PipelineStageFlags::TopOfPipe)
+			.setNewStage(PipelineStageFlags::ColorAttachment));
 
 		// Depth attachment barrier
 		cmd->ImageBarrier(ImageBarrierDesc()

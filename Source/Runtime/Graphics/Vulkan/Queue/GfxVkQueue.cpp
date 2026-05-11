@@ -41,7 +41,7 @@ namespace Horizon
         for (u32 i = 0; i < signalSems.size(); i++)
             signalSems[i] = VkSemaphore(signals[i]->Semaphore());
 
-        VkPipelineStageFlags stgFlag = VkPipelineUtils::GetVkStageFlags(flags);
+        VkPipelineStageFlags stgFlag = VkPipelineUtils::GetVkPipelineStageFlags(flags);
         std::vector<VkPipelineStageFlags> stgFlags(waitSems.size(), stgFlag);
 
         VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };

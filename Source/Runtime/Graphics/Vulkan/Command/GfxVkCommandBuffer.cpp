@@ -360,83 +360,9 @@ namespace Horizon
 
 	void GfxVkCommandBuffer::ImageBarrier(const ImageBarrierDesc& desc) const
 	{
-		// Deduce access masks and pipeline stages from the layout transition.
-		VkAccessFlags srcAccess = 0;
-		VkAccessFlags dstAccess = 0;
-		VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-		VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-
-		switch (desc.oldLayout)
-		{
-		case ImageLayout::Undefined:
-			srcAccess = 0;
-			srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-			break;
-		case ImageLayout::ColorAttachmentOptimal:
-			srcAccess = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			srcStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			break;
-		case ImageLayout::TransferSrcOptimal:
-			srcAccess = VK_ACCESS_TRANSFER_READ_BIT;
-			srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			break;
-		case ImageLayout::TransferDstOptimal:
-			srcAccess = VK_ACCESS_TRANSFER_WRITE_BIT;
-			srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			break;
-		case ImageLayout::PresentSrcKHR:
-			srcAccess = 0;
-			srcStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			break;
-		case ImageLayout::General:
-			srcAccess = VK_ACCESS_SHADER_WRITE_BIT;
-			srcStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-			break;
-		case ImageLayout::ShaderReadOnlyOptimal:
-			srcAccess = VK_ACCESS_SHADER_READ_BIT;
-			srcStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-			break;
-		default:
-			srcAccess = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-			srcStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-			break;
-		}
-
-		switch (desc.newLayout)
-		{
-		case ImageLayout::ColorAttachmentOptimal:
-			dstAccess = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			break;
-		case ImageLayout::TransferSrcOptimal:
-			dstAccess = VK_ACCESS_TRANSFER_READ_BIT;
-			dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			break;
-		case ImageLayout::TransferDstOptimal:
-			dstAccess = VK_ACCESS_TRANSFER_WRITE_BIT;
-			dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			break;
-		case ImageLayout::ShaderReadOnlyOptimal:
-			dstAccess = VK_ACCESS_SHADER_READ_BIT;
-			dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-			break;
-		case ImageLayout::PresentSrcKHR:
-			dstAccess = 0;
-			dstStage = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			break;
-		case ImageLayout::General:
-			dstAccess = VK_ACCESS_SHADER_WRITE_BIT;
-			dstStage = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-			break;
-		default:
-			dstAccess = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-			dstStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-			break;
-		}
-
 		VkImageMemoryBarrier barrier = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-		barrier.srcAccessMask = srcAccess;
-		barrier.dstAccessMask = dstAccess;
+		barrier.srcAccessMask = VkPipelineUtils::GetVkAccessFlags(desc.srcAccess);
+		barrier.dstAccessMask = VkPipelineUtils::GetVkAccessFlags(desc.dstAccess);;
 		barrier.oldLayout = VkPipelineUtils::GetVkImgLayout(desc.oldLayout);
 		barrier.newLayout = VkPipelineUtils::GetVkImgLayout(desc.newLayout);
 		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -448,7 +374,7 @@ namespace Horizon
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
 
-		vkCmdPipelineBarrier(m_buffer, srcStage, dstStage, 0,
+		vkCmdPipelineBarrier(m_buffer, VkPipelineUtils::GetVkPipelineStageFlags(desc.srcStage), VkPipelineUtils::GetVkPipelineStageFlags(desc.dstStage), 0,
 			0, nullptr, 0, nullptr, 1, &barrier);
 	}
 }

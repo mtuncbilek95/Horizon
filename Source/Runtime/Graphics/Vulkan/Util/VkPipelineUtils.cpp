@@ -404,82 +404,159 @@ namespace Horizon
         return vkFlags;
     }
 
-    VkPipelineStageFlags VkPipelineUtils::GetVkStageFlags(PipelineStageFlags flags)
-    {
-        VkPipelineStageFlags vkFlags = 0;
+	VkPipelineStageFlags VkPipelineUtils::GetVkPipelineStageFlags(PipelineStageFlags flags)
+	{
+		if (flags == PipelineStageFlags::Auto)
+			return 0;
 
-        for (usize i = 0; i <= 18; ++i)
-        {
-            PipelineStageFlags val = static_cast<PipelineStageFlags>(1ull << i);
+		VkPipelineStageFlags vkFlags = 0;
 
-            if (HasFlag(flags, val))
-            {
-                switch (val)
-                {
-                case PipelineStageFlags::TopOfPipe:
-                    vkFlags |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                    break;
-                case PipelineStageFlags::DrawIndirect:
-                    vkFlags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
-                    break;
-                case PipelineStageFlags::VertexInput:
-                    vkFlags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
-                    break;
-                case PipelineStageFlags::VertexShader:
-                    vkFlags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-                    break;
-                case PipelineStageFlags::TessControlShader:
-                    vkFlags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
-                    break;
-                case PipelineStageFlags::TessEvalShader:
-                    vkFlags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
-                    break;
-                case PipelineStageFlags::GeometryShader:
-                    vkFlags |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
-                    break;
-                case PipelineStageFlags::FragmentShader:
-                    vkFlags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-                    break;
-                case PipelineStageFlags::EarlyFragment:
-                    vkFlags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-                    break;
-                case PipelineStageFlags::LateFragment:
-                    vkFlags |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                    break;
-                case PipelineStageFlags::ColorAttachment:
-                    vkFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                    break;
-                case PipelineStageFlags::ComputeShader:
-                    vkFlags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-                    break;
-                case PipelineStageFlags::Transfer:
-                    vkFlags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
-                    break;
-                case PipelineStageFlags::BottomOfPipe:
-                    vkFlags |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-                    break;
-                case PipelineStageFlags::Host:
-                    vkFlags |= VK_PIPELINE_STAGE_HOST_BIT;
-                    break;
-                case PipelineStageFlags::AccelerationStructure:
-                    vkFlags |= VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
-                    break;
-                case PipelineStageFlags::RaytracingShader:
-                    vkFlags |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
-                    break;
-                case PipelineStageFlags::TaskShader:
-                    vkFlags |= VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT;
-                    break;
-                case PipelineStageFlags::MeshShader:
-                    vkFlags |= VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT;
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
+		for (usize i = 0; i <= 18; ++i)
+		{
+			PipelineStageFlags val = static_cast<PipelineStageFlags>(1ull << i);
 
-        return vkFlags;
-    }
+			if (HasFlag(flags, val))
+			{
+				switch (val)
+				{
+				case PipelineStageFlags::TopOfPipe:
+					vkFlags |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+					break;
+				case PipelineStageFlags::DrawIndirect:
+					vkFlags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+					break;
+				case PipelineStageFlags::VertexInput:
+					vkFlags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+					break;
+				case PipelineStageFlags::VertexShader:
+					vkFlags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+					break;
+				case PipelineStageFlags::TessControlShader:
+					vkFlags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+					break;
+				case PipelineStageFlags::TessEvalShader:
+					vkFlags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+					break;
+				case PipelineStageFlags::GeometryShader:
+					vkFlags |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+					break;
+				case PipelineStageFlags::FragmentShader:
+					vkFlags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+					break;
+				case PipelineStageFlags::EarlyFragment:
+					vkFlags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+					break;
+				case PipelineStageFlags::LateFragment:
+					vkFlags |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+					break;
+				case PipelineStageFlags::ColorAttachment:
+					vkFlags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+					break;
+				case PipelineStageFlags::ComputeShader:
+					vkFlags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+					break;
+				case PipelineStageFlags::Transfer:
+					vkFlags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+					break;
+				case PipelineStageFlags::BottomOfPipe:
+					vkFlags |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+					break;
+				case PipelineStageFlags::Host:
+					vkFlags |= VK_PIPELINE_STAGE_HOST_BIT;
+					break;
+				case PipelineStageFlags::AccelerationStructure:
+					vkFlags |= VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+					break;
+				case PipelineStageFlags::RaytracingShader:
+					vkFlags |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+					break;
+				case PipelineStageFlags::TaskShader:
+					vkFlags |= VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT;
+					break;
+				case PipelineStageFlags::MeshShader:
+					vkFlags |= VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT;
+					break;
+				default:
+					break;
+				}
+			}
+		}
 
+		return vkFlags;
+	}
+
+	VkAccessFlags VkPipelineUtils::GetVkAccessFlags(AccessFlags flags)
+	{
+		if (flags == AccessFlags::Auto)
+			return 0;
+
+		VkAccessFlags vkFlags = 0;
+
+		for (usize i = 0; i <= 16; ++i)
+		{
+			AccessFlags val = static_cast<AccessFlags>(1ull << i);
+
+			if (HasFlag(flags, val))
+			{
+				switch (val)
+				{
+				case AccessFlags::IndirectCommandRead:
+					vkFlags |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+					break;
+				case AccessFlags::IndexRead:
+					vkFlags |= VK_ACCESS_INDEX_READ_BIT;
+					break;
+				case AccessFlags::VertexAttributeRead:
+					vkFlags |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+					break;
+				case AccessFlags::UniformRead:
+					vkFlags |= VK_ACCESS_UNIFORM_READ_BIT;
+					break;
+				case AccessFlags::InputAttachmentRead:
+					vkFlags |= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+					break;
+				case AccessFlags::ShaderRead:
+					vkFlags |= VK_ACCESS_SHADER_READ_BIT;
+					break;
+				case AccessFlags::ShaderWrite:
+					vkFlags |= VK_ACCESS_SHADER_WRITE_BIT;
+					break;
+				case AccessFlags::ColorAttachmentRead:
+					vkFlags |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+					break;
+				case AccessFlags::ColorAttachmentWrite:
+					vkFlags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+					break;
+				case AccessFlags::DepthStencilAttachmentRead:
+					vkFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+					break;
+				case AccessFlags::DepthStencilAttachmentWrite:
+					vkFlags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+					break;
+				case AccessFlags::TransferRead:
+					vkFlags |= VK_ACCESS_TRANSFER_READ_BIT;
+					break;
+				case AccessFlags::TransferWrite:
+					vkFlags |= VK_ACCESS_TRANSFER_WRITE_BIT;
+					break;
+				case AccessFlags::HostRead:
+					vkFlags |= VK_ACCESS_HOST_READ_BIT;
+					break;
+				case AccessFlags::HostWrite:
+					vkFlags |= VK_ACCESS_HOST_WRITE_BIT;
+					break;
+				case AccessFlags::MemoryRead:
+					vkFlags |= VK_ACCESS_MEMORY_READ_BIT;
+					break;
+				case AccessFlags::MemoryWrite:
+					vkFlags |= VK_ACCESS_MEMORY_WRITE_BIT;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+
+		return vkFlags;
+	}
 }

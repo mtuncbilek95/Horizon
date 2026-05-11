@@ -37,14 +37,9 @@ namespace Horizon
 			.setImage(color->ImageOwner())
 			.setOldLayout(ImageLayout::Undefined)
 			.setNewLayout(ImageLayout::ColorAttachmentOptimal)
-			.setAspect(ImageAspect::Color));
-
-		// Depth attachment barrier
-		cmd->ImageBarrier(ImageBarrierDesc()
-			.setImage(depth->ImageOwner())
-			.setOldLayout(ImageLayout::Undefined)
-			.setNewLayout(ImageLayout::DepthStencilAttachmentOptimal)
-			.setAspect(ImageAspect::Depth));
+			.setAspect(ImageAspect::Color)
+			.setOldStage(PipelineStageFlags::TopOfPipe)
+			.setNewStage(PipelineStageFlags::ColorAttachment));
 
 		// God damn rendering
 		cmd->BeginRendering(RenderingInfo()

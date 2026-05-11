@@ -29,6 +29,7 @@ namespace Horizon
         static VkLogicOp GetVkLogicOp(LogicOp op);
         static VkDynamicState GetVkDynamicState(DynamicState state);
         static VkPipelineCreateFlags GetVkPipelineFlags(PipelineFlags flags);
-        static VkPipelineStageFlags GetVkStageFlags(PipelineStageFlags flags);
+        static VkPipelineStageFlags GetVkPipelineStageFlags(PipelineStageFlags flags);
+		static VkAccessFlags GetVkAccessFlags(AccessFlags flags);
     };
 }
