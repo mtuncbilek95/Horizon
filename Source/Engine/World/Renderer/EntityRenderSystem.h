@@ -18,6 +18,8 @@ namespace Horizon
 		EntityRenderSystem();
 		~EntityRenderSystem();
 
+		FrameGraph& GetGraph() { return *m_graph.get(); }
+
 		void OnTick() final;
 
 	private:

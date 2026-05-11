@@ -9,40 +9,19 @@ namespace Horizon
 		m_cache = std::move(cache);
 	}
 
-	RenderTargetHandle FrameGraph::Import(const CompositePresentObject& presentObj)
+	void FrameGraph::Import(const CompositePresentObject& presentObj)
 	{
-		RenderTargetHandle handle;
-		handle.idx = static_cast<u32>(m_resources.size());
-		handle.version = 0;
-
-		RenderTargetEntry imported;
-		imported.view = std::shared_ptr<GfxImageView>(presentObj.imageView, [](GfxImageView*) {});
-		imported.isInUse = true;
-		m_importedResources.push_back(std::move(imported));
+		m_backbufferHandle.idx = static_cast<u32>(m_resources.size());
+		m_backbufferHandle.version = 0;
 
 		ResourceEntry entry;
 		entry.imported = true;
-		entry.resource = &m_importedResources.back();
+		entry.importedView = presentObj.imageView;
 
 		m_resources.push_back(std::move(entry));
-		return handle;
 	}
 
-	void FrameGraph::AddPass(const std::string& name, std::function<void(PassBuilder&)> setup,
-		std::function<void(GfxCommandBuffer*, const PassResources&)> execute)
-	{
-		u32 passIndex = static_cast<u32>(m_passes.size());
-
-		PassEntry pass;
-		pass.name = name;
-		pass.execute = std::move(execute);
-		m_passes.push_back(std::move(pass));
-
-		PassBuilder builder(*this, passIndex);
-		setup(builder);
-	}
-
-	RenderTargetHandle FrameGraph::CreateResource(const RenderTargetDesc& desc)
+	RenderTargetHandle FrameGraph::CreateResource(const std::string& name, const RenderTargetDesc& desc)
 	{
 		RenderTargetHandle handle;
 		handle.idx = static_cast<u32>(m_resources.size());
@@ -59,17 +38,21 @@ namespace Horizon
 	void FrameGraph::RegisterRead(u32 passIndex, RenderTargetHandle handle)
 	{
 		m_resources[handle.idx].readers.push_back(passIndex);
-		m_passes[passIndex].reads.push_back(handle);
 	}
 
 	void FrameGraph::RegisterWrite(u32 passIndex, RenderTargetHandle handle)
 	{
 		m_resources[handle.idx].writer = passIndex;
-		m_passes[passIndex].writes.push_back(handle);
 	}
 
 	void FrameGraph::Compile()
 	{
+		for (u32 i = 0; i < m_passes.size(); i++)
+		{
+			GraphBuilder builder(m_passNames[i], *this, i);
+			m_passes[i]->Setup(builder);
+		}
+
 		u32 passCount = static_cast<u32>(m_passes.size());
 
 		std::vector<std::vector<u32>> adjacency(passCount);
@@ -126,7 +109,7 @@ namespace Horizon
 
 		for (u32 passIndex : m_executionOrder)
 		{
-			m_passes[passIndex].execute(cmd, resources);
+			m_passes[passIndex]->Execute(cmd, resources);
 		}
 	}
 
@@ -141,8 +124,8 @@ namespace Horizon
 		}
 
 		m_resources.clear();
-		m_passes.clear();
 		m_executionOrder.clear();
-		m_importedResources.clear();
+		m_handleRegistry.clear();
+		m_renderables.clear();
 	}
 }

@@ -1,6 +1,6 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Cache/CacheContext.h>
-#include <Engine/Dummy/DummyContext.h>
+#include <Engine/Dummy/DummySystem.h>
 #include <Engine/Graphics/GfxContext.h>
 
 #include <Engine/Window/WindowSystem.h>
@@ -15,11 +15,11 @@ int main(int argc, char* argv[])
 
 	engine.AddContext<CacheContext>();
 	engine.AddContext<GfxContext>();
-	engine.AddContext<DummyContext>();
 
 	engine.AddSystem<WindowSystem>();
 	engine.AddSystem<EntityComponentSystem>();
 	engine.AddSystem<PresentationSystem>();
+	engine.AddSystem<DummySystem>();
 
 	engine.Run();
 }

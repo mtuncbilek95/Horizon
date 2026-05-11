@@ -16,5 +16,8 @@ namespace Horizon
 	};
 
 	struct RenderTargetTag;
+	struct RenderBufferTag;
+
 	using RenderTargetHandle = ResourceHandle<RenderTargetTag>;
+	using RenderBufferHandle = ResourceHandle<RenderBufferTag>;
 }

@@ -10,6 +10,9 @@ namespace Horizon
 
 	GfxImageView* PassResources::Get(RenderTargetHandle handle) const
 	{
-		return m_resources[handle.idx].resource->view.get();
+		auto& entry = m_resources[handle.idx];
+		if (entry.imported)
+			return entry.importedView;
+		return entry.resource->view.get();
 	}
 }
