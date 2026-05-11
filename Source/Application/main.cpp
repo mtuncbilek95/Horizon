@@ -4,6 +4,7 @@
 #include <Engine/Graphics/GfxContext.h>
 #include <Engine/Graphics/SamplerContext.h>
 #include <Engine/Graphics/ShaderContext.h>
+#include <Engine/Graphics/PipelineContext.h>
 
 #include <Engine/Window/WindowSystem.h>
 #include <Engine/World/EntityComponentSystem.h>
@@ -20,6 +21,7 @@ int main(int argc, char* argv[])
 	engine.AddContext<GfxContext>();
 	engine.AddContext<SamplerContext>();
 	engine.AddContext<ShaderContext>();
+	engine.AddContext<PipelineContext>();
 
 	engine.AddSystem<WindowSystem>();
 	engine.AddSystem<EntityComponentSystem>();

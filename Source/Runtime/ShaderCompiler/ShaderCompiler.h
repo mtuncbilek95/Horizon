@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Runtime/Graphics/RHI/Util/ShaderStage.h>
+#include <Runtime/Graphics/RHI/Util/DescriptorFormat.h>
+#include <Runtime/Graphics/RHI/Util/ImageFormat.h>
 
 #include <filesystem>
 #include <map>
@@ -12,17 +14,6 @@ namespace Horizon
 		std::string sourceText;
 		std::string entryPoint;
 		ShaderStage stage;
-	};
-
-	enum class ShaderDescriptorType
-	{
-		UniformBuffer,
-		StorageBuffer,
-		CombinedImageSampler,
-		StorageImage,
-		SampledImage,
-		Sampler,
-		InputAttachment
 	};
 
 	enum class ShaderDataFormat : u8
@@ -45,7 +36,7 @@ namespace Horizon
 	{
 		std::string name;
 		u32 location;
-		ShaderDataFormat format;
+		ImageFormat format;
 	};
 
 	struct DescriptorBindingInfo
@@ -54,7 +45,7 @@ namespace Horizon
 		u32 set;
 		u32 binding;
 		u32 count;
-		ShaderDescriptorType type;
+		DescriptorType type;
 		std::vector<ShaderBufferMember> members;
 	};
 
@@ -82,7 +73,7 @@ namespace Horizon
 		std::string name;
 		u32 binding;
 		u32 count;
-		ShaderDescriptorType type;
+		DescriptorType type;
 		ShaderStage stages;
 		std::vector<ShaderBufferMember> members;
 	};

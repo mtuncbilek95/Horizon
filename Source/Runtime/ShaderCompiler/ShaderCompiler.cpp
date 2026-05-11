@@ -37,113 +37,91 @@ namespace Horizon
 		}
 	}
 
-	static ShaderDescriptorType ToShaderDescriptorType(SpvReflectDescriptorType type)
+	static DescriptorType ToDescriptorType(SpvReflectDescriptorType type)
 	{
 		switch (type)
 		{
-		case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-			return ShaderDescriptorType::UniformBuffer;
-		case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-			return ShaderDescriptorType::StorageBuffer;
-		case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-			return ShaderDescriptorType::CombinedImageSampler;
-		case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-			return ShaderDescriptorType::StorageImage;
-		case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-			return ShaderDescriptorType::SampledImage;
-		case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
-			return ShaderDescriptorType::Sampler;
-		case SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-			return ShaderDescriptorType::InputAttachment;
-		default:
-			return ShaderDescriptorType::UniformBuffer;
+		case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:         return DescriptorType::Uniform;
+		case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:         return DescriptorType::Storage;
+		case SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER: return DescriptorType::CombinedSamplerImage;
+		case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:          return DescriptorType::StorageImage;
+		case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE:          return DescriptorType::SampledImage;
+		case SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:                return DescriptorType::Sampler;
+		case SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:       return DescriptorType::InputAttachment;
+		default:                                                 return DescriptorType::Uniform;
 		}
 	}
 
-	static ShaderDataFormat ToShaderDataFormatFromSpv(SpvReflectFormat format)
+	static ImageFormat SpvFormatToImageFormat(SpvReflectFormat format)
 	{
 		switch (format)
 		{
-		case SPV_REFLECT_FORMAT_R32_SFLOAT:
-			return ShaderDataFormat::Float;
-		case SPV_REFLECT_FORMAT_R32G32_SFLOAT:
-			return ShaderDataFormat::Vec2;
-		case SPV_REFLECT_FORMAT_R32G32B32_SFLOAT:
-			return ShaderDataFormat::Vec3;
-		case SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT:
-			return ShaderDataFormat::Vec4;
-		case SPV_REFLECT_FORMAT_R32_SINT:
-			return ShaderDataFormat::Int;
-		case SPV_REFLECT_FORMAT_R32G32_SINT:
-			return ShaderDataFormat::IVec2;
-		case SPV_REFLECT_FORMAT_R32G32B32_SINT:
-			return ShaderDataFormat::IVec3;
-		case SPV_REFLECT_FORMAT_R32G32B32A32_SINT:
-			return ShaderDataFormat::IVec4;
-		case SPV_REFLECT_FORMAT_R32_UINT:
-			return ShaderDataFormat::UInt;
-		case SPV_REFLECT_FORMAT_R32G32_UINT:
-			return ShaderDataFormat::UVec2;
-		case SPV_REFLECT_FORMAT_R32G32B32_UINT:
-			return ShaderDataFormat::UVec3;
-		case SPV_REFLECT_FORMAT_R32G32B32A32_UINT:
-			return ShaderDataFormat::UVec4;
-		default:
-			return ShaderDataFormat::Float;
+		case SPV_REFLECT_FORMAT_R32_SFLOAT:          return ImageFormat::R32_SFloat;
+		case SPV_REFLECT_FORMAT_R32G32_SFLOAT:       return ImageFormat::R32G32_SFloat;
+		case SPV_REFLECT_FORMAT_R32G32B32_SFLOAT:    return ImageFormat::R32G32B32_SFloat;
+		case SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT: return ImageFormat::R32G32B32A32_SFloat;
+		case SPV_REFLECT_FORMAT_R32_SINT:            return ImageFormat::R32_SFloat;
+		default:                                     return ImageFormat::R32G32B32A32_SFloat;
 		}
 	}
 
-	static ShaderDataFormat ToShaderDataFormat(const SpvReflectNumericTraits& numeric, const SpvReflectTypeDescription& traits)
+	static ShaderDataFormat ToShaderDataFormat(const SpvReflectNumericTraits& numeric)
 	{
-		if (numeric.matrix.column_count > 0)
-		{
-			if (numeric.matrix.column_count == 3)
-				return ShaderDataFormat::Mat3;
-			if (numeric.matrix.column_count == 4)
-				return ShaderDataFormat::Mat4;
-		}
+		if (numeric.matrix.column_count == 3) return ShaderDataFormat::Mat3;
+		if (numeric.matrix.column_count == 4) return ShaderDataFormat::Mat4;
 
 		u32 compCount = numeric.vector.component_count;
-		b8 isFloat = (numeric.scalar.width == 32 && numeric.scalar.signedness == 0);
-		b8 isSigned = (numeric.scalar.signedness == 1);
+		bool isFloat = (numeric.scalar.width == 32 && numeric.scalar.signedness == 0);
+		bool isSigned = (numeric.scalar.signedness == 1);
 
-		if (compCount == 0 || compCount == 1)
+		if (compCount <= 1)
 		{
-			if (isSigned)
-				return ShaderDataFormat::Int;
-			if (isFloat)
-				return ShaderDataFormat::Float;
+			if (isSigned) return ShaderDataFormat::Int;
+			if (isFloat)  return ShaderDataFormat::Float;
 			return ShaderDataFormat::UInt;
 		}
 
 		if (isFloat)
 		{
-			if (compCount == 2)
-				return ShaderDataFormat::Vec2;
-			if (compCount == 3)
-				return ShaderDataFormat::Vec3;
-			if (compCount == 4)
-				return ShaderDataFormat::Vec4;
+			if (compCount == 2) return ShaderDataFormat::Vec2;
+			if (compCount == 3) return ShaderDataFormat::Vec3;
+			if (compCount == 4) return ShaderDataFormat::Vec4;
 		}
 
 		if (isSigned)
 		{
-			if (compCount == 2)
-				return ShaderDataFormat::IVec2;
-			if (compCount == 3)
-				return ShaderDataFormat::IVec3;
-			if (compCount == 4)
-				return ShaderDataFormat::IVec4;
+			if (compCount == 2) return ShaderDataFormat::IVec2;
+			if (compCount == 3) return ShaderDataFormat::IVec3;
+			if (compCount == 4) return ShaderDataFormat::IVec4;
 		}
 
-		if (compCount == 2)
-			return ShaderDataFormat::UVec2;
-		if (compCount == 3)
-			return ShaderDataFormat::UVec3;
-		if (compCount == 4)
-			return ShaderDataFormat::UVec4;
+		if (compCount == 2) return ShaderDataFormat::UVec2;
+		if (compCount == 3) return ShaderDataFormat::UVec3;
+		if (compCount == 4) return ShaderDataFormat::UVec4;
 
 		return ShaderDataFormat::Float;
+	}
+
+	static std::string StageToExtension(ShaderStage stg)
+	{
+		switch (stg)
+		{
+		case ShaderStage::Vertex:       return "vert";
+		case ShaderStage::TessControl:  return "tesc";
+		case ShaderStage::TessEval:     return "tese";
+		case ShaderStage::Geometry:     return "geom";
+		case ShaderStage::Fragment:     return "frag";
+		case ShaderStage::Compute:      return "comp";
+		case ShaderStage::Raygen:       return "rgen";
+		case ShaderStage::Anyhit:       return "rahit";
+		case ShaderStage::ClosestHit:   return "rchit";
+		case ShaderStage::Miss:         return "rmiss";
+		case ShaderStage::Intersection: return "rint";
+		case ShaderStage::Callable:     return "rcall";
+		case ShaderStage::Task:         return "task";
+		case ShaderStage::Mesh:         return "mesh";
+		default:                        return "unknown";
+		}
 	}
 
 	ReadArray<u32> ShaderCompiler::GenerateSpirv(const std::string& source, const std::string& entryPoint, ShaderStage stage)
@@ -225,7 +203,7 @@ namespace Horizon
 		}
 
 		{
-			u32 count = 0;
+			uint32_t count = 0;
 			spvReflectEnumerateDescriptorBindings(&module, &count, nullptr);
 
 			std::vector<SpvReflectDescriptorBinding*> bindings(count);
@@ -237,23 +215,23 @@ namespace Horizon
 				info.name = b->name ? b->name : "";
 				info.set = b->set;
 				info.binding = b->binding;
-				info.type = ToShaderDescriptorType(b->descriptor_type);
+				info.type = ToDescriptorType(b->descriptor_type);
 
 				info.count = 1;
-				for (u32 d = 0; d < b->array.dims_count; d++)
+				for (uint32_t d = 0; d < b->array.dims_count; d++)
 					info.count *= b->array.dims[d];
 
 				if (b->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
 					b->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
 				{
-					for (u32 i = 0; i < b->block.member_count; i++)
+					for (uint32_t i = 0; i < b->block.member_count; i++)
 					{
 						auto& m = b->block.members[i];
 						ShaderBufferMember member = {};
 						member.name = m.name ? m.name : "";
 						member.offset = m.offset;
 						member.size = m.size;
-						member.format = ToShaderDataFormat(m.numeric, *m.type_description);
+						member.format = ToShaderDataFormat(m.numeric);
 						info.members.push_back(std::move(member));
 					}
 				}
@@ -263,7 +241,7 @@ namespace Horizon
 		}
 
 		{
-			u32 count = 0;
+			uint32_t count = 0;
 			spvReflectEnumeratePushConstantBlocks(&module, &count, nullptr);
 
 			std::vector<SpvReflectBlockVariable*> blocks(count);
@@ -274,15 +252,16 @@ namespace Horizon
 				PushConstantInfo info = {};
 				info.offset = pc->offset;
 				info.size = pc->size;
+				info.stages = dataInfo.stage;
 
-				for (u32 i = 0; i < pc->member_count; i++)
+				for (uint32_t i = 0; i < pc->member_count; i++)
 				{
 					auto& m = pc->members[i];
 					ShaderBufferMember member = {};
 					member.name = m.name ? m.name : "";
 					member.offset = m.offset;
 					member.size = m.size;
-					member.format = ToShaderDataFormat(m.numeric, *m.type_description);
+					member.format = ToShaderDataFormat(m.numeric);
 					info.members.push_back(std::move(member));
 				}
 
@@ -291,7 +270,7 @@ namespace Horizon
 		}
 
 		{
-			u32 count = 0;
+			uint32_t count = 0;
 			spvReflectEnumerateInputVariables(&module, &count, nullptr);
 
 			std::vector<SpvReflectInterfaceVariable*> inputs(count);
@@ -305,13 +284,18 @@ namespace Horizon
 				ShaderIOVariable io = {};
 				io.name = var->name ? var->name : "";
 				io.location = var->location;
-				io.format = ToShaderDataFormatFromSpv(var->format);
+				io.format = SpvFormatToImageFormat(var->format);
 				reflectionData.inputs.push_back(std::move(io));
 			}
+
+			std::ranges::sort(reflectionData.inputs,
+				[](const ShaderIOVariable& a, const ShaderIOVariable& b) {
+					return a.location < b.location;
+				});
 		}
 
 		{
-			u32 count = 0;
+			uint32_t count = 0;
 			spvReflectEnumerateOutputVariables(&module, &count, nullptr);
 
 			std::vector<SpvReflectInterfaceVariable*> outputs(count);
@@ -325,7 +309,7 @@ namespace Horizon
 				ShaderIOVariable io = {};
 				io.name = var->name ? var->name : "";
 				io.location = var->location;
-				io.format = ToShaderDataFormatFromSpv(var->format);
+				io.format = SpvFormatToImageFormat(var->format);
 				reflectionData.outputs.push_back(std::move(io));
 			}
 		}

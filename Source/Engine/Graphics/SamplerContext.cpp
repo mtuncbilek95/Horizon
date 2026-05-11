@@ -152,5 +152,7 @@ namespace Horizon
 	}
 
 	void SamplerContext::OnFinalize()
-	{}
+	{
+		m_samplers.clear();
+	}
 }
