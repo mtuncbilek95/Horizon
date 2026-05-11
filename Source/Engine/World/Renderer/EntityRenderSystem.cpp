@@ -46,7 +46,10 @@ namespace Horizon
 		CompositePresentObject presentObj = presentSystem.AcquireNextImage();
 		m_graph->Import(presentObj);
 		m_graph->Compile();
+
+		m_cmdBuffers[presentObj.frameIndex]->BeginRecord();
 		m_graph->Execute(m_cmdBuffers[presentObj.frameIndex].get());
+		m_cmdBuffers[presentObj.frameIndex]->EndRecord();
 
 		presentSystem.SubmitPresent(CompositeSubmitObject()
 			.addCmdBuffer(m_cmdBuffers[presentObj.frameIndex].get())

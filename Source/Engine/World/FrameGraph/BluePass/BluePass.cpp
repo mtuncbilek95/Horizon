@@ -1,4 +1,4 @@
-#include "BasicPass.h"
+#include "BluePass.h"
 
 #include <Runtime/Graphics/RHI/Command/GfxCommandBuffer.h>
 #include <Runtime/Graphics/RHI/Image/GfxImage.h>
@@ -9,7 +9,7 @@
 
 namespace Horizon
 {
-	void BasicPass::Setup(GraphBuilder& builder)
+	void BluePass::Setup(GraphBuilder& builder)
 	{
 		m_colorHandle = builder.Create("color", RenderTargetDesc{
 			.size = {1920, 1080},
@@ -27,7 +27,7 @@ namespace Horizon
 		m_depthHandle = builder.Write(m_depthHandle);
 	}
 
-	void BasicPass::Execute(GfxCommandBuffer* cmd, const PassResources& resources)
+	void BluePass::Execute(GfxCommandBuffer* cmd, const PassResources& resources)
 	{
 		GfxImageView* color = resources.Get(m_colorHandle);
 		GfxImageView* depth = resources.Get(m_depthHandle);
@@ -54,7 +54,7 @@ namespace Horizon
 				.setImageLayout(ImageLayout::ColorAttachmentOptimal)
 				.setLoadOp(AttachmentLoad::Clear)
 				.setStoreOp(AttachmentStore::Store)
-				.setClearValue(ClearValue().setColor({ 1.f, 1.f, 0.f, 1.f })))
+				.setClearValue(ClearValue().setColor({ 0.f, 0.f, 1.f, 1.f })))
 			/*.setDepthAttachment(RenderingAttachmentInfo()
 				.setImageView(depth)
 				.setImageLayout(ImageLayout::DepthStencilAttachmentOptimal)
@@ -62,7 +62,7 @@ namespace Horizon
 				.setStoreOp(AttachmentStore::Store)
 				.setClearValue(ClearValue().setDepth(1.0f)))*/);
 
-		// Put some shit here.
+				// Put some shit here.
 
 		cmd->EndRendering();
 	}

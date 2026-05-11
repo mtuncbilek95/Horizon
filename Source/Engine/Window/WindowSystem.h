@@ -5,6 +5,18 @@
 
 namespace Horizon
 {
+	class InputSingleton
+	{
+	public:
+		static InputSingleton& Get() { static InputSingleton inst; return inst; }
+
+		InputDispatcher* GetDispatcher() { return m_dispatcher; }
+		void SetDispatcher(InputDispatcher* dp) { m_dispatcher = dp; }
+
+	private:
+		InputDispatcher* m_dispatcher;
+	};
+
 	class WindowSystem final : public System<WindowSystem>
 	{
 		using WindowHandle = void*;

@@ -5,19 +5,14 @@
 
 namespace Horizon
 {
-	class CompositePass : public FramePass
+	class BluePass : public FramePass
 	{
 	public:
-		CompositePass();
-
 		void Setup(GraphBuilder& builder) override;
 		void Execute(GfxCommandBuffer* cmd, const PassResources& resources) override;
 
 	private:
 		RenderTargetHandle m_colorHandle;
-		RenderTargetHandle m_switchHandle;
-		RenderTargetHandle m_backbufferHandle;
-
-		b8 m_switched;
+		RenderTargetHandle m_depthHandle;
 	};
 }

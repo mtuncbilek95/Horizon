@@ -7,17 +7,34 @@
 #include <Engine/World/FrameGraph/GraphBuilder.h>
 #include <Engine/World/FrameGraph/PassResources.h>
 
+#include <Engine/Window/WindowSystem.h>
+
 namespace Horizon
 {
+	CompositePass::CompositePass()
+	{
+		InputSingleton::Get().GetDispatcher()->OnKeyPressed([&](const InputMessage& msg)
+			{
+				if (msg.key == KeyCode::Space && msg.keyAction == InputAction::Press)
+					m_switched = !m_switched;
+			});
+	}
+
 	void CompositePass::Setup(GraphBuilder& builder)
 	{
-		m_colorHandle = builder.ReadFrom("BasicPass", "color");
+		m_colorHandle = builder.ReadFrom("RedPass", "color");
+		m_switchHandle = builder.ReadFrom("BluePass", "color");
 		m_backbufferHandle = builder.WriteToComposite();
 	}
 
 	void CompositePass::Execute(GfxCommandBuffer* cmd, const PassResources& resources)
 	{
-		GfxImageView* color = resources.Get(m_colorHandle);
+		GfxImageView* color = nullptr;
+		if (m_switched)
+			color = resources.Get(m_colorHandle);
+		else
+			color = resources.Get(m_switchHandle);
+
 		GfxImageView* back = resources.Get(m_backbufferHandle);
 
 		cmd->ImageBarrier(ImageBarrierDesc()
@@ -45,7 +62,5 @@ namespace Horizon
 			.setOldLayout(ImageLayout::TransferDstOptimal)
 			.setNewLayout(ImageLayout::PresentSrcKHR)
 			.setAspect(ImageAspect::Color));
-
-		cmd->EndRecord();
 	}
 }

@@ -5,6 +5,8 @@
 #include <Engine/World/FrameGraph/FrameGraph.h>
 
 #include <Engine/World/FrameGraph/BasicPass/BasicPass.h>
+#include <Engine/World/FrameGraph/RedPass/RedPass.h>
+#include <Engine/World/FrameGraph/BluePass/BluePass.h>
 #include <Engine/World/FrameGraph/CompositePass/CompositePass.h>
 
 namespace Horizon
@@ -16,6 +18,8 @@ namespace Horizon
 		auto& graph = ecsRenderer.GetGraph();
 
 		graph.RegisterPass<BasicPass>("BasicPass");
+		graph.RegisterPass<RedPass>("RedPass");
+		graph.RegisterPass<BluePass>("BluePass");
 		graph.RegisterPass<CompositePass>("CompositePass");
 
 		// Add more stuff for ecs like add at least one mesh to see the behaviour.

@@ -15,6 +15,9 @@ namespace Horizon
 			return EngineReport(GetObjectType(), "Failed to create window");
 
 		m_window->Show();
+
+		InputSingleton::Get().SetDispatcher(&m_window->GetInputDispatcher());
+
 		return EngineReport();
 	}
 
