@@ -5,6 +5,8 @@
 
 namespace Horizon
 {
+	class GfxPipeline;
+
 	class BluePass : public FramePass
 	{
 	public:
@@ -14,5 +16,7 @@ namespace Horizon
 	private:
 		RenderTargetHandle m_colorHandle;
 		RenderTargetHandle m_depthHandle;
+
+		GfxPipeline* m_testPipeline;
 	};
 }

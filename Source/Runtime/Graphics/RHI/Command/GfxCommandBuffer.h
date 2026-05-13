@@ -4,6 +4,7 @@
 #include <Runtime/Graphics/RHI/Object/GfxObject.h>
 #include <Runtime/Graphics/RHI/Util/RenderingInfo.h>
 #include <Runtime/Graphics/RHI/Util/ShaderStage.h>
+#include <Runtime/Graphics/RHI/Pipeline/GfxPipelineDesc.h>
 
 #include <vector>
 

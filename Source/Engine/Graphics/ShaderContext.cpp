@@ -86,6 +86,9 @@ namespace Horizon
 		for (const auto& entry : fs::recursive_directory_iterator("Shaders/"))
 		{
 			ShaderData data = ShaderCompiler::ReadShaderData(entry.path());
+			if (data.sourceText.empty())
+				continue;
+
 			ReadArray<u32> spirv = ShaderCompiler::GenerateSpirv(data.sourceText, data.entryPoint, data.stage);
 			ShaderReflectionData reflectedData = ShaderCompiler::ReflectShader(spirv, data);
 

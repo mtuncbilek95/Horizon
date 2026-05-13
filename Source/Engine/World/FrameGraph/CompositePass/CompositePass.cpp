@@ -11,7 +11,7 @@
 
 namespace Horizon
 {
-	CompositePass::CompositePass()
+	CompositePass::CompositePass() : m_switched(false)
 	{
 		InputSingleton::Get().GetDispatcher()->OnKeyPressed([&](const InputMessage& msg)
 			{
@@ -41,13 +41,17 @@ namespace Horizon
 			.setImage(color->ImageOwner())
 			.setOldLayout(ImageLayout::ColorAttachmentOptimal)
 			.setNewLayout(ImageLayout::TransferSrcOptimal)
-			.setAspect(ImageAspect::Color));
+			.setAspect(ImageAspect::Color)
+			.setOldStage(PipelineStageFlags::ColorAttachment)
+			.setNewStage(PipelineStageFlags::Transfer));
 
 		cmd->ImageBarrier(ImageBarrierDesc()
 			.setImage(back->ImageOwner())
 			.setOldLayout(ImageLayout::Undefined)
 			.setNewLayout(ImageLayout::TransferDstOptimal)
-			.setAspect(ImageAspect::Color));
+			.setAspect(ImageAspect::Color)
+			.setOldStage(PipelineStageFlags::TopOfPipe)
+			.setNewStage(PipelineStageFlags::Transfer));
 
 		cmd->BlitImage(BlitImageDesc()
 			.setSrcImage(color->ImageOwner())
@@ -61,6 +65,8 @@ namespace Horizon
 			.setImage(back->ImageOwner())
 			.setOldLayout(ImageLayout::TransferDstOptimal)
 			.setNewLayout(ImageLayout::PresentSrcKHR)
-			.setAspect(ImageAspect::Color));
+			.setAspect(ImageAspect::Color)
+			.setOldStage(PipelineStageFlags::Transfer)
+			.setNewStage(PipelineStageFlags::BottomOfPipe));
 	}
 }

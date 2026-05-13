@@ -6,6 +6,7 @@
 #include <Engine/Graphics/ShaderContext.h>
 #include <Engine/Graphics/PipelineContext.h>
 
+#include <Engine/Job/JobSystem.h>
 #include <Engine/Window/WindowSystem.h>
 #include <Engine/World/EntityComponentSystem.h>
 #include <Engine/Presentation/PresentationSystem.h>
@@ -23,6 +24,7 @@ int main(int argc, char* argv[])
 	engine.AddContext<ShaderContext>();
 	engine.AddContext<PipelineContext>();
 
+	engine.AddSystem<JobSystem>();
 	engine.AddSystem<WindowSystem>();
 	engine.AddSystem<EntityComponentSystem>();
 	engine.AddSystem<PresentationSystem>();

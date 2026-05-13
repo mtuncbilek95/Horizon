@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Engine/Core/Engine.h>
+
 #include <Engine/World/FrameGraph/ResourceHandle.h>
 #include <Engine/World/FrameGraph/RenderTargetDesc.h>
 #include <Engine/World/FrameGraph/RenderTargetEntry.h>
@@ -35,7 +37,9 @@ namespace Horizon
 		friend class GraphBuilder;
 
 	public:
-		void SetGraphCache(std::unique_ptr<FrameGraphCache> cache);
+		FrameGraph(Engine* pEngine);
+		~FrameGraph() = default;
+
 		void Import(const CompositePresentObject& presentObj);
 
 		template<typename T>
@@ -61,10 +65,12 @@ namespace Horizon
 		void Reset();
 
 		void SetRenderables(std::vector<RenderableObject>&& renderables) { m_renderables = std::move(renderables); }
-		void SetViewObject(ViewObject&& obj) { m_viewObject = std::move(obj); }
-
 		const std::vector<RenderableObject>& GetRenderables() const { return m_renderables; }
+
+		void SetViewObject(ViewObject&& obj) { m_viewObject = std::move(obj); }
 		const ViewObject& GetViewObject() const { return m_viewObject; }
+
+		Engine* GetEngine() const { return m_engine; }
 
 	private:
 		RenderTargetHandle CreateResource(const std::string& name, const RenderTargetDesc& desc);
@@ -85,5 +91,7 @@ namespace Horizon
 
 		std::vector<RenderableObject> m_renderables;
 		ViewObject m_viewObject;
+
+		Engine* m_engine;
 	};
 }

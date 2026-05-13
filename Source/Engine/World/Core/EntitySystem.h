@@ -15,7 +15,10 @@ namespace Horizon
 		virtual ~EntitySystem() = default;
 
 		EntityComponentSystem* GetECS() const { return m_mainECS; }
+		Engine* GetEngine() const { return m_engine; }
+
 		void SetECS(EntityComponentSystem* pECS) { m_mainECS = pECS; }
+		void SetEngine(Engine* pEngine) { m_engine; }
 
 		std::string GetObjectType() const final { return TypeName<T>(); }
 		std::type_index GetObjectIndex() const final { return std::type_index(typeid(T)); }
@@ -31,5 +34,6 @@ namespace Horizon
 
 	private:
 		EntityComponentSystem* m_mainECS;
+		Engine* m_engine;
 	};
 }

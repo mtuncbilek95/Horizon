@@ -74,11 +74,7 @@ namespace Horizon
 				.setLevel(CommandLevel::Primary)
 				.setPool(m_pool.get())));
 
-		// Generate cache without telling graph anything about GfxDevice
-		auto graphCache = std::make_unique<FrameGraphCache>(m_device);
-		m_graph = std::make_unique<FrameGraph>();
-		m_graph->SetGraphCache(std::move(graphCache));
-
+		m_graph = std::make_unique<FrameGraph>(GetECS()->GetEngine());
 		return true;
 	}
 

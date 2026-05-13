@@ -1,12 +1,15 @@
 #include "FrameGraph.h"
 
+#include <Engine/Graphics/GfxContext.h>
+
 #include <queue>
 
 namespace Horizon
 {
-	void FrameGraph::SetGraphCache(std::unique_ptr<FrameGraphCache> cache)
+	FrameGraph::FrameGraph(Engine* pEngine) : m_engine(pEngine), m_viewObject()
 	{
-		m_cache = std::move(cache);
+		auto& gfxCtx = m_engine->GetContext<GfxContext>();
+		m_cache = std::make_unique<FrameGraphCache>(&gfxCtx.Device());
 	}
 
 	void FrameGraph::Import(const CompositePresentObject& presentObj)
