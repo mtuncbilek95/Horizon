@@ -41,6 +41,22 @@ namespace Horizon
 		virtual void BindViewport(const Math::Vec2f& xy, const Math::Vec2f& size, const Math::Vec2f& depth) const = 0;
 		virtual void BindScissor(const Math::Vec2i& offset, const Math::Vec2u& extent) const = 0;
 
+		virtual void SetCullMode(CullMode mode) const = 0;
+		virtual void SetFrontFace(FaceOrientation orientation) const = 0;
+		virtual void SetPrimitiveTopology(PrimitiveTopology topology) const = 0;
+		virtual void SetDepthTestEnable(b8 enable) const = 0;
+		virtual void SetDepthWriteEnable(b8 enable) const = 0;
+		virtual void SetDepthCompareOp(CompareOp op) const = 0;
+		virtual void SetDepthBoundsTestEnable(b8 enable) const = 0;
+		virtual void SetDepthBounds(f32 min, f32 max) const = 0;
+		virtual void SetDepthBiasEnable(b8 enable) const = 0;
+		virtual void SetPolygonMode(PolygonMode mode) const = 0;
+		virtual void SetLogicOpEnable(b8 enable) const = 0;
+		virtual void SetLogicOp(LogicOp op) const = 0;
+		virtual void SetColorBlendEnable(u32 attachment, b8 enable) const = 0;
+		virtual void SetColorBlendEquation(u32 attachment, const BlendAttachment& equation) const = 0;
+		virtual void SetColorWriteMask(u32 attachment, ColorComponent mask) const = 0;
+
         virtual void BindVertices(const std::vector<GfxBuffer*> buffers) const = 0;
         virtual void BindIndex(const GfxBuffer* buffer, usize offset) const = 0;
 

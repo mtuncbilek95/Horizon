@@ -52,7 +52,8 @@ namespace Horizon
         }
     }
 
-    GfxVkDevice::GfxVkDevice(const GfxDeviceDesc& desc, GfxInstance* pInstance) : GfxDevice(desc, pInstance)
+    GfxVkDevice::GfxVkDevice(const GfxDeviceDesc& desc, GfxInstance* pInstance) : GfxDevice(desc, pInstance), 
+		m_subgroupProps(), m_rayTracingProps()
     {
         m_instance = static_cast<VkInstance>(pInstance->Instance());
         m_adapter = static_cast<VkPhysicalDevice>(pInstance->Adapter());
@@ -137,6 +138,8 @@ namespace Horizon
         extensions.push_back({ VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, false });
         extensions.push_back({ VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME, false });
         extensions.push_back({ VK_EXT_MESH_SHADER_EXTENSION_NAME, false });
+		extensions.push_back({ VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME, false });
+		extensions.push_back({ VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME, false });
 
         //Check if the device supports the extensions
         u32 extensionCount = 0;

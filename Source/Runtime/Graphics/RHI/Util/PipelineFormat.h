@@ -23,13 +23,26 @@ namespace Horizon
         TriangleStripAdj = 9
     };
 
-    enum class DynamicState
-    {
-        Viewport = 1 << 0,
-        Scissor = 1 << 1,
-        PolygonMode = 1 << 2,
-        PrimitiveTopology = 1 << 3,
-    };
+	enum class DynamicState : uint32_t
+	{
+		Viewport = 1 << 0,
+		Scissor = 1 << 1,
+		CullMode = 1 << 2,
+		FrontFace = 1 << 3,
+		PrimitiveTopology = 1 << 4,
+		DepthTestEnable = 1 << 5,
+		DepthWriteEnable = 1 << 6,
+		DepthCompareOp = 1 << 7,
+		DepthBoundsTestEnable = 1 << 8,
+		DepthBounds = 1 << 9,
+		DepthBiasEnable = 1 << 10,
+		PolygonMode = 1 << 11,
+		LogicOpEnable = 1 << 12,
+		LogicOp = 1 << 13,
+		ColorBlendEnable = 1 << 14,
+		ColorBlendEquation = 1 << 15,
+		ColorWriteMask = 1 << 16,
+	};
 
     enum class PolygonMode
     {

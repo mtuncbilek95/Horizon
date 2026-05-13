@@ -335,6 +335,91 @@ namespace Horizon
 		vkCmdSetScissor(m_buffer, 0, 1, &scissor);
 	}
 
+	void GfxVkCommandBuffer::SetCullMode(CullMode mode) const
+	{
+		vkCmdSetCullMode((VkCommandBuffer)Buffer(), VkPipelineUtils::GetVkCullMode(mode));
+	}
+
+	void GfxVkCommandBuffer::SetFrontFace(FaceOrientation orientation) const
+	{
+		vkCmdSetFrontFace((VkCommandBuffer)Buffer(), VkPipelineUtils::GetVkFrontFace(orientation));
+	}
+
+	void GfxVkCommandBuffer::SetPrimitiveTopology(PrimitiveTopology topology) const
+	{
+		vkCmdSetPrimitiveTopology((VkCommandBuffer)Buffer(), VkPipelineUtils::GetVkTopo(topology));
+	}
+
+	void GfxVkCommandBuffer::SetDepthTestEnable(b8 enable) const
+	{
+		vkCmdSetDepthTestEnable((VkCommandBuffer)Buffer(), enable);
+	}
+
+	void GfxVkCommandBuffer::SetDepthWriteEnable(b8 enable) const
+	{
+		vkCmdSetDepthWriteEnable((VkCommandBuffer)Buffer(), enable);
+	}
+
+	void GfxVkCommandBuffer::SetDepthCompareOp(CompareOp op) const
+	{
+		vkCmdSetDepthCompareOp((VkCommandBuffer)Buffer(), VkPipelineUtils::GetVkCompareOp(op));
+	}
+
+	void GfxVkCommandBuffer::SetDepthBoundsTestEnable(b8 enable) const
+	{
+		vkCmdSetDepthBoundsTestEnable((VkCommandBuffer)Buffer(), enable);
+	}
+
+	void GfxVkCommandBuffer::SetDepthBounds(f32 min, f32 max) const
+	{
+		vkCmdSetDepthBounds((VkCommandBuffer)Buffer(), min, max);
+	}
+
+	void GfxVkCommandBuffer::SetDepthBiasEnable(b8 enable) const
+	{
+		vkCmdSetDepthBiasEnable((VkCommandBuffer)Buffer(), enable);
+	}
+
+	void GfxVkCommandBuffer::SetPolygonMode(PolygonMode mode) const
+	{
+		vkCmdSetPolygonModeEXT((VkCommandBuffer)Buffer(), VkPipelineUtils::GetVkPolygonMode(mode));
+	}
+
+	void GfxVkCommandBuffer::SetLogicOpEnable(b8 enable) const
+	{
+		vkCmdSetLogicOpEnableEXT((VkCommandBuffer)Buffer(), enable);
+	}
+
+	void GfxVkCommandBuffer::SetLogicOp(LogicOp op) const
+	{
+		vkCmdSetLogicOpEXT((VkCommandBuffer)Buffer(), VkPipelineUtils::GetVkLogicOp(op));
+	}
+
+	void GfxVkCommandBuffer::SetColorBlendEnable(u32 attachment, b8 enable) const
+	{
+		VkBool32 value = enable;
+		vkCmdSetColorBlendEnableEXT((VkCommandBuffer)Buffer(), attachment, 1, &value);
+	}
+
+	void GfxVkCommandBuffer::SetColorBlendEquation(u32 attachment, const BlendAttachment& equation) const
+	{
+		VkColorBlendEquationEXT eq = {
+			.srcColorBlendFactor = VkPipelineUtils::GetVkBlendFactor(equation.srcColor),
+			.dstColorBlendFactor = VkPipelineUtils::GetVkBlendFactor(equation.dstColor),
+			.colorBlendOp = VkPipelineUtils::GetVkBlendOp(equation.colorOp),
+			.srcAlphaBlendFactor = VkPipelineUtils::GetVkBlendFactor(equation.srcAlpha),
+			.dstAlphaBlendFactor = VkPipelineUtils::GetVkBlendFactor(equation.dstAlpha),
+			.alphaBlendOp = VkPipelineUtils::GetVkBlendOp(equation.alphaOp),
+		};
+		vkCmdSetColorBlendEquationEXT((VkCommandBuffer)Buffer(), attachment, 1, &eq);
+	}
+
+	void GfxVkCommandBuffer::SetColorWriteMask(u32 attachment, ColorComponent mask) const
+	{
+		VkColorComponentFlags flags = VkPipelineUtils::GetVkColorComponents(mask);
+		vkCmdSetColorWriteMaskEXT((VkCommandBuffer)Buffer(), attachment, 1, &flags);
+	}
+
 	void GfxVkCommandBuffer::BlitImage(const BlitImageDesc& desc) const
 	{
 		VkImageBlit region = {};

@@ -32,6 +32,22 @@ namespace Horizon
 		void BindViewport(const Math::Vec2f& xy, const Math::Vec2f& size, const Math::Vec2f& depth) const final;
 		void BindScissor(const Math::Vec2i& offset, const Math::Vec2u& extent) const final;
 
+		void SetCullMode(CullMode mode) const final;
+		void SetFrontFace(FaceOrientation orientation) const final;
+		void SetPrimitiveTopology(PrimitiveTopology topology) const final;
+		void SetDepthTestEnable(b8 enable) const final;
+		void SetDepthWriteEnable(b8 enable) const final;
+		void SetDepthCompareOp(CompareOp op) const final;
+		void SetDepthBoundsTestEnable(b8 enable) const final;
+		void SetDepthBounds(f32 min, f32 max) const final;
+		void SetDepthBiasEnable(b8 enable) const final;
+		void SetPolygonMode(PolygonMode mode) const final;
+		void SetLogicOpEnable(b8 enable) const final;
+		void SetLogicOp(LogicOp op) const final;
+		void SetColorBlendEnable(u32 attachment, b8 enable) const final;
+		void SetColorBlendEquation(u32 attachment, const BlendAttachment& equation) const final;
+		void SetColorWriteMask(u32 attachment, ColorComponent mask) const final;
+
         void BindVertices(const std::vector<GfxBuffer*> buffers) const final;
         void BindIndex(const GfxBuffer* buffer, usize offset) const final;
 
