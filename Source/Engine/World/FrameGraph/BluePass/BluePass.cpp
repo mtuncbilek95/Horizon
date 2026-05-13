@@ -60,6 +60,8 @@ namespace Horizon
 		GfxImageView* color = resources.Get(m_colorHandle);
 		GfxImageView* depth = resources.Get(m_depthHandle);
 
+		cmd->BeginLabel("BluePass", { 0.1f, 0.2f, 0.3f });
+
 		// Color attachment barrier
 		cmd->ImageBarrier(ImageBarrierDesc()
 			.setImage(color->ImageOwner())
@@ -85,5 +87,7 @@ namespace Horizon
 		cmd->DrawVertexed(3, 0, 0, 1);
 
 		cmd->EndRendering();
+
+		cmd->EndLabel();
 	}
 }

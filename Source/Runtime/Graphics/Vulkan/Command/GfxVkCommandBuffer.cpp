@@ -109,6 +109,23 @@ namespace Horizon
 		vkEndCommandBuffer(m_buffer);
 	}
 
+	void GfxVkCommandBuffer::BeginLabel(const std::string& name, const Math::Vec3f& clr) const
+	{
+		VkDebugUtilsLabelEXT label{};
+		label.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+		label.pLabelName = name.c_str();
+		label.color[0] = clr.r;
+		label.color[1] = clr.g;
+		label.color[2] = clr.b;
+		label.color[3] = 1.0f;
+		vkCmdBeginDebugUtilsLabelEXT(m_buffer, &label);
+	}
+
+	void GfxVkCommandBuffer::EndLabel() const
+	{
+		vkCmdEndDebugUtilsLabelEXT(m_buffer);
+	}
+
 	void GfxVkCommandBuffer::BeginRendering(const RenderingInfo& info)
 	{
 		std::vector<VkRenderingAttachmentInfo> colorAttachments(info.colorAttachments.size());

@@ -37,6 +37,8 @@ namespace Horizon
 
 		GfxImageView* back = resources.Get(m_backbufferHandle);
 
+		cmd->BeginLabel("CompositePass", { 1.f, 1.f, 1.f });
+
 		cmd->ImageBarrier(ImageBarrierDesc()
 			.setImage(color->ImageOwner())
 			.setOldLayout(ImageLayout::ColorAttachmentOptimal)
@@ -68,5 +70,7 @@ namespace Horizon
 			.setAspect(ImageAspect::Color)
 			.setOldStage(PipelineStageFlags::Transfer)
 			.setNewStage(PipelineStageFlags::BottomOfPipe));
+
+		cmd->EndLabel();
 	}
 }

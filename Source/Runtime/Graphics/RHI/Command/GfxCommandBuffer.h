@@ -31,6 +31,9 @@ namespace Horizon
         virtual void BeginRecord(const DynamicInheritanceDesc& desc, CommandBufferUsage usage = CommandBufferUsage::OneTimeSubmit) const = 0;
         virtual void EndRecord() const = 0;
 
+		virtual void BeginLabel(const std::string& name, const Math::Vec3f& clr) const = 0;
+		virtual void EndLabel() const = 0;
+
 		virtual void BeginRendering(const RenderingInfo& info) = 0;
 		virtual void EndRendering() = 0;
 

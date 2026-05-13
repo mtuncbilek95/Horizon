@@ -21,6 +21,9 @@ namespace Horizon
 		void BeginRecord(const DynamicInheritanceDesc& desc, CommandBufferUsage usage = CommandBufferUsage::OneTimeSubmit) const final;
         void EndRecord() const final;
 
+		void BeginLabel(const std::string& name, const Math::Vec3f& clr) const;
+		void EndLabel() const;
+
 		void BeginRendering(const RenderingInfo& info) final;
 		void EndRendering() final;
 
