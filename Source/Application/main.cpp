@@ -15,6 +15,8 @@
 
 using namespace Horizon;
 
+#define HAVE_INTELSPONZA
+
 int main()
 {
 	MainWindow();
@@ -47,7 +49,16 @@ int main()
 			GfxSwapchain::Resize(msg.resizeWidth, msg.resizeHeight);
 		});
 
-	EntityHandle camera = LoadScene("Cooked/Sponza/Sponza.hmodel");
+#if defined(HAVE_INTELSPONZA)
+	EntityHandle camera = LoadScene({ 
+		"Cooked/IntelSponza/IntelSponza.hmodel",
+		"Cooked/SponzaCurtains/SponzaCurtains.hmodel"
+		});
+#else
+	EntityHandle camera = LoadScene({
+		"Cooked/Sponza/Sponza.hmodel"
+		});
+#endif
 	InstallCameraControls(camera);
 
 	Renderer renderer;

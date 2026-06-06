@@ -3,7 +3,7 @@
 namespace Horizon::Asset
 {
 	inline constexpr u32 ModelMagic = 0x4C444D48;
-	inline constexpr u32 ModelVersion = 3;
+	inline constexpr u32 ModelVersion = 4;
 
 	enum class MaterialSlot : u32
 	{
@@ -50,7 +50,8 @@ namespace Horizon::Asset
 	struct TextureRecord
 	{
 		char path[256];
-		u32 width, height, format, dataOffset, dataSize;
+		u32 width, height, format;
+		u64 dataOffset, dataSize;
 	};
 
 	struct CookedVertex
@@ -64,13 +65,13 @@ namespace Horizon::Asset
 		u32 meshCount, materialCount, instanceCount, textureCount;
 		u32 vertexCount, indexCount;
 		u32 vertexStride;
-		u32 textureDataSize;
+		u64 textureDataSize;
 	};
 
 	static_assert(sizeof(MeshRecord) == 36);
 	static_assert(sizeof(MaterialRecord) == 64);
 	static_assert(sizeof(InstanceRecord) == 68);
-	static_assert(sizeof(TextureRecord) == 276);
+	static_assert(sizeof(TextureRecord) == 288);
 	static_assert(sizeof(CookedVertex) == 48);
-	static_assert(sizeof(ModelHeader) == 40);
+	static_assert(sizeof(ModelHeader) == 48);
 }

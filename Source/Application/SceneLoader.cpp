@@ -12,7 +12,7 @@
 
 namespace Horizon
 {
-	EntityHandle LoadScene(const char* modelPath)
+	EntityHandle LoadScene(std::vector<std::filesystem::path> modelPaths)
 	{
 		EntityHandle camera = MainWorld().CreateEntity();
 		{
@@ -24,28 +24,31 @@ namespace Horizon
 			MainWorld().AddComponent(camera, cam);
 		}
 
-		const Model& model = AssetSystem().LoadModel(modelPath);
-		ConsoleLog().Info("Model: {} instance", model.instances.size());
-
-		for (const ModelInstance& instance : model.instances)
+		for (auto& path : modelPaths)
 		{
-			EntityHandle entity = MainWorld().CreateEntity();
+			const Model& model = AssetSystem().LoadModel(path);
+			ConsoleLog().Info("Model {}: {} instance", path.stem().string(), model.instances.size());
 
-			glm::vec3 scale, translation, skew;
-			glm::quat rotation;
-			glm::vec4 perspective;
-			glm::decompose(instance.transform, scale, rotation, translation, skew, perspective);
+			for (const ModelInstance& instance : model.instances)
+			{
+				EntityHandle entity = MainWorld().CreateEntity();
 
-			TransformComp transform;
-			transform.position = translation;
-			transform.rotation = rotation;
-			transform.scale = scale;
-			MainWorld().AddComponent(entity, transform);
+				glm::vec3 scale, translation, skew;
+				glm::quat rotation;
+				glm::vec4 perspective;
+				glm::decompose(instance.transform, scale, rotation, translation, skew, perspective);
 
-			MeshComp meshComp;
-			meshComp.meshId = instance.mesh;
-			meshComp.materialId = instance.material;
-			MainWorld().AddComponent(entity, meshComp);
+				TransformComp transform;
+				transform.position = translation;
+				transform.rotation = rotation;
+				transform.scale = scale;
+				MainWorld().AddComponent(entity, transform);
+
+				MeshComp meshComp;
+				meshComp.meshId = instance.mesh;
+				meshComp.materialId = instance.material;
+				MainWorld().AddComponent(entity, meshComp);
+			}
 		}
 
 		return camera;

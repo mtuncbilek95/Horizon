@@ -2,7 +2,10 @@
 
 #include <Engine/ECS/ECS.h>
 
+#include <filesystem>
+#include <vector>
+
 namespace Horizon
 {
-	EntityHandle LoadScene(const char* modelPath);
+	EntityHandle LoadScene(std::vector<std::filesystem::path> modelPaths);
 }
