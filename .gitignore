@@ -1,0 +1,6 @@
+.vs/*
+Build/*
+Install/*
+Publish/*
+
+Tools/AssetCooker/.vs/*
