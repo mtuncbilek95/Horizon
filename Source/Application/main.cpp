@@ -28,7 +28,7 @@ int main()
 	GfxDeviceDesc deviceDesc = {};
 	deviceDesc.windowHandle = MainWindow().GetOSHandle();
 	deviceDesc.framesInFlight = 2;
-	deviceDesc.maxWorkers = 1;
+	deviceDesc.maxWorkers = 2;
 #if defined(_DEBUG)
 	deviceDesc.enableDebug = true;
 #endif
@@ -40,9 +40,9 @@ int main()
 	swapchainDesc.windowHandle = MainWindow().GetOSHandle();
 	swapchainDesc.width = MainWindow().GetSize().x;
 	swapchainDesc.height = MainWindow().GetSize().y;
-	swapchainDesc.imageCount = 2;
+	swapchainDesc.imageCount = 3;
 	swapchainDesc.format = GfxTextureFormat::RGBA8;
-	swapchainDesc.vsync = true;
+	swapchainDesc.vsync = false;
 	GfxSwapchain::Create(swapchainDesc);
 
 	InputSystem().OnResizeWindow([](const InputMessage& msg)

@@ -13,7 +13,6 @@
 
 namespace Horizon
 {
-	static constexpr u32 MaxFramesInFlight = 2;
 	static constexpr u32 MaxWorkers = 8;
 	static constexpr u32 BindlessCapacity = 1 << 16;
 	static constexpr u32 MaxListsPerWorker = 64;
@@ -83,8 +82,8 @@ namespace Horizon::DX12
 		IDXGISwapChain4* swapchain = nullptr;
 
 		DXGI_FORMAT swapchainFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-		std::array<GfxTextureHandle, MaxFramesInFlight> backbuffers;
-		u32 backbufferCount = 0, backbufferIndex = 0, nextTargetView = 0, nextDepthView = 0;
+		std::vector<GfxTextureHandle> backbuffers;
+		u32 backbufferIndex = 0, nextTargetView = 0, nextDepthView = 0;
 		b8 vsync = true;
 
 		std::array<ID3D12CommandQueue*, 3> queues;
@@ -120,7 +119,7 @@ namespace Horizon::DX12
 		HANDLE frameFenceEvent = nullptr;
 		u64 frameFenceValue = 0;
 
-		std::array<Frame, MaxFramesInFlight> frames;
+		std::vector<Frame> frames;
 		u32 frameIndex = 0;
 		u32 framesInFlight = 2;
 		u32 maxWorkers = 1;

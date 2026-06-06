@@ -53,6 +53,7 @@ namespace Horizon
 		Context& context = GfxContext();
 		context.framesInFlight = desc.framesInFlight;
 		context.maxWorkers = desc.maxWorkers;
+		context.frames.resize(desc.framesInFlight);
 
 		u32 factoryFlags = 0;
 #if defined(_DEBUG)
@@ -64,7 +65,7 @@ namespace Horizon
 			ID3D12Debug1* gpuValidation = nullptr;
 			if (SUCCEEDED(context.debug->QueryInterface(IID_PPV_ARGS(&gpuValidation))))
 			{
-				gpuValidation->SetEnableGPUBasedValidation(true);
+				//gpuValidation->SetEnableGPUBasedValidation(true);
 				gpuValidation->Release();
 			}
 		}

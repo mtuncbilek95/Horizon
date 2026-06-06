@@ -99,7 +99,7 @@ namespace Horizon
 		std::ifstream file(path, std::ios::binary | std::ios::ate);
 		if (!file)
 		{
-			ConsoleLog().Error("hmodel acilamadi: {}", key);
+			ConsoleLog().Error("hmodel could not be opened: {}", key);
 			return m_cache[key];
 		}
 		usize size = (usize)file.tellg();
@@ -110,7 +110,7 @@ namespace Horizon
 		const ModelHeader* header = (const ModelHeader*)bytes.data();
 		if (header->magic != ModelMagic || header->version != ModelVersion)
 		{
-			ConsoleLog().Error("hmodel gecersiz/eski (magic/version): {}", key);
+			ConsoleLog().Error("hmodel invalid/old (magic/version): {}", key);
 			return m_cache[key];
 		}
 

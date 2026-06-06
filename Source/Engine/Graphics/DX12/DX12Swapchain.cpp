@@ -13,7 +13,7 @@ namespace Horizon
 	static void CreateBackbuffers(u32 width, u32 height)
 	{
 		Context& context = GfxContext();
-		for (u32 backbufferIdx = 0; backbufferIdx < context.backbufferCount; backbufferIdx++)
+		for (u32 backbufferIdx = 0; backbufferIdx < context.backbuffers.size(); backbufferIdx++)
 		{
 			ID3D12Resource* resource = nullptr;
 			HRESULT hresult = context.swapchain->GetBuffer(backbufferIdx, IID_PPV_ARGS(&resource));
@@ -49,7 +49,7 @@ namespace Horizon
 	{
 		Context& context = GfxContext();
 		context.swapchainFormat = ToDXGI(desc.format);
-		context.backbufferCount = desc.imageCount;
+		context.backbuffers.resize(desc.imageCount);
 		context.vsync = desc.vsync;
 
 		DXGI_SWAP_CHAIN_DESC1 swapchainDesc = {};
@@ -95,14 +95,14 @@ namespace Horizon
 		Context& context = GfxContext();
 		GfxDevice::WaitIdle();
 
-		for (u32 backbufferIdx = 0; backbufferIdx < context.backbufferCount; backbufferIdx++)
+		for (u32 backbufferIdx = 0; backbufferIdx < context.backbuffers.size(); backbufferIdx++)
 		{
 			TexturePoolGet(context.backbuffers[backbufferIdx]).resource->Release();
 			TexturePoolFree(context.backbuffers[backbufferIdx]);
 		}
 		context.nextTargetView = 0;
 
-		HRESULT hresult = context.swapchain->ResizeBuffers(context.backbufferCount, width, height, context.swapchainFormat, 0);
+		HRESULT hresult = context.swapchain->ResizeBuffers(context.backbuffers.size(), width, height, context.swapchainFormat, 0);
 		CHECK_HR(hresult, "ResizeBuffers");
 		CreateBackbuffers(width, height);
 	}
@@ -110,7 +110,7 @@ namespace Horizon
 	void GfxSwapchain::Destroy()
 	{
 		Context& context = GfxContext();
-		for (u32 backbufferIdx = 0; backbufferIdx < context.backbufferCount; backbufferIdx++)
+		for (u32 backbufferIdx = 0; backbufferIdx < context.backbuffers.size(); backbufferIdx++)
 		{
 			if (context.backbuffers[backbufferIdx].isValid())
 			{
