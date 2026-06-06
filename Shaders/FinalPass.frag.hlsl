@@ -17,10 +17,19 @@ SamplerState linearClamp : register(s2);
 
 static const float Exposure = 1.0;
 static const float Contrast = 1.05;
+
 static const float Saturation = 1.12;
+
 static const float VignetteStart = 0.60;
 static const float VignetteStrength = 0.35;
+
 static const float BloomIntensity = 0.35;
+
+static const float CAStrength = 0.0008;
+static const float GrainStrength = 0.03;
+
+static const float3 ShadowTint = float3(0.95, 0.98, 1.08);
+static const float3 HighlightTint = float3(1.06, 1.02, 0.94);
 
 static const float FXAASpanMax = 8.0;
 static const float FXAAReduceMul = 1.0 / 8.0;
@@ -64,6 +73,27 @@ float Vignette(float2 uv)
 {
     float dist = length(uv - 0.5) * 1.41421356;
     return 1.0 - smoothstep(VignetteStart, 1.0, dist) * VignetteStrength;
+}
+
+float3 SplitTone(float3 color)
+{
+    float lum = Luma(color);
+    float3 shadows = color * ShadowTint;
+    float3 highlights = color * HighlightTint;
+    return lerp(shadows, highlights, smoothstep(0.0, 1.0, lum));
+}
+
+float Hash(float2 pixel)
+{
+    pixel = frac(pixel * float2(443.897, 441.423));
+    pixel += dot(pixel, pixel + 19.19);
+    return frac(pixel.x * pixel.y);
+}
+
+float3 GrainDither(float3 color, float2 pixel, uint slot)
+{
+    float notation = Hash(pixel + float2(slot * 13.0, slot * 7.0)) - 0.5;
+    return color + notation * GrainStrength;
 }
 
 float4 PSMain(VertexOut vertOut) : SV_Target0
@@ -119,9 +149,18 @@ float4 PSMain(VertexOut vertOut) : SV_Target0
         float lumaB = Luma(rgbB);
         color = (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;
     }
+    
+    float2 caOff = (vertOut.texCoord - 0.5) * CAStrength;
+    float caAmt = saturate(length(caOff * float2(width, height)));
+    float caR = SampleLDR(hdrTex, bloomTex, vertOut.texCoord + caOff).r;
+    float caB = SampleLDR(hdrTex, bloomTex, vertOut.texCoord - caOff).b;
+    color.r = lerp(color.r, caR, caAmt);
+    color.b = lerp(color.b, caB, caAmt);
 
     color = Grade(color);
+    color = SplitTone(color);
     color *= Vignette(vertOut.texCoord);
+    color = GrainDither(color, vertOut.position.xy, pushConst.frameSlot);
 
     return float4(color, 1.0);
 }
