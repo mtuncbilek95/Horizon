@@ -20,7 +20,7 @@ namespace Horizon::Asset
 			{
 				textureRecord.width = textureRecord.height = 1;
 				textureRecord.format = 0;
-				textureRecord.dataOffset = (u32)model.textureBlob.size();
+				textureRecord.dataOffset = (u64)model.textureBlob.size();
 				textureRecord.dataSize = 4;
 				const u8 magenta[4] =
 				{
@@ -37,7 +37,7 @@ namespace Horizon::Asset
 			textureRecord.width = (u32)width;
 			textureRecord.height = (u32)height;
 			textureRecord.format = 0;
-			textureRecord.dataOffset = (u32)model.textureBlob.size();
+			textureRecord.dataOffset = (u64)model.textureBlob.size();
 			textureRecord.dataSize = bytes;
 			model.textureBlob.insert(model.textureBlob.end(), pixels, pixels + bytes);
 

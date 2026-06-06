@@ -23,7 +23,7 @@ namespace Horizon::Asset
 		header.vertexCount = (u32)model.vertices.size();
 		header.indexCount = (u32)model.indices.size();
 		header.vertexStride = sizeof(CookedVertex);
-		header.textureDataSize = (u32)model.textureBlob.size();
+		header.textureDataSize = (u64)model.textureBlob.size();
 
 		auto writeBlob = [&](const void* data, size_t bytes) { if (bytes) file.write((const char*)data, bytes); };
 

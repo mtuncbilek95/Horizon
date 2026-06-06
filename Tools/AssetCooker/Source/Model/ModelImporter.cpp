@@ -128,20 +128,25 @@ namespace Horizon::Asset
 		outModel.materials.push_back(materialRecord);
 	}
 
-	static void WalkNode(const aiNode* node, const aiMatrix4x4& parent, CookedModel& outModel)
+	static void WalkNode(const aiNode* node, const aiMatrix4x4& parent, const aiScene* scene, const std::vector<u8>& materialIsBlend, CookedModel& outModel)
 	{
 		aiMatrix4x4 world = parent * node->mTransformation;
 
 		for (u32 meshIdx = 0; meshIdx < node->mNumMeshes; meshIdx++)
 		{
+			u32 sceneMeshIndex = node->mMeshes[meshIdx];
+			// Transparan (BLEND) decal'leri atla: opak cizilince goruntuyu bozuyorlar
+			if (materialIsBlend[scene->mMeshes[sceneMeshIndex]->mMaterialIndex])
+				continue;
+
 			InstanceRecord instance{};
-			instance.meshIndex = node->mMeshes[meshIdx];
+			instance.meshIndex = sceneMeshIndex;
 			WriteTransform(world, instance.transform);
 			outModel.instances.push_back(instance);
 		}
 
 		for (u32 childIdx = 0; childIdx < node->mNumChildren; childIdx++)
-			WalkNode(node->mChildren[childIdx], world, outModel);
+			WalkNode(node->mChildren[childIdx], world, scene, materialIsBlend, outModel);
 	}
 
 	bool ImportModel(const std::filesystem::path& sourcePath, CookedModel& outModel)
@@ -159,13 +164,22 @@ namespace Horizon::Asset
 		if (!scene || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !scene->mRootNode)
 			return false;
 
+		std::vector<u8> materialIsBlend(scene->mNumMaterials, 0);
 		for (u32 materialIdx = 0; materialIdx < scene->mNumMaterials; materialIdx++)
-			ExtractMaterial(scene->mMaterials[materialIdx], outModel);
+		{
+			const aiMaterial* material = scene->mMaterials[materialIdx];
+			ExtractMaterial(material, outModel);
+
+			aiString alphaMode;
+			if (material->Get("$mat.gltf.alphaMode", 0, 0, alphaMode) == AI_SUCCESS &&
+				std::strcmp(alphaMode.C_Str(), "BLEND") == 0)
+				materialIsBlend[materialIdx] = 1;
+		}
 
 		for (u32 meshIdx = 0; meshIdx < scene->mNumMeshes; meshIdx++)
 			ExtractMesh(scene->mMeshes[meshIdx], scene->mMeshes[meshIdx]->mMaterialIndex, outModel);
 
-		WalkNode(scene->mRootNode, aiMatrix4x4(), outModel);
+		WalkNode(scene->mRootNode, aiMatrix4x4(), scene, materialIsBlend, outModel);
 
 		return true;
 	}
