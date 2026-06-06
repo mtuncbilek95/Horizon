@@ -20,7 +20,7 @@ static const float Contrast = 1.05;
 static const float Saturation = 1.12;
 static const float VignetteStart = 0.60;
 static const float VignetteStrength = 0.35;
-static const float BloomIntensity = 0.2;
+static const float BloomIntensity = 0.35;
 
 static const float FXAASpanMax = 8.0;
 static const float FXAAReduceMul = 1.0 / 8.0;
