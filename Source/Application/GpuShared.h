@@ -39,6 +39,7 @@ namespace Horizon
 	{
 		u32 albedoIndex;
 		u32 normalIndex;
+		u32 geoNormalIndex;
 		u32 materialIndex;
 		u32 emissiveIndex;
 		u32 depthIndex;

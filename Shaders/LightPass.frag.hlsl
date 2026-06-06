@@ -4,6 +4,7 @@ struct LightPush
 {
     uint albedoIndex;
     uint normalIndex;
+    uint geoNormalIndex;
     uint materialIndex;
     uint emissiveIndex;
     uint depthIndex;
@@ -35,6 +36,7 @@ struct VertexOut
 static const int ShadowPCF = 2;
 static const float PI = 3.14159265359;
 static const float AmbientIntensity = 0.2;
+static const float AmbientNormalStrength = 0.15;
 
 ConstantBuffer<LightPush> pushConst : register(b0);
 SamplerState samp : register(s4);
@@ -110,6 +112,7 @@ float4 PSMain(VertexOut vertOut) : SV_Target0
     
     Texture2D albedoTex = ResourceDescriptorHeap[pushConst.albedoIndex];
     Texture2D normalTex = ResourceDescriptorHeap[pushConst.normalIndex];
+    Texture2D geoNormalTex = ResourceDescriptorHeap[pushConst.geoNormalIndex];
     Texture2D materialTex = ResourceDescriptorHeap[pushConst.materialIndex];
     Texture2D emissiveTex = ResourceDescriptorHeap[pushConst.emissiveIndex];
     Texture2D<float> depthTex = ResourceDescriptorHeap[pushConst.depthIndex];
@@ -124,6 +127,7 @@ float4 PSMain(VertexOut vertOut) : SV_Target0
     float3 worldPos = ReconstructWorld(vertOut.texCoord, depth, frame.invViewProj);
     float3 albedo = albedoTex.Load(int3(pixel, 0)).rgb;
     float3 N = normalize(normalTex.Load(int3(pixel, 0)).xyz);
+    float3 geoN = normalize(geoNormalTex.Load(int3(pixel, 0)).xyz);
     float3 metalRough = materialTex.Load(int3(pixel, 0)).rgb;
     float3 emissive = emissiveTex.Load(int3(pixel, 0)).rgb;
 
@@ -149,7 +153,9 @@ float4 PSMain(VertexOut vertOut) : SV_Target0
     float shadow = ShadowFactor(worldPos, frame.lightViewProj, shadowTex);
     
     float3 Lo = (kD * albedo / PI + specular) * radiance * NdotL * shadow;
-    float3 ambient = albedo * ao * SkyGradient(N) * AmbientIntensity;
+    
+    float3 ambN = normalize(lerp(geoN, N, AmbientNormalStrength));
+    float3 ambient = albedo * ao * SkyGradient(ambN) * AmbientIntensity;
     
     return float4(ambient + Lo + emissive, 1.0);
 }

@@ -35,7 +35,8 @@ struct PSOutput
     float4 albedo : SV_Target0;
     float4 normal : SV_Target1;
     float4 material : SV_Target2;
-    float3 emissive : SV_Target3;
+    float4 geoNormal : SV_Target3;
+    float3 emissive : SV_Target4;
 };
 
 static const uint MaterialAlphaMask = 1u << 1;
@@ -99,6 +100,7 @@ PSOutput PSMain(VertexOut vertOut)
     psOut.albedo = float4(albedo.rgb, 1.0);
     psOut.normal = float4(N, 0.0);
     psOut.material = float4(metallic, roughness, ambientOcc, 0.0);
+    psOut.geoNormal = float4(normalize(vertOut.normal), 0.0);
     psOut.emissive = emissive.rgb;
     
     return psOut;

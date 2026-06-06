@@ -28,6 +28,7 @@ namespace Horizon
 		FGTextureHandle albedo;
 		FGTextureHandle normal;
 		FGTextureHandle material;
+		FGTextureHandle geoNormal;
 		FGTextureHandle emissive;
 		FGTextureHandle depth;
 	};
@@ -36,6 +37,7 @@ namespace Horizon
 	{
 		FGTextureHandle albedo;
 		FGTextureHandle normal;
+		FGTextureHandle geoNormal;
 		FGTextureHandle material;
 		FGTextureHandle emissive;
 		FGTextureHandle depth;
@@ -141,11 +143,12 @@ namespace Horizon
 			desc.depthTest = true;
 			desc.depthWrite = true;
 			desc.depthCompare = GfxCompareOp::GreaterEqual;
-			desc.colorCount = 4;
+			desc.colorCount = 5;
 			desc.colorFormats[0] = GfxTextureFormat::RGBA8;
 			desc.colorFormats[1] = GfxTextureFormat::RGBA16F;
 			desc.colorFormats[2] = GfxTextureFormat::RGBA8;
-			desc.colorFormats[3] = GfxTextureFormat::R11G11B10F;
+			desc.colorFormats[3] = GfxTextureFormat::RGBA16F;
+			desc.colorFormats[4] = GfxTextureFormat::R11G11B10F;
 			desc.depthFormat = GfxTextureFormat::D32;
 			desc.debugName = "GBuffer";
 			m_gbufferPipeline = BuildPipeline(desc, "Shaders/GBuffer.vert", "Shaders/GBuffer.frag");
@@ -273,13 +276,15 @@ namespace Horizon
 				FGTextureHandle albedo = builder.CreateTexture(ColorDesc(width, height, GfxTextureFormat::RGBA8, "GAlbedo"), "GAlbedo");
 				FGTextureHandle normal = builder.CreateTexture(ColorDesc(width, height, GfxTextureFormat::RGBA16F, "GNormal"), "GNormal");
 				FGTextureHandle material = builder.CreateTexture(ColorDesc(width, height, GfxTextureFormat::RGBA8, "GMaterial"), "GMaterial");
+				FGTextureHandle geoNormal = builder.CreateTexture(ColorDesc(width, height, GfxTextureFormat::RGBA16F, "GGeoNormal"), "GGeoNormal");
 				FGTextureHandle emissive = builder.CreateTexture(ColorDesc(width, height, GfxTextureFormat::R11G11B10F, "GEmissive"), "GEmissive");
 				FGTextureHandle depth = builder.CreateTexture(DepthDesc(width, height, "Scene Depth"), "Scene Depth");
 
 				data.albedo = builder.SetColorAttachment(0, albedo);
 				data.normal = builder.SetColorAttachment(1, normal);
 				data.material = builder.SetColorAttachment(2, material);
-				data.emissive = builder.SetColorAttachment(3, emissive);
+				data.geoNormal = builder.SetColorAttachment(3, geoNormal);
+				data.emissive = builder.SetColorAttachment(4, emissive);
 				data.depth = builder.SetDepthAttachment(depth);
 			},
 			[this, frameSlot](const GBufferData&, FrameGraphResources&, GfxCommandList* cmdList) // Execute
@@ -307,6 +312,7 @@ namespace Horizon
 			{
 				data.albedo = builder.Read(gbuffer.albedo, GfxResourceState::ShaderResource);
 				data.normal = builder.Read(gbuffer.normal, GfxResourceState::ShaderResource);
+				data.geoNormal = builder.Read(gbuffer.geoNormal, GfxResourceState::ShaderResource);
 				data.material = builder.Read(gbuffer.material, GfxResourceState::ShaderResource);
 				data.emissive = builder.Read(gbuffer.emissive, GfxResourceState::ShaderResource);
 				data.depth = builder.Read(gbuffer.depth, GfxResourceState::ShaderResource);
@@ -320,6 +326,7 @@ namespace Horizon
 				LightPush push = {};
 				push.albedoIndex = resources.GetTextureShaderView(data.albedo);
 				push.normalIndex = resources.GetTextureShaderView(data.normal);
+				push.geoNormalIndex = resources.GetTextureShaderView(data.geoNormal);
 				push.materialIndex = resources.GetTextureShaderView(data.material);
 				push.emissiveIndex = resources.GetTextureShaderView(data.emissive);
 				push.depthIndex = resources.GetTextureShaderView(data.depth);
