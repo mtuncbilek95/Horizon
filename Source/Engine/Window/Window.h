@@ -19,9 +19,9 @@ namespace Horizon
 
 	struct WindowDesc
 	{
-		std::string name = "DX12 ECS";
-		glm::uvec2 size = { 1920, 1080 };
-		WindowMode mode = WindowMode::Windowed;
+		std::string name = "Horizon - Sponza";
+		glm::uvec2 size = { 2560, 1440 };
+		WindowMode mode = WindowMode::Borderless;
 	};
 
 	class Window
