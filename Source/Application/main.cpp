@@ -12,6 +12,12 @@
 
 #include <Engine/ECS/ECS.h>
 #include <Engine/ECS/Components/CameraComp.h>
+#include <Engine/ECS/Components/MeshComp.h>
+
+#include <Engine/Asset/AssetRegistry.h>
+#include <Engine/Graphics/RHI/GfxImGui.h>
+
+#include <imgui.h>
 
 using namespace Horizon;
 
@@ -61,6 +67,14 @@ int main()
 #endif
 	InstallCameraControls(camera);
 
+	GfxImGui::Init(MainWindow().GetAPIHandle());
+
+	u64 totalTriangles = 0;
+	MainWorld().ForEach<MeshComp>([&](EntityHandle, MeshComp& mc)
+		{
+			totalTriangles += AssetSystem().GetMesh(mc.meshId).indexCount / 3;
+		});
+
 	Renderer renderer;
 	renderer.Initialize(framesInFlight);
 
@@ -68,6 +82,20 @@ int main()
 	while (MainWindow().IsActive())
 	{
 		MainWindow().PollEvents();
+
+		GfxImGui::BeginFrame();
+		{
+			ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
+			ImGui::Begin("Stats", nullptr,
+				ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+				ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+				ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground);
+
+			const ImGuiIO& io = ImGui::GetIO();
+			ImGui::Text("FPS: %.1f  (%.2f ms)", io.Framerate, 1000.0f / io.Framerate);
+			ImGui::Text("Triangles: %llu", totalTriangles);
+			ImGui::End();
+		}
 
 		const u32 windowWidth = MainWindow().GetSize().x;
 		const u32 windowHeight = MainWindow().GetSize().y;
@@ -88,6 +116,7 @@ int main()
 	}
 
 	GfxDevice::WaitIdle();
+	GfxImGui::Shutdown();
 	renderer.Shutdown();
 	MainGraph().Shutdown();
 	GfxDevice::Shutdown();

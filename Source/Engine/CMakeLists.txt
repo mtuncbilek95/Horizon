@@ -17,8 +17,10 @@ target_link_libraries(Engine
 )
 SetupGLFW(Engine)
 
-target_link_libraries(Engine 
-	PRIVATE 
+target_link_libraries(Engine PUBLIC Imgui)
+
+target_link_libraries(Engine
+	PRIVATE
 		WinPixEventRuntime
 )
 target_compile_definitions(Engine 

@@ -19,14 +19,25 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(imgui)
 
 file(GLOB IMGUI_FILES "${imgui_SOURCE_DIR}/*.cpp" "${imgui_SOURCE_DIR}/*.h")
-source_group(TREE "${imgui_SOURCE_DIR}" FILES ${IMGUI_FILES})
-add_library(Imgui STATIC ${IMGUI_FILES})
 
-target_include_directories(Imgui PUBLIC ${imgui_SOURCE_DIR})
+set(IMGUI_BACKENDS
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.h"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_dx12.cpp"
+    "${imgui_SOURCE_DIR}/backends/imgui_impl_dx12.h"
+)
+
+source_group(TREE "${imgui_SOURCE_DIR}" FILES ${IMGUI_FILES} ${IMGUI_BACKENDS})
+add_library(Imgui STATIC ${IMGUI_FILES} ${IMGUI_BACKENDS})
+
+target_include_directories(Imgui PUBLIC
+    ${imgui_SOURCE_DIR}
+    ${imgui_SOURCE_DIR}/backends
+)
 
 include(SetupGLFW)
 SetupGLFW(Imgui)
-target_link_libraries(Imgui PRIVATE glfw)
+target_link_libraries(Imgui PRIVATE glfw d3d12.lib dxgi.lib)
 
 if(UNIX AND NOT APPLE)
 	target_compile_options(Imgui PRIVATE -include dlfcn.h)

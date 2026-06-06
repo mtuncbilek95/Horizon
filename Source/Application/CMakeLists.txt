@@ -9,7 +9,7 @@ target_include_directories(Application PRIVATE "${CMAKE_SOURCE_DIR}/Source")
 
 target_link_libraries(Application
     PRIVATE
-        Engine
+        Engine Imgui
 )
 
 set_target_properties(Application PROPERTIES

@@ -13,6 +13,7 @@
 #include <Engine/Graphics/RHI/GfxTexture.h>
 #include <Engine/Graphics/RHI/GfxBuffer.h>
 #include <Engine/Graphics/RHI/GfxCommandList.h>
+#include <Engine/Graphics/RHI/GfxImGui.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -435,6 +436,8 @@ namespace Horizon
 				GfxCmdList::BindPipeline(cmdList, m_finalPipeline);
 				GfxCmdList::SetConstants(cmdList, &push, sizeof(push));
 				GfxCmdList::Draw(cmdList, 3, 1);
+
+				GfxImGui::Render(cmdList);
 			});
 	}
 
