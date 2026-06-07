@@ -1,4 +1,4 @@
-#include "Renderer.h"
+/*#include "Renderer.h"
 #include "SceneLoader.h"
 #include "CameraController.h"
 
@@ -17,7 +17,7 @@
 #include <Engine/Asset/AssetRegistry.h>
 #include <Engine/Graphics/RHI/GfxImGui.h>
 
-#include <imgui.h>
+#include <imgui.h>*/
 
 using namespace Horizon;
 

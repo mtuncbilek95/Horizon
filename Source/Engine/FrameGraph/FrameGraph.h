@@ -121,7 +121,7 @@ namespace Horizon
 
 		std::vector<FrameGraphAccess> m_reads;
 		std::vector<FrameGraphAccess> m_writes;
-		std::vector<GfxBarrier> m_textureBarriers;
+		std::vector<GfxTextureBarrier> m_textureBarriers;
 		std::vector<GfxBufferBarrier> m_bufferBarriers;
 
 		std::array<FrameGraphColorAttachment, 8> m_colorAttachments{};

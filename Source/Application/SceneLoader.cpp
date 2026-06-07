@@ -27,7 +27,6 @@ namespace Horizon
 		for (auto& path : modelPaths)
 		{
 			const Model& model = AssetSystem().LoadModel(path);
-			ConsoleLog().Info("Model {}: {} instance", path.stem().string(), model.instances.size());
 
 			for (const ModelInstance& instance : model.instances)
 			{
