@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <limits>
-#include <Engine/Log/Log.h>
 
 namespace Horizon
 {
@@ -38,22 +37,22 @@ namespace Horizon
 	{
 		HandleId id = InvalidHandleId;
 
-		bool isValid() const { return id != InvalidHandleId; }
+		bool IsValid() const { return id != InvalidHandleId; }
 
-		explicit operator bool() const { return isValid(); }
+		explicit operator bool() const { return IsValid(); }
 
 		bool operator==(const Handle& other) const { return id == other.id; }
 		bool operator!=(const Handle& other) const { return id != other.id; }
 
-		static Handle make(uint32_t index, uint32_t generation)
+		static Handle Generate(u32 index, u32 generation)
 		{
-			Handle h;
-			h.id = (HandleId(generation) << IndexBits) | HandleId(index);
-			return h;
+			Handle hndl;
+			hndl.id = (HandleId(generation) << IndexBits) | HandleId(index);
+			return hndl;
 		}
 
-		u32 index() const { return u32(id & IndexMask); }
-		u32 generation() const { return u32(id >> IndexBits); }
+		u32 Index() const { return u32(id & IndexMask); }
+		u32 Generation() const { return u32(id >> IndexBits); }
 	};
 
 #define GENERATE_FLAGS(E) \

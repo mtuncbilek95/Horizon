@@ -1,23 +1,14 @@
-#include "DX12Buffer.h"
-
-#include <Runtime/Graphics/RHI/GfxBuffer.h>
-#include <Runtime/Graphics/RHI/GfxDevice.h>
-
-#include <Runtime/Graphics/DX12/DX12Device.h>
-
-#define CHECK_HR(hr, what) \
-	if(FAILED(hr)) { Horizon::MainLog::Error("{}: {}", what, _com_error(hr).ErrorMessage()); exit(-1); }
-
-#define CHECK_REASON(hr, what) \
-	if (FAILED(hr)) { Horizon::MainLog::Error("{}: {}", what, _com_error(hr).ErrorMessage()); }
+#include "DX12Context.h"
 
 namespace Horizon
 {
-	GfxBuffer::GfxBuffer(const GfxBufferDesc& desc, GfxDevice* pDevice) : GfxObject(pDevice), m_desc(desc)
+	GfxBufferHandle GfxDevice::CreateBuffer(const GfxBufferDesc& desc)
 	{
-		DX12Device* deviceNative = static_cast<DX12Device*>(pDevice->GetNative());
+		Context& context = DX12Context();
 
-		DX12Buffer* pNative = new DX12Buffer();
+		usize size = desc.size;
+		if (has(desc.usage, GfxBufferUsage::Constant))
+			size = (size + 255) & ~usize(255);
 
 		D3D12_RESOURCE_DESC resourceDesc = {};
 		resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -41,78 +32,73 @@ namespace Horizon
 			(desc.memory == GfxMemoryType::Readback) ? D3D12_RESOURCE_STATE_COPY_DEST :
 			D3D12_RESOURCE_STATE_COMMON;
 
-		HRESULT hresult = deviceNative->allocator->CreateResource(&allocDesc, &resourceDesc, initState, nullptr,
-			&pNative->memory, IID_PPV_ARGS(&pNative->resource));
-		CHECK_REASON(hresult, "Create Buffer Resource");
+		DX12Buffer buffer = {};
+		buffer.memory = desc.memory;
 
-		if (desc.memory != GfxMemoryType::GPU)
-			pNative->resource->Map(0, nullptr, &m_mapped);
+		HRESULT bResult = context.pAllocator->CreateResource(&allocDesc, &resourceDesc, initState,
+			nullptr, &buffer.pMemory, IID_PPV_ARGS(&buffer.pResource));
+		CHECK_REASON(bResult, "ID3D12Resource - CreateResource");
 
-		m_gpuAddress = pNative->resource->GetGPUVirtualAddress();
+		if (FAILED(bResult))
+			return GfxBufferHandle();
 
-		if (desc.stride > 0)
+		buffer.sizeInBytes = desc.size;
+		buffer.gpuVirtualAddress = buffer.pResource->GetGPUVirtualAddress();
+
+		if (buffer.pMapped == nullptr && (desc.memory == GfxMemoryType::Upload || desc.memory == GfxMemoryType::Readback))
 		{
-			m_shaderView = deviceNative->bindless.Allocate();
-
-			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-			srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			srvDesc.Buffer.NumElements = u32(desc.size / desc.stride);
-			srvDesc.Buffer.StructureByteStride = desc.stride;
-
-			deviceNative->device->CreateShaderResourceView(pNative->resource, &srvDesc, deviceNative->bindless.GetCPUHandle(m_shaderView));
-		}
-		else if (has(desc.usage, GfxBufferUsage::Storage))
-		{
-			m_shaderView = deviceNative->bindless.Allocate();
-
-			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-			srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			srvDesc.Buffer.NumElements = u32(desc.size / 4);
-			srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
-
-			deviceNative->device->CreateShaderResourceView(pNative->resource, &srvDesc, deviceNative->bindless.GetCPUHandle(m_shaderView));
-
-			m_accessView = deviceNative->bindless.Allocate();
-
-			D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-			uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-			uavDesc.Buffer.NumElements = u32(desc.size / 4);
-			uavDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-
-			deviceNative->device->CreateUnorderedAccessView(pNative->resource, nullptr, &uavDesc, deviceNative->bindless.GetCPUHandle(m_accessView));
+			D3D12_RANGE noRead = { 0, 0 };
+			buffer.pResource->Map(0, &noRead, &buffer.pMapped);
 		}
 
-		m_native = pNative;
+		const b8 shaderRead = has(desc.usage, GfxBufferUsage::Vertex)
+			|| has(desc.usage, GfxBufferUsage::Index)
+			|| has(desc.usage, GfxBufferUsage::Storage);
+
+		if (shaderRead)
+			buffer.shaderViewIndex = Helpers::CreateBufferSRV(buffer, desc);
+
+		if (has(desc.usage, GfxBufferUsage::Storage))    
+			buffer.accessViewIndex = Helpers::CreateBufferUAV(buffer, desc);
+
+		if (!desc.debugName.empty())
+			buffer.pResource->SetPrivateData(WKPDID_D3DDebugObjectName, u32(desc.debugName.size()), desc.debugName.data());
+
+		return context.bufferPool.Insert(std::move(buffer));
 	}
 
-	GfxBuffer::~GfxBuffer()
+	void GfxDevice::WriteBuffer(GfxBufferHandle handle, void* pData, usize sizeInBytes, usize offset)
 	{
-		// TODO: inFrame destroy->fence-deferred
-		DX12Device* deviceNative = static_cast<DX12Device*>(m_device->GetNative());
-		DX12Buffer* pNative = static_cast<DX12Buffer*>(m_native);
+		Context& context = DX12Context();
 
-		if (m_shaderView != ~0u)
-			deviceNative->bindless.Free(m_shaderView);
-		if (m_accessView != ~0u)
-			deviceNative->bindless.Free(m_accessView);
-
-		if (pNative)
-		{
-			if (pNative->resource)
-				pNative->resource->Release();
-			if (pNative->memory)
-				pNative->memory->Release();
-			delete pNative;
-		}
+		context.bufferPool.ResolveWrite(handle, [&](DX12Buffer& buffer)
+			{
+				assert(buffer.pMapped && "WriteBuffer is only being used for Upload/Readback");
+				std::memcpy((u8*)buffer.pMapped + offset, pData, sizeInBytes);
+			});
 	}
 
-	void GfxBuffer::Write(const void* pData, usize count, usize offset) const
+	void GfxDevice::DestroyBuffer(GfxBufferHandle handle)
 	{
-		std::memcpy((u8*)m_mapped + offset, pData, count * m_desc.stride);
+		Context& context = DX12Context();
+
+		context.bufferPool.ResolveWrite(handle, [&](DX12Buffer& buffer)
+			{
+				if (buffer.shaderViewIndex != ~0u)
+					Helpers::FreeDescriptor(context.resourceHeap, buffer.shaderViewIndex);
+
+				if (buffer.accessViewIndex != ~0u)
+					Helpers::FreeDescriptor(context.resourceHeap, buffer.accessViewIndex);
+
+				if (buffer.pMapped)
+					buffer.pResource->Unmap(0, nullptr);
+
+				if (buffer.pResource)
+					buffer.pResource->Release();
+				if (buffer.pMemory)
+					buffer.pMemory->Release();
+			});
+
+		context.bufferPool.Remove(handle);
 	}
 }

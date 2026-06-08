@@ -10,6 +10,12 @@ namespace Horizon
 	struct MainLog
 	{
 		template<typename... Args>
+		static void Terminal(std::format_string<Args...> formatString, Args&&... args)
+		{
+			Print("", formatString, std::forward<Args>(args)...);
+		}
+
+		template<typename... Args>
 		static void Info(std::format_string<Args...> formatString, Args&&... args)
 		{
 			Print("INFO", formatString, std::forward<Args>(args)...);
