@@ -26,8 +26,6 @@ namespace Horizon
 
 	static void ResizeCallback(GLFWwindow* window, i32 width, i32 height)
 	{
-		MainWindow().SetSize({ (u32)width, (u32)height });
-
 		auto* dispatcher = static_cast<InputDispatcher*>(glfwGetWindowUserPointer(window));
 		if (dispatcher)
 			dispatcher->DispatchResize(width, height);

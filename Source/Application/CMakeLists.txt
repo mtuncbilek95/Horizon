@@ -27,9 +27,9 @@ file(GLOB SHADER_SOURCES CONFIGURE_DEPENDS "${SHADER_SRC_DIR}/*.hlsl")
 
 set(SHADER_OUTPUTS "")
 foreach(SHADER_SRC ${SHADER_SOURCES})
-    get_filename_component(SHADER_FILE ${SHADER_SRC} NAME)       # GBuffer.vert.hlsl
-    get_filename_component(OUT_NAME    ${SHADER_SRC} NAME_WLE)   # GBuffer.vert
-    get_filename_component(STAGE_EXT   ${OUT_NAME}   LAST_EXT)   # .vert
+    get_filename_component(SHADER_FILE ${SHADER_SRC} NAME)
+    get_filename_component(OUT_NAME    ${SHADER_SRC} NAME_WLE)
+    get_filename_component(STAGE_EXT   ${OUT_NAME}   LAST_EXT)
 
     if(STAGE_EXT STREQUAL ".vert")
         CompileShader("${SHADER_FILE}" "vs_6_6" "VSMain" "${OUT_NAME}")

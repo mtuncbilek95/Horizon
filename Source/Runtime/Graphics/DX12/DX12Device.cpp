@@ -69,6 +69,17 @@ namespace Horizon
 		Helpers::CreateDescriptorHeap(context.renderTargetHeap, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1024, false);
 		Helpers::CreateDescriptorHeap(context.depthStencilHeap, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 256, false);
 
+		for (u32 lane = 0; lane < Context::CmdLanes; lane++)
+		{
+			D3D12_COMMAND_LIST_TYPE listType = qTypes[lane % u32(GfxQueueType::Count)];
+			for (u32 frame = 0; frame < MaxFramesInFlight; frame++)
+			{
+				bResult = context.pDevice->CreateCommandAllocator(listType,
+					IID_PPV_ARGS(&context.cmdAllocators[lane * MaxFramesInFlight + frame]));
+				CHECK_HR(bResult, "ID3D12CommandAllocator - CreateCommandAllocator");
+			}
+		}
+
 #if defined(HORIZON_DEBUG)
 		Helpers::CreateTerminalLog();
 #endif
@@ -83,6 +94,18 @@ namespace Horizon
 			context.pInfoQueue->UnregisterMessageCallback(context.pInfoId);
 			context.pInfoQueue->Release();
 			context.pInfoQueue = nullptr;
+		}
+	}
+
+	void GfxDevice::ResetCommandPools(u32 frameSlot)
+	{
+		Context& context = DX12Context();
+		context.currentFrameSlot = frameSlot;
+
+		for (u32 lane = 0; lane < Context::CmdLanes; lane++)
+		{
+			context.cmdAllocators[lane * MaxFramesInFlight + frameSlot]->Reset();
+			context.nextLocal[lane] = 0;
 		}
 	}
 

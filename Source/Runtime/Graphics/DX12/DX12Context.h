@@ -22,11 +22,6 @@ namespace Horizon
 #define CHECK_REASON(hr, what) \
 	if(FAILED(hr)) { MainLog::Error("{}: {}", what, _com_error(hr).ErrorMessage()); }
 
-	inline constexpr u32 MaxFramesInFlight = 2;
-	inline constexpr u32 BindlessCapacity = 1 << 16;
-	inline constexpr u32 MaxWorkers = 8;
-	inline constexpr u32 MaxListsPerWorker = 64;
-
 	struct DX12DescriptorHeap
 	{
 		ID3D12DescriptorHeap* pHeap = nullptr;
@@ -88,6 +83,7 @@ namespace Horizon
 	{
 		ID3D12Fence* pFence = nullptr;
 		HANDLE pEvent = nullptr;
+		u64 fenceValue = 0;
 	};
 
 	struct DX12CmdList
@@ -103,9 +99,11 @@ namespace Horizon
 		static constexpr u32 CmdLanes = MaxWorkers * u32(GfxQueueType::Count);
 
 		// ========== DEVICE-DESC ==========
+		u32 pCmdWorkerCount = 1;
+		u32 imageCount = 2;
 		b8 bEnableDebug = false;
 		b8 bGPUValidation = false;
-		u32 pCmdWorkerCount = 1;
+		b8 bSyncPresent = false;
 
 		// ========== DEBUGGER ==========
 #if defined(HORIZON_DEBUG)
@@ -117,6 +115,7 @@ namespace Horizon
 		IDXGIFactory7* pFactory = nullptr;
 		IDXGIAdapter4* pAdapter = nullptr;
 		ID3D12Device10* pDevice = nullptr;
+		IDXGISwapChain4* pSwapchain = nullptr;
 		D3D12MA::Allocator* pAllocator = nullptr;
 		ID3D12RootSignature* pGlobalRoot = nullptr;
 
@@ -130,11 +129,14 @@ namespace Horizon
 
 		std::array<DX12CmdList, CmdLanes* MaxListsPerWorker> cmdLists;
 		std::array<ID3D12CommandAllocator*, CmdLanes* MaxFramesInFlight> cmdAllocators{};
-		std::array<u64, CmdLanes> lastResetFrame;
+		std::array<u32, CmdLanes> nextLocal{};
+		u32 currentFrameSlot = 0;
 
 		DX12DescriptorHeap resourceHeap;
 		DX12DescriptorHeap renderTargetHeap;
 		DX12DescriptorHeap depthStencilHeap;
+
+		std::vector<GfxTextureHandle> backBufferPool;
 	};
 
 	Context& DX12Context();
@@ -146,11 +148,20 @@ namespace Horizon
 		D3D12_CPU_DESCRIPTOR_HANDLE CpuAt(const DX12DescriptorHeap& heap, u32 i);
 
 		void CreateGlobalRootSignature();
+		void CreateBackbuffers(u32 width, u32 height);
 		void CreateTerminalLog();
 		void CreateDescriptorHeap(DX12DescriptorHeap& heap, D3D12_DESCRIPTOR_HEAP_TYPE type,
 			u32 capacity, b8 shaderVisible);
 
 		u32 CreateBufferSRV(DX12Buffer& b, const GfxBufferDesc& desc);
 		u32 CreateBufferUAV(DX12Buffer& b, const GfxBufferDesc& desc);
+
+		DXGI_FORMAT ToDXGIFormat(GfxTextureFormat format);
+		D3D12_RESOURCE_STATES ToResourceState(GfxResourceState state);
+
+		inline DX12CmdList& ResolveCmdList(GfxCmdListHandle handle)
+		{
+			return DX12Context().cmdLists[handle.Index()];
+		}
 	}
 }

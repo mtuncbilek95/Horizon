@@ -11,18 +11,16 @@ target_include_directories(Runtime PRIVATE "${CMAKE_SOURCE_DIR}/Source")
 
 target_link_libraries(Runtime
 	PUBLIC
-		glm::glm
-    PRIVATE
-        glfw
+		glm::glm glfw
 )
 SetupGLFW(Runtime)
 
 target_link_libraries(Runtime
-	PRIVATE
+	PUBLIC
 		WinPixEventRuntime
 )
 target_compile_definitions(Runtime 
-	PRIVATE 
+	PUBLIC 
 		$<$<CONFIG:Debug>:USE_PIX>
 )
 

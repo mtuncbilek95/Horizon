@@ -28,14 +28,14 @@ namespace Horizon
 			}
 
 			m_alive[index] = true;
-			return EntityHandle::make(index, m_generations[index]);
+			return EntityHandle::Generate(index, m_generations[index]);
 		}
 
 		void DestroyEntity(EntityHandle handle)
 		{
 			assert(IsAlive(handle) && "Destroying dead/stale entity");
 
-			u32 index = handle.index();
+			u32 index = handle.Index();
 			m_alive[index] = false;
 			m_generations[index]++;
 
@@ -46,14 +46,14 @@ namespace Horizon
 
 		b8 IsAlive(EntityHandle handle) const
 		{
-			if (!handle.isValid())
+			if (!handle.IsValid())
 				return false;
 
-			u32 index = handle.index();
+			u32 index = handle.Index();
 			if (index >= MaxEntities)
 				return false;
 
-			return m_alive[index] && m_generations[index] == handle.generation();
+			return m_alive[index] && m_generations[index] == handle.Generation();
 		}
 
 	private:
