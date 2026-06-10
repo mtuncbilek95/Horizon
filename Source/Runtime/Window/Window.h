@@ -21,7 +21,7 @@ namespace Horizon
 	{
 		std::string name = "Horizon - Sponza";
 		glm::uvec2 size = { 1920, 1080 };
-		WindowMode mode = WindowMode::Borderless;
+		WindowMode mode = WindowMode::Windowed;
 	};
 
 	class Window
