@@ -1,12 +1,12 @@
 #pragma once
 
 #include <Engine/Engine/IModule.h>
-
-#include <Runtime/Core/ObjectSlotMap.h>
-#include <Runtime/Graphics/GfxBackend.h>
+#include <Engine/Graphics/GraphicsPool.h>
+#include <Engine/Graphics/GraphicsRecord.h>
 
 #include <string>
 #include <vector>
+#include <array>
 
 namespace Horizon
 {
@@ -25,13 +25,6 @@ namespace Horizon
 
 	class GraphicsModule : public IModule
 	{
-		struct CmdLane
-		{
-			GfxCmdAllocator* pAllocators[MaxFramesInFlight] = {};
-			std::vector<GfxCmdList*> lists[MaxFramesInFlight];
-			u32 nextLocal[MaxFramesInFlight] = {};
-		};
-
 	public:
 		GfxDevice* GetDevice() const { return m_mainDevice; }
 		GfxSwapchain* GetSwapchain() const { return m_swapchain; }
@@ -48,10 +41,6 @@ namespace Horizon
 		GfxPipelineHandle CreatePipeline(const GfxComputePipelineDesc& desc);
 		void DestroyPipeline(GfxPipelineHandle handl);
 
-		GfxTexture* ResolveTexture(GfxTextureHandle handl);
-		GfxBuffer* ResolveBuffer(GfxBufferHandle handl);
-		GfxPipeline* ResolvePipeline(GfxPipelineHandle handl);
-
 		u32 GetTextureShaderView(GfxTextureHandle handl);
 		u32 GetTextureAccessView(GfxTextureHandle handl);
 		u32 GetBufferShaderView(GfxBufferHandle handl);
@@ -59,12 +48,6 @@ namespace Horizon
 
 		void BeginFrame();
 		void EndFrame();
-		GfxTextureHandle GetCurrentBackbuffer();
-		u32 GetFrameSlot() const { return u32(m_frameIndex % MaxFramesInFlight); }
-		glm::uvec2 GetSurfaceSize() const { return { m_surfaceWidth, m_surfaceHeight }; }
-
-		GfxCmdList* RequestCmdList(GfxQueueType type);
-		void SubmitCmdLists(GfxCmdList* const* ppLists, u32 count, GfxQueueType type);
 
 		void OnAttach(Engine& engine) final;
 		void OnDetach() final;
@@ -83,15 +66,8 @@ namespace Horizon
 
 		GfxPipelineLayout* m_globalLayout = nullptr;
 
-		ObjectSlotMap<GfxBuffer*, GfxBufferHandle, 4096> m_bufferPool;
-		ObjectSlotMap<GfxTexture*, GfxTextureHandle, 2048> m_texturePool;
-		ObjectSlotMap<GfxPipeline*, GfxPipelineHandle, 512> m_pipelinePool;
-
-		std::vector<CmdLane> m_lanes;
-		std::vector<GfxTextureHandle> m_backbufferHandles;
-		u64 m_slotValues[MaxFramesInFlight] = {};
-		u64 m_frameIndex = 0;
-		u32 m_threadCount = 1;
-		u32 m_surfaceWidth = 0, m_surfaceHeight = 0;
+		GraphicsPool<TextureRecord, GfxTextureTag> m_textures;
+		GraphicsPool<BufferRecord, GfxBufferTag> m_buffer;
+		GraphicsPool<PipelineRecord, GfxPipelineTag> m_pipelines;
 	};
 }
