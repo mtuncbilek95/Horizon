@@ -2,65 +2,42 @@
 
 #include <Engine/Engine/Engine.h>
 
+#include <random>
+
 namespace Horizon
 {
 	void JobModule::OnAttach(Engine& engine)
 	{
 		IModule::OnAttach(engine);
 
-		const u32 hardwareThreads = std::thread::hardware_concurrency();
-		m_workerCount = hardwareThreads > 1 ? hardwareThreads - 1 : 1;
+		uint32_t maxWorker = std::thread::hardware_concurrency() - 1;
 
-		m_pool.Start(m_workerCount);
+		for (uint32_t idx = 0; idx < maxWorker; idx++)
+			m_workers.push_back(std::make_unique<JobWorker>(this, idx));
 	}
 
 	void JobModule::OnDetach()
 	{
-		m_pool.Stop();
 	}
 
-	void JobModule::Submit(JobFunc job)
+	void JobModule::SubmitJob(Job&& job)
 	{
-		m_pool.Push(std::move(job));
+		usize index = m_nextWorker.fetch_add(1, std::memory_order_relaxed) % m_workers.size();
+		m_workers[index]->AddJob(std::move(job));
 	}
 
-	void JobModule::Submit(JobCounter& counter, JobFunc job)
+	JobWorker* JobModule::GetRandomVictim(JobWorker* avoidWorker)
 	{
-		counter.remaining.fetch_add(1, std::memory_order_relaxed);
+		if (m_workers.size() <= 1)
+			return nullptr;
 
-		m_pool.Push([&counter, job = std::move(job)]()
-			{
-				job();
-				counter.remaining.fetch_sub(1, std::memory_order_release);
-			});
-	}
+		thread_local std::mt19937 range{ std::random_device{}() };
+		std::uniform_int_distribution<usize> distribution(0, m_workers.size() - 2);
+		usize index = distribution(range);
 
-	void JobModule::Dispatch(JobCounter& counter, u32 count, u32 groupSize, JobRangeFunc fn)
-	{
-		if (count == 0)
-			return;
+		if (index >= avoidWorker->GetWorkerIndex())
+			++index;
 
-		groupSize = groupSize == 0 ? 1 : groupSize;
-		const u32 groupCount = (count + groupSize - 1) / groupSize;
-
-		for (u32 g = 0; g < groupCount; g++)
-		{
-			const u32 begin = g * groupSize;
-			const u32 end = begin + groupSize < count ? begin + groupSize : count;
-
-			Submit(counter, [fn, begin, end]()
-				{
-					fn(begin, end);
-				});
-		}
-	}
-
-	void JobModule::Wait(JobCounter& counter)
-	{
-		while (!counter.IsDone())
-		{
-			if (!m_pool.TryExecuteOne())
-				std::this_thread::yield();
-		}
+		return m_workers[index].get();
 	}
 }
