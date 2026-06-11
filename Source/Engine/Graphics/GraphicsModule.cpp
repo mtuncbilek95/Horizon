@@ -2,6 +2,7 @@
 
 #include <Engine/Engine/Engine.h>
 #include <Engine/Window/WindowModule.h>
+#include <Engine/Job/JobModule.h>
 
 #include <cmath>
 
@@ -9,9 +10,6 @@
 
 namespace Horizon
 {
-	inline constexpr u32 MaxBindlessCapacity = 1 << 16;
-	inline constexpr u32 MaxFramesInFlight = 2;
-
 	void GraphicsModule::OnAttach(Engine& engine)
 	{
 		IModule::OnAttach(engine);
@@ -60,8 +58,125 @@ namespace Horizon
 
 		m_globalLayout = Gfx::CreateGfxGlobalPipelineLayout(m_mainDevice);
 
+		m_surfaceWidth = currWindow.GetSize().x;
+		m_surfaceHeight = currWindow.GetSize().y;
+
+		auto* pJobModule = engine.TryGetModule<JobModule>();
+		m_threadCount = pJobModule ? pJobModule->WorkerCount() + 1 : 1;
+		m_lanes.resize(m_threadCount * QueueTypeCount);
+
 		Gfx::InitGfxImGui(m_mainDevice, m_graphicsQueue, m_resourceHeap,
 			currWindow.GetAPIHandle(), GfxTextureFormat::RGBA8, MaxFramesInFlight);
+	}
+
+	GfxQueue* GraphicsModule::GetQueue(GfxQueueType type) const
+	{
+		return type == GfxQueueType::Compute ? m_computeQueue :
+			type == GfxQueueType::Transfer ? m_transferQueue : m_graphicsQueue;
+	}
+
+	GfxTexture* GraphicsModule::ResolveTexture(GfxTextureHandle handl)
+	{
+		GfxTexture** ppTexture = m_texturePool.GetObject(handl);
+		return ppTexture ? *ppTexture : nullptr;
+	}
+
+	GfxBuffer* GraphicsModule::ResolveBuffer(GfxBufferHandle handl)
+	{
+		GfxBuffer** ppBuffer = m_bufferPool.GetObject(handl);
+		return ppBuffer ? *ppBuffer : nullptr;
+	}
+
+	GfxPipeline* GraphicsModule::ResolvePipeline(GfxPipelineHandle handl)
+	{
+		GfxPipeline** ppPipeline = m_pipelinePool.GetObject(handl);
+		return ppPipeline ? *ppPipeline : nullptr;
+	}
+
+	u32 GraphicsModule::GetTextureShaderView(GfxTextureHandle handl)
+	{
+		GfxTexture* pTexture = ResolveTexture(handl);
+		return pTexture ? Gfx::GetTextureShaderView(pTexture) : ~0u;
+	}
+
+	u32 GraphicsModule::GetTextureAccessView(GfxTextureHandle handl)
+	{
+		GfxTexture* pTexture = ResolveTexture(handl);
+		return pTexture ? Gfx::GetTextureAccessView(pTexture) : ~0u;
+	}
+
+	u32 GraphicsModule::GetBufferShaderView(GfxBufferHandle handl)
+	{
+		GfxBuffer* pBuffer = ResolveBuffer(handl);
+		return pBuffer ? Gfx::GetBufferShaderView(pBuffer) : ~0u;
+	}
+
+	u32 GraphicsModule::GetBufferAccessView(GfxBufferHandle handl)
+	{
+		GfxBuffer* pBuffer = ResolveBuffer(handl);
+		return pBuffer ? Gfx::GetBufferAccessView(pBuffer) : ~0u;
+	}
+
+	void GraphicsModule::BeginFrame()
+	{
+		const u32 slot = GetFrameSlot();
+
+		Gfx::WaitGfxQueueCPU(m_graphicsQueue, m_slotValues[slot]);
+
+		for (CmdLane& lane : m_lanes)
+		{
+			if (lane.pAllocators[slot] != nullptr)
+				Gfx::ResetGfxCmdAllocator(lane.pAllocators[slot]);
+			lane.nextLocal[slot] = 0;
+		}
+	}
+
+	void GraphicsModule::EndFrame()
+	{
+		const u32 slot = GetFrameSlot();
+
+		m_slotValues[slot] = Gfx::SignalGfxQueue(m_graphicsQueue);
+		Gfx::Present(m_swapchain);
+		m_frameIndex++;
+	}
+
+	GfxTexture* GraphicsModule::GetCurrentBackbuffer()
+	{
+		return Gfx::RequestTexture(m_swapchain, Gfx::GetBackbufferIndex(m_swapchain));
+	}
+
+	GfxCmdList* GraphicsModule::RequestCmdList(GfxQueueType type)
+	{
+		const u32 slot = GetFrameSlot();
+		const u32 lane = ThreadPool::LocalWorkerIndex() * QueueTypeCount + u32(type);
+
+		CmdLane& cmdLane = m_lanes[lane];
+
+		if (cmdLane.pAllocators[slot] == nullptr)
+			cmdLane.pAllocators[slot] = Gfx::CreateGfxCmdAllocator(m_mainDevice, type);
+
+		GfxCmdList* pCmd = nullptr;
+		const u32 local = cmdLane.nextLocal[slot]++;
+
+		if (local < cmdLane.lists[slot].size())
+			pCmd = cmdLane.lists[slot][local];
+		else
+		{
+			pCmd = Gfx::CreateGfxCmdList(m_mainDevice, cmdLane.pAllocators[slot]);
+			cmdLane.lists[slot].push_back(pCmd);
+		}
+
+		Gfx::BeginGfxCmdList(pCmd, cmdLane.pAllocators[slot]);
+
+		if (type != GfxQueueType::Transfer)
+			Gfx::CmdSetupBindless(pCmd, m_globalLayout, m_resourceHeap);
+
+		return pCmd;
+	}
+
+	void GraphicsModule::SubmitCmdLists(GfxCmdList* const* ppLists, u32 count, GfxQueueType type)
+	{
+		Gfx::ExecuteGfxCmdLists(GetQueue(type), ppLists, count);
 	}
 
 	GfxTextureHandle GraphicsModule::CreateTexture(const GfxTextureDesc& desc)
@@ -124,6 +239,14 @@ namespace Horizon
 		return m_bufferPool.Insert(std::move(pBuffer));
 	}
 
+	void GraphicsModule::WriteBuffer(GfxBufferHandle handl, const void* pData, usize sizeInBytes, usize offset)
+	{
+		m_bufferPool.ResolveWrite(handl, [&](GfxBuffer*& pBuffer)
+			{
+				Gfx::WriteGfxBuffer(pBuffer, pData, sizeInBytes, offset);
+			});
+	}
+
 	void GraphicsModule::DestroyBuffer(GfxBufferHandle handl)
 	{
 		m_bufferPool.ResolveWrite(handl, [&](GfxBuffer*& pBuffer)
@@ -176,6 +299,19 @@ namespace Horizon
 		Gfx::WaitGfxQueueCPU(m_graphicsQueue, flushValue);
 
 		Gfx::ShutdownGfxImGui();
+
+		for (CmdLane& lane : m_lanes)
+		{
+			for (u32 slot = 0; slot < MaxFramesInFlight; slot++)
+			{
+				for (GfxCmdList* pCmd : lane.lists[slot])
+					Gfx::DestroyGfxCmdList(pCmd);
+
+				if (lane.pAllocators[slot] != nullptr)
+					Gfx::DestroyGfxCmdAllocator(lane.pAllocators[slot]);
+			}
+		}
+		m_lanes.clear();
 
 		Gfx::DestroyGfxSwapchain(m_swapchain);
 
