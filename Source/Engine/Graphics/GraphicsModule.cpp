@@ -54,7 +54,11 @@ namespace Horizon
 		m_swapchain = Gfx::CreateGfxSwapchain(m_mainDevice, m_graphicsQueue, scDesc);
 
 		for (u32 i = 0; i < scDesc.imageCount; i++)
-			Gfx::CreateTextureRTV(m_mainDevice, m_colorHeap, Gfx::RequestTexture(m_swapchain, i));
+		{
+			GfxTexture* pImage = Gfx::RequestTexture(m_swapchain, i);
+			Gfx::CreateTextureRTV(m_mainDevice, m_colorHeap, pImage);
+			m_backbufferHandles.push_back(m_texturePool.Insert(std::move(pImage)));
+		}
 
 		m_globalLayout = Gfx::CreateGfxGlobalPipelineLayout(m_mainDevice);
 
@@ -140,9 +144,9 @@ namespace Horizon
 		m_frameIndex++;
 	}
 
-	GfxTexture* GraphicsModule::GetCurrentBackbuffer()
+	GfxTextureHandle GraphicsModule::GetCurrentBackbuffer()
 	{
-		return Gfx::RequestTexture(m_swapchain, Gfx::GetBackbufferIndex(m_swapchain));
+		return m_backbufferHandles[Gfx::GetBackbufferIndex(m_swapchain)];
 	}
 
 	GfxCmdList* GraphicsModule::RequestCmdList(GfxQueueType type)
@@ -201,6 +205,8 @@ namespace Horizon
 	{
 		m_texturePool.ResolveWrite(handl, [&](GfxTexture*& pTexture)
 			{
+				assert(!Gfx::IsBackbuffer(pTexture) && "Backbuffer textures are owned by the swapchain");
+
 				const u32 srv = Gfx::GetTextureShaderView(pTexture);
 				const u32 uav = Gfx::GetTextureAccessView(pTexture);
 				const u32 rtv = Gfx::GetTextureTargetView(pTexture);
@@ -312,6 +318,10 @@ namespace Horizon
 			}
 		}
 		m_lanes.clear();
+
+		for (GfxTextureHandle handl : m_backbufferHandles)
+			m_texturePool.Remove(handl);
+		m_backbufferHandles.clear();
 
 		Gfx::DestroyGfxSwapchain(m_swapchain);
 

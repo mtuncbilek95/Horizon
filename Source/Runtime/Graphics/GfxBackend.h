@@ -217,6 +217,7 @@ namespace Horizon
 		u32 GetTextureAccessView(const GfxTexture* pTexture);
 		u32 GetTextureTargetView(const GfxTexture* pTexture);
 		u32 GetTextureDepthView(const GfxTexture* pTexture);
+		b8 IsBackbuffer(const GfxTexture* pTexture);
 		void DestroyGfxTexture(GfxTexture* texHandl);
 
 		GfxCmdAllocator* CreateGfxCmdAllocator(GfxDevice* pDevice, GfxQueueType type);

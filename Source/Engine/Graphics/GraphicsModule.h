@@ -59,7 +59,7 @@ namespace Horizon
 
 		void BeginFrame();
 		void EndFrame();
-		GfxTexture* GetCurrentBackbuffer();
+		GfxTextureHandle GetCurrentBackbuffer();
 		u32 GetFrameSlot() const { return u32(m_frameIndex % MaxFramesInFlight); }
 		glm::uvec2 GetSurfaceSize() const { return { m_surfaceWidth, m_surfaceHeight }; }
 
@@ -88,6 +88,7 @@ namespace Horizon
 		ObjectSlotMap<GfxPipeline*, GfxPipelineHandle, 512> m_pipelinePool;
 
 		std::vector<CmdLane> m_lanes;
+		std::vector<GfxTextureHandle> m_backbufferHandles;
 		u64 m_slotValues[MaxFramesInFlight] = {};
 		u64 m_frameIndex = 0;
 		u32 m_threadCount = 1;

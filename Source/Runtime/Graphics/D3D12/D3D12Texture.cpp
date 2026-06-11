@@ -155,6 +155,11 @@ namespace Horizon
 		return pTexture->depthViewIndex;
 	}
 
+	b8 Gfx::IsBackbuffer(const GfxTexture* pTexture)
+	{
+		return pTexture->bIsBackbuffer;
+	}
+
 	u32 Gfx::CreateTextureUAV(GfxDevice* pContext, GfxDescriptorHeap* pHeap, GfxTexture* pTexture)
 	{
 		u32 index = Helpers::AllocateDescriptor(pHeap);
