@@ -57,12 +57,15 @@ namespace Horizon
 
 	void Gfx::ShutdownGfxDevice(GfxDevice* devHandl)
 	{
+		// Terminal report will only be in debug mode
+#if defined(HORIZON_DEBUG) 
 		if (devHandl->pInfoQueue)
 		{
 			devHandl->pInfoQueue->UnregisterMessageCallback(devHandl->pInfoId);
 			devHandl->pInfoQueue->Release();
 			devHandl->pInfoQueue = nullptr;
 		}
+#endif
 		
 		if (devHandl->pAllocator)
 			devHandl->pAllocator->Release();
@@ -75,5 +78,8 @@ namespace Horizon
 			
 		if (devHandl->pFactory)
 			devHandl->pFactory->Release();
+
+		if(devHandl->pDebug)
+			devHandl->pDebug->Release();
 	}
 }

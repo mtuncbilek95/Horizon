@@ -18,6 +18,7 @@ SetupGLFW(Runtime)
 target_link_libraries(Runtime
 	PUBLIC
 		WinPixEventRuntime
+		Imgui
 )
 target_compile_definitions(Runtime 
 	PUBLIC 

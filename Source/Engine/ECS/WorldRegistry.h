@@ -54,13 +54,13 @@ namespace Horizon
 		template<typename T>
 		bool HasComponent(EntityHandle entityHandle) const
 		{
-			assert(entityHandle.isValid() && "Entity is invalid");
+			assert(entityHandle.IsValid() && "Entity is invalid");
 			return m_signatures[entityHandle.id].test(GetComponentTypeId<T>());
 		}
 
 		const Signature& GetSignature(EntityHandle entityHandle) const
 		{
-			assert(entityHandle.isValid() && "Entity is invalid");
+			assert(entityHandle.IsValid() && "Entity is invalid");
 			return m_signatures[entityHandle.id];
 		}
 
