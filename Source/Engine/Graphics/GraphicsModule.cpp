@@ -115,6 +115,33 @@ namespace Horizon
 
 		Gfx::BeginGfxCmdList(m_frameCmd, m_frameAllocators[slot]);
 		Gfx::CmdSetupBindless(m_frameCmd, m_globalLayout, m_resourceHeap);
+
+		RenderScene();
+	}
+
+	void GraphicsModule::RenderScene()
+	{
+		GfxCmdList* cmd = m_frameCmd;
+		GfxTexture* target = m_currPresentImg;
+
+		GfxTextureBarrier toRenderTarget =
+		{
+			.pTexture = target,
+			.before = GfxResourceState::Present, .after = GfxResourceState::RenderTarget
+		};
+		Gfx::CmdBarrier(cmd, &toRenderTarget, 1);
+
+		Gfx::CmdBeginRendering(cmd, GfxRenderBeginDesc()
+			.addColorTarget(target, GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
+			.setSize(1920, 1080));
+
+
+		GfxTextureBarrier toPresent =
+		{
+			.pTexture = target,
+			.before = GfxResourceState::RenderTarget, .after = GfxResourceState::Present
+		};
+		Gfx::CmdBarrier(cmd, &toPresent, 1);
 	}
 
 	void GraphicsModule::EndFrame()

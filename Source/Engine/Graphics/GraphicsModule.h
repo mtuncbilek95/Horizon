@@ -43,6 +43,7 @@ namespace Horizon
 		GfxTexture* GetTexture(GfxTextureHandle handl);
 
 		void BeginFrame();
+		void RenderScene();
 		void EndFrame();
 
 		void OnAttach(Engine& engine) final;
