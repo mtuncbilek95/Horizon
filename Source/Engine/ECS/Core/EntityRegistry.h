@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/ECS/Definitions.h>
+#include <Engine/ECS/Core/Definitions.h>
 
 namespace Horizon
 {

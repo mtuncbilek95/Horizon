@@ -1,11 +1,10 @@
 #pragma once
 
 #include <Engine/Engine/IModule.h>
-#include <Engine/ECS/Core/WorldRegistry.h>
 
 namespace Horizon
 {
-	class EntityComponentModule : public IModule
+	class EditorModule : public IModule
 	{
 	public:
 		void OnAttach(Engine& engine) final;
@@ -13,6 +12,5 @@ namespace Horizon
 		void OnDetach() final;
 
 	private:
-		WorldRegistry m_world;
 	};
 }

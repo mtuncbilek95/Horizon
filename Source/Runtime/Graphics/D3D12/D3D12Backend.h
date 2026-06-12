@@ -22,7 +22,7 @@ namespace Horizon
 		ID3D12Fence* pTimeline = nullptr;
 		u64 value = 0;
 
-		D3D12_COMMAND_LIST_TYPE type = D3D12_COMMAND_LIST_TYPE_BUNDLE;
+		D3D12_COMMAND_LIST_TYPE type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	};
 
 	struct GfxBuffer

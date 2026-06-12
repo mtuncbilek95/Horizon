@@ -22,15 +22,18 @@ namespace Horizon
 
 	typedef bool b8;
 
-	constexpr u64 u64_max = std::numeric_limits<u64>::max();
-	constexpr u32 u32_max = std::numeric_limits<u32>::max();
-	constexpr u16 u16_max = std::numeric_limits<u16>::max();
-	constexpr u8 u8_max = std::numeric_limits<u8>::max();
+	inline constexpr u64 u64_max = std::numeric_limits<u64>::max();
+	inline constexpr u32 u32_max = std::numeric_limits<u32>::max();
+	inline constexpr u16 u16_max = std::numeric_limits<u16>::max();
+	inline constexpr u8 u8_max = std::numeric_limits<u8>::max();
+
+	inline constexpr u32 kInvalid32 = ~0u;
+	inline constexpr u64 kInvalid64 = ~0ull;
 
 	using HandleId = u64;
-	static constexpr HandleId InvalidHandleId = ~0ull;
-	static constexpr HandleId IndexBits = 32;
-	static constexpr HandleId IndexMask = (HandleId(1) << IndexBits) - 1;
+	inline constexpr HandleId InvalidHandleId = ~0ull;
+	inline constexpr HandleId IndexBits = 32;
+	inline constexpr HandleId IndexMask = (HandleId(1) << IndexBits) - 1;
 
 	template<typename Tag>
 	struct Handle

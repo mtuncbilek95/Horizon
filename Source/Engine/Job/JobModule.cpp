@@ -18,6 +18,8 @@ namespace Horizon
 
 	void JobModule::OnDetach()
 	{
+		for (usize i = 0; i < m_workers.size(); i++)
+			m_workers[i]->Stop();
 	}
 
 	void JobModule::SubmitJob(Job&& job)

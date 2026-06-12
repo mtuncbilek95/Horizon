@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Engine/ECS/Definitions.h>
-#include <Engine/ECS/EntityRegistry.h>
-#include <Engine/ECS/ComponentRegistry.h>
+#include <Engine/ECS/Core/Definitions.h>
+#include <Engine/ECS/Core/EntityRegistry.h>
+#include <Engine/ECS/Core/ComponentRegistry.h>
 
 namespace Horizon
 {

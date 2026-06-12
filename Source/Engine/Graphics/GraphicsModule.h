@@ -1,7 +1,7 @@
 #pragma once
 
+#include <Engine/Core/SlotPool.h>
 #include <Engine/Engine/IModule.h>
-#include <Engine/Graphics/GraphicsPool.h>
 #include <Engine/Graphics/GraphicsRecord.h>
 
 #include <string>
@@ -29,27 +29,24 @@ namespace Horizon
 		GfxDevice* GetDevice() const { return m_mainDevice; }
 		GfxSwapchain* GetSwapchain() const { return m_swapchain; }
 		GfxQueue* GetQueue(GfxQueueType type) const;
+		GfxDescriptorHeap* GetDescriptorHeap(GfxDescriptorHeapType type) const;
 
 		GfxTextureHandle CreateTexture(const GfxTextureDesc& desc);
-		void DestroyTexture(GfxTextureHandle handl);
-
-		GfxBufferHandle CreateBuffer(const GfxBufferDesc& desc);
-		void WriteBuffer(GfxBufferHandle handl, const void* pData, usize sizeInBytes, usize offset);
-		void DestroyBuffer(GfxBufferHandle handl);
-
-		GfxPipelineHandle CreatePipeline(const GfxGraphicsPipelineDesc& desc);
-		GfxPipelineHandle CreatePipeline(const GfxComputePipelineDesc& desc);
-		void DestroyPipeline(GfxPipelineHandle handl);
-
 		u32 GetTextureShaderView(GfxTextureHandle handl);
 		u32 GetTextureAccessView(GfxTextureHandle handl);
-		u32 GetBufferShaderView(GfxBufferHandle handl);
-		u32 GetBufferAccessView(GfxBufferHandle handl);
+		u32 GetTextureColorView(GfxTextureHandle handl);
+		u32 GetTextureDepthView(GfxTextureHandle handl);
+		void DestroyTexture(GfxTextureHandle handl);
+
+		GfxCmdList* GetFrameCmd() const { return m_frameCmd; }
+		GfxTexture* GetCurrentPresentImage() const { return m_currPresentImg; }
+		GfxTexture* GetTexture(GfxTextureHandle handl);
 
 		void BeginFrame();
 		void EndFrame();
 
 		void OnAttach(Engine& engine) final;
+		void OnSync() final;
 		void OnDetach() final;
 
 	private:
@@ -66,8 +63,15 @@ namespace Horizon
 
 		GfxPipelineLayout* m_globalLayout = nullptr;
 
-		GraphicsPool<TextureRecord, GfxTextureTag> m_textures;
-		GraphicsPool<BufferRecord, GfxBufferTag> m_buffer;
-		GraphicsPool<PipelineRecord, GfxPipelineTag> m_pipelines;
+		GfxCmdAllocator* m_frameAllocators[MaxFramesInFlight];
+		GfxCmdList* m_frameCmd = nullptr;
+		GfxTexture* m_currPresentImg = nullptr;
+
+		u64 m_frameFenceValues[MaxFramesInFlight] = {};
+		u64 m_frameIndex = 0;
+
+		// Pools
+	private:
+		SlotPool<TextureRecord, GfxTextureHandle> m_texturePool;
 	};
 }

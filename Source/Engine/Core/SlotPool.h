@@ -1,16 +1,15 @@
 #pragma once
 
 #include <vector>
+#include <functional>
 
 namespace Horizon
 {
-	template<typename TRecord, typename Tag>
-	class GraphicsPool
+	template<typename TRecord, typename THandle>
+	class SlotPool
 	{
 	public:
-		using HandleType = Handle<Tag>;
-
-		HandleType Create(const TRecord& record)
+		THandle Create(const TRecord& record)
 		{
 			u32 index;
 			if (!m_freeList.empty())
@@ -24,12 +23,12 @@ namespace Horizon
 				m_slots.push_back({});
 			}
 
-			m_slots[index] = record;
+			m_slots[index].record = record;
 			m_slots[index].alive = true;
-			return HandleType::Generate(index, m_slots[index].generation);
+			return THandle::Generate(index, m_slots[index].generation);
 		}
 
-		TRecord* Resolve(HandleType handle)
+		TRecord* Resolve(THandle handle)
 		{
 			if (!handle.IsValid() || handle.Index() >= m_slots.size())
 				return nullptr;
@@ -41,7 +40,7 @@ namespace Horizon
 			return &slot.record;
 		}
 
-		void Destroy(HandleType handle)
+		void Destroy(THandle handle)
 		{
 			TRecord* pRecord = Resolve(handle);
 			if (pRecord == nullptr)
@@ -52,6 +51,17 @@ namespace Horizon
 			slot.generation++;
 			slot.record = {};
 			m_freeList.push_back(handle.Index());
+		}
+
+		void DestroyWith(THandle handle, std::function<void(TRecord*)>&& func)
+		{
+			TRecord* pRecord = Resolve(handle);
+
+			if (pRecord == nullptr)
+				return;
+
+			func(pRecord);
+			Destroy(handle);
 		}
 
 	private:

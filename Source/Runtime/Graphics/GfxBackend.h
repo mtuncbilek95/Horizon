@@ -107,7 +107,6 @@ namespace Horizon
 		GfxComputePipelineDesc& setCS(GfxShaderBlob val) { computeShader = val; return *this; }
 	};
 
-
 	struct GfxDeviceDesc
 	{
 		b8 enableDebug = true;

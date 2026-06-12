@@ -10,6 +10,124 @@
 
 namespace Horizon
 {
+	GfxQueue* GraphicsModule::GetQueue(GfxQueueType type) const
+	{
+		return type == GfxQueueType::Compute ? m_computeQueue :
+			type == GfxQueueType::Transfer ? m_transferQueue : m_graphicsQueue;
+	}
+
+	GfxDescriptorHeap* GraphicsModule::GetDescriptorHeap(GfxDescriptorHeapType type) const
+	{
+		return type == GfxDescriptorHeapType::Color ? m_colorHeap :
+			type == GfxDescriptorHeapType::Resource ? m_resourceHeap : m_depthHeap;
+	}
+
+	GfxTextureHandle GraphicsModule::CreateTexture(const GfxTextureDesc& desc)
+	{
+		GfxTexture* pTexture = Gfx::CreateGfxTexture(m_mainDevice, desc);
+		if (pTexture == nullptr)
+			return GfxTextureHandle();
+
+		u32 srvIndex = kInvalid32, uavIndex = kInvalid32, rtvIndex = kInvalid32, dsvIndex = kInvalid32;
+		if (has(desc.usage, GfxTextureUsage::Sampled))
+			srvIndex = Gfx::CreateTextureSRV(m_mainDevice, m_resourceHeap, pTexture);
+		if (has(desc.usage, GfxTextureUsage::RenderTarget))
+			rtvIndex = Gfx::CreateTextureRTV(m_mainDevice, m_colorHeap, pTexture);
+		if (has(desc.usage, GfxTextureUsage::DepthStencil))
+			dsvIndex = Gfx::CreateTextureDSV(m_mainDevice, m_depthHeap, pTexture);
+		if (has(desc.usage, GfxTextureUsage::Storage))
+			uavIndex = Gfx::CreateTextureUAV(m_mainDevice, m_resourceHeap, pTexture);
+
+		TextureRecord record =
+		{
+			.pTex = pTexture,
+			.desc = desc,
+			.currState = GfxResourceState::Common,
+			.shaderView = srvIndex, .accessView = uavIndex,
+			.colorView = rtvIndex, .depthView = dsvIndex
+		};
+		return m_texturePool.Create(record);
+	}
+
+	u32 GraphicsModule::GetTextureShaderView(GfxTextureHandle handl)
+	{
+		auto* record = m_texturePool.Resolve(handl);
+		return record->shaderView;
+	}
+
+	u32 GraphicsModule::GetTextureAccessView(GfxTextureHandle handl)
+	{
+		auto* record = m_texturePool.Resolve(handl);
+		return record->accessView;
+	}
+
+	u32 GraphicsModule::GetTextureColorView(GfxTextureHandle handl)
+	{
+		auto* record = m_texturePool.Resolve(handl);
+		return record->colorView;
+	}
+
+	u32 GraphicsModule::GetTextureDepthView(GfxTextureHandle handl)
+	{
+		auto* record = m_texturePool.Resolve(handl);
+		return record->depthView;
+	}
+
+	void GraphicsModule::DestroyTexture(GfxTextureHandle handl)
+	{
+		m_texturePool.DestroyWith(handl, [&](TextureRecord* record)
+			{
+				if (record->accessView != kInvalid32)
+					Gfx::FreeDescriptorIndex(m_resourceHeap, record->accessView);
+
+				if (record->shaderView != kInvalid32)
+					Gfx::FreeDescriptorIndex(m_resourceHeap, record->shaderView);
+
+				if (record->colorView != kInvalid32)
+					Gfx::FreeDescriptorIndex(m_colorHeap, record->colorView);
+
+				if (record->depthView != kInvalid32)
+					Gfx::FreeDescriptorIndex(m_depthHeap, record->depthView);
+
+				Gfx::DestroyGfxTexture(record->pTex);
+			}
+		);
+	}
+
+	GfxTexture* GraphicsModule::GetTexture(GfxTextureHandle handl)
+	{
+		auto* record = m_texturePool.Resolve(handl);
+		if (!record)
+			return nullptr;
+
+		return record->pTex;
+	}
+
+	void GraphicsModule::BeginFrame()
+	{
+		u32 slot = u32(m_frameIndex % MaxFramesInFlight);
+
+		Gfx::WaitGfxQueueCPU(m_graphicsQueue, m_frameFenceValues[slot]);
+		Gfx::ResetGfxCmdAllocator(m_frameAllocators[slot]);
+
+		u32 backBufferIndex = Gfx::GetBackbufferIndex(m_swapchain);
+		m_currPresentImg = Gfx::RequestTexture(m_swapchain, backBufferIndex);
+
+		Gfx::BeginGfxCmdList(m_frameCmd, m_frameAllocators[slot]);
+		Gfx::CmdSetupBindless(m_frameCmd, m_globalLayout, m_resourceHeap);
+	}
+
+	void GraphicsModule::EndFrame()
+	{
+		Gfx::CloseGfxCmdList(m_frameCmd);
+		Gfx::ExecuteGfxCmdLists(m_graphicsQueue, &m_frameCmd, 1);
+		Gfx::Present(m_swapchain);
+
+		u32 slot = u32(m_frameIndex % MaxFramesInFlight);
+		m_frameFenceValues[slot] = Gfx::SignalGfxQueue(m_graphicsQueue);
+		m_frameIndex++;
+	}
+
 	void GraphicsModule::OnAttach(Engine& engine)
 	{
 		IModule::OnAttach(engine);
@@ -61,116 +179,15 @@ namespace Horizon
 
 		m_globalLayout = Gfx::CreateGfxGlobalPipelineLayout(m_mainDevice);
 
-		auto* pJobModule = engine.TryGetModule<JobModule>();
+		for (u32 i = 0; i < MaxFramesInFlight; i++)
+			m_frameAllocators[i] = Gfx::CreateGfxCmdAllocator(m_mainDevice, GfxQueueType::Graphics);
 
-		Gfx::InitGfxImGui(m_mainDevice, m_graphicsQueue, m_resourceHeap,
-			currWindow.GetAPIHandle(), GfxTextureFormat::RGBA8, MaxFramesInFlight);
+		m_frameCmd = Gfx::CreateGfxCmdList(m_mainDevice, m_frameAllocators[0]);
 	}
 
-	GfxQueue* GraphicsModule::GetQueue(GfxQueueType type) const
+	void GraphicsModule::OnSync()
 	{
-		return type == GfxQueueType::Compute ? m_computeQueue :
-			type == GfxQueueType::Transfer ? m_transferQueue : m_graphicsQueue;
-	}
-
-	u32 GraphicsModule::GetTextureShaderView(GfxTextureHandle handl)
-	{
-		return 0;
-	}
-
-	u32 GraphicsModule::GetTextureAccessView(GfxTextureHandle handl)
-	{
-		return 0;
-	}
-
-	u32 GraphicsModule::GetBufferShaderView(GfxBufferHandle handl)
-	{
-		return 0;
-	}
-
-	u32 GraphicsModule::GetBufferAccessView(GfxBufferHandle handl)
-	{
-		return 0;
-	}
-
-	void GraphicsModule::BeginFrame()
-	{
-		
-	}
-
-	void GraphicsModule::EndFrame()
-	{
-	}
-
-	GfxTextureHandle GraphicsModule::CreateTexture(const GfxTextureDesc& desc)
-	{
-		GfxTexture* pTexture = Gfx::CreateGfxTexture(m_mainDevice, desc);
-		if (pTexture == nullptr)
-			return GfxTextureHandle();
-
-		if (has(desc.usage, GfxTextureUsage::Sampled))
-			Gfx::CreateTextureSRV(m_mainDevice, m_resourceHeap, pTexture);
-		if (has(desc.usage, GfxTextureUsage::RenderTarget))
-			Gfx::CreateTextureRTV(m_mainDevice, m_colorHeap, pTexture);
-		if (has(desc.usage, GfxTextureUsage::DepthStencil))
-			Gfx::CreateTextureDSV(m_mainDevice, m_depthHeap, pTexture);
-		if (has(desc.usage, GfxTextureUsage::Storage))
-			Gfx::CreateTextureUAV(m_mainDevice, m_resourceHeap, pTexture);
-
-		return GfxTextureHandle();
-	}
-
-	void GraphicsModule::DestroyTexture(GfxTextureHandle handl)
-	{
-		
-	}
-
-	GfxBufferHandle GraphicsModule::CreateBuffer(const GfxBufferDesc& desc)
-	{
-		GfxBuffer* pBuffer = Gfx::CreateGfxBuffer(m_mainDevice, desc);
-		if (pBuffer == nullptr)
-			return GfxBufferHandle();
-
-		const b8 shaderRead = has(desc.usage, GfxBufferUsage::Vertex)
-			|| has(desc.usage, GfxBufferUsage::Index)
-			|| has(desc.usage, GfxBufferUsage::Storage);
-
-		if (shaderRead && desc.memory == GfxMemoryType::GPU)
-			Gfx::CreateBufferSRV(m_mainDevice, m_resourceHeap, pBuffer);
-		if (has(desc.usage, GfxBufferUsage::Storage))
-			Gfx::CreateBufferUAV(m_mainDevice, m_resourceHeap, pBuffer);
-
-		return GfxBufferHandle();
-	}
-
-	void GraphicsModule::WriteBuffer(GfxBufferHandle handl, const void* pData, usize sizeInBytes, usize offset)
-	{
-	}
-
-	void GraphicsModule::DestroyBuffer(GfxBufferHandle handl)
-	{
-	}
-
-	GfxPipelineHandle GraphicsModule::CreatePipeline(const GfxGraphicsPipelineDesc& desc)
-	{
-		GfxPipeline* pPipeline = Gfx::CreateGfxGraphicsPipeline(m_mainDevice, m_globalLayout, desc);
-		if (pPipeline == nullptr)
-			return GfxPipelineHandle();
-
-		return GfxPipelineHandle();
-	}
-
-	GfxPipelineHandle GraphicsModule::CreatePipeline(const GfxComputePipelineDesc& desc)
-	{
-		GfxPipeline* pPipeline = Gfx::CreateGfxComputePipeline(m_mainDevice, m_globalLayout, desc);
-		if (pPipeline == nullptr)
-			return GfxPipelineHandle();
-
-		return GfxPipelineHandle();
-	}
-
-	void GraphicsModule::DestroyPipeline(GfxPipelineHandle handl)
-	{
+		BeginFrame();
 	}
 
 	void GraphicsModule::OnDetach()
