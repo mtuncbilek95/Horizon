@@ -3,6 +3,7 @@
 #include <Engine/Core/SlotPool.h>
 #include <Engine/Engine/IModule.h>
 #include <Engine/Graphics/GraphicsRecord.h>
+#include <Engine/Graphics/FrameGraph/FrameGraph.h>
 
 #include <string>
 #include <vector>
@@ -74,5 +75,8 @@ namespace Horizon
 		// Pools
 	private:
 		SlotPool<TextureRecord, GfxTextureHandle> m_texturePool;
+
+	private:
+		FrameGraph m_graph;
 	};
 }

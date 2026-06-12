@@ -115,8 +115,6 @@ namespace Horizon
 
 		Gfx::BeginGfxCmdList(m_frameCmd, m_frameAllocators[slot]);
 		Gfx::CmdSetupBindless(m_frameCmd, m_globalLayout, m_resourceHeap);
-
-		RenderScene();
 	}
 
 	void GraphicsModule::RenderScene()
@@ -124,24 +122,7 @@ namespace Horizon
 		GfxCmdList* cmd = m_frameCmd;
 		GfxTexture* target = m_currPresentImg;
 
-		GfxTextureBarrier toRenderTarget =
-		{
-			.pTexture = target,
-			.before = GfxResourceState::Present, .after = GfxResourceState::RenderTarget
-		};
-		Gfx::CmdBarrier(cmd, &toRenderTarget, 1);
-
-		Gfx::CmdBeginRendering(cmd, GfxRenderBeginDesc()
-			.addColorTarget(target, GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
-			.setSize(1920, 1080));
-
-
-		GfxTextureBarrier toPresent =
-		{
-			.pTexture = target,
-			.before = GfxResourceState::RenderTarget, .after = GfxResourceState::Present
-		};
-		Gfx::CmdBarrier(cmd, &toPresent, 1);
+		m_graph.Execute(m_frameCmd);
 	}
 
 	void GraphicsModule::EndFrame()
@@ -210,11 +191,34 @@ namespace Horizon
 			m_frameAllocators[i] = Gfx::CreateGfxCmdAllocator(m_mainDevice, GfxQueueType::Graphics);
 
 		m_frameCmd = Gfx::CreateGfxCmdList(m_mainDevice, m_frameAllocators[0]);
+
+		m_graph.AddPass("Scene", [this](GfxCmdList* cmd) 
+			{
+				GfxTextureBarrier toRenderTarget =
+				{
+					.pTexture = GetCurrentPresentImage(),
+					.before = GfxResourceState::Present, .after = GfxResourceState::RenderTarget
+				};
+				Gfx::CmdBarrier(cmd, &toRenderTarget, 1);
+
+				Gfx::CmdBeginRendering(cmd, GfxRenderBeginDesc()
+					.addColorTarget(GetCurrentPresentImage(), GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
+					.setSize(1920, 1080));
+
+
+				GfxTextureBarrier toPresent =
+				{
+					.pTexture = GetCurrentPresentImage(),
+					.before = GfxResourceState::RenderTarget, .after = GfxResourceState::Present
+				};
+				Gfx::CmdBarrier(cmd, &toPresent, 1);
+			});
 	}
 
 	void GraphicsModule::OnSync()
 	{
 		BeginFrame();
+		RenderScene();
 	}
 
 	void GraphicsModule::OnDetach()
