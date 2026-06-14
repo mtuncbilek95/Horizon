@@ -1,94 +1,74 @@
-#include "D3D12Backend.h"
+#include "D3D12Swapchain.h"
 
-#include <Runtime/Graphics/GfxBackend.h>
+#include "D3D12Device.h"
+#include "D3D12Texture.h"
 
 namespace Horizon
 {
-	GfxSwapchain* Gfx::CreateGfxSwapchain(GfxDevice* pContext, GfxQueue* pQueue, const GfxSwapchainDesc& desc)
+	D3D12Swapchain::~D3D12Swapchain()
 	{
-		GfxSwapchain* pSC = new GfxSwapchain();
-		pSC->vSync = desc.vSync;
-		pSC->imageCount = desc.imageCount;
+		ReleaseBackbuffers();
 
-		// Those mfs are somehow wants to use BOOL and TRUE/FALSE instead of bool and true/false
-		BOOL allowTearing = FALSE;
-		if (SUCCEEDED(pContext->pFactory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING,
-			&allowTearing, sizeof(allowTearing))))
+		if (m_swapchain)
+			m_swapchain->Release();
+	}
+
+	GfxTexture* D3D12Swapchain::GetBackbuffer(u32 index)
+	{
+		return m_backbuffers[index];
+	}
+
+	u32 D3D12Swapchain::GetCurrentIndex()
+	{
+		return m_swapchain->GetCurrentBackBufferIndex();
+	}
+
+	void D3D12Swapchain::Present()
+	{
+		const u32 syncInterval = m_vSync ? 1 : 0;
+		const u32 presentFlags = (!m_vSync && m_allowTearing) ? DXGI_PRESENT_ALLOW_TEARING : 0;
+
+		HRESULT hr = m_swapchain->Present(syncInterval, presentFlags);
+		CHECK_REASON(hr, "IDXGISwapChain4 - Present");
+	}
+
+	void D3D12Swapchain::Resize(u32 width, u32 height)
+	{
+		if (width == m_width && height == m_height)
+			return;
+
+		ReleaseBackbuffers();
+
+		const u32 resizeFlags = m_allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+		HRESULT hr = m_swapchain->ResizeBuffers(m_imageCount, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, resizeFlags);
+		CHECK_HR(hr, "IDXGISwapChain4 - ResizeBuffers");
+
+		m_width = width;
+		m_height = height;
+
+		AcquireBackbuffers();
+	}
+
+	void D3D12Swapchain::AcquireBackbuffers()
+	{
+		m_backbuffers.resize(m_imageCount);
+
+		for (u32 index = 0; index < m_imageCount; index++)
 		{
-			pSC->bAllowTearing = allowTearing == TRUE;
+			ID3D12Resource* resource = nullptr;
+			HRESULT hr = m_swapchain->GetBuffer(index, IID_PPV_ARGS(&resource));
+			CHECK_HR(hr, "IDXGISwapChain4 - GetBuffer");
+
+			m_backbuffers[index] = m_device->CreateBackbufferTexture(resource, m_width, m_height,
+				DXGI_FORMAT_R8G8B8A8_UNORM);
 		}
-
-		DXGI_SWAP_CHAIN_DESC1 scDesc = {};
-		scDesc.Width = desc.width;
-		scDesc.Height = desc.height;
-		scDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		scDesc.SampleDesc = { 1, 0 };
-		scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		scDesc.BufferCount = desc.imageCount;
-		scDesc.Scaling = DXGI_SCALING_STRETCH;
-		scDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-		scDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-		scDesc.Flags = pSC->bAllowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-
-		IDXGISwapChain1* pSwapchain1 = nullptr;
-		HRESULT bResult = pContext->pFactory->CreateSwapChainForHwnd(pQueue->pQueue,
-			(HWND)desc.pWindowHandle, &scDesc, nullptr, nullptr, &pSwapchain1);
-		CHECK_HR(bResult, "IDXGISwapChain1 - CreateSwapChainForHwnd");
-
-		bResult = pSwapchain1->QueryInterface(IID_PPV_ARGS(&pSC->pSwapchain));
-		CHECK_HR(bResult, "IDXGISwapChain4 - QueryInterface");
-		pSwapchain1->Release();
-
-		pSC->images.resize(desc.imageCount);
-		for (u32 i = 0; i < desc.imageCount; i++)
-		{
-			GfxTexture& image = pSC->images[i];
-
-			bResult = pSC->pSwapchain->GetBuffer(i, IID_PPV_ARGS(&image.pResource));
-			CHECK_HR(bResult, "IDXGISwapChain4 - GetBuffer");
-
-			image.pMemory = nullptr;
-			image.state = D3D12_RESOURCE_STATE_PRESENT;
-			image.format = scDesc.Format;
-			image.type = GfxTextureType::Tex2D;
-			image.width = desc.width;
-			image.height = desc.height;
-			image.bIsBackbuffer = true;
-		}
-
-		return pSC;
 	}
 
-	GfxTexture* Gfx::RequestTexture(GfxSwapchain* pSwapchain, usize index)
+	void D3D12Swapchain::ReleaseBackbuffers()
 	{
-		return &pSwapchain->images[index];
-	}
+		for (D3D12Texture* backbuffer : m_backbuffers)
+			m_device->DestroyBackbufferTexture(backbuffer);
 
-	u32 Gfx::GetBackbufferIndex(const GfxSwapchain* pSwapchain)
-	{
-		return pSwapchain->pSwapchain->GetCurrentBackBufferIndex();
-	}
-
-	void Gfx::Present(GfxSwapchain* scHandl)
-	{
-		const u32 syncInterval = scHandl->vSync ? 1 : 0;
-		const u32 flags = (!scHandl->vSync && scHandl->bAllowTearing) ? DXGI_PRESENT_ALLOW_TEARING : 0;
-
-		HRESULT bResult = scHandl->pSwapchain->Present(syncInterval, flags);
-		CHECK_REASON(bResult, "IDXGISwapChain4 - Present");
-	}
-
-	void Gfx::DestroyGfxSwapchain(GfxSwapchain* scHandl)
-	{
-		for (GfxTexture& image : scHandl->images)
-		{
-			if (image.pResource)
-				image.pResource->Release();
-		}
-
-		if (scHandl->pSwapchain)
-			scHandl->pSwapchain->Release();
-
-		delete scHandl;
+		m_backbuffers.clear();
 	}
 }

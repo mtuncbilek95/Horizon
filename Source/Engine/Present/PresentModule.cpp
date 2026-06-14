@@ -12,9 +12,6 @@ namespace Horizon
 
 	void PresentModule::OnSync()
 	{
-		auto& graphics = m_engine->GetModule<GraphicsModule>();
-
-		graphics.EndFrame();
 	}
 
 	void PresentModule::OnDetach()

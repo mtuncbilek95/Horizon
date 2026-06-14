@@ -1,9 +1,11 @@
-#include "D3D12Backend.h"
+#include "D3D12Pipeline.h"
 
-#include <Runtime/Graphics/GfxBackend.h>
+#include <Runtime/Graphics/D3D12/D3D12Device.h>
 
 namespace Horizon
 {
+	namespace
+	{
 		template<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE Type, typename T>
 		struct alignas(void*) StreamSubobject
 		{
@@ -70,19 +72,90 @@ namespace Horizon
 			depthDesc.DepthFunc = Helpers::ToCompare(desc.depthCompare);
 			return depthDesc;
 		}
+	}
 
-	GfxPipeline* Gfx::CreateGfxGraphicsPipeline(GfxDevice* pContext, GfxPipelineLayout* pLayout,
-		const GfxGraphicsPipelineDesc& desc)
+	void D3D12Device::CreateRootSignature()
+	{
+		constexpr u32 kRootConstantCount = 16;
+
+		D3D12_ROOT_PARAMETER1 params[1] = {};
+		params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+		params[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+		params[0].Constants.ShaderRegister = 0;
+		params[0].Constants.RegisterSpace = 0;
+		params[0].Constants.Num32BitValues = kRootConstantCount;
+
+		auto makeSampler = [](u32 reg, D3D12_FILTER filter, D3D12_TEXTURE_ADDRESS_MODE addr,
+			D3D12_COMPARISON_FUNC comp = D3D12_COMPARISON_FUNC_NEVER,
+			D3D12_STATIC_BORDER_COLOR border = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,
+			u32 aniso = 0)
+			{
+				D3D12_STATIC_SAMPLER_DESC sampDesc = {};
+				sampDesc.Filter = filter;
+				sampDesc.AddressU = addr;
+				sampDesc.AddressV = addr;
+				sampDesc.AddressW = addr;
+				sampDesc.MipLODBias = 0.0f;
+				sampDesc.MaxAnisotropy = aniso;
+				sampDesc.ComparisonFunc = comp;
+				sampDesc.BorderColor = border;
+				sampDesc.MinLOD = 0.0f;
+				sampDesc.MaxLOD = D3D12_FLOAT32_MAX;
+				sampDesc.ShaderRegister = reg;
+				sampDesc.RegisterSpace = 0;
+				sampDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+				return sampDesc;
+			};
+
+		const D3D12_STATIC_SAMPLER_DESC samplers[] =
+		{
+			makeSampler(0, D3D12_FILTER_MIN_MAG_MIP_POINT,  D3D12_TEXTURE_ADDRESS_MODE_WRAP),						// PointWrap
+			makeSampler(1, D3D12_FILTER_MIN_MAG_MIP_POINT,  D3D12_TEXTURE_ADDRESS_MODE_CLAMP),						// PointClamp
+			makeSampler(2, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP),						// LinearWrap
+			makeSampler(3, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP),						// LinearClamp
+			makeSampler(4, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_MIRROR),						// LinearMirror
+			makeSampler(5, D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+						   D3D12_COMPARISON_FUNC_NEVER, D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK, 16),				// AnisoWrap
+			makeSampler(6, D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+						   D3D12_COMPARISON_FUNC_NEVER, D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK, 16),				// AnisoClamp
+			makeSampler(7, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_BORDER),						// LinearBorder
+			makeSampler(8, D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+						   D3D12_COMPARISON_FUNC_LESS_EQUAL, D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE),				// ShadowCmp
+			makeSampler(9, D3D12_FILTER_MIN_MAG_MIP_POINT,  D3D12_TEXTURE_ADDRESS_MODE_BORDER),						// PointBorder
+		};
+
+		D3D12_VERSIONED_ROOT_SIGNATURE_DESC vdesc = {};
+		vdesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+		vdesc.Desc_1_1.NumParameters = _countof(params);
+		vdesc.Desc_1_1.pParameters = params;
+		vdesc.Desc_1_1.NumStaticSamplers = _countof(samplers);
+		vdesc.Desc_1_1.pStaticSamplers = samplers;
+		vdesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED;
+
+		ID3DBlob* pBlob = nullptr;
+		ID3DBlob* pError = nullptr;
+		HRESULT hr = D3D12SerializeVersionedRootSignature(&vdesc, &pBlob, &pError);
+		CHECK_HR(hr, "ID3D12RootSignature - D3D12SerializeVersionedRootSignature");
+
+		hr = m_device->CreateRootSignature(0, pBlob->GetBufferPointer(), pBlob->GetBufferSize(),
+			IID_PPV_ARGS(&m_rootSignature));
+		CHECK_HR(hr, "ID3D12RootSignature - CreateRootSignature");
+
+		pBlob->Release();
+	}
+
+	GfxPointer<GfxPipeline> D3D12Device::CreatePipeline(const GfxGraphicsPipelineDesc& desc)
 	{
 		const b8 bUsesMesh = desc.meshShader.pData != nullptr;
 
-		GfxPipeline* pPipeline = new GfxPipeline();
-		HRESULT bResult = S_OK;
+		auto* pipe = new D3D12Pipeline();
+		pipe->m_ownerDevice = this;
+		HRESULT hr = S_OK;
 
 		if (bUsesMesh)
 		{
 			MeshStateStream stream = {};
-			stream.rootSignature.value = pLayout->pLayout;
+			stream.rootSignature.value = m_rootSignature;
 			stream.taskShader.value = { desc.taskShader.pData, desc.taskShader.size };
 			stream.meshShader.value = { desc.meshShader.pData, desc.meshShader.size };
 			stream.pixelShader.value = { desc.pixelShader.pData, desc.pixelShader.size };
@@ -101,19 +174,16 @@ namespace Horizon
 			streamDesc.SizeInBytes = sizeof(stream);
 			streamDesc.pPipelineStateSubobjectStream = &stream;
 
-			bResult = pContext->pDevice->CreatePipelineState(&streamDesc,
-				IID_PPV_ARGS(&pPipeline->pPipeline));
-			CHECK_REASON(bResult, "ID3D12PipelineState - CreatePipelineState (Mesh)");
+			hr = m_device->CreatePipelineState(&streamDesc, IID_PPV_ARGS(&pipe->m_pipeline));
+			CHECK_REASON(hr, "ID3D12PipelineState - CreatePipelineState (Mesh)");
 		}
 		else
 		{
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-			psoDesc.pRootSignature = pLayout->pLayout;
+			psoDesc.pRootSignature = m_rootSignature;
 			psoDesc.VS = { desc.vertexShader.pData, desc.vertexShader.size };
 			psoDesc.PS = { desc.pixelShader.pData, desc.pixelShader.size };
-
 			psoDesc.InputLayout = { nullptr, 0 };
-
 			psoDesc.BlendState = BuildBlendDesc(desc);
 			psoDesc.SampleMask = UINT_MAX;
 			psoDesc.RasterizerState = BuildRasterizerDesc(desc);
@@ -125,51 +195,43 @@ namespace Horizon
 			psoDesc.DSVFormat = Helpers::ToDXGIFormat(desc.depthFormat);
 			psoDesc.SampleDesc = { 1, 0 };
 
-			bResult = pContext->pDevice->CreateGraphicsPipelineState(&psoDesc,
-				IID_PPV_ARGS(&pPipeline->pPipeline));
-			CHECK_REASON(bResult, "ID3D12PipelineState - CreateGraphicsPipelineState");
+			hr = m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipe->m_pipeline));
+			CHECK_REASON(hr, "ID3D12PipelineState - CreateGraphicsPipelineState");
 		}
 
-		if (FAILED(bResult))
+		if (FAILED(hr))
 		{
-			delete pPipeline;
-			return nullptr;
+			delete pipe;
+			return {};
 		}
 
-		pPipeline->topology = Helpers::ToTopology(desc.topology);
-		pPipeline->bIsCompute = false;
-		pPipeline->bUsesMeshShading = bUsesMesh;
+		pipe->m_type = GfxPipelineType::Graphics;
+		pipe->m_topology = Helpers::ToTopology(desc.topology);
+		pipe->m_usesMeshShading = bUsesMesh;
 
-		return pPipeline;
+		return GfxPointer<GfxPipeline>(pipe);
 	}
 
-	GfxPipeline* Gfx::CreateGfxComputePipeline(GfxDevice* pContext, GfxPipelineLayout* pLayout,
-		const GfxComputePipelineDesc& desc)
+	GfxPointer<GfxPipeline> D3D12Device::CreatePipeline(const GfxComputePipelineDesc& desc)
 	{
 		D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
-		psoDesc.pRootSignature = pLayout->pLayout;
+		psoDesc.pRootSignature = m_rootSignature;
 		psoDesc.CS = { desc.computeShader.pData, desc.computeShader.size };
 
-		GfxPipeline* pPipeline = new GfxPipeline();
-		HRESULT bResult = pContext->pDevice->CreateComputePipelineState(&psoDesc,
-			IID_PPV_ARGS(&pPipeline->pPipeline));
-		CHECK_REASON(bResult, "ID3D12PipelineState - CreateComputePipelineState");
+		auto* pipe = new D3D12Pipeline();
+		pipe->m_ownerDevice = this;
 
-		if (FAILED(bResult))
+		HRESULT hr = m_device->CreateComputePipelineState(&psoDesc, IID_PPV_ARGS(&pipe->m_pipeline));
+		CHECK_REASON(hr, "ID3D12PipelineState - CreateComputePipelineState");
+
+		if (FAILED(hr))
 		{
-			delete pPipeline;
-			return nullptr;
+			delete pipe;
+			return {};
 		}
 
-		pPipeline->bIsCompute = true;
-		return pPipeline;
-	}
+		pipe->m_type = GfxPipelineType::Compute;
 
-	void Gfx::DestroyGfxPipeline(GfxPipeline* plHandl)
-	{
-		if (plHandl->pPipeline)
-			plHandl->pPipeline->Release();
-
-		delete plHandl;
+		return GfxPointer<GfxPipeline>(pipe);
 	}
 }

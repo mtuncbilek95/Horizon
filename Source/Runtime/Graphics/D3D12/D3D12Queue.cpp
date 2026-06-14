@@ -1,39 +1,39 @@
-#include "D3D12Backend.h"
+#include "D3D12Queue.h"
 
-#include <Runtime/Graphics/GfxBackend.h>
+#include <Runtime/Graphics/D3D12/D3D12Fence.h>
+#include <Runtime/Graphics/D3D12/D3D12CommandList.h>
+
+#include <cassert>
 
 namespace Horizon
 {
-	GfxQueue* Gfx::CreateGfxQueue(GfxDevice* pContext, const GfxQueueDesc& desc)
-	{
-		GfxQueue* pQueue = new GfxQueue();
-
-		D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-		queueDesc.Type = desc.type == GfxQueueType::Graphics ? D3D12_COMMAND_LIST_TYPE_DIRECT :
-			desc.type == GfxQueueType::Compute ? D3D12_COMMAND_LIST_TYPE_COMPUTE : D3D12_COMMAND_LIST_TYPE_COPY;
-		queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
-		HRESULT bResult = pContext->pDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&pQueue->pQueue));
-		CHECK_HR(bResult, "ID3D12CommandQueue - CreateCommandQueue");
-
-		bResult = pContext->pDevice->CreateFence(pQueue->value, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pQueue->pTimeline));
-		CHECK_HR(bResult, "ID3D12Fence - CreateFence");
-
-		pQueue->type = queueDesc.Type;
-
-		return pQueue;
+	D3D12Queue::~D3D12Queue() 
+	{ 
+		if (m_queue) 
+			m_queue->Release(); 
 	}
 
-	void Gfx::DestroyGfxQueue(GfxQueue* qHandle)
+	void D3D12Queue::Submit(GfxCommandList* const* lists, u32 count)
 	{
-		if (qHandle->pQueue && qHandle->pTimeline && qHandle->pTimeline->GetCompletedValue() < qHandle->value)
-			qHandle->pTimeline->SetEventOnCompletion(qHandle->value, nullptr);
+		assert(count <= 64 && "Submit batch limit");
 
-		if (qHandle->pTimeline)
-			qHandle->pTimeline->Release();
+		ID3D12CommandList* native[64];
+		for (u32 i = 0; i < count; i++)
+			native[i] = static_cast<D3D12CommandList*>(lists[i])->Handle();
+		m_queue->ExecuteCommandLists(count, native);
+	}
 
-		if (qHandle->pQueue)
-			qHandle->pQueue->Release();
+	u64 D3D12Queue::Signal(GfxFence* fence)
+	{
+		auto* d3d12Fence = static_cast<D3D12Fence*>(fence);
+		u64 signalValue = d3d12Fence->Advance();
+		m_queue->Signal(d3d12Fence->Handle(), signalValue);
+		return signalValue;
+	}
 
-		delete qHandle;
+	void D3D12Queue::Wait(GfxFence* fence, u64 value)
+	{
+		auto* d3d12Fence = static_cast<D3D12Fence*>(fence);
+		m_queue->Wait(d3d12Fence->Handle(), value);
 	}
 }
