@@ -2,13 +2,14 @@
 
 namespace Horizon
 {
-	enum class TypeKind : u8
+	enum class TypeCodes : c8
 	{
 		Void,
+		Composed,
 		String,
 		Char,
 		Byte,
-		Boolean,
+		Bool8,
 		Signed16,
 		Unsigned16,
 		Signed32,

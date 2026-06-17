@@ -7,6 +7,6 @@ namespace Horizon
 	struct EnumValue final
 	{
 		std::string enumName = {};
-		i64 value = 0;
+		i64 enumValue = 0;
 	};
 }

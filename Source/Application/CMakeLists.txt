@@ -16,8 +16,7 @@ set_target_properties(Application PROPERTIES
     OUTPUT_NAME "CompactEngine"
 )
 
-include("${CMAKE_SOURCE_DIR}/CMake/CompileShadersDXC.cmake")
-include("${CMAKE_SOURCE_DIR}/CMake/CookAsset.cmake")
+include(CompileShadersDXC)
 
 set(SHADER_SRC_DIR "${CMAKE_SOURCE_DIR}/Shaders")
 set(SHADER_OUT_DIR "${CMAKE_BINARY_DIR}/Shaders")
@@ -49,10 +48,6 @@ endforeach()
 add_custom_target(Shaders ALL DEPENDS ${SHADER_OUTPUTS})
 add_dependencies(Application Shaders)
 
-#set(ASSET_OUT_DIR "${CMAKE_BINARY_DIR}/Cooked")
-#SetupAssetCooker("${CMAKE_SOURCE_DIR}/Tools/AssetCooker" "${CMAKE_BINARY_DIR}/AssetCooker" COOKER_EXECUTABLE)
-#CookAssets("${COOKER_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/Resources" "${ASSET_OUT_DIR}")
-#add_dependencies(Application CookAssets)
 
 install(TARGETS Application
     RUNTIME DESTINATION "bin"
@@ -61,10 +56,6 @@ install(TARGETS Application
 install(DIRECTORY "${SHADER_OUT_DIR}/"
     DESTINATION "bin/Shaders"
 )
-
-#install(DIRECTORY "${ASSET_OUT_DIR}/"
-#    DESTINATION "bin/Cooked"
-#)
 
 add_custom_command(TARGET Application POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different

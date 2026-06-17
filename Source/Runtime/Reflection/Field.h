@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Runtime/Reflection/Type.h>
-#include <Runtime/Reflection/TypeEnum.h>
+#include <Runtime/Reflection/FieldMode.h>
 
 #include <string>
 
@@ -10,42 +10,42 @@ namespace Horizon
 	class Field final
 	{
 		friend class TypeDispatcher;
-
-		Field(const std::string& name, Type* pFieldType, TypeEnum mode, u32 offset);
-		~Field() = default;
-
 	public:
-		const std::string& GetName() const { return m_name; }
+		const std::string& GetName() const noexcept { return m_name; }
 		Type* GetType() const noexcept { return m_fieldType; }
-		TypeEnum GetMode() const noexcept { return m_mode; }
+		FieldMode GetMode() const noexcept { return m_mode; }
 		u32 GetOffset() const noexcept { return m_offset; }
 
 		template<typename T>
-		void SetValue(void* pObject, const T& value) const noexcept
+		void SetValue(void* pObj, const T& value) const noexcept
 		{
-			c8* pObjInBytes = (c8*)pObject + m_offset;
-			T* pVal = (T*)pObjInBytes;
+			c8* pObjInByte = (c8*)pObj + m_offset;
+			T* pVal = (T*)pObjInByte;
 			*pVal = value;
 		}
 
 		template<typename T>
-		T GetValue(const void* pObject) const noexcept
+		T GetValue(const void* pObj) const noexcept
 		{
-			c8* pObjInBytes = (c8*)pObject + m_offset;
-			return *(T*)pObjInBytes;
+			c8* pObjInByte = (c8*)pObj + m_offset;
+			return *(T*)pObjInByte;
 		}
 
 		template<typename T>
-		T* GetAddress(void* pObject) const noexcept
+		T* GetAddress(void* pObj) const noexcept
 		{
-			c8* pObjInBytes = (c8*)pObject + m_offset;
-			return (T*)pObjInBytes;
+			c8* pObjInByte = (c8*)pObj + m_offset;
+			return (T*)pObjInByte;
 		}
+
+	private:
+		Field(const std::string& name, Type* pFieldType, FieldMode mode, u32 offset);
+		~Field() = default;
 
 	private:
 		std::string m_name;
 		Type* m_fieldType;
-		TypeEnum m_mode;
+		FieldMode m_mode;
 		u32 m_offset;
 	};
 }

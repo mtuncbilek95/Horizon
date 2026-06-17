@@ -2,7 +2,7 @@
 
 namespace Horizon
 {
-	enum class TypeEnum : u8
+	enum class TypeModes : c8
 	{
 		Class,
 		Struct,
