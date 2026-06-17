@@ -10,6 +10,13 @@
 
 namespace Horizon
 {
+	std::unique_ptr<GfxDevice> CreateGfxDevice()
+	{
+		auto device = std::make_unique<D3D12Device>();
+		device->Init();
+		return std::move(device);
+	}
+
 	void D3D12Device::Init()
 	{
 		u32 factoryFlags = 0;
@@ -314,8 +321,23 @@ namespace Horizon
 		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
 		viewDesc.Format = Helpers::ToDepthSRVFormat(tex->m_dxgiFormat);
 		viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		viewDesc.Texture2D.MipLevels = tex->m_desc.mipLevels;
+
+		switch (tex->m_desc.type)
+		{
+		case GfxTextureType::Tex2D:
+			viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			viewDesc.Texture2D.MipLevels = tex->m_desc.mipLevels;
+			break;
+		case GfxTextureType::Tex2DArray:
+			viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+			viewDesc.Texture2DArray.MipLevels = tex->m_desc.mipLevels;
+			viewDesc.Texture2DArray.ArraySize = tex->m_desc.depth;
+			break;
+		case GfxTextureType::Tex3D:
+			viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+			viewDesc.Texture3D.MipLevels = tex->m_desc.mipLevels;
+			break;
+		}
 
 		m_device->CreateShaderResourceView(tex->m_resource, &viewDesc, m_resourceHeap.CpuAt(index));
 
@@ -323,7 +345,21 @@ namespace Horizon
 	}
 
 	void D3D12Device::CreateTextureUAV(D3D12Texture* tex)
-	{}
+	{
+		u32 index = m_resourceHeap.Allocate();
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc = {};
+		viewDesc.Format = tex->m_dxgiFormat;
+		viewDesc.ViewDimension = tex->m_desc.type == GfxTextureType::Tex3D
+			? D3D12_UAV_DIMENSION_TEXTURE3D : D3D12_UAV_DIMENSION_TEXTURE2D;
+
+		if (tex->m_desc.type == GfxTextureType::Tex3D)
+			viewDesc.Texture3D.WSize = tex->m_desc.depth;
+
+		m_device->CreateUnorderedAccessView(tex->m_resource, nullptr, &viewDesc, m_resourceHeap.CpuAt(index));
+
+		tex->m_accessView = index;
+	}
 
 	void D3D12Device::CreateTextureRTV(D3D12Texture* tex)
 	{
@@ -336,7 +372,22 @@ namespace Horizon
 	}
 
 	void D3D12Device::CreateTextureDSV(D3D12Texture* tex)
-	{}
+	{
+		u32 index = m_depthHeap.Allocate();
+
+		D3D12_DEPTH_STENCIL_VIEW_DESC viewDesc = {};
+		viewDesc.Format = tex->m_dxgiFormat;
+		viewDesc.ViewDimension = tex->m_desc.type == GfxTextureType::Tex2DArray
+			? D3D12_DSV_DIMENSION_TEXTURE2DARRAY : D3D12_DSV_DIMENSION_TEXTURE2D;
+
+		if (tex->m_desc.type == GfxTextureType::Tex2DArray)
+			viewDesc.Texture2DArray.ArraySize = tex->m_desc.depth;
+
+		m_device->CreateDepthStencilView(tex->m_resource, &viewDesc, m_depthHeap.CpuAt(index));
+
+		tex->m_depthViewIndex = index;
+		tex->m_dsvHandle = m_depthHeap.CpuAt(index);
+	}
 
 	void D3D12Device::CreateBufferSRV(D3D12Buffer* buf)
 	{

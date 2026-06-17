@@ -1,14 +1,10 @@
 #pragma once
 
 #include <Engine/Engine/IModule.h>
-#include <Runtime/Graphics/RHI/Swapchain/GfxSwapchain.h>
-
-#include <memory>
 
 namespace Horizon
 {
-
-	class PresentModule : public IModule
+	class DomainModule : public IModule
 	{
 	public:
 		void OnAttach(Engine& engine) final;
@@ -16,6 +12,5 @@ namespace Horizon
 		void OnDetach() final;
 
 	private:
-		std::unique_ptr<GfxSwapchain> m_swapchain;
 	};
 }

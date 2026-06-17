@@ -14,4 +14,11 @@ namespace Horizon
 
 	void EntityComponentModule::OnDetach()
 	{}
+
+	RenderView EntityComponentModule::GetRenderView()
+	{
+		RenderView view = {};
+
+		return view;
+	}
 }

@@ -114,6 +114,11 @@ namespace Horizon
 		m_list->SetGraphicsRoot32BitConstants(0, count32, data, offset32);
 	}
 
+	void D3D12CommandList::SetComputeConstants(const void* data, u32 count32, u32 offset32)
+	{
+		m_list->SetComputeRoot32BitConstants(0, count32, data, offset32);
+	}
+
 	void D3D12CommandList::BindIndexBuffer(GfxBuffer* buffer)
 	{
 		D3D12_INDEX_BUFFER_VIEW indexBufferView = {};
@@ -147,5 +152,33 @@ namespace Horizon
 	{
 		m_list->CopyBufferRegion(static_cast<D3D12Buffer*>(dst)->GetResource(), dstOffset,
 			static_cast<D3D12Buffer*>(src)->GetResource(), srcOffset, size);
+	}
+
+	void D3D12CommandList::CopyBufferToTexture(GfxBuffer* src, usize srcOffset, GfxTexture* dst, u32 mipLevel, u32 arraySlice)
+	{
+		ID3D12Resource* destinationResource = static_cast<D3D12Texture*>(dst)->GetResource();
+
+		const D3D12_RESOURCE_DESC resourceDesc = destinationResource->GetDesc();
+		const u32 subresource = mipLevel + arraySlice * resourceDesc.MipLevels;
+
+		ID3D12Device* nativeDevice = nullptr;
+		destinationResource->GetDevice(IID_PPV_ARGS(&nativeDevice));
+
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
+		nativeDevice->GetCopyableFootprints(&resourceDesc, subresource, 1, srcOffset,
+			&footprint, nullptr, nullptr, nullptr);
+		nativeDevice->Release();
+
+		D3D12_TEXTURE_COPY_LOCATION sourceLocation = {};
+		sourceLocation.pResource = static_cast<D3D12Buffer*>(src)->GetResource();
+		sourceLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+		sourceLocation.PlacedFootprint = footprint;
+
+		D3D12_TEXTURE_COPY_LOCATION destinationLocation = {};
+		destinationLocation.pResource = destinationResource;
+		destinationLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		destinationLocation.SubresourceIndex = subresource;
+
+		m_list->CopyTextureRegion(&destinationLocation, 0, 0, 0, &sourceLocation, nullptr);
 	}
 }

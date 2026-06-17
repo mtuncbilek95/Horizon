@@ -67,11 +67,13 @@ namespace Horizon
 		virtual void BeginRendering(const GfxRenderBeginDesc& desc) = 0;
 		virtual void BindPipeline(GfxPipeline* pipeline) = 0;
 		virtual void SetGraphicsConstants(const void* data, u32 count32, u32 offset32 = 0) = 0;
+		virtual void SetComputeConstants(const void* data, u32 count32, u32 offset32 = 0) = 0;
 		virtual void BindIndexBuffer(GfxBuffer* buffer) = 0;
 		virtual void Draw(u32 vtxCount, u32 instCount, u32 firstVtx = 0, u32 firstInst = 0) = 0;
 		virtual void DrawIndexed(u32 idxCount, u32 instCount, u32 firstIdx = 0, i32 vtxOffset = 0, u32 firstInst = 0) = 0;
 		virtual void Dispatch(u32 groupX, u32 groupY, u32 groupZ) = 0;
 		virtual void DispatchMesh(u32 groupX, u32 groupY, u32 groupZ) = 0;
 		virtual void CopyBuffer(GfxBuffer* src, usize srcOff, GfxBuffer* dst, usize dstOff, usize size) = 0;
+		virtual void CopyBufferToTexture(GfxBuffer* src, usize srcOff, GfxTexture* dst, u32 mipLevel = 0, u32 arraySlice = 0) = 0;
 	};
 }

@@ -25,7 +25,7 @@ namespace Horizon
 		virtual ~GfxSwapchain() = default;
 
 		virtual GfxTexture* GetBackbuffer(u32 index) = 0;
-		virtual u32  GetCurrentIndex() = 0;
+		virtual u32 GetCurrentIndex() = 0;
 		virtual void Present() = 0;
 		virtual void Resize(u32 width, u32 height) = 0;
 

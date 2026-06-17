@@ -20,12 +20,14 @@ namespace Horizon
 		void BeginRendering(const GfxRenderBeginDesc& desc) final;
 		void BindPipeline(GfxPipeline* pipeline) final;
 		void SetGraphicsConstants(const void* data, u32 count32, u32 offset32) final;
+		void SetComputeConstants(const void* data, u32 count32, u32 offset32) final;
 		void BindIndexBuffer(GfxBuffer* buffer) final;
 		void Draw(u32 vtx, u32 inst, u32 firstVtx, u32 firstInst) final;
 		void DrawIndexed(u32 idx, u32 inst, u32 firstIdx, i32 vtxOff, u32 firstInst) final;
 		void Dispatch(u32 groupX, u32 groupY, u32 groupZ) final;
 		void DispatchMesh(u32 groupX, u32 groupY, u32 groupZ) final;
 		void CopyBuffer(GfxBuffer* src, usize srcOff, GfxBuffer* dst, usize dstOff, usize size) final;
+		void CopyBufferToTexture(GfxBuffer* src, usize srcOff, GfxTexture* dst, u32 mipLevel, u32 arraySlice) final;
 
 		ID3D12GraphicsCommandList6* Handle() const { return m_list; }
 

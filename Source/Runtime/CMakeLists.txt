@@ -12,6 +12,7 @@ target_include_directories(Runtime PRIVATE "${CMAKE_SOURCE_DIR}/Source")
 target_link_libraries(Runtime
 	PUBLIC
 		glm::glm glfw
+		nlohmann_json::nlohmann_json
 )
 SetupGLFW(Runtime)
 

@@ -60,4 +60,6 @@ namespace Horizon
 		std::mutex m_mutex;
 		std::atomic<u64> m_frameIndex = 0;
 	};
+
+	std::unique_ptr<GfxDevice> CreateGfxDevice();
 }
