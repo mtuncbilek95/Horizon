@@ -45,6 +45,13 @@ namespace Horizon
 
 		virtual void FreeDescriptor(GfxDescriptorHeapType type, u32 index) = 0;
 
+		virtual void InitializeImGui(void* pAPIHandle, GfxQueue* graphicsQueue) = 0;
+		virtual void NewFrameImGui() = 0;
+		virtual void ShutdownImGui() = 0;
+
+		// Bindless, shader-visible texture id for displaying a texture via ImGui::Image.
+		virtual u64 GetImGuiTextureId(GfxTexture* texture) = 0;
+
 		void EnqueueDelete(GfxResource* pResource);
 		void FlushPendingDeletes(u64 currentFrame);
 		void SetFrameIndex(u64 idx);

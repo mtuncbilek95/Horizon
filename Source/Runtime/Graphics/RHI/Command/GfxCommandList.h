@@ -75,5 +75,7 @@ namespace Horizon
 		virtual void DispatchMesh(u32 groupX, u32 groupY, u32 groupZ) = 0;
 		virtual void CopyBuffer(GfxBuffer* src, usize srcOff, GfxBuffer* dst, usize dstOff, usize size) = 0;
 		virtual void CopyBufferToTexture(GfxBuffer* src, usize srcOff, GfxTexture* dst, u32 mipLevel = 0, u32 arraySlice = 0) = 0;
+
+		virtual void DrawImGui() = 0;
 	};
 }

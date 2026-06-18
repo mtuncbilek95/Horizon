@@ -8,8 +8,24 @@
 #include <Runtime/Graphics/D3D12/D3D12Swapchain.h>
 #include <Runtime/Graphics/D3D12/D3D12Texture.h>
 
+#include <imgui.h>
+#include <backends/imgui_impl_dx12.h>
+#include <backends/imgui_impl_glfw.h>
+
 namespace Horizon
 {
+	static void ImGuiSrvAlloc(ImGui_ImplDX12_InitInfo* info,
+		D3D12_CPU_DESCRIPTOR_HANDLE* outCpu, D3D12_GPU_DESCRIPTOR_HANDLE* outGpu)
+	{
+		static_cast<D3D12Device*>(info->UserData)->AllocateImGuiSrv(outCpu, outGpu);
+	}
+
+	static void ImGuiSrvFree(ImGui_ImplDX12_InitInfo* info,
+		D3D12_CPU_DESCRIPTOR_HANDLE cpu, D3D12_GPU_DESCRIPTOR_HANDLE)
+	{
+		static_cast<D3D12Device*>(info->UserData)->FreeImGuiSrv(cpu);
+	}
+
 	std::unique_ptr<GfxDevice> CreateGfxDevice()
 	{
 		auto device = std::make_unique<D3D12Device>();
@@ -61,6 +77,8 @@ namespace Horizon
 
 	D3D12Device::~D3D12Device()
 	{
+		ShutdownImGui();
+
 		FlushPendingDeletes(kInvalid64);
 
 		if (m_resourceHeap.pHeap)
@@ -129,7 +147,17 @@ namespace Horizon
 
 		D3D12_CLEAR_VALUE clear = {};
 		clear.Format = viewFormat;
-		if (isDepth) clear.DepthStencil = { 1.0f, 0 }; else clear.Color[3] = 1.0f;
+		if (isDepth)
+		{
+			clear.DepthStencil = { 1.0f, 0 };
+		}
+		else
+		{
+			clear.Color[0] = desc.clearColor.r;
+			clear.Color[1] = desc.clearColor.g;
+			clear.Color[2] = desc.clearColor.b;
+			clear.Color[3] = desc.clearColor.a;
+		}
 		const b8 wantsClear = has(desc.usage, GfxTextureUsage::RenderTarget)
 			|| has(desc.usage, GfxTextureUsage::DepthStencil);
 
@@ -312,6 +340,60 @@ namespace Horizon
 	void D3D12Device::DestroyBackbufferTexture(D3D12Texture* texture)
 	{
 		delete texture;
+	}
+
+	void D3D12Device::InitializeImGui(void* pAPIHandle, GfxQueue* graphicsQueue)
+	{
+		ImGui_ImplGlfw_InitForOther((GLFWwindow*)pAPIHandle, true);
+
+
+		ImGui_ImplDX12_InitInfo info = {};
+		info.Device = m_device;
+		info.CommandQueue = static_cast<D3D12Queue*>(graphicsQueue)->Handle();
+		info.NumFramesInFlight = MaxFramesInFlight;
+		info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+		info.DSVFormat = DXGI_FORMAT_UNKNOWN;
+		info.UserData = this;
+		info.SrvDescriptorHeap = m_resourceHeap.pHeap;
+		info.SrvDescriptorAllocFn = ImGuiSrvAlloc;
+		info.SrvDescriptorFreeFn = ImGuiSrvFree;
+
+		ImGui_ImplDX12_Init(&info);
+		m_imguiInitialized = true;
+	}
+
+	void D3D12Device::NewFrameImGui()
+	{
+		ImGui_ImplDX12_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+	}
+
+	void D3D12Device::ShutdownImGui()
+	{
+		if (!m_imguiInitialized)
+			return;
+
+		ImGui_ImplDX12_Shutdown();
+		m_imguiInitialized = false;
+		ImGui_ImplGlfw_Shutdown();
+	}
+
+	u64 D3D12Device::GetImGuiTextureId(GfxTexture* texture)
+	{
+		// ImGui DX12 uses the GPU descriptor handle (in the bound SRV heap) as the texture id.
+		return m_resourceHeap.GpuAt(static_cast<D3D12Texture*>(texture)->GetShaderView()).ptr;
+	}
+
+	void D3D12Device::AllocateImGuiSrv(D3D12_CPU_DESCRIPTOR_HANDLE* outCpu, D3D12_GPU_DESCRIPTOR_HANDLE* outGpu)
+	{
+		const u32 index = m_resourceHeap.Allocate();
+		*outCpu = m_resourceHeap.CpuAt(index);
+		*outGpu = m_resourceHeap.GpuAt(index);
+	}
+
+	void D3D12Device::FreeImGuiSrv(D3D12_CPU_DESCRIPTOR_HANDLE cpu)
+	{
+		m_resourceHeap.Free(m_resourceHeap.IndexOf(cpu));
 	}
 
 	void D3D12Device::CreateTextureSRV(D3D12Texture* tex)

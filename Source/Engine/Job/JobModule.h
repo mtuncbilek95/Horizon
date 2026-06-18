@@ -14,9 +14,12 @@ namespace Horizon
 		void OnDetach() final;
 
 		void SubmitJob(Job&& job);
+		void Dispatch(JobCounter& counter, Job&& job);
+		void Wait(JobCounter& counter);
 
 	private:
 		JobWorker* GetRandomVictim(JobWorker* avoidWorker);
+		b8 TryRunOneJob();
 
 	private:
 		std::vector<std::unique_ptr<JobWorker>> m_workers;

@@ -15,7 +15,8 @@ namespace Horizon
 	{
 		Graphics,
 		Compute,
-		Transfer
+		Transfer,
+		Count
 	};
 
 	enum class GfxTextureFormat : u8

@@ -3,6 +3,8 @@
 #include <Runtime/Graphics/RHI/GfxTypes.h>
 #include <Runtime/Graphics/RHI/Object/GfxResource.h>
 
+#include <glm/glm.hpp>
+
 namespace Horizon
 {
 	struct GfxTextureDesc
@@ -13,6 +15,10 @@ namespace Horizon
 		GfxTextureFormat format = GfxTextureFormat::RGBA8;
 		GfxTextureUsage usage = GfxTextureUsage::Sampled;
 		GfxTextureType type = GfxTextureType::Tex2D;
+
+		// Optimized clear value for render-target/depth targets. Clear passes should use this
+		// same value to take the GPU's fast-clear path.
+		glm::vec4 clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 	};
 
 	class GfxTexture : public GfxResource

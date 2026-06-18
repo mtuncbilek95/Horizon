@@ -27,7 +27,15 @@ namespace Horizon
 		std::unique_ptr<GfxSwapchain> CreateSwapchain(const GfxSwapchainDesc& desc, GfxQueue* presentQueue) final;
 
 		void FreeDescriptor(GfxDescriptorHeapType type, u32 index) final { HeapFor(type).Free(index); }
-		
+
+		void InitializeImGui(void* pAPIHandle, GfxQueue* graphicsQueue) final;
+		void NewFrameImGui() final;
+		void ShutdownImGui() final;
+		u64 GetImGuiTextureId(GfxTexture* texture) final;
+
+		void AllocateImGuiSrv(D3D12_CPU_DESCRIPTOR_HANDLE* outCpu, D3D12_GPU_DESCRIPTOR_HANDLE* outGpu);
+		void FreeImGuiSrv(D3D12_CPU_DESCRIPTOR_HANDLE cpu);
+
 		ID3D12RootSignature* GetRootSignature() const { return m_rootSignature; }
 		ID3D12DescriptorHeap* GetResourceHeap() const { return m_resourceHeap.pHeap; }
 
@@ -73,5 +81,7 @@ namespace Horizon
 		D3D12DescriptorHeap m_depthHeap;
 
 		ID3D12RootSignature* m_rootSignature = nullptr;
+
+		b8 m_imguiInitialized = false;
 	};
 }

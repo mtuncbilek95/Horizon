@@ -28,6 +28,7 @@ namespace Horizon
 		void DispatchMesh(u32 groupX, u32 groupY, u32 groupZ) final;
 		void CopyBuffer(GfxBuffer* src, usize srcOff, GfxBuffer* dst, usize dstOff, usize size) final;
 		void CopyBufferToTexture(GfxBuffer* src, usize srcOff, GfxTexture* dst, u32 mipLevel, u32 arraySlice) final;
+		void DrawImGui() final;
 
 		ID3D12GraphicsCommandList6* Handle() const { return m_list; }
 

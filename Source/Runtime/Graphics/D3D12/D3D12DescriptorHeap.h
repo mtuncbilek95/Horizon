@@ -30,5 +30,8 @@ namespace Horizon
 		void Free(u32 index) { freeList.push_back(index); }
 
 		D3D12_CPU_DESCRIPTOR_HANDLE CpuAt(u32 i) const { return { cpuStart.ptr + usize(i) * descriptorSize }; }
+		D3D12_GPU_DESCRIPTOR_HANDLE GpuAt(u32 i) const { return { gpuStart.ptr + u64(i) * descriptorSize }; }
+
+		u32 IndexOf(D3D12_CPU_DESCRIPTOR_HANDLE handle) const { return u32((handle.ptr - cpuStart.ptr) / descriptorSize); }
 	};
 }

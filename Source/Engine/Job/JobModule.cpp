@@ -28,6 +28,26 @@ namespace Horizon
 		m_workers[index]->AddJob(std::move(job));
 	}
 
+	void JobModule::Dispatch(JobCounter& counter, Job&& job)
+	{
+		counter.remaining.fetch_add(1, std::memory_order_relaxed);
+
+		SubmitJob([&counter, job = std::move(job)]()
+			{
+				job();
+				counter.remaining.fetch_sub(1, std::memory_order_acq_rel);
+			});
+	}
+
+	void JobModule::Wait(JobCounter& counter)
+	{
+		while (counter.remaining.load(std::memory_order_acquire) > 0)
+		{
+			if (!TryRunOneJob())
+				std::this_thread::yield();
+		}
+	}
+
 	JobWorker* JobModule::GetRandomVictim(JobWorker* avoidWorker)
 	{
 		if (m_workers.size() <= 1)
@@ -42,4 +62,20 @@ namespace Horizon
 
 		return m_workers[index].get();
 	}
+
+	b8 JobModule::TryRunOneJob()
+	{
+		for (auto& worker : m_workers)
+		{
+			Job job;
+			if (worker->TryStealFromThis(job))
+			{
+				job();
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 }

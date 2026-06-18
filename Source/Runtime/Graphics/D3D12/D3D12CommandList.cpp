@@ -5,6 +5,9 @@
 #include <Runtime/Graphics/D3D12/D3D12Pipeline.h>
 #include <Runtime/Graphics/D3D12/D3D12Texture.h>
 
+#include <imgui.h>
+#include <backends/imgui_impl_dx12.h>
+
 namespace Horizon
 {
 	D3D12CommandList::~D3D12CommandList()
@@ -180,5 +183,10 @@ namespace Horizon
 		destinationLocation.SubresourceIndex = subresource;
 
 		m_list->CopyTextureRegion(&destinationLocation, 0, 0, 0, &sourceLocation, nullptr);
+	}
+
+	void D3D12CommandList::DrawImGui()
+	{
+		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_list);
 	}
 }
