@@ -27,6 +27,7 @@ namespace Horizon
 	inline constexpr u16 u16_max = std::numeric_limits<u16>::max();
 	inline constexpr u8 u8_max = std::numeric_limits<u8>::max();
 
+	inline constexpr u16 kInvalid16 = 0xFFFF;
 	inline constexpr u32 kInvalid32 = ~0u;
 	inline constexpr u64 kInvalid64 = ~0ull;
 
@@ -57,6 +58,19 @@ namespace Horizon
 		u32 Index() const { return u32(id & IndexMask); }
 		u32 Generation() const { return u32(id >> IndexBits); }
 	};
+
+	inline u32 NextTypeId()
+	{
+		static u32 counter = 0;
+		return counter++;
+	}
+
+	template<typename T>
+	u32 TypeId()
+	{
+		static const u32 id = NextTypeId();
+		return id;
+	}
 
 #define GENERATE_FLAGS(E) \
 	inline E operator|(E a, E b){ return E(u32(a) | u32(b)); } \
