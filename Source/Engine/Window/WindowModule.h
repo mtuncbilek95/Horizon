@@ -1,25 +1,24 @@
 #pragma once
 
-#include <Runtime/Window/Window.h>
-#include <Engine/Engine/IModule.h>
+#include <Engine/Core/Submodule.h>
 
 namespace Horizon
 {
-	class WindowModule : public IModule
+	class Window;
+
+	class WindowModule final : public Submodule
 	{
 	public:
 		WindowModule() = default;
-		WindowModule(const WindowDesc& desc);
-		~WindowModule();
+		~WindowModule() = default;
 
-		const Window& GetMainWindow() const { return *m_window; }
+		Window* GetWindow() const { return m_window; }
 
-		void OnAttach(Engine& engine) final;
+		void OnAttach(Engine* engine) final;
 		void OnSync() final;
 		void OnDetach() final;
 
 	private:
-		WindowDesc m_desc = WindowDesc();
-		std::unique_ptr<Window> m_window;
+		Window* m_window;
 	};
 }

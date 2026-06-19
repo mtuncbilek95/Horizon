@@ -1,33 +1,28 @@
 #include "WindowModule.h"
 
-#include <Engine/Engine/Engine.h>
-#include <Engine/CommandLine/CommandLineModule.h>
+#include <Engine/Core/Engine.h>
+#include <Runtime/PAL/Window/Window.h>
 
 namespace Horizon
 {
-	WindowModule::WindowModule(const WindowDesc& desc) : m_desc(desc)
-	{}
-
-	WindowModule::~WindowModule()
-	{}
-
-	void WindowModule::OnAttach(Engine& engine)
+	void WindowModule::OnAttach(Engine* pEngine)
 	{
-		IModule::OnAttach(engine);
+		Submodule::OnAttach(pEngine);
 
-		auto* cmdLineArg = engine.TryGetModule<CommandLineModule>();
-
-		m_window = std::make_unique<Window>(m_desc);
+		m_window = Allocator::Create<Window>(CurrLoc(), WindowDesc());
+		m_window->Show();
 	}
 
 	void WindowModule::OnSync()
 	{
 		m_window->PollEvents();
 
-		if (!m_window->IsActive())
-			m_engine->RequestExit("Window closed!");
+		if (!m_window->GetActive())
+			m_engine->RequestExit("Main window is no longer active!");
 	}
 
 	void WindowModule::OnDetach()
-	{}
+	{
+		Allocator::Delete(m_window);
+	}
 }
