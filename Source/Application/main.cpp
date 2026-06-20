@@ -2,6 +2,7 @@
 
 #include <Engine/Job/JobModule.h>
 #include <Engine/Window/WindowModule.h>
+#include <Editor/Domain/DomainModule.h>
 #include <Engine/Asset/AssetModule.h>
 #include <Engine/Graphics/GraphicsModule.h>
 
@@ -13,6 +14,7 @@ i32 main(i32 argC, c8** argV)
 
 	engine.AddModule<JobModule>();
 	engine.AddModule<WindowModule>();
+	engine.AddModule<DomainModule>();
 	engine.AddModule<AssetModule>();
 	engine.AddModule<GraphicsModule>();
 

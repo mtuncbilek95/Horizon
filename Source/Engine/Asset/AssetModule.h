@@ -14,7 +14,7 @@ namespace Horizon
 		void OnSync() final;
 		void OnDetach() final;
 
-		void ImportAsset(const std::filesystem::path& from, const std::filesystem::path& to);
+		AssetProperties* Create(std::string typeName);
 
 	private:
 		template<typename T>
@@ -36,8 +36,6 @@ namespace Horizon
 					return Allocator::Create<T>(CurrLoc());
 				};
 		}
-
-		AssetProperties* Create(std::string typeName);
 
 	private:
 		std::unordered_map<u32, PropertyFactory> m_registeredTypes;
