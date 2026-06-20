@@ -10,6 +10,7 @@ namespace Horizon
 			return DXGI_FORMAT_R8_UNORM;
 		case GfxTextureFormat::RG8:
 			return DXGI_FORMAT_R8G8_UNORM;
+		case GfxTextureFormat::RGB8:
 		case GfxTextureFormat::RGBA8:
 			return DXGI_FORMAT_R8G8B8A8_UNORM;
 		case GfxTextureFormat::RGBA8_sRGB:

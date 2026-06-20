@@ -22,7 +22,7 @@ namespace Horizon
 	enum class GfxTextureFormat : u8
 	{
 		Undefined,
-		R8, RG8, RGBA8, RGBA8_sRGB,
+		R8, RG8, RGB8, RGBA8, RGBA8_sRGB,
 		BGRA8, BGRA8_sRGB,
 		R16F, RG16F, RGBA16F,
 		R32F, RG32F, RGBA32F,

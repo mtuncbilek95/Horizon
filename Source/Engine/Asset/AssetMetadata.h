@@ -4,6 +4,7 @@
 
 #include <string>
 #include <filesystem>
+#include <iosfwd>
 
 using json = nlohmann::json;
 
@@ -11,9 +12,12 @@ namespace Horizon
 {
 	struct AssetProperties
 	{
+		virtual ~AssetProperties() = default;
+
 		virtual void Serialize(json& outFile) const = 0;
 		virtual void Deserialize(const json& inFile) = 0;
 		virtual void Import(const std::filesystem::path& path) = 0;
+		virtual void Cook(std::ostream& out) const = 0;
 	};
 
 	struct AssetMetadata

@@ -7,6 +7,8 @@
 
 #include <Engine/Asset/Texture/TextureProperties.h>
 
+#include <fstream>
+
 namespace Horizon
 {
 	namespace
@@ -52,23 +54,37 @@ namespace Horizon
 
 	void AssetModule::ImportAsset(const std::filesystem::path& from, const std::filesystem::path& to)
 	{
-		auto type = ExtensionToType(from.extension().string());
-		auto* correctProp = Create(type);
-
-		if (!correctProp)
+		std::string type = ExtensionToType(from.extension().string());
+		if (type.empty())
 			return;
-		correctProp->Import(from);
+
+		AssetProperties* props = Create(type);
+		if (!props)
+			return;
+
+		props->Import(from);
+
+		const std::string stem = from.stem().string();
+		std::filesystem::path binPath = to / (stem + ".hbin");
+
+		{
+			std::ofstream bin(binPath, std::ios::binary);
+			props->Cook(bin);
+		}
 
 		AssetMetadata metadata = {};
-		metadata.assetInfo = correctProp;
+		metadata.assetInfo = props;
 		metadata.assetId = Guid::Generate();
-		metadata.assetName = from.stem().string();
+		metadata.assetName = stem;
 		metadata.assetType = type;
-		metadata.binPath = metadata.assetId.ToString() + ".h" + type;
+		metadata.binPath = binPath;
+		metadata.binarySize = std::filesystem::file_size(binPath);
 
 		metadata.Serialize(to);
 
-		Terminal::Info("AssetModule", "Assume that {} has been serialized", from.string());
+		Allocator::Delete(props);
+
+		Terminal::Info("AssetModule", "{} has been serialized", from.string());
 	}
 
 	AssetProperties* AssetModule::Create(std::string typeName)
