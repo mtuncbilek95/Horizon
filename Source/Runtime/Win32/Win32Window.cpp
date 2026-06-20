@@ -182,6 +182,28 @@ namespace Horizon
 				pWindow->SubmitMessage(message);
 				break;
 			}
+			case WM_DROPFILES:
+			{
+				Window* pWindow = GetWindowFromHandle(hwnd);
+
+				InputMessage message = {};
+				message.type = InputMessageType::DropFiles;
+
+				HDROP hDrop = (HDROP)wParam;
+				u32 fileCount = DragQueryFile(hDrop, 0xFFFFFFFF, NULL, 0);
+
+				for (u32 it = 0; it < fileCount; it++)
+				{
+					c8 buffer[MAX_PATH];
+					DragQueryFile(hDrop, it, buffer, MAX_PATH);
+
+					message.filePaths.push_back(std::string(buffer));
+				}
+				DragFinish(hDrop);
+
+				pWindow->SubmitMessage(message);
+				break;
+			}
 			case WM_SETCURSOR:
 			{
 				if (LOWORD(lParam) == HTCLIENT)
@@ -189,6 +211,7 @@ namespace Horizon
 					SetCursor(LoadCursor(NULL, IDC_ARROW));
 					return TRUE;
 				}
+
 				return DefWindowProc(hwnd, msg, wParam, lParam);
 			}
 			default:
@@ -196,6 +219,12 @@ namespace Horizon
 			}
 
 			return 0;
+		}
+
+		void EnableFlags(HWND hwnd, WindowFlags flags)
+		{
+			if (HasFlag(flags, WindowFlags::EnableDragDrop))
+				DragAcceptFiles(hwnd, TRUE);
 		}
 	}
 
@@ -236,6 +265,8 @@ namespace Horizon
 
 		m_handle = ToOSHandle(hwnd);
 		m_active = true;
+
+		EnableFlags(hwnd, desc.flags);
 	}
 
 	Window::~Window()

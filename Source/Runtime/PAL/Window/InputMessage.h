@@ -6,6 +6,9 @@
 #include <Runtime/PAL/Window/MouseButton.h>
 #include <Runtime/PAL/Window/WindowMode.h>
 
+#include <vector>
+#include <filesystem>
+
 namespace Horizon
 {
 	struct InputMessage
@@ -23,5 +26,7 @@ namespace Horizon
 		i32 posX, posY;
 
 		InputModifiers modifiers;
+
+		std::vector<std::filesystem::path> filePaths;
 	};
 }

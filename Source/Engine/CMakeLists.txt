@@ -11,3 +11,10 @@ target_link_libraries(Engine
 	PUBLIC
 		Runtime
 )
+
+target_link_libraries(Engine
+	PUBLIC
+		stb
+)
+
+AddStbMacros(Engine)

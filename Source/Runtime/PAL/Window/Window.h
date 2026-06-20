@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Runtime/PAL/Window/WindowMode.h>
+#include <Runtime/PAL/Window/WindowFlags.h>
 #include <Runtime/PAL/Window/InputMessage.h>
 
 #include <string>
@@ -24,6 +25,7 @@ namespace Horizon
 		std::string titleName = "Horizon";
 		u32 width = 1920, height = 1080;
 		WindowMode mode = WindowMode::Borderless;
+		WindowFlags flags;
 	};
 
 	class Window final

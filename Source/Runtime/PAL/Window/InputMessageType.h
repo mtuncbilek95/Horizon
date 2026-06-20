@@ -16,6 +16,7 @@ namespace Horizon
 		Move,
 		Focus,
 		LostFocus,
-		Close
+		Close,
+		DropFiles
 	};
 }
