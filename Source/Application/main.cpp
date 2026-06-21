@@ -5,6 +5,7 @@
 #include <Editor/Domain/DomainModule.h>
 #include <Engine/Asset/AssetModule.h>
 #include <Engine/Graphics/GraphicsModule.h>
+#include <Editor/Editor/EditorModule.h>
 
 using namespace Horizon;
 
@@ -17,6 +18,7 @@ i32 main(i32 argC, c8** argV)
 	engine.AddModule<DomainModule>();
 	engine.AddModule<AssetModule>();
 	engine.AddModule<GraphicsModule>();
+	engine.AddModule<EditorModule>();
 
 	engine.Run();
 }
