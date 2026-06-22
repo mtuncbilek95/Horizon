@@ -28,7 +28,7 @@ namespace Horizon
 		WindowFlags flags;
 	};
 
-	class Window final
+	class H_EXPORT Window final
 	{
 	public:
 		Window(const WindowDesc& desc);

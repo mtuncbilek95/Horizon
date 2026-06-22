@@ -4,7 +4,7 @@ namespace Horizon
 {
 	using CritSecHandl = void*;
 
-	class CriticalSection
+	class H_EXPORT CriticalSection
 	{
 	public:
 		CriticalSection();

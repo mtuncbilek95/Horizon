@@ -6,6 +6,7 @@ function(SetupConfig)
     endif()
 
     if(WIN32)
+        add_compile_definitions(H_EXPORT=__declspec\(dllexport\)) # Its just a placeholder
         add_compile_definitions(FORCEINLINE=__forceinline)
         add_compile_definitions(NOINLINE=__declspec\(noinline\))
         add_compile_definitions(INLINE=__inline)

@@ -37,4 +37,8 @@ namespace Horizon
 	inline constexpr u16 kInvalid16 = u16(~0u);
 	inline constexpr u32 kInvalid32 = ~0u;
 	inline constexpr u64 kInvalid64 = ~0ull;
+
+	inline constexpr u64 MaxNameBufferLength = 512;
+	inline constexpr u64 MaxBufferLength = 256;
+	inline constexpr u64 MaxPathLength = 2048;
 }
