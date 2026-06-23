@@ -5,6 +5,7 @@
 #include <Runtime/PAL/Sync/Thread.h>
 #include <Runtime/PAL/Sync/CriticalSection.h>
 #include <Runtime/PAL/Sync/Semaphore.h>
+#include <Runtime/PAL/Sync/Atomic.h>
 
 #include <queue>
 #include <shared_mutex>
@@ -45,6 +46,6 @@ namespace Horizon
 
 		usize m_index;
 
-		std::atomic<b8> m_working = false;
+		Atomic<b8> m_working = false;
 	};
 }

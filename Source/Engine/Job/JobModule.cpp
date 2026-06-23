@@ -35,24 +35,24 @@ namespace Horizon
 
 	void JobModule::SubmitJob(Job&& job)
 	{
-		usize index = m_nextWorker.fetch_add(1, std::memory_order_relaxed) % m_workers.size();
+		usize index = m_nextWorker.FetchAdd(1) % m_workers.size();
 		m_workers[index]->AddJob(std::move(job));
 	}
 
 	void JobModule::Dispatch(JobCounter& counter, Job&& job)
 	{
-		counter.remaining.fetch_add(1, std::memory_order_relaxed);
+		counter.remaining.FetchAdd(1);
 
 		SubmitJob([&counter, job = std::move(job)]()
 			{
 				job();
-				counter.remaining.fetch_sub(1, std::memory_order_acq_rel);
+				counter.remaining.FetchSubtract(1);
 			});
 	}
 
 	void JobModule::Wait(JobCounter& counter)
 	{
-		while (counter.remaining.load(std::memory_order_acquire) > 0)
+		while (counter.remaining.Load() > 0)
 		{
 			if (!TryRunOneJob())
 				Thread::YieldCurrent();

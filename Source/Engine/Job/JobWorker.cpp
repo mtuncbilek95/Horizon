@@ -18,7 +18,7 @@ namespace Horizon
 
 	void JobWorker::Run()
 	{
-		while (m_working)
+		while (m_working.Load())
 		{
 			Job currJob;
 			if (TryPopJob(currJob))
@@ -40,7 +40,7 @@ namespace Horizon
 
 	void JobWorker::Stop()
 	{
-		m_working = false;
+		m_working.Store(false);
 		m_signal.Release();
 
 		if (m_worker.IsJoinable())

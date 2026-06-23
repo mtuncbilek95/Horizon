@@ -43,6 +43,7 @@ namespace Horizon
 
 		static u32 PerformanceCoreCount();
 		static u32 EfficiencyCoreCount();
+
 	private:
 		ThreadHandle m_handle = nullptr;
 		u64 m_id = 0;

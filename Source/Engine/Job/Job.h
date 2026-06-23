@@ -1,7 +1,8 @@
 #pragma once
 
+#include <Runtime/PAL/Sync/Atomic.h>
+
 #include <functional>
-#include <atomic>
 
 namespace Horizon
 {
@@ -9,6 +10,6 @@ namespace Horizon
 
 	struct JobCounter
 	{
-		std::atomic<u32> remaining = 0;
+		Atomic<u32> remaining = 0;
 	};
 }

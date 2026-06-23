@@ -1,7 +1,12 @@
 #pragma once
 
+#include <Runtime/Containers/ScopedLock.h>
+
 #include <Runtime/RHI/GfxTypes.h>
 #include <Runtime/RHI/Object/GfxResource.h>
+
+#include <Runtime/PAL/Sync/Atomic.h>
+#include <Runtime/PAL/Sync/CriticalSection.h>
 
 #include <queue>
 #include <atomic>
@@ -55,8 +60,8 @@ namespace Horizon
 		};
 
 		std::queue<Pending> m_pending;
-		std::mutex m_mutex;
-		std::atomic<u64> m_frameIndex = 0;
+		CriticalSection m_mutex;
+		Atomic<u64> m_frameIndex = 0;
 	};
 
 	GfxDevice* CreateGfxDevice();

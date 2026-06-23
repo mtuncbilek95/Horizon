@@ -4,6 +4,8 @@
 #include <Engine/Job/Job.h>
 #include <Engine/Job/JobWorker.h>
 
+#include <Runtime/PAL/Sync/Atomic.h>
+
 namespace Horizon
 {
 	class JobModule : public Submodule
@@ -24,6 +26,6 @@ namespace Horizon
 
 	private:
 		std::vector<JobWorker*> m_workers;
-		std::atomic<usize> m_nextWorker = 0;
+		Atomic<usize> m_nextWorker = 0;
 	};
 }

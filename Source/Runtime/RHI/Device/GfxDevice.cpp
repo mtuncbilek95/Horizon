@@ -7,13 +7,13 @@ namespace Horizon
 {
 	void GfxDevice::EnqueueDelete(GfxResource* pResource)
 	{
-		std::lock_guard lock(m_mutex);
-		m_pending.push({ pResource, m_frameIndex.load() });
+		ScopedLock lock(m_mutex);
+		m_pending.push({ pResource, m_frameIndex.Load() });
 	}
 
 	void GfxDevice::FlushPendingDeletes(u64 currentFrame)
 	{
-		std::lock_guard lock(m_mutex);
+		ScopedLock lock(m_mutex);
 		while (!m_pending.empty() && m_pending.front().retireFrame + MaxFramesInFlight <= currentFrame)
 		{
 			Allocator::Delete(m_pending.front().pResource);
@@ -23,6 +23,6 @@ namespace Horizon
 
 	void GfxDevice::SetFrameIndex(u64 idx)
 	{
-		m_frameIndex = idx;
+		m_frameIndex.Store(idx);
 	}
 }
