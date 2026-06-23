@@ -23,7 +23,7 @@ namespace Horizon
 		b8 TryRunOneJob();
 
 	private:
-		std::vector<std::unique_ptr<JobWorker>> m_workers;
+		std::vector<JobWorker*> m_workers;
 		std::atomic<usize> m_nextWorker = 0;
 	};
 }

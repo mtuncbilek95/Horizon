@@ -2,10 +2,17 @@
 
 #include <Engine/Job./JobModule.h>
 
+#include <Runtime/Containers/ScopedLock.h>
+
 namespace Horizon
 {
+	void JobWorker::ThreadEntryPoint(void* userData)
+	{
+		((JobWorker*)userData)->Run();
+	}
+
 	JobWorker::JobWorker(JobModule* pModule, usize index) : m_owner(pModule),
-		m_index(index), m_worker(&JobWorker::Run, this), m_working(true)
+		m_index(index), m_worker(&JobWorker::ThreadEntryPoint, this, "Thread"), m_working(true)
 	{
 	}
 
@@ -27,34 +34,32 @@ namespace Horizon
 				continue;
 			}
 
-			std::unique_lock lock(m_mutex);
-			m_condition.wait_for(lock, std::chrono::milliseconds(1),
-				[&] { return !m_jobs.empty() || !m_working; });
+			m_signal.TryAcquire(1);
 		}
 	}
 
 	void JobWorker::Stop()
 	{
 		m_working = false;
-		m_condition.notify_one();
+		m_signal.Release();
 
-		if (m_worker.joinable())
-			m_worker.join();
+		if (m_worker.IsJoinable())
+			m_worker.Join();
 	}
 
 	void JobWorker::AddJob(Job&& job)
 	{
 		{
-			std::lock_guard lock(m_mutex);
+			ScopedLock lock(m_mutex);
 			m_jobs.push_back(std::move(job));
 		}
 
-		m_condition.notify_one();
+		m_signal.Release();
 	}
 
 	b8 JobWorker::TryStealFromThis(Job& out)
 	{
-		std::lock_guard lock(m_mutex);
+		ScopedLock lock(m_mutex);
 
 		if (m_jobs.empty())
 			return false;
@@ -65,9 +70,14 @@ namespace Horizon
 		return true;
 	}
 
+	void JobWorker::SetThreadAffinity(u64 mask)
+	{
+		m_worker.SetAffinity(mask);
+	}
+
 	b8 JobWorker::TryPopJob(Job& out)
 	{
-		std::lock_guard lock(m_mutex);
+		ScopedLock lock(m_mutex);
 
 		if (m_jobs.empty())
 			return false;

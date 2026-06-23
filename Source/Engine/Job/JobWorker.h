@@ -2,9 +2,11 @@
 
 #include <Engine/Job/Job.h>
 
+#include <Runtime/PAL/Sync/Thread.h>
+#include <Runtime/PAL/Sync/CriticalSection.h>
+#include <Runtime/PAL/Sync/Semaphore.h>
+
 #include <queue>
-#include <thread>
-#include <mutex>
 #include <shared_mutex>
 #include <condition_variable>
 #include <atomic>
@@ -15,6 +17,7 @@ namespace Horizon
 
 	class JobWorker
 	{
+		static void ThreadEntryPoint(void* userData);
 	public:
 		JobWorker(JobModule* pModule, usize index);
 		~JobWorker() = default;
@@ -27,18 +30,21 @@ namespace Horizon
 		b8 TryStealFromThis(Job& out);
 		usize GetWorkerIndex() const { return m_index; }
 
+		void SetThreadAffinity(u64 mask);
+
 	private:
 		b8 TryPopJob(Job& out);
 
 	private:
 		std::deque<Job> m_jobs;
-		std::thread m_worker;
-		std::mutex m_mutex;
-		std::condition_variable m_condition;
-		std::atomic<b8> m_working = false;
+		JobModule* m_owner;
+
+		Thread m_worker;
+		CriticalSection m_mutex;
+		Semaphore m_signal;
 
 		usize m_index;
 
-		JobModule* m_owner;
+		std::atomic<b8> m_working = false;
 	};
 }

@@ -9,7 +9,7 @@ namespace Horizon
 
 	struct SymbolLibraryDesc
 	{
-		std::string path = "";
+		std::string path;
 		b8 isMain = true;
 	};
 

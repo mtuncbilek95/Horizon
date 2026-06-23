@@ -10,16 +10,27 @@ namespace Horizon
 	{
 		Submodule::OnAttach(pEngine);
 
-		uint32_t maxWorker = std::thread::hardware_concurrency() - 1;
+		for (usize i = 0; i < Thread::HardwareConcurrency() - 1; i++)
+			m_workers.push_back(Allocator::Create<JobWorker>(CurrLoc(), this, i));
 
-		for (uint32_t idx = 0; idx < maxWorker; idx++)
-			m_workers.push_back(std::make_unique<JobWorker>(this, idx));
+		auto cores = Thread::EnumerateCores();
+		for (usize i = 0; i < m_workers.size(); ++i)
+		{
+			const CoreInfo& core = cores[i % cores.size()];
+			m_workers[i]->SetThreadAffinity(1ull << core.logicalIndex);
+
+			Terminal::Info("JobModule", "Thread{} pinned to {}-Core",
+				i, core.isPerformance ? "Performance" : "Efficiency");
+		}
 	}
 
 	void JobModule::OnDetach()
 	{
 		for (usize i = 0; i < m_workers.size(); i++)
 			m_workers[i]->Stop();
+
+		for (auto* worker : m_workers)
+			Allocator::Delete(worker);
 	}
 
 	void JobModule::SubmitJob(Job&& job)
@@ -44,7 +55,7 @@ namespace Horizon
 		while (counter.remaining.load(std::memory_order_acquire) > 0)
 		{
 			if (!TryRunOneJob())
-				std::this_thread::yield();
+				Thread::YieldCurrent();
 		}
 	}
 
@@ -60,7 +71,7 @@ namespace Horizon
 		if (index >= avoidWorker->GetWorkerIndex())
 			++index;
 
-		return m_workers[index].get();
+		return m_workers[index];
 	}
 
 	b8 JobModule::TryRunOneJob()
