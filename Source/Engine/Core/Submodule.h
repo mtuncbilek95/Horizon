@@ -1,11 +1,17 @@
 #pragma once
 
+#include <Runtime/Reflection/Class.h>
+
+H_GENERATE_REFLECTION;
+
 namespace Horizon
 {
 	class Engine;
 
-	class Submodule
+	HCLASS(Base);
+	class Submodule : public Class
 	{
+		GENERATE_OBJECT;
 	public:
 		virtual ~Submodule() = default;
 
