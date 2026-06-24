@@ -3,8 +3,6 @@
 #include <Windows.h>
 #include <process.h>
 
-#include <string>
-#include <vector>
 #include <utility>
 #include <algorithm>
 
@@ -16,12 +14,12 @@ namespace Horizon
 		{
 			ThreadEntry entry;
 			CustomUserData userData;
-			std::string name;
+			String name;
 		};
 
-		void SetCurrentThreadName(const std::string& name)
+		void SetCurrentThreadName(const String& name)
 		{
-			if (name.empty())
+			if (name.IsEmpty())
 				return;
 
 			using SetThreadDescriptionFn = HRESULT(WINAPI*)(HANDLE, PCWSTR);
@@ -36,12 +34,12 @@ namespace Horizon
 			if (!pSetThreadDescription)
 				return;
 
-			i32 wlen = ::MultiByteToWideChar(CP_UTF8, 0, name.data(), (i32)(name.size()), nullptr, 0);
+			i32 wlen = ::MultiByteToWideChar(CP_UTF8, 0, name.GetSource(), (i32)(name.GetSize()), nullptr, 0);
 			if (wlen <= 0)
 				return;
 
 			std::wstring wname((usize)(wlen), L'\0');
-			::MultiByteToWideChar(CP_UTF8, 0, name.data(), (i32)(name.size()), wname.data(), wlen);
+			::MultiByteToWideChar(CP_UTF8, 0, name.GetSource(), (i32)(name.GetSize()), wname.data(), wlen);
 			pSetThreadDescription(::GetCurrentThread(), wname.c_str());
 		}
 
@@ -59,9 +57,9 @@ namespace Horizon
 		}
 	}
 
-	Thread::Thread(ThreadEntry entry, CustomUserData userData, std::string_view name)
+	Thread::Thread(ThreadEntry entry, CustomUserData userData, StringView name)
 	{
-		ThreadStartContext* ctx = Allocator::Create<ThreadStartContext>(CurrLoc(), entry, userData, std::string(name));
+		ThreadStartContext* ctx = Allocator::Create<ThreadStartContext>(CurrLoc(), entry, userData, String(name.GetSource(), name.GetSize()));
 
 		uintptr_t h = ::_beginthreadex(nullptr, 0, &ThreadTrampoline, ctx, 0, nullptr);
 		if (h == 0)
@@ -159,18 +157,18 @@ namespace Horizon
 		return (u64)(::GetCurrentThreadId());
 	}
 
-	std::vector<CoreInfo> Thread::EnumerateCores()
+	List<CoreInfo> Thread::EnumerateCores()
 	{
-		std::vector<CoreInfo> result;
+		List<CoreInfo> result;
 
 		DWORD len = 0;
 		::GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &len);
 		if (len == 0)
 			return result;
 
-		std::vector<u8> buffer(len);
+		List<u8> buffer(len);
 		if (!::GetLogicalProcessorInformationEx(RelationProcessorCore,
-			(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.data()), &len))
+			(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.Data()), &len))
 			return result;
 
 		auto forEachCore = [&](auto&& fn)
@@ -178,7 +176,7 @@ namespace Horizon
 				DWORD offset = 0;
 				while (offset < len)
 				{
-					auto* rec = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.data() + offset);
+					auto* rec = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.Data() + offset);
 					if (rec->Relationship == RelationProcessorCore)
 						fn(*rec);
 					offset += rec->Size;
@@ -203,7 +201,7 @@ namespace Horizon
 				{
 					if (mask & (KAFFINITY(1) << bit))
 					{
-						result.push_back(CoreInfo{ bit, isPerf });
+						result.PushBack(CoreInfo{ bit, isPerf });
 						break;
 					}
 				}

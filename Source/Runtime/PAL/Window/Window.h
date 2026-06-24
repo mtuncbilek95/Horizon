@@ -4,10 +4,8 @@
 #include <Runtime/PAL/Window/WindowFlags.h>
 #include <Runtime/PAL/Window/InputMessage.h>
 
-#include <string>
-#include <string_view>
-#include <vector>
-#include <span>
+#include <Runtime/Containers/String.h>
+#include <Runtime/Containers/List.h>
 
 namespace Horizon
 {
@@ -22,7 +20,7 @@ namespace Horizon
 
 	struct WindowDesc final
 	{
-		std::string titleName = "Horizon";
+		String titleName = "Horizon";
 		u32 width = 1920, height = 1080;
 		WindowMode mode = WindowMode::Borderless;
 		WindowFlags flags = WindowFlags::None;
@@ -40,11 +38,11 @@ namespace Horizon
 		Window& operator=(const Window&) = delete;
 		Window& operator=(Window&&) = delete;
 
-		std::span<const InputMessage> GetMessages() const { return m_messages; }
+		const List<InputMessage>& GetMessages() const { return m_messages; }
 		void SubmitMessage(const InputMessage& msg);
 
 		WindowRect GetRect() const { return { m_desc.width, m_desc.height, m_posX, m_posY }; }
-		std::string_view GetName() const { return m_desc.titleName; }
+		const String& GetName() const { return m_desc.titleName; }
 		OSHandle GetOSHandle() const { return m_handle; }
 		OSInstance GetOSInstance() const { return m_instance; }
 
@@ -58,7 +56,7 @@ namespace Horizon
 	private:
 		WindowDesc m_desc;
 
-		std::vector<InputMessage> m_messages;
+		List<InputMessage> m_messages;
 		OSHandle m_handle = OSHandle{};
 		OSInstance m_instance = OSInstance{};
 

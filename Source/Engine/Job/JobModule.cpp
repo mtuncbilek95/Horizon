@@ -16,7 +16,7 @@ namespace Horizon
 		auto cores = Thread::EnumerateCores();
 		for (usize i = 0; i < m_workers.size(); ++i)
 		{
-			const CoreInfo& core = cores[i % cores.size()];
+			const CoreInfo& core = cores[i % cores.Size()];
 			m_workers[i]->SetThreadAffinity(1ull << core.logicalIndex);
 
 			Terminal::Info("JobModule", "Thread{} pinned to {}-Core",

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <string_view>
+#include <Runtime/Containers/List.h>
+#include <Runtime/Containers/StringView.h>
 
 namespace Horizon
 {
@@ -18,7 +19,7 @@ namespace Horizon
 	{
 	public:
 		Thread() = default;
-		Thread(ThreadEntry entry, CustomUserData userData, std::string_view name = {});
+		Thread(ThreadEntry entry, CustomUserData userData, StringView name = {});
 		~Thread();
 
 		Thread(const Thread&) = delete;
@@ -34,7 +35,7 @@ namespace Horizon
 		u64 GetId() const { return m_id; }
 
 		void SetAffinity(u64 coreMask);
-		static std::vector<CoreInfo> EnumerateCores();
+		static List<CoreInfo> EnumerateCores();
 
 		static void SleepMs(u32 millisec);
 		static void YieldCurrent();
