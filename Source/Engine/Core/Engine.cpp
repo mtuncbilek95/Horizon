@@ -1,9 +1,23 @@
 #include "Engine.h"
 
+#include <Engine/Reflection/ReflectionModule.h>
+
 namespace Horizon
 {
+	Engine::Engine()
+	{
+		m_reflectionModule = Allocator::Create<ReflectionModule>(CurrLoc());
+	}
+
+	Engine::~Engine()
+	{
+		Allocator::Delete(m_reflectionModule);
+	}
+
 	void Engine::Run()
 	{
+		m_reflectionModule->LoadMainModule();
+
 		for (auto& module : m_modules)
 			module->OnAttach(this);
 
@@ -24,7 +38,7 @@ namespace Horizon
 		Allocator::ReportLeaks();
 	}
 
-	void Engine::RequestExit(std::string_view reason)
+	void Engine::RequestExit(StringView reason)
 	{
 		m_exitRequested = true;
 		Terminal::Info("Engine", "Quit Reason - {}", reason);

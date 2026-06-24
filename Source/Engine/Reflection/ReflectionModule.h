@@ -1,16 +1,24 @@
 #pragma once
 
-#include <Engine/Core/Submodule.h>
+#include <Engine/Reflection/ReflectionContext.h>
+
+#include <Runtime/Containers/Path.h>
+#include <Runtime/PAL/Module/SymbolLibrary.h>
 
 namespace Horizon
 {
-	class ReflectionModule final : public Submodule
+	class ReflectionModule final
 	{
 	public:
-		void OnAttach(Engine* pEngine) final;
-		void OnSync() final;
-		void OnDetach() final;
+		void LoadMainModule();
+		void LoadModule(const Path& path);
+
+		const ReflectionContext& GetContext() const noexcept { return m_context; }
 
 	private:
+		void ProcessManifest(const SymbolLibrary& library);
+
+	private:
+		ReflectionContext m_context;
 	};
 }

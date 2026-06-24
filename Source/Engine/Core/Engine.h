@@ -2,18 +2,24 @@
 
 #include <Engine/Core/Submodule.h>
 
+#include <Runtime/Containers/StringView.h>
+
 #include <vector>
 #include <memory>
 #include <unordered_map>
 #include <typeindex>
-#include <string_view>
 #include <cassert>
 
 namespace Horizon
 {
+	class ReflectionModule;
+
 	class Engine final
 	{
 	public:
+		Engine();
+		~Engine();
+
 		template<typename TModule, typename... Args>
 			requires std::is_base_of_v<Submodule, TModule>
 		TModule& AddModule(Args&&... args)
@@ -53,11 +59,13 @@ namespace Horizon
 		}
 
 		void Run();
-		void RequestExit(std::string_view reason);
+		void RequestExit(StringView reason);
 
 	private:
 		std::vector<Submodule*> m_modules;
 		std::unordered_map<std::type_index, Submodule*> m_lookup;
 		b8 m_exitRequested = false;
+
+		ReflectionModule* m_reflectionModule;
 	};
 }
