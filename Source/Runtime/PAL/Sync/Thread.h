@@ -14,7 +14,7 @@ namespace Horizon
 		b8 isPerformance;
 	};
 
-	class Thread
+	class H_EXPORT Thread
 	{
 	public:
 		Thread() = default;

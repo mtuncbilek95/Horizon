@@ -4,7 +4,7 @@ namespace Horizon
 {
 	using MutexHandle = void*;
 
-	class Mutex
+	class H_EXPORT Mutex
 	{
 	public:
 		Mutex();

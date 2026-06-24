@@ -25,7 +25,7 @@ namespace Horizon
 		std::string titleName = "Horizon";
 		u32 width = 1920, height = 1080;
 		WindowMode mode = WindowMode::Borderless;
-		WindowFlags flags;
+		WindowFlags flags = WindowFlags::None;
 	};
 
 	class H_EXPORT Window final

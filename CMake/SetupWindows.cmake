@@ -3,5 +3,5 @@ function(SetupD3D TARGET)
 endfunction()
 
 function(SetupWin32 TARGET)
-    target_link_libraries(${TARGET} PUBLIC user32.lib gdi32.lib shell32.lib Setupapi.lib windowscodecs.lib)
+    target_link_libraries(${TARGET} PUBLIC user32.lib gdi32.lib shell32.lib Setupapi.lib windowscodecs.lib Synchronization.lib)
 endfunction()

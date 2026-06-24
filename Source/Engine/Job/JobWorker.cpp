@@ -4,6 +4,8 @@
 
 #include <Runtime/Containers/ScopedLock.h>
 
+#include <utility>
+
 namespace Horizon
 {
 	void JobWorker::ThreadEntryPoint(void* userData)
@@ -11,37 +13,67 @@ namespace Horizon
 		((JobWorker*)userData)->Run();
 	}
 
-	JobWorker::JobWorker(JobModule* pModule, usize index) : m_owner(pModule),
-		m_index(index), m_worker(&JobWorker::ThreadEntryPoint, this, "Thread"), m_working(true)
+	JobWorker::JobWorker(JobModule* pModule, usize index) : m_owner(pModule), m_index(index), m_inbox(nullptr), 
+		m_signal(0), m_working(true), m_worker(&JobWorker::ThreadEntryPoint, this, "Thread")
 	{
+	}
+
+	JobWorker::~JobWorker()
+	{
+		JobNode* node = nullptr;
+		while (m_deque.PopBottom(node))
+			Allocator::Delete(node);
+
+		for (JobNode* nod = m_inbox.Exchange(nullptr); nod;)
+		{
+			JobNode* next = nod->next;
+			Allocator::Delete(nod);
+			nod = next;
+		}
 	}
 
 	void JobWorker::Run()
 	{
 		while (m_working.Load())
 		{
-			Job currJob;
-			if (TryPopJob(currJob))
+			DrainInbox();
+
+			Job job;
+			if (TryPopJob(job))
 			{
-				currJob();
+				job();
 				continue;
 			}
 
 			if (auto* pVictim = m_owner->GetRandomVictim(this);
-				pVictim && pVictim->TryStealFromThis(currJob))
+				pVictim && pVictim->TryStealFromThis(job))
 			{
-				currJob();
+				job();
 				continue;
 			}
 
-			m_signal.TryAcquire(1);
+			i64 seq = m_signal.Load();
+
+			DrainInbox();
+			if (TryPopJob(job))
+			{
+				job();
+				continue;
+			}
+
+			if (!m_working.Load())
+				break;
+
+			Futex::Wait(m_signal.Address(), seq);
 		}
 	}
 
 	void JobWorker::Stop()
 	{
 		m_working.Store(false);
-		m_signal.Release();
+
+		m_signal.FetchAdd(1);
+		Futex::WakeAll(m_signal.Address());
 
 		if (m_worker.IsJoinable())
 			m_worker.Join();
@@ -49,24 +81,34 @@ namespace Horizon
 
 	void JobWorker::AddJob(Job&& job)
 	{
+		JobNode* node = Allocator::Create<JobNode>(CurrLoc(), std::move(job), nullptr);
+
+		JobNode* head = m_inbox.Load();
+
+		while (true)
 		{
-			ScopedLock lock(m_mutex);
-			m_jobs.push_back(std::move(job));
+			node->next = head;
+			JobNode* prev = m_inbox.CompareExchange(head, node);
+
+			if (prev == head)
+				break;
+
+			head = prev;
 		}
 
-		m_signal.Release();
+		m_signal.FetchAdd(1);
+		Futex::WakeSingle(m_signal.Address());
 	}
 
 	b8 JobWorker::TryStealFromThis(Job& out)
 	{
-		ScopedLock lock(m_mutex);
+		JobNode* node = nullptr;
 
-		if (m_jobs.empty())
+		if (!m_deque.Steal(node))
 			return false;
 
-		out = std::move(m_jobs.front());
-		m_jobs.pop_front();
-
+		out = std::move(node->job);
+		Allocator::Delete(node);
 		return true;
 	}
 
@@ -75,16 +117,39 @@ namespace Horizon
 		m_worker.SetAffinity(mask);
 	}
 
+	void JobWorker::DrainInbox()
+	{
+		JobNode* head = m_inbox.Exchange(nullptr);
+		if (!head)
+			return;
+
+		JobNode* ordered = nullptr;
+		while (head)
+		{
+			JobNode* next = head->next;
+			head->next = ordered;
+			ordered = head;
+			head = next;
+		}
+
+		for (JobNode* n = ordered; n; )
+		{
+			JobNode* next = n->next;
+			n->next = nullptr;
+			m_deque.PushBottom(n);
+			n = next;
+		}
+	}
+
 	b8 JobWorker::TryPopJob(Job& out)
 	{
-		ScopedLock lock(m_mutex);
+		JobNode* node = nullptr;
 
-		if (m_jobs.empty())
+		if (!m_deque.PopBottom(node))
 			return false;
 
-		out = std::move(m_jobs.back());
-		m_jobs.pop_back();
-
+		out = std::move(node->job);
+		Allocator::Delete(node);
 		return true;
 	}
 }

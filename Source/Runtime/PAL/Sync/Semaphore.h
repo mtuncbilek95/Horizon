@@ -4,7 +4,7 @@ namespace Horizon
 {
 	using SemaphoreHandle = void*;
 
-	class Semaphore
+	class H_EXPORT Semaphore
 	{
 	public:
 		Semaphore(u32 initialCount = 0, u32 maxCount = i32_max);

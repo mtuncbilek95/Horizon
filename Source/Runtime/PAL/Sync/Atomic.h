@@ -25,7 +25,7 @@ namespace Horizon
 	};
 
 	template<typename T>
-	class Atomic
+	class H_EXPORT Atomic
 	{
 		static_assert(sizeof(T) <= sizeof(i64), "Atomic<T> only supports to types that sizeof(T) == 64.");
 
@@ -75,6 +75,8 @@ namespace Horizon
 		{
 			return FromRaw(AtomicOps::CompareExchange(&m_value, ToRaw(expected), ToRaw(desired), order));
 		}
+
+		void* Address() { return (void*)&m_value; }
 
 	private:
 		static i64 ToRaw(T value) { return (i64)value; }
