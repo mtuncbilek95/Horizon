@@ -15,6 +15,7 @@ namespace Horizon
 	class GfxPipeline;
 	class GfxBuffer;
 	class GfxCommandList;
+	class GfxFence;
 
 	struct EditorRendererDesc
 	{
