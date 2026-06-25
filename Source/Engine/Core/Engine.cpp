@@ -18,6 +18,9 @@ namespace Horizon
 		{
 			FlushPending();
 
+			if (m_exitRequested)
+				break;
+
 			for (Subsystem* system : m_activeSystems)
 				system->OnSync();
 		}
@@ -34,17 +37,15 @@ namespace Horizon
 
 	void Engine::FlushPending()
 	{
-		// Check the changes
 		b8 changed = !m_removePendingSystems.empty() || !m_initPendingSystems.empty();
 
-		// Detach the fuck out pending deletes
-		for (auto* system : m_removePendingSystems)
+		for (Subsystem* system : m_removePendingSystems)
 		{
 			system->OnDetach();
 
 			std::erase(m_activeSystems, system);
 
-			for (auto it = m_lookup.begin(); it != m_lookup.end(); it++)
+			for (auto it = m_lookup.begin(); it != m_lookup.end(); ++it)
 			{
 				if (it->second == system)
 				{
@@ -55,37 +56,90 @@ namespace Horizon
 
 			Allocator::Delete(system);
 		}
-
-		// Clean up the mess
 		m_removePendingSystems.clear();
 
 		std::unordered_set<Subsystem*> attaching(m_initPendingSystems.begin(), m_initPendingSystems.end());
 
-		for (auto* system : m_initPendingSystems)
+		for (Subsystem* system : m_initPendingSystems)
 			m_activeSystems.push_back(system);
-
 		m_initPendingSystems.clear();
 
-		if (changed)
-			SortActive();
+		if (!changed)
+			return;
+
+		std::vector<Subsystem*> initOrder = BuildOrder(m_activeSystems, true);
 
 		if (!m_exitRequested)
 		{
-			for (Subsystem* system : m_activeSystems)
+			Terminal::Log("Engine", "### Subsystem Initialize Order ###");
+			for (usize i = 0; i < initOrder.size(); i++)
+				Terminal::Log("Engine", "Index ({}) - {}", i, initOrder[i]->GetName());
+
+			for (Subsystem* system : initOrder)
 			{
 				if (attaching.contains(system))
-					system->OnAttach(this);
+				{
+					EngineReport report = system->OnAttach(this);
+					if (report)
+					{
+						Terminal::Error("Engine", "{} failed to attach: {}", system->GetName(), report.GetMessage());
+
+						RequestExit("Subsystem attach failed.");
+						return;
+					}
+				}
 			}
 		}
+
+		SortActive();
 	}
 
 	void Engine::SortActive()
 	{
-		const usize count = m_activeSystems.size();
+		m_activeSystems = BuildOrder(m_activeSystems, false);
+
+		if (m_exitRequested)
+			return;
+
+		Terminal::Log("Engine", "### Subsystem Execution Order ###");
+		for (usize i = 0; i < m_activeSystems.size(); i++)
+			Terminal::Log("Engine", "Index ({}) - {}", i, m_activeSystems[i]->GetName());
+
+	}
+
+	void Engine::Shutdown()
+	{
+		for (auto it = m_activeSystems.rbegin(); it != m_activeSystems.rend(); ++it)
+		{
+			(*it)->OnDetach();
+			Allocator::Delete(*it);
+		}
+
+		for (Subsystem* system : m_initPendingSystems)
+			Allocator::Delete(system);
+
+		m_activeSystems.clear();
+		m_initPendingSystems.clear();
+		m_removePendingSystems.clear();
+		m_lookup.clear();
+	}
+
+	std::vector<Subsystem*> Engine::BuildOrder(const std::vector<Subsystem*>& systems, b8 initialize)
+	{
+		const usize count = systems.size();
+
+		std::vector<OrderRules> rules(count);
+		for (usize i = 0; i < count; i++)
+		{
+			if (initialize)
+				systems[i]->GetInitializeOrder(rules[i]);
+			else
+				systems[i]->GetExecutionOrder(rules[i]);
+		}
 
 		std::unordered_map<Subsystem*, usize> indexOf;
 		for (usize i = 0; i < count; i++)
-			indexOf[m_activeSystems[i]] = i;
+			indexOf[systems[i]] = i;
 
 		std::vector<std::unordered_set<Subsystem*>> afterDeps(count);
 
@@ -96,46 +150,38 @@ namespace Horizon
 				if (a == b)
 					continue;
 
-				if (m_activeSystems[a]->GetExecutionTier() < m_activeSystems[b]->GetExecutionTier())
-					afterDeps[b].insert(m_activeSystems[a]);
+				if (systems[a]->GetTier() < systems[b]->GetTier())
+					afterDeps[b].insert(systems[a]);
 			}
 		}
 
-		std::vector<std::type_index> afterList;
-		std::vector<std::type_index> beforeList;
-
 		for (usize i = 0; i < count; i++)
 		{
-			Subsystem* system = m_activeSystems[i];
+			Subsystem* system = systems[i];
 
-			afterList.clear();
-			beforeList.clear();
-			system->GetExecuteAfter(afterList);
-			system->GetExecuteBefore(beforeList);
-
-			for (const std::type_index& a : afterList)
+			for (const std::type_index& a : rules[i].after)
 			{
-				for (const std::type_index& b : beforeList)
+				for (const std::type_index& b : rules[i].before)
 				{
 					if (a == b)
 					{
-						Terminal::Error("Engine", "{} declares ExecuteAfter and ExecuteBefore on the same type {}.",
-							typeid(*system).name(), a.name());
+						Terminal::Error("Engine", "{} declares After and Before on the same type {} ({} order).",
+							system->GetName(), a.name(), initialize ? "Initialize" : "Execution");
 
 						RequestExit("Subsystem ordering contradiction.");
-						return;
+						return systems;
 					}
 				}
 			}
 
-			for (const std::type_index& t : afterList)
+			for (const std::type_index& t : rules[i].after)
 			{
 				auto it = m_lookup.find(t);
 				if (it != m_lookup.end() && indexOf.contains(it->second))
 					afterDeps[i].insert(it->second);
 			}
 
-			for (const std::type_index& t : beforeList)
+			for (const std::type_index& t : rules[i].before)
 			{
 				auto it = m_lookup.find(t);
 				if (it != m_lookup.end() && indexOf.contains(it->second))
@@ -171,8 +217,8 @@ namespace Horizon
 				if (!ready)
 					continue;
 
-				ordered.push_back(m_activeSystems[i]);
-				placedSet.insert(m_activeSystems[i]);
+				ordered.push_back(systems[i]);
+				placedSet.insert(systems[i]);
 				placed[i] = true;
 				progressed = true;
 				break;
@@ -183,36 +229,16 @@ namespace Horizon
 				for (usize i = 0; i < count; i++)
 				{
 					if (!placed[i])
-						Terminal::Error("Engine", "{} is stuck in an ordering cycle or tier conflict.", typeid(*m_activeSystems[i]).name());
+						Terminal::Error("Engine", "{} is stuck in a {} ordering cycle or tier conflict.",
+							systems[i]->GetName(), initialize ? "Initialize" : "Execution");
 				}
 
 				RequestExit("Subsystem ordering could not be resolved.");
-				return;
+				return systems;
 			}
 		}
 
-		m_activeSystems = std::move(ordered);
-
-		Terminal::Log("Engine", "### Subsystem Order List ###");
-		for (usize i = 0; i < m_activeSystems.size(); i++)
-			Terminal::Log("Engine", "Index ({}) - {}", i, m_activeSystems[i]->GetName());
-
+		return ordered;
 	}
 
-	void Engine::Shutdown()
-	{
-		for (auto it = m_activeSystems.rbegin(); it != m_activeSystems.rend(); ++it)
-		{
-			(*it)->OnDetach();
-			Allocator::Delete(*it);
-		}
-
-		for (Subsystem* system : m_initPendingSystems)
-			Allocator::Delete(system);
-
-		m_activeSystems.clear();
-		m_initPendingSystems.clear();
-		m_removePendingSystems.clear();
-		m_lookup.clear();
-	}
 }

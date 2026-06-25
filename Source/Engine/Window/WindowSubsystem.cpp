@@ -7,7 +7,7 @@
 
 namespace Horizon
 {
-	void WindowSubsystem::OnAttach(Engine* pEngine)
+	EngineReport WindowSubsystem::OnAttach(Engine* pEngine)
 	{
 		Subsystem::OnAttach(pEngine);
 
@@ -22,7 +22,12 @@ namespace Horizon
 #endif
 
 		m_window = Allocator::Create<Window>(CurrLoc(), winDesc);
+		if (!m_window)
+			return EngineReport("Window has not been initialize. Just kill yourself!");
+
 		m_window->Show();
+
+		return EngineReport();
 	}
 
 	void WindowSubsystem::OnSync()
@@ -38,12 +43,14 @@ namespace Horizon
 		Allocator::Delete(m_window);
 	}
 
-	void WindowSubsystem::GetExecuteAfter(std::vector<std::type_index>& out) const
+	void WindowSubsystem::GetInitializeOrder(OrderRules& rules) const
 	{
-		Requires<JobSubsystem>(out);
+		Requires<JobSubsystem>(rules.after);
 	}
 
-	void WindowSubsystem::GetExecuteBefore(std::vector<std::type_index>& out) const
+	void WindowSubsystem::GetExecutionOrder(OrderRules& rules) const
 	{
+		Requires<JobSubsystem>(rules.after);
 	}
+
 }

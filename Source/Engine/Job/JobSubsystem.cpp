@@ -6,7 +6,7 @@
 
 namespace Horizon
 {
-	void JobSubsystem::OnAttach(Engine* pEngine)
+	EngineReport JobSubsystem::OnAttach(Engine* pEngine)
 	{
 		Subsystem::OnAttach(pEngine);
 
@@ -22,6 +22,8 @@ namespace Horizon
 			Terminal::Info("JobSubsystem", "Thread{} pinned to {}-Core",
 				i, core.isPerformance ? "Performance" : "Efficiency");
 		}
+
+		return EngineReport();
 	}
 
 	void JobSubsystem::OnDetach()

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Engine/Core/EngineReport.h>
+
 #include <vector>
 #include <typeindex>
 
@@ -7,11 +9,18 @@ namespace Horizon
 {
 	class Engine;
 
-	enum class ExecutionTier : u8 
+	enum class OrderTier : u8
 	{
 		First,
 		Default,
 		Last
+	};
+
+	struct OrderRules
+	{
+		OrderTier tier = OrderTier::Default;
+		std::vector<std::type_index> after;
+		std::vector<std::type_index> before;
 	};
 
 	class H_EXPORT Subsystem
@@ -23,13 +32,13 @@ namespace Horizon
 		Subsystem(const Subsystem&) = delete;
 		Subsystem& operator=(const Subsystem&) = delete;
 
-		virtual void OnAttach(Engine* engine) { m_engine = engine; }
+		virtual EngineReport OnAttach(Engine* engine) { m_engine = engine; return EngineReport(); }
 		virtual void OnSync() {}
 		virtual void OnDetach() {}
 
-		virtual void GetExecuteAfter(std::vector<std::type_index>& out) const {}
-		virtual void GetExecuteBefore(std::vector<std::type_index>& out) const {}
-		virtual ExecutionTier GetExecutionTier() const { return ExecutionTier::Default; }
+		virtual OrderTier GetTier() const { return OrderTier::Default; }
+		virtual void GetInitializeOrder(OrderRules& rules) const {}
+		virtual void GetExecutionOrder(OrderRules& rules) const {}
 
 		std::string_view GetName() const
 		{

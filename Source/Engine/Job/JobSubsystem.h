@@ -8,14 +8,18 @@
 
 namespace Horizon
 {
+	/*
+	 * First module that always needs to be run, so every other modules can 
+	 * use this whenever they want.
+	 */
 	class JobSubsystem : public Subsystem
 	{
 		friend class JobWorker;
 	public:
-		void OnAttach(Engine* pEngine) final;
+		EngineReport OnAttach(Engine* pEngine) final;
 		void OnDetach() final;
 
-		ExecutionTier GetExecutionTier() const final { return ExecutionTier::First; }
+		OrderTier GetTier() const override { return OrderTier::First; }
 
 		void SubmitJob(Job&& job);
 		void Dispatch(JobCounter& counter, Job&& job);

@@ -10,9 +10,9 @@ i32 main(i32 argC, c8** argV)
 {
 	Engine engine;
 
-	engine.AddModule<WindowSubsystem>();
-	engine.AddModule<JobSubsystem>();
-	engine.AddModule<GraphicsSubsystem>();
+	engine.AddSubsystem<WindowSubsystem>();
+	engine.AddSubsystem<JobSubsystem>();
+	engine.AddSubsystem<GraphicsSubsystem>();
 
 	engine.Run();
 }

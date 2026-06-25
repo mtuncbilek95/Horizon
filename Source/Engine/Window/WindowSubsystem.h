@@ -14,12 +14,12 @@ namespace Horizon
 
 		Window* GetWindow() const { return m_window; }
 
-		void OnAttach(Engine* engine) final;
+		EngineReport OnAttach(Engine* engine) final;
 		void OnSync() final;
 		void OnDetach() final;
 
-		void GetExecuteAfter(std::vector<std::type_index>& out) const final;
-		void GetExecuteBefore(std::vector<std::type_index>& out) const final;
+		void GetInitializeOrder(OrderRules& rules) const final;
+		void GetExecutionOrder(OrderRules& rules) const final;
 
 	private:
 		Window* m_window;

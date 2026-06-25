@@ -15,20 +15,20 @@ namespace Horizon
 		Engine();
 		~Engine();
 
-		template<typename TModule, typename... Args>
-			requires std::is_base_of_v<Subsystem, TModule>
-		TModule& AddModule(Args&&... args)
+		template<typename TSubsystem, typename... Args>
+			requires std::is_base_of_v<Subsystem, TSubsystem>
+		TSubsystem& AddSubsystem(Args&&... args)
 		{
-			std::type_index key = std::type_index(typeid(TModule));
+			std::type_index key = std::type_index(typeid(TSubsystem));
 
 			auto it = m_lookup.find(key);
 			if (it != m_lookup.end())
 			{
 				Terminal::Warn("Engine", "{} has already been registered.", key.name());
-				return *static_cast<TModule*>(it->second);
+				return *static_cast<TSubsystem*>(it->second);
 			}
 
-			auto* system = Allocator::Create<TModule>(CurrLoc(), std::forward<Args>(args)...);
+			auto* system = Allocator::Create<TSubsystem>(CurrLoc(), std::forward<Args>(args)...);
 
 			m_lookup.emplace(key, system);
 			m_initPendingSystems.push_back(system);
@@ -36,13 +36,13 @@ namespace Horizon
 			return *system;
 		}
 
-		template<typename TModule>
-		void RemoveModule()
+		template<typename TSubsystem>
+		void RemoveSubsystem()
 		{
-			auto it = m_lookup.find(std::type_index(typeid(TModule)));
+			auto it = m_lookup.find(std::type_index(typeid(TSubsystem)));
 			if (it == m_lookup.end())
 			{
-				Terminal::Warn("Engine", "{} is not registered.", typeid(TModule).name());
+				Terminal::Warn("Engine", "{} is not registered.", typeid(TSubsystem).name());
 				return;
 			}
 
@@ -50,16 +50,16 @@ namespace Horizon
 		}
 
 		template<typename TModule>
-		TModule& GetModule()
+		TModule& GetSubsystem()
 		{
 			auto it = m_lookup.find(std::type_index(typeid(TModule)));
-			Terminal::Assert(it != m_lookup.end(), "Engine", "Module not found");
+			Terminal::Assert(it != m_lookup.end(), "Engine", "Subsystem not found");
 
 			return *static_cast<TModule*>(it->second);
 		}
 
 		template<typename TModule>
-		TModule* TryGetModule()
+		TModule* TryGetSubsystem()
 		{
 			auto it = m_lookup.find(std::type_index(typeid(TModule)));
 			return it == m_lookup.end() ? nullptr : static_cast<TModule*>(it->second);
@@ -72,6 +72,8 @@ namespace Horizon
 		void FlushPending();
 		void SortActive();
 		void Shutdown();
+
+		std::vector<Subsystem*> BuildOrder(const std::vector<Subsystem*>& systems, b8 initialize);
 
 	private:
 		std::vector<Subsystem*> m_activeSystems;

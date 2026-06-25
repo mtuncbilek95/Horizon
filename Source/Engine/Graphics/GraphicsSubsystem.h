@@ -18,12 +18,11 @@ namespace Horizon
 		GraphicsSubsystem() = default;
 		~GraphicsSubsystem() = default;
 
-		void OnAttach(Engine* engine) final;
-		void OnSync() final;
+		EngineReport OnAttach(Engine* engine) final;
 		void OnDetach() final;
 
-		void GetExecuteAfter(std::vector<std::type_index>& out) const final;
-		void GetExecuteBefore(std::vector<std::type_index>& out) const final;
+		void GetInitializeOrder(OrderRules& rules) const final;
+		void GetExecutionOrder(OrderRules& rules) const final;
 
 		GfxDevice* GetDevice() const { return m_device; }
 		GfxQueue* GetGraphicsQueue() const { return m_graphicsQueue; }

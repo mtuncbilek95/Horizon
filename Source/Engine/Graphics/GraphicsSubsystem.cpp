@@ -13,17 +13,29 @@
 
 namespace Horizon
 {
-	void GraphicsSubsystem::OnAttach(Engine* pEngine)
+	EngineReport GraphicsSubsystem::OnAttach(Engine* pEngine)
 	{
 		Subsystem::OnAttach(pEngine);
 
-		auto* pWindowSub = m_engine->TryGetModule<WindowSubsystem>();
+		auto* pWindowSub = m_engine->TryGetSubsystem<WindowSubsystem>();
+		if(!pWindowSub)
+			return EngineReport("Failed to get WindowSubsystem. Nothing will work...");
 
 		m_device = CreateGfxDevice();
+		if (!m_device)
+			return EngineReport("Failed to create GfxDevice");
 
 		m_graphicsQueue = m_device->CreateQueue(GfxQueueType::Graphics);
+		if (!m_graphicsQueue)
+			return EngineReport("Failed to create GfxQueue(Graphics)");
+
 		m_computeQueue = m_device->CreateQueue(GfxQueueType::Compute);
+		if (!m_computeQueue)
+			return EngineReport("Failed to create GfxQueue(Compute)");
+
 		m_transferQueue = m_device->CreateQueue(GfxQueueType::Transfer);
+		if (!m_transferQueue)
+			return EngineReport("Failed to create GfxQueue(Transfer)");
 
 		WindowRect windowRect = pWindowSub->GetWindow()->GetRect();
 
@@ -35,10 +47,10 @@ namespace Horizon
 		swapDesc.vSync = true;
 		swapDesc.bAllowTearing = false;
 		m_swapchain = m_device->CreateSwapchain(swapDesc, m_graphicsQueue);
-	}
+		if (!m_swapchain)
+			return EngineReport("Failed to create GfxSwapchain");
 
-	void GraphicsSubsystem::OnSync()
-	{
+		return EngineReport();
 	}
 
 	void GraphicsSubsystem::OnDetach()
@@ -52,12 +64,14 @@ namespace Horizon
 		Allocator::Delete(m_device);
 	}
 
-	void GraphicsSubsystem::GetExecuteAfter(std::vector<std::type_index>& out) const
+	void GraphicsSubsystem::GetInitializeOrder(OrderRules& rules) const
 	{
-		Requires<WindowSubsystem>(out);
+		Requires<WindowSubsystem>(rules.after);
 	}
 
-	void GraphicsSubsystem::GetExecuteBefore(std::vector<std::type_index>& out) const
+	void GraphicsSubsystem::GetExecutionOrder(OrderRules& rules) const
 	{
+		Requires<WindowSubsystem>(rules.after);
 	}
+
 }
