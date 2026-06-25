@@ -35,6 +35,7 @@ namespace Horizon
 		if (!m_swapchain)
 			return EngineReport("Failed to create GfxSwapchain");
 
+		Terminal::Debug("PresentationSubsystem", "Swapchain has been initialized!");
 		return EngineReport();
 	}
 

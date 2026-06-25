@@ -25,6 +25,9 @@ namespace Horizon
 
 		m_window->Show();
 
+#if defined(HORIZON_WINDOWS)
+		Terminal::Info("WindowSubsystem", "Win32 based window has been initialized!");
+#endif
 		return EngineReport();
 	}
 

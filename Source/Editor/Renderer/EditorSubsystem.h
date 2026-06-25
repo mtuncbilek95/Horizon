@@ -6,6 +6,8 @@
 
 namespace Horizon
 {
+	class EditorRenderer;
+
 	class EditorSubsystem final : public Subsystem
 	{
 	public:
@@ -20,5 +22,7 @@ namespace Horizon
 
 	private:
 		PAL::Window* m_engineWindow = nullptr;
+		EditorRenderer* m_editorRenderer = nullptr;
+
 	};
 }

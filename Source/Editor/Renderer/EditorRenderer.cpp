@@ -21,6 +21,7 @@ namespace Horizon
 
 	EditorRenderer::~EditorRenderer()
 	{
+		ImGui::DestroyContext((ImGuiContext*)m_context);
 	}
 
 	void EditorRenderer::OnMousePosition(i32 x, i32 y)

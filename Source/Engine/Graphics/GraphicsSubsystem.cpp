@@ -37,6 +37,7 @@ namespace Horizon
 		if (!m_transferQueue)
 			return EngineReport("Failed to create GfxQueue(Transfer)");
 
+		Terminal::Debug("GraphicsSubsystem", "Device, Graphics Queue, Compute Queue and Transfer Queue has been initialized!");
 		return EngineReport();
 	}
 

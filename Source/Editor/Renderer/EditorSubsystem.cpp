@@ -1,5 +1,7 @@
 #include "EditorSubsystem.h"
 
+#include <Editor/Renderer/EditorRenderer.h>
+
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowSubsystem.h>
 #include <Engine/Graphics/GraphicsSubsystem.h>
@@ -23,12 +25,19 @@ namespace Horizon
 		if (!pOutputSub)
 			return EngineReport("Failed to get PresentationSubsystem. Nothing will work...");
 
+		EditorRendererDesc renderDesc = {};
+		renderDesc.pDevice = pGraphSub->GetDevice();
+		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
+
+		m_editorRenderer = Allocator::Create<EditorRenderer>(CurrLoc(), renderDesc);
+		Terminal::Debug("EditorSubsystem", "EditorRenderer has been initialized!");
 
 		return EngineReport();
 	}
 
 	void EditorSubsystem::OnDetach()
 	{
+		Allocator::Delete(m_editorRenderer);
 	}
 
 	void EditorSubsystem::GetInitializeOrder(OrderRules& rules) const

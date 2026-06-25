@@ -23,6 +23,7 @@ namespace Horizon
 				i, core.isPerformance ? "Performance" : "Efficiency");
 		}
 
+		Terminal::Debug("JobSubsystem", "{} amount of thread has been initialized for multi-threading", m_workers.size());
 		return EngineReport();
 	}
 
