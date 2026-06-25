@@ -92,6 +92,11 @@ namespace Horizon
 
 	b8 EditorRenderer::BeginRender(f32 dt)
 	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.DeltaTime = dt;
+
+		ImGui::NewFrame();
+
 		return true;
 	}
 

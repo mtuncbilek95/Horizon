@@ -15,6 +15,7 @@ namespace Horizon
 		~EditorSubsystem() = default;
 
 		EngineReport OnAttach(Engine* engine) final;
+		void OnSync() final;
 		void OnDetach() final;
 
 		void GetInitializeOrder(OrderRules& rules) const final;

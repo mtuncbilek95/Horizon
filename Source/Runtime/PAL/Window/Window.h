@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <span>
 
 namespace Horizon::PAL
 {
@@ -38,7 +39,7 @@ namespace Horizon::PAL
 		Window& operator=(const Window&) = delete;
 		Window& operator=(Window&&) = delete;
 
-		const std::vector<InputMessage>& GetMessages() const { return m_messages; }
+		std::span<const InputMessage> GetMessages() const { return m_messages; }
 		void SubmitMessage(const InputMessage& msg);
 
 		WindowRect GetRect() const { return { m_desc.width, m_desc.height, m_posX, m_posY }; }
