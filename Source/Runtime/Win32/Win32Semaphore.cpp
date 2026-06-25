@@ -2,7 +2,7 @@
 
 #include <Windows.h>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	Semaphore::Semaphore(u32 initialCount, u32 maxCount)
 	{

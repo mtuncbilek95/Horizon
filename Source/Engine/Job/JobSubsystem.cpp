@@ -10,13 +10,13 @@ namespace Horizon
 	{
 		Subsystem::OnAttach(pEngine);
 
-		for (usize i = 0; i < Thread::HardwareConcurrency() - 1; i++)
+		for (usize i = 0; i < PAL::Thread::HardwareConcurrency() - 1; i++)
 			m_workers.push_back(Allocator::Create<JobWorker>(CurrLoc(), this, i));
 
-		auto cores = Thread::EnumerateCores();
+		auto cores = PAL::Thread::EnumerateCores();
 		for (usize i = 0; i < m_workers.size(); ++i)
 		{
-			const CoreInfo& core = cores[i % cores.size()];
+			const PAL::CoreInfo& core = cores[i % cores.size()];
 			m_workers[i]->SetThreadAffinity(1ull << core.logicalIndex);
 
 			Terminal::Info("JobSubsystem", "Thread{} pinned to {}-Core",
@@ -57,8 +57,18 @@ namespace Horizon
 		while (counter.remaining.Load() > 0)
 		{
 			if (!TryRunOneJob())
-				Thread::YieldCurrent();
+				PAL::Thread::YieldCurrent();
 		}
+	}
+
+	void JobSubsystem::GetInitializeOrder(OrderRules& rules) const
+	{
+		rules.tier = OrderTier::First;
+	}
+
+	void JobSubsystem::GetExecutionOrder(OrderRules& rules) const
+	{
+		rules.tier = OrderTier::First;
 	}
 
 	JobWorker* JobSubsystem::GetRandomVictim(JobWorker* avoidWorker)

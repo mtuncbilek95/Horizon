@@ -1,0 +1,44 @@
+#pragma once
+
+#include <Runtime/PAL/Window/MouseButton.h>
+#include <Runtime/PAL/Window/KeyCode.h>
+
+namespace Horizon
+{
+	using RenderContext = void*;
+
+	class GfxDevice;
+	class GfxQueue;
+
+	struct EditorRendererDesc
+	{
+		GfxDevice* pDevice = nullptr;
+		GfxQueue* pQueue = nullptr;
+	};
+
+	class H_EXPORT EditorRenderer
+	{
+	public:
+		EditorRenderer(const EditorRendererDesc& desc);
+		~EditorRenderer();
+
+		void OnMousePosition(i32 x, i32 y);
+		void OnMouseButtonDown(PAL::MouseButton button);
+		void OnMouseButtonUp(PAL::MouseButton button);
+		void OnMouseWheel(f32 delta);
+		void OnKeyboardDown(PAL::KeyCode key);
+		void OnKeyboardUp(PAL::KeyCode key);
+		void OnKeyboardChar(u32 value);
+		void OnResizeWindow(u32 width, u32 height);
+
+
+		b8 BeginRender(f32 dt);
+		b8 EndRender(/* Need some body like gpu fence, cpu fence, framebuffer etc. */);
+
+	private:
+		GfxDevice* m_device;
+		GfxQueue* m_graphicsQueue;
+
+		RenderContext m_context;
+	};
+}

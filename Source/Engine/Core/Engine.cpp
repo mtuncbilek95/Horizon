@@ -150,7 +150,7 @@ namespace Horizon
 				if (a == b)
 					continue;
 
-				if (systems[a]->GetTier() < systems[b]->GetTier())
+				if (rules[a].tier < rules[b].tier)
 					afterDeps[b].insert(systems[a]);
 			}
 		}

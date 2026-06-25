@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <cassert>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	SymbolLibrary::SymbolLibrary(const SymbolLibraryDesc& desc) : m_desc(desc)
 	{

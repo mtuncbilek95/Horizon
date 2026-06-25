@@ -45,11 +45,11 @@ namespace Horizon
 		usize m_index;
 
 		WorkStealingDeque<JobNode*> m_deque;
-		Atomic<JobNode*> m_inbox;
+		PAL::Atomic<JobNode*> m_inbox;
 
-		Atomic<i64> m_signal;
-		Atomic<b8> m_working;
+		PAL::Atomic<i64> m_signal;
+		PAL::Atomic<b8> m_working;
 
-		Thread m_worker;
+		PAL::Thread m_worker;
 	};
 }

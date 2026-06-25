@@ -4,7 +4,7 @@
 #include <Windows.h>
 #include <windowsx.h>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	namespace
 	{

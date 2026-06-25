@@ -8,7 +8,7 @@
 #include <utility>
 #include <algorithm>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	namespace
 	{

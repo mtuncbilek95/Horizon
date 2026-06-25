@@ -2,26 +2,23 @@
 
 #include <Engine/Core/Subsystem.h>
 
-#include <Runtime/PAL/Window/Window.h>
-
 namespace Horizon
 {
-	class WindowSubsystem final : public Subsystem
+	class GfxSwapchain;
+
+	class PresentationSubsystem final : public Subsystem
 	{
 	public:
-		WindowSubsystem() = default;
-		~WindowSubsystem() = default;
-
-		PAL::Window* GetWindow() const { return m_window; }
+		PresentationSubsystem() = default;
+		~PresentationSubsystem() = default;
 
 		EngineReport OnAttach(Engine* engine) final;
-		void OnSync() final;
 		void OnDetach() final;
 
 		void GetInitializeOrder(OrderRules& rules) const final;
 		void GetExecutionOrder(OrderRules& rules) const final;
 
 	private:
-		PAL::Window* m_window;
+		GfxSwapchain* m_swapchain = nullptr;
 	};
 }

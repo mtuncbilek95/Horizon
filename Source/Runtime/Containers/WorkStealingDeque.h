@@ -105,9 +105,9 @@ namespace Horizon
 			return fresh;
 		}
 	private:
-		Atomic<i64> m_top;
-		Atomic<i64> m_bottom;
-		Atomic<Buffer*> m_buffer;
+		PAL::Atomic<i64> m_top;
+		PAL::Atomic<i64> m_bottom;
+		PAL::Atomic<Buffer*> m_buffer;
 		std::vector<Buffer*> m_retired;
 	};
 }

@@ -10,6 +10,6 @@ namespace Horizon
 
 	struct JobCounter
 	{
-		Atomic<u32> remaining = 0;
+		PAL::Atomic<u32> remaining = 0;
 	};
 }

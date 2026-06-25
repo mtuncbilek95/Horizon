@@ -2,7 +2,7 @@
 
 #include <Windows.h>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	void Futex::Wait(void* pAddress, i64 expectedValue)
 	{

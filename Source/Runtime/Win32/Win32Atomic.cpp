@@ -2,7 +2,7 @@
 
 #include <Windows.h>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	i64 AtomicOps::Load(const i64* pValue, MemoryOrder)
 	{

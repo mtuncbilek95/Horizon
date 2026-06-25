@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	struct H_EXPORT Futex
 	{

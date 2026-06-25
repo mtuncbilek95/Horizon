@@ -37,26 +37,11 @@ namespace Horizon
 		if (!m_transferQueue)
 			return EngineReport("Failed to create GfxQueue(Transfer)");
 
-		WindowRect windowRect = pWindowSub->GetWindow()->GetRect();
-
-		GfxSwapchainDesc swapDesc = {};
-		swapDesc.pWindowHandle = (void*)pWindowSub->GetWindow()->GetOSHandle();
-		swapDesc.imageCount = 3;
-		swapDesc.width = windowRect.width;
-		swapDesc.height = windowRect.height;
-		swapDesc.vSync = true;
-		swapDesc.bAllowTearing = false;
-		m_swapchain = m_device->CreateSwapchain(swapDesc, m_graphicsQueue);
-		if (!m_swapchain)
-			return EngineReport("Failed to create GfxSwapchain");
-
 		return EngineReport();
 	}
 
 	void GraphicsSubsystem::OnDetach()
 	{
-		Allocator::Delete(m_swapchain);
-
 		Allocator::Delete(m_graphicsQueue);
 		Allocator::Delete(m_computeQueue);
 		Allocator::Delete(m_transferQueue);

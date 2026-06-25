@@ -64,7 +64,7 @@ namespace Horizon
 			if (!m_working.Load())
 				break;
 
-			Futex::Wait(m_signal.Address(), seq);
+			PAL::Futex::Wait(m_signal.Address(), seq);
 		}
 	}
 
@@ -73,7 +73,7 @@ namespace Horizon
 		m_working.Store(false);
 
 		m_signal.FetchAdd(1);
-		Futex::WakeAll(m_signal.Address());
+		PAL::Futex::WakeAll(m_signal.Address());
 
 		if (m_worker.IsJoinable())
 			m_worker.Join();
@@ -97,7 +97,7 @@ namespace Horizon
 		}
 
 		m_signal.FetchAdd(1);
-		Futex::WakeSingle(m_signal.Address());
+		PAL::Futex::WakeSingle(m_signal.Address());
 	}
 
 	b8 JobWorker::TryStealFromThis(Job& out)

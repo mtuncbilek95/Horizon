@@ -4,7 +4,7 @@
 #include <Runtime/PAL/Window/MouseButton.h>
 #include <Runtime/PAL/Window/InputModifiers.h>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	struct WindowHelpers
 	{

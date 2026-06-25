@@ -2,7 +2,7 @@
 
 #include <Windows.h>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	CriticalSection::CriticalSection()
 	{

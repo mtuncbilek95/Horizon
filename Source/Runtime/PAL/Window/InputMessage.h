@@ -9,7 +9,7 @@
 #include <vector>
 #include <filesystem>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	struct InputMessage
 	{

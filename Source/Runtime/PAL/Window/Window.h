@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	enum class OSHandle : uptr {};
 	enum class OSInstance : uptr {};

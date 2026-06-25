@@ -3,7 +3,7 @@
 #include <vector>
 #include <string_view>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	using ThreadEntry = void(*)(void* userData);
 	using ThreadHandle = void*;

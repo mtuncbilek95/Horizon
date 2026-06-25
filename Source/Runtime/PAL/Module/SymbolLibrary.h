@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <string>
 
-namespace Horizon
+namespace Horizon::PAL
 {
 	using SymbolAddress = void*;
 	using LibInstance = void*;

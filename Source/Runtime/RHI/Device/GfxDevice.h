@@ -9,8 +9,6 @@
 #include <Runtime/PAL/Sync/CriticalSection.h>
 
 #include <queue>
-#include <atomic>
-#include <mutex>
 
 namespace Horizon
 {
@@ -60,8 +58,8 @@ namespace Horizon
 		};
 
 		std::queue<Pending> m_pending;
-		CriticalSection m_mutex;
-		Atomic<u64> m_frameIndex = 0;
+		PAL::CriticalSection m_mutex;
+		PAL::Atomic<u64> m_frameIndex = 0;
 	};
 
 	GfxDevice* CreateGfxDevice();

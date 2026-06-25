@@ -36,7 +36,6 @@ namespace Horizon
 		virtual void OnSync() {}
 		virtual void OnDetach() {}
 
-		virtual OrderTier GetTier() const { return OrderTier::Default; }
 		virtual void GetInitializeOrder(OrderRules& rules) const {}
 		virtual void GetExecutionOrder(OrderRules& rules) const {}
 

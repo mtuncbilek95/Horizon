@@ -19,11 +19,12 @@ namespace Horizon
 		EngineReport OnAttach(Engine* pEngine) final;
 		void OnDetach() final;
 
-		OrderTier GetTier() const override { return OrderTier::First; }
-
 		void SubmitJob(Job&& job);
 		void Dispatch(JobCounter& counter, Job&& job);
 		void Wait(JobCounter& counter);
+
+		void GetInitializeOrder(OrderRules& rules) const final;
+		void GetExecutionOrder(OrderRules& rules) const final;
 
 	private:
 		JobWorker* GetRandomVictim(JobWorker* avoidWorker);
@@ -31,6 +32,6 @@ namespace Horizon
 
 	private:
 		std::vector<JobWorker*> m_workers;
-		Atomic<usize> m_nextWorker = 0;
+		PAL::Atomic<usize> m_nextWorker = 0;
 	};
 }
