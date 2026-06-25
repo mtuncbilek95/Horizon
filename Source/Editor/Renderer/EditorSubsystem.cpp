@@ -31,6 +31,8 @@ namespace Horizon
 		if (!pOutputSub)
 			return EngineReport("Failed to get PresentationSubsystem. Nothing will work...");
 
+		m_presentationSub = pOutputSub;
+
 		EditorRendererDesc renderDesc = {};
 		renderDesc.pDevice = pGraphSub->GetDevice();
 		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
@@ -103,17 +105,17 @@ namespace Horizon
 		// Apply resize window
 		// TODO: Later
 
-		// Acquire next image
+		i8 imageIndex = m_presentationSub->AcquireImageIndex();
+		if (imageIndex == -1)
+			return;
 
 		// Render ui work
 		m_editorRenderer->BeginRender(deltaTime);
 
 		// TODO: Add Editor::WindowContext loop here
 
-		m_editorRenderer->EndRender();
-
-		// TODO:
-		// pOutputSub->SubmitPresentRequest
+		m_editorRenderer->EndRender(m_presentationSub->GetBackbuffer(imageIndex));
+		m_presentationSub->Present(imageIndex);
 	}
 
 	void EditorSubsystem::OnDetach()

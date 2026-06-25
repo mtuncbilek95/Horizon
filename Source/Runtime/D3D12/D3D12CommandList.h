@@ -21,6 +21,10 @@ namespace Horizon
 		void BindPipeline(GfxPipeline* pipeline) final;
 		void SetGraphicsConstants(const void* data, u32 count32, u32 offset32) final;
 		void SetComputeConstants(const void* data, u32 count32, u32 offset32) final;
+		void SetViewports(const GfxViewport* viewports, u32 count) final;
+		void SetScissors(const GfxScissor* scissors, u32 count) final;
+		void SetViewport(const GfxViewport& viewport) final;
+		void SetScissor(const GfxScissor& scissor) final;
 		void BindIndexBuffer(GfxBuffer* buffer) final;
 		void Draw(u32 vtx, u32 inst, u32 firstVtx, u32 firstInst) final;
 		void DrawIndexed(u32 idx, u32 inst, u32 firstIdx, i32 vtxOff, u32 firstInst) final;

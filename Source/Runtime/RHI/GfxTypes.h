@@ -216,4 +216,22 @@ namespace Horizon
 	{
 		f32 r, g, b, a;
 	};
+
+	struct GfxViewport
+	{
+		f32 x = 0.0f;
+		f32 y = 0.0f;
+		f32 width = 0.0f;
+		f32 height = 0.0f;
+		f32 minDepth = 0.0f;
+		f32 maxDepth = 1.0f;
+	};
+
+	struct GfxScissor
+	{
+		i32 x = 0;
+		i32 y = 0;
+		i32 width = 0;
+		i32 height = 0;
+	};
 }

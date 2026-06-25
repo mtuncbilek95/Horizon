@@ -119,6 +119,50 @@ namespace Horizon
 		m_list->SetComputeRoot32BitConstants(0, count32, data, offset32);
 	}
 
+	void D3D12CommandList::SetViewports(const GfxViewport* viewports, u32 count)
+	{
+		assert(count <= 16 && "Viewport batch limit exceeded");
+
+		D3D12_VIEWPORT native[16] = {};
+		for (u32 i = 0; i < count; i++)
+		{
+			native[i].TopLeftX = viewports[i].x;
+			native[i].TopLeftY = viewports[i].y;
+			native[i].Width = viewports[i].width;
+			native[i].Height = viewports[i].height;
+			native[i].MinDepth = viewports[i].minDepth;
+			native[i].MaxDepth = viewports[i].maxDepth;
+		}
+
+		m_list->RSSetViewports(count, native);
+	}
+
+	void D3D12CommandList::SetScissors(const GfxScissor* scissors, u32 count)
+	{
+		assert(count <= 16 && "Scissor batch limit exceeded");
+
+		D3D12_RECT native[16] = {};
+		for (u32 i = 0; i < count; i++)
+		{
+			native[i].left = scissors[i].x;
+			native[i].top = scissors[i].y;
+			native[i].right = scissors[i].x + LONG(scissors[i].width);
+			native[i].bottom = scissors[i].y + LONG(scissors[i].height);
+		}
+
+		m_list->RSSetScissorRects(count, native);
+	}
+
+	void D3D12CommandList::SetViewport(const GfxViewport& viewport)
+	{
+		SetViewports(&viewport, 1);
+	}
+
+	void D3D12CommandList::SetScissor(const GfxScissor& scissor)
+	{
+		SetScissors(&scissor, 1);
+	}
+
 	void D3D12CommandList::BindIndexBuffer(GfxBuffer* buffer)
 	{
 		D3D12_INDEX_BUFFER_VIEW indexBufferView = {};

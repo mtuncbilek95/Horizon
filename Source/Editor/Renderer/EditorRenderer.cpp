@@ -100,7 +100,7 @@ namespace Horizon
 		return true;
 	}
 
-	b8 EditorRenderer::EndRender(/* Need some body like gpu fence, cpu fence, framebuffer etc. */)
+	b8 EditorRenderer::EndRender(GfxTexture* backbuffer)
 	{
 		return true;
 	}
