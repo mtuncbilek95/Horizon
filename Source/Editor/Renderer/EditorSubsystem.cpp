@@ -7,6 +7,8 @@
 #include <Engine/Graphics/GraphicsSubsystem.h>
 #include <Engine/Presentation/PresentationSubsystem.h>
 
+#include <imgui.h>
+
 #include <chrono>
 
 using Clock = std::chrono::high_resolution_clock;
@@ -109,10 +111,13 @@ namespace Horizon
 		if (imageIndex == -1)
 			return;
 
+		PAL::WindowRect rect = m_engineWindow->GetRect();
+		m_editorRenderer->OnResizeWindow(rect.width, rect.height);
+
 		// Render ui work
 		m_editorRenderer->BeginRender(deltaTime);
 
-		// TODO: Add Editor::WindowContext loop here
+		ImGui::ShowDemoWindow();
 
 		m_editorRenderer->EndRender(m_presentationSub->GetBackbuffer(imageIndex));
 		m_presentationSub->Present(imageIndex);

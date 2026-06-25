@@ -42,19 +42,15 @@ namespace Horizon
 		b8 EndRender(GfxTexture* backbuffer);
 
 	private:
+		void CreatePipeline();
+
+	private:
 		GfxDevice* m_device;
 		GfxQueue* m_graphicsQueue;
 
 		RenderContext m_context;
 
 		GfxPipeline* m_pipeline = nullptr;
-		GfxTexture* m_fontTexture = nullptr;
-
-		GfxCommandList* m_commandLists[MaxFramesInFlight] = {};
-		GfxBuffer* m_vertexBuffers[MaxFramesInFlight] = {};
-		GfxBuffer* m_indexBuffers[MaxFramesInFlight] = {};
-		u32 m_vertexCapacities[MaxFramesInFlight] = {};
-		u32 m_indexCapacities[MaxFramesInFlight] = {};
 
 		GfxFence* m_fence = nullptr;
 		u64 m_frameFenceValues[MaxFramesInFlight] = {};

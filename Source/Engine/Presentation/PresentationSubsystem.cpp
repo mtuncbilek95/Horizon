@@ -24,6 +24,8 @@ namespace Horizon
 		if (!pGraphSub)
 			return EngineReport("Failed to get GraphicsSubsystem. Nothing will work...");
 
+		m_graphicsQueue = pGraphSub->GetGraphicsQueue();
+
 		PAL::WindowRect windowRect = pWindowSub->GetWindow()->GetRect();
 
 		GfxSwapchainDesc swapDesc = {};
