@@ -27,18 +27,18 @@ namespace Horizon
 		}
 		else
 		{
-			assert(!desc.path.IsEmpty() && "This should be not empty");
+			assert(!desc.path.empty() && "This should be not empty");
 
-			instance = LoadLibrary(desc.path.GetString().GetSource());
+			instance = LoadLibrary(desc.path.string().c_str());
 
 			if (!instance)
 				return;
 		}
 
-		Path newPath = desc.isMain ? Path(tempBuffer) : desc.path;
-		String name = newPath.GetFileName();
+		std::filesystem::path newPath = desc.isMain ? std::filesystem::path(tempBuffer) : desc.path;
+		std::string name = newPath.filename().string();
 
-		if (name.IsEmpty())
+		if (name.empty())
 		{
 			if (desc.isMain)
 				return;
@@ -53,7 +53,7 @@ namespace Horizon
 		m_instance = instance;
 	}
 
-	SymbolAddress SymbolLibrary::GetSymbol(const String& name) const
+	SymbolAddress SymbolLibrary::GetSymbol(const std::string& name) const
 	{
 		if (!m_instance)
 		{
@@ -61,6 +61,6 @@ namespace Horizon
 			return nullptr;
 		}
 
-		return GetProcAddress(HINSTANCE(m_instance), name.GetSource());
+		return GetProcAddress(HINSTANCE(m_instance), name.c_str());
 	}
 }

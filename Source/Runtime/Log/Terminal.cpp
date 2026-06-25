@@ -5,7 +5,7 @@
 
 namespace Horizon
 {
-	void Terminal::Print(Level logLevel, StringView titleName, StringView message)
+	void Terminal::Print(Level logLevel, std::string_view titleName, std::string_view message)
 	{
 		const char* color = "\033[90m";
 		const char* name = "Log";
@@ -44,7 +44,7 @@ namespace Horizon
 		std::println("[{:%H:%M:%S}][{}][{}{}\x1b[0m]:{}", time, titleName, color, name, message);
 	}
 
-	void Terminal::IntendedAssert(b8 result, StringView titleName, StringView message)
+	void Terminal::IntendedAssert(b8 result, std::string_view titleName, std::string_view message)
 	{
 		Print(Level::Fatal, titleName, message);
 		std::abort();

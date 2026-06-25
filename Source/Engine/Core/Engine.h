@@ -1,19 +1,14 @@
 #pragma once
 
-#include <Engine/Core/Submodule.h>
+#include <Engine/Core/Subsystem.h>
 
-#include <Runtime/Containers/StringView.h>
-
+#include <string_view>
 #include <vector>
-#include <memory>
 #include <unordered_map>
 #include <typeindex>
-#include <cassert>
 
 namespace Horizon
 {
-	class ReflectionModule;
-
 	class Engine final
 	{
 	public:
@@ -21,25 +16,37 @@ namespace Horizon
 		~Engine();
 
 		template<typename TModule, typename... Args>
-			requires std::is_base_of_v<Submodule, TModule>
+			requires std::is_base_of_v<Subsystem, TModule>
 		TModule& AddModule(Args&&... args)
 		{
 			std::type_index key = std::type_index(typeid(TModule));
-			auto it = m_lookup.find(key);
 
+			auto it = m_lookup.find(key);
 			if (it != m_lookup.end())
 			{
 				Terminal::Warn("Engine", "{} has already been registered.", key.name());
 				return *static_cast<TModule*>(it->second);
 			}
 
-			auto* module = Allocator::Create<TModule>(CurrLoc(), std::forward<Args>(args)...);
-			TModule& ref = *module;
+			auto* system = Allocator::Create<TModule>(CurrLoc(), std::forward<Args>(args)...);
 
-			m_lookup.emplace(key, module);
-			m_modules.push_back(module);
+			m_lookup.emplace(key, system);
+			m_initPendingSystems.push_back(system);
 
-			return ref;
+			return *system;
+		}
+
+		template<typename TModule>
+		void RemoveModule()
+		{
+			auto it = m_lookup.find(std::type_index(typeid(TModule)));
+			if (it == m_lookup.end())
+			{
+				Terminal::Warn("Engine", "{} is not registered.", typeid(TModule).name());
+				return;
+			}
+
+			m_removePendingSystems.push_back(it->second);
 		}
 
 		template<typename TModule>
@@ -59,13 +66,19 @@ namespace Horizon
 		}
 
 		void Run();
-		void RequestExit(StringView reason);
+		void RequestExit(std::string_view reason);
 
 	private:
-		std::vector<Submodule*> m_modules;
-		std::unordered_map<std::type_index, Submodule*> m_lookup;
-		b8 m_exitRequested = false;
+		void FlushPending();
+		void SortActive();
+		void Shutdown();
 
-		ReflectionModule* m_reflectionModule;
+	private:
+		std::vector<Subsystem*> m_activeSystems;
+		std::vector<Subsystem*> m_initPendingSystems;
+		std::vector<Subsystem*> m_removePendingSystems;
+
+		std::unordered_map<std::type_index, Subsystem*> m_lookup;
+		b8 m_exitRequested = false;
 	};
 }

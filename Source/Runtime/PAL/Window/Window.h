@@ -4,8 +4,8 @@
 #include <Runtime/PAL/Window/WindowFlags.h>
 #include <Runtime/PAL/Window/InputMessage.h>
 
-#include <Runtime/Containers/String.h>
-#include <Runtime/Containers/List.h>
+#include <string>
+#include <vector>
 
 namespace Horizon
 {
@@ -20,7 +20,7 @@ namespace Horizon
 
 	struct WindowDesc final
 	{
-		String titleName = "Horizon";
+		std::string titleName = "Horizon";
 		u32 width = 1920, height = 1080;
 		WindowMode mode = WindowMode::Borderless;
 		WindowFlags flags = WindowFlags::None;
@@ -38,11 +38,11 @@ namespace Horizon
 		Window& operator=(const Window&) = delete;
 		Window& operator=(Window&&) = delete;
 
-		const List<InputMessage>& GetMessages() const { return m_messages; }
+		const std::vector<InputMessage>& GetMessages() const { return m_messages; }
 		void SubmitMessage(const InputMessage& msg);
 
 		WindowRect GetRect() const { return { m_desc.width, m_desc.height, m_posX, m_posY }; }
-		const String& GetName() const { return m_desc.titleName; }
+		const std::string& GetName() const { return m_desc.titleName; }
 		OSHandle GetOSHandle() const { return m_handle; }
 		OSInstance GetOSInstance() const { return m_instance; }
 
@@ -56,7 +56,7 @@ namespace Horizon
 	private:
 		WindowDesc m_desc;
 
-		List<InputMessage> m_messages;
+		std::vector<InputMessage> m_messages;
 		OSHandle m_handle = OSHandle{};
 		OSInstance m_instance = OSInstance{};
 

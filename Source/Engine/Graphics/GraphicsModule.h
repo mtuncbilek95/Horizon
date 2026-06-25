@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Core/Submodule.h>
+#include <Engine/Core/Subsystem.h>
 
 #include <Runtime/RHI/GfxTypes.h>
 
@@ -12,7 +12,7 @@ namespace Horizon
 	class GfxFence;
 	class GfxCommandList;
 
-	class GraphicsModule final : public Submodule
+	class GraphicsModule final : public Subsystem
 	{
 	public:
 		GraphicsModule() = default;

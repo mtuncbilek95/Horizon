@@ -6,7 +6,7 @@ namespace Horizon
 {
 	void AssetModule::OnAttach(Engine* pEngine)
 	{
-		Submodule::OnAttach(pEngine);
+		Subsystem::OnAttach(pEngine);
 
 		RegisterType<TextureProperties>("Texture");
 	}

@@ -197,7 +197,7 @@ namespace Horizon
 					c8 buffer[MAX_PATH];
 					DragQueryFile(hDrop, it, buffer, MAX_PATH);
 
-					message.filePaths.PushBack(std::filesystem::path(buffer));
+					message.filePaths.push_back(std::filesystem::path(buffer));
 				}
 				DragFinish(hDrop);
 
@@ -257,7 +257,7 @@ namespace Horizon
 				Terminal::Fatal("Win32Window", "RegisterClassEx failed (err {}).", err);
 		}
 
-		HWND hwnd = CreateWindowEx(WS_EX_ACCEPTFILES, WindowClassName, desc.titleName.GetSource(), WS_OVERLAPPEDWINDOW,
+		HWND hwnd = CreateWindowEx(WS_EX_ACCEPTFILES, WindowClassName, desc.titleName.c_str(), WS_OVERLAPPEDWINDOW,
 			m_posX, m_posY, desc.width, desc.height, nullptr, nullptr, instance, this);
 
 		if (hwnd == nullptr)
@@ -294,7 +294,7 @@ namespace Horizon
 			break;
 		}
 
-		m_messages.PushBack(msg);
+		m_messages.push_back(msg);
 	}
 
 	void Window::Show()
@@ -309,7 +309,7 @@ namespace Horizon
 
 	void Window::PollEvents()
 	{
-		m_messages.Free();
+		m_messages.clear();
 
 		MSG msg = {};
 		while (PeekMessage(&msg, ToHWND(m_handle), 0, 0, PM_REMOVE) != 0)

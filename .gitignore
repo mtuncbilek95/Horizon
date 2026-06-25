@@ -6,3 +6,5 @@ Publish/*
 Tools/AssetCooker/.vs/*
 
 Resources/*
+
+.claude/*

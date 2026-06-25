@@ -6,8 +6,7 @@
 #include <Runtime/PAL/Window/MouseButton.h>
 #include <Runtime/PAL/Window/WindowMode.h>
 
-#include <Runtime/Containers/List.h>
-
+#include <vector>
 #include <filesystem>
 
 namespace Horizon
@@ -28,6 +27,6 @@ namespace Horizon
 
 		InputModifiers modifiers;
 
-		List<std::filesystem::path> filePaths;
+		std::vector<std::filesystem::path> filePaths;
 	};
 }

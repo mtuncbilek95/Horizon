@@ -8,7 +8,7 @@ namespace Horizon
 {
 	void JobModule::OnAttach(Engine* pEngine)
 	{
-		Submodule::OnAttach(pEngine);
+		Subsystem::OnAttach(pEngine);
 
 		for (usize i = 0; i < Thread::HardwareConcurrency() - 1; i++)
 			m_workers.push_back(Allocator::Create<JobWorker>(CurrLoc(), this, i));
@@ -16,7 +16,7 @@ namespace Horizon
 		auto cores = Thread::EnumerateCores();
 		for (usize i = 0; i < m_workers.size(); ++i)
 		{
-			const CoreInfo& core = cores[i % cores.Size()];
+			const CoreInfo& core = cores[i % cores.size()];
 			m_workers[i]->SetThreadAffinity(1ull << core.logicalIndex);
 
 			Terminal::Info("JobModule", "Thread{} pinned to {}-Core",

@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Engine/Core/Submodule.h>
+#include <Engine/Core/Subsystem.h>
 
 namespace Horizon
 {
 	class Window;
 
-	class WindowModule final : public Submodule
+	class WindowModule final : public Subsystem
 	{
 	public:
 		WindowModule() = default;

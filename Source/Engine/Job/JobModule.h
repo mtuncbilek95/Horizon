@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Core/Submodule.h>
+#include <Engine/Core/Subsystem.h>
 #include <Engine/Job/Job.h>
 #include <Engine/Job/JobWorker.h>
 
@@ -8,7 +8,7 @@
 
 namespace Horizon
 {
-	class JobModule : public Submodule
+	class JobModule : public Subsystem
 	{
 		friend class JobWorker;
 

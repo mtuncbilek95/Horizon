@@ -1,13 +1,13 @@
 #pragma once
 
-#include <Engine/Core/Submodule.h>
+#include <Engine/Core/Subsystem.h>
 #include <Engine/Asset/AssetMetadata.h>
 
 #include <unordered_map>
 
 namespace Horizon
 {
-	class AssetModule final : public Submodule
+	class AssetModule final : public Subsystem
 	{
 	public:
 		void OnAttach(Engine* pEngine) final;

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Runtime/Containers/Path.h>
+#include <filesystem>
+#include <string>
 
 namespace Horizon
 {
@@ -9,7 +10,7 @@ namespace Horizon
 
 	struct SymbolLibraryDesc
 	{
-		Path path;
+		std::filesystem::path path;
 		b8 isMain = true;
 	};
 
@@ -19,15 +20,15 @@ namespace Horizon
 		SymbolLibrary(const SymbolLibraryDesc& desc);
 		~SymbolLibrary() = default;
 
-		const Path& GetPath() const noexcept { return m_desc.path; }
+		const std::filesystem::path& GetPath() const noexcept { return m_desc.path; }
 		b8 GetIsMain() const noexcept { return m_desc.isMain; }
-		const String& GetName() const noexcept { return m_name; }
+		const std::string& GetName() const noexcept { return m_name; }
 
-		SymbolAddress GetSymbol(const String& name) const;
+		SymbolAddress GetSymbol(const std::string& name) const;
 
 	private:
 		SymbolLibraryDesc m_desc;
-		String m_name;
+		std::string m_name;
 
 		LibInstance m_instance;
 	};

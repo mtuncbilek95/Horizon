@@ -15,7 +15,7 @@ namespace Horizon
 {
 	void GraphicsModule::OnAttach(Engine* pEngine)
 	{
-		Submodule::OnAttach(pEngine);
+		Subsystem::OnAttach(pEngine);
 
 		auto* windowModule = m_engine->TryGetModule<WindowModule>();
 

@@ -7,7 +7,7 @@ namespace Horizon
 {
 	void WindowModule::OnAttach(Engine* pEngine)
 	{
-		Submodule::OnAttach(pEngine);
+		Subsystem::OnAttach(pEngine);
 
 		WindowDesc winDesc = {};
 		winDesc.width = 1920;
