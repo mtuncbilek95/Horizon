@@ -1,4 +1,4 @@
-#include "JobModule.h"
+#include "JobSubsystem.h"
 
 #include <Engine/Core/Engine.h>
 
@@ -6,7 +6,7 @@
 
 namespace Horizon
 {
-	void JobModule::OnAttach(Engine* pEngine)
+	void JobSubsystem::OnAttach(Engine* pEngine)
 	{
 		Subsystem::OnAttach(pEngine);
 
@@ -19,12 +19,12 @@ namespace Horizon
 			const CoreInfo& core = cores[i % cores.size()];
 			m_workers[i]->SetThreadAffinity(1ull << core.logicalIndex);
 
-			Terminal::Info("JobModule", "Thread{} pinned to {}-Core",
+			Terminal::Info("JobSubsystem", "Thread{} pinned to {}-Core",
 				i, core.isPerformance ? "Performance" : "Efficiency");
 		}
 	}
 
-	void JobModule::OnDetach()
+	void JobSubsystem::OnDetach()
 	{
 		for (usize i = 0; i < m_workers.size(); i++)
 			m_workers[i]->Stop();
@@ -33,13 +33,13 @@ namespace Horizon
 			Allocator::Delete(worker);
 	}
 
-	void JobModule::SubmitJob(Job&& job)
+	void JobSubsystem::SubmitJob(Job&& job)
 	{
 		usize index = m_nextWorker.FetchAdd(1) % m_workers.size();
 		m_workers[index]->AddJob(std::move(job));
 	}
 
-	void JobModule::Dispatch(JobCounter& counter, Job&& job)
+	void JobSubsystem::Dispatch(JobCounter& counter, Job&& job)
 	{
 		counter.remaining.FetchAdd(1);
 
@@ -50,7 +50,7 @@ namespace Horizon
 			});
 	}
 
-	void JobModule::Wait(JobCounter& counter)
+	void JobSubsystem::Wait(JobCounter& counter)
 	{
 		while (counter.remaining.Load() > 0)
 		{
@@ -59,7 +59,7 @@ namespace Horizon
 		}
 	}
 
-	JobWorker* JobModule::GetRandomVictim(JobWorker* avoidWorker)
+	JobWorker* JobSubsystem::GetRandomVictim(JobWorker* avoidWorker)
 	{
 		if (m_workers.size() <= 1)
 			return nullptr;
@@ -74,7 +74,7 @@ namespace Horizon
 		return m_workers[index];
 	}
 
-	b8 JobModule::TryRunOneJob()
+	b8 JobSubsystem::TryRunOneJob()
 	{
 		for (auto& worker : m_workers)
 		{

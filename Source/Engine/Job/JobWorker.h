@@ -10,7 +10,7 @@
 
 namespace Horizon
 {
-	class JobModule;
+	class JobSubsystem;
 
 	class JobWorker
 	{
@@ -23,7 +23,7 @@ namespace Horizon
 		};
 
 	public:
-		JobWorker(JobModule* pModule, usize index);
+		JobWorker(JobSubsystem* pSubsystem, usize index);
 		~JobWorker();
 
 		void Run();
@@ -41,7 +41,7 @@ namespace Horizon
 		b8 TryPopJob(Job& out);
 
 	private:
-		JobModule* m_owner;
+		JobSubsystem* m_owner;
 		usize m_index;
 
 		WorkStealingDeque<JobNode*> m_deque;

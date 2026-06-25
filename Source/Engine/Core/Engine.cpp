@@ -59,16 +59,24 @@ namespace Horizon
 		// Clean up the mess
 		m_removePendingSystems.clear();
 
-		// Attach new shit
+		std::unordered_set<Subsystem*> attaching(m_initPendingSystems.begin(), m_initPendingSystems.end());
+
 		for (auto* system : m_initPendingSystems)
-		{
-			system->OnAttach(this);
 			m_activeSystems.push_back(system);
-		}
+
 		m_initPendingSystems.clear();
 
 		if (changed)
 			SortActive();
+
+		if (!m_exitRequested)
+		{
+			for (Subsystem* system : m_activeSystems)
+			{
+				if (attaching.contains(system))
+					system->OnAttach(this);
+			}
+		}
 	}
 
 	void Engine::SortActive()
@@ -80,28 +88,56 @@ namespace Horizon
 			indexOf[m_activeSystems[i]] = i;
 
 		std::vector<std::unordered_set<Subsystem*>> afterDeps(count);
-		std::vector<std::type_index> temp;
+
+		for (usize a = 0; a < count; a++)
+		{
+			for (usize b = 0; b < count; b++)
+			{
+				if (a == b)
+					continue;
+
+				if (m_activeSystems[a]->GetExecutionTier() < m_activeSystems[b]->GetExecutionTier())
+					afterDeps[b].insert(m_activeSystems[a]);
+			}
+		}
+
+		std::vector<std::type_index> afterList;
+		std::vector<std::type_index> beforeList;
 
 		for (usize i = 0; i < count; i++)
 		{
-			auto* system = m_activeSystems[i];
+			Subsystem* system = m_activeSystems[i];
 
-			temp.clear();
-			system->GetExecuteAfter(temp);
-			for (const std::type_index& typeIndex : temp)
+			afterList.clear();
+			beforeList.clear();
+			system->GetExecuteAfter(afterList);
+			system->GetExecuteBefore(beforeList);
+
+			for (const std::type_index& a : afterList)
 			{
-				auto it = m_lookup.find(typeIndex);
+				for (const std::type_index& b : beforeList)
+				{
+					if (a == b)
+					{
+						Terminal::Error("Engine", "{} declares ExecuteAfter and ExecuteBefore on the same type {}.",
+							typeid(*system).name(), a.name());
 
+						RequestExit("Subsystem ordering contradiction.");
+						return;
+					}
+				}
+			}
+
+			for (const std::type_index& t : afterList)
+			{
+				auto it = m_lookup.find(t);
 				if (it != m_lookup.end() && indexOf.contains(it->second))
 					afterDeps[i].insert(it->second);
 			}
 
-			temp.clear();
-			system->GetExecuteBefore(temp);
-			for (const std::type_index& typeIndex : temp)
+			for (const std::type_index& t : beforeList)
 			{
-				auto it = m_lookup.find(typeIndex);
-
+				auto it = m_lookup.find(t);
 				if (it != m_lookup.end() && indexOf.contains(it->second))
 					afterDeps[indexOf[it->second]].insert(system);
 			}
@@ -123,9 +159,9 @@ namespace Horizon
 					continue;
 
 				b8 ready = true;
-				for (auto* dependency : afterDeps[i])
+				for (Subsystem* dep : afterDeps[i])
 				{
-					if (!placedSet.contains(dependency));
+					if (!placedSet.contains(dep))
 					{
 						ready = false;
 						break;
@@ -144,18 +180,23 @@ namespace Horizon
 
 			if (!progressed)
 			{
-				Terminal::Error("Engine", "Subsystem ordering cycle detected; appending remainder as-is.");
-
 				for (usize i = 0; i < count; i++)
 				{
 					if (!placed[i])
-						ordered.push_back(m_activeSystems[i]);
+						Terminal::Error("Engine", "{} is stuck in an ordering cycle or tier conflict.", typeid(*m_activeSystems[i]).name());
 				}
-				break;
+
+				RequestExit("Subsystem ordering could not be resolved.");
+				return;
 			}
 		}
 
 		m_activeSystems = std::move(ordered);
+
+		Terminal::Log("Engine", "### Subsystem Order List ###");
+		for (usize i = 0; i < m_activeSystems.size(); i++)
+			Terminal::Log("Engine", "Index ({}) - {}", i, m_activeSystems[i]->GetName());
+
 	}
 
 	void Engine::Shutdown()

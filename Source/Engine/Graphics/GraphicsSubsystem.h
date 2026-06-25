@@ -12,15 +12,18 @@ namespace Horizon
 	class GfxFence;
 	class GfxCommandList;
 
-	class GraphicsModule final : public Subsystem
+	class GraphicsSubsystem final : public Subsystem
 	{
 	public:
-		GraphicsModule() = default;
-		~GraphicsModule() = default;
+		GraphicsSubsystem() = default;
+		~GraphicsSubsystem() = default;
 
 		void OnAttach(Engine* engine) final;
 		void OnSync() final;
 		void OnDetach() final;
+
+		void GetExecuteAfter(std::vector<std::type_index>& out) const final;
+		void GetExecuteBefore(std::vector<std::type_index>& out) const final;
 
 		GfxDevice* GetDevice() const { return m_device; }
 		GfxQueue* GetGraphicsQueue() const { return m_graphicsQueue; }
@@ -36,13 +39,5 @@ namespace Horizon
 		GfxQueue* m_transferQueue = nullptr;
 
 		GfxSwapchain* m_swapchain = nullptr;
-
-		GfxFence* m_frameFence = nullptr;
-		GfxCommandList* m_frameCmds[MaxFramesInFlight] = {};
-		u64 m_frameFenceValues[MaxFramesInFlight] = {};
-		u64 m_frameIndex = 0;
-
-		u32 m_width = 0;
-		u32 m_height = 0;
 	};
 }

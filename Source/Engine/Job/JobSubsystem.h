@@ -8,13 +8,14 @@
 
 namespace Horizon
 {
-	class JobModule : public Subsystem
+	class JobSubsystem : public Subsystem
 	{
 		friend class JobWorker;
-
 	public:
 		void OnAttach(Engine* pEngine) final;
 		void OnDetach() final;
+
+		ExecutionTier GetExecutionTier() const final { return ExecutionTier::First; }
 
 		void SubmitJob(Job&& job);
 		void Dispatch(JobCounter& counter, Job&& job);

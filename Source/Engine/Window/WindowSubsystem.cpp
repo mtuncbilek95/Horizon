@@ -1,11 +1,13 @@
-#include "WindowModule.h"
+#include "WindowSubsystem.h"
+
+#include <Runtime/PAL/Window/Window.h>
 
 #include <Engine/Core/Engine.h>
-#include <Runtime/PAL/Window/Window.h>
+#include <Engine/Job/JobSubsystem.h>
 
 namespace Horizon
 {
-	void WindowModule::OnAttach(Engine* pEngine)
+	void WindowSubsystem::OnAttach(Engine* pEngine)
 	{
 		Subsystem::OnAttach(pEngine);
 
@@ -23,7 +25,7 @@ namespace Horizon
 		m_window->Show();
 	}
 
-	void WindowModule::OnSync()
+	void WindowSubsystem::OnSync()
 	{
 		m_window->PollEvents();
 
@@ -31,8 +33,17 @@ namespace Horizon
 			m_engine->RequestExit("Main window is no longer active!");
 	}
 
-	void WindowModule::OnDetach()
+	void WindowSubsystem::OnDetach()
 	{
 		Allocator::Delete(m_window);
+	}
+
+	void WindowSubsystem::GetExecuteAfter(std::vector<std::type_index>& out) const
+	{
+		Requires<JobSubsystem>(out);
+	}
+
+	void WindowSubsystem::GetExecuteBefore(std::vector<std::type_index>& out) const
+	{
 	}
 }
