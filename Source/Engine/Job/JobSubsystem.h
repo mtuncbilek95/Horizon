@@ -12,7 +12,7 @@ namespace Horizon
 	 * First module that always needs to be run, so every other modules can 
 	 * use this whenever they want.
 	 */
-	class JobSubsystem : public Subsystem
+	class H_EXPORT JobSubsystem : public Subsystem
 	{
 		friend class JobWorker;
 	public:

@@ -12,7 +12,7 @@ namespace Horizon
 	class GfxFence;
 	class GfxCommandList;
 
-	class GraphicsSubsystem final : public Subsystem
+	class H_EXPORT GraphicsSubsystem final : public Subsystem
 	{
 	public:
 		GraphicsSubsystem() = default;

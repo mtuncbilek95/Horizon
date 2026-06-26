@@ -9,7 +9,7 @@ namespace Horizon
 	class EditorRenderer;
 	class PresentationSubsystem;
 
-	class EditorSubsystem final : public Subsystem
+	class H_EXPORT EditorSubsystem final : public Subsystem
 	{
 	public:
 		EditorSubsystem() = default;

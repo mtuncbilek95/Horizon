@@ -8,7 +8,7 @@ namespace Horizon
 {
 	using Job = std::function<void()>;
 
-	struct JobCounter
+	struct H_EXPORT JobCounter
 	{
 		PAL::Atomic<u32> remaining = 0;
 	};

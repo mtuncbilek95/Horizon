@@ -9,7 +9,7 @@ namespace Horizon
 	class GfxFence;
 	class GfxQueue;
 
-	class PresentationSubsystem final : public Subsystem
+	class H_EXPORT PresentationSubsystem final : public Subsystem
 	{
 	public:
 		PresentationSubsystem() = default;

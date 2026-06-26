@@ -9,7 +9,7 @@
 
 namespace Horizon
 {
-	class Engine final
+	class H_EXPORT Engine final
 	{
 	public:
 		Engine();

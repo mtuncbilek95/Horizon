@@ -12,7 +12,7 @@ namespace Horizon
 {
 	class JobSubsystem;
 
-	class JobWorker
+	class H_EXPORT JobWorker
 	{
 		static void ThreadEntryPoint(void* userData);
 

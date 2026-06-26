@@ -6,7 +6,7 @@
 
 namespace Horizon
 {
-	class WindowSubsystem final : public Subsystem
+	class H_EXPORT WindowSubsystem final : public Subsystem
 	{
 	public:
 		WindowSubsystem() = default;
