@@ -13,6 +13,10 @@ namespace Horizon
 			m_projectPath = argV[1];
 
 		// for(i32 i = 2; i < argC; i++)
+		
+		// Dummy Folder for testing purpose. If you see this and say "Oh! That's absolute path!",
+		// you should go fuck yourself harder.
+		m_projectPath = "D:/Projects/Horizon/ExampleProject";
 	}
 
 	EngineReport CommandSubsystem::OnAttach(Engine* pEngine)

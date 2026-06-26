@@ -20,6 +20,9 @@ namespace Horizon
 		void GetExecutionOrder(OrderRules& rules) const final;
 
 	private:
+		void RecursiveDebugChecker(DomainFolder* folder);
+
+	private:
 		std::filesystem::path m_rootPath;
 		DomainFolder* m_rootFolder;
 	};

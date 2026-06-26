@@ -37,6 +37,7 @@ namespace Horizon
 	private:
 		Guid m_id;
 
+		Engine* m_engine;
 		DomainFolder* m_parent;
 
 		std::filesystem::path m_metaPath;

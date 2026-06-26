@@ -38,6 +38,7 @@ namespace Horizon
 		std::vector<DomainFolder*> m_subFolders;
 		std::vector<DomainFile*> m_files;
 
+		Engine* m_engine;
 		DomainFolder* m_parent;
 
 		std::string m_name;

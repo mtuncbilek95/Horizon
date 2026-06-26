@@ -56,7 +56,7 @@ namespace Horizon
 
 		m_fence = m_device->CreateFence();
 
-		CreatePipeline();
+		//CreatePipeline();
 	}
 
 	EditorRenderer::~EditorRenderer()

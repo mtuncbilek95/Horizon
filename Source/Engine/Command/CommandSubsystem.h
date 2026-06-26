@@ -17,6 +17,9 @@ namespace Horizon
 
 		void GetInitializeOrder(OrderRules& rules) const final;
 
+		const std::filesystem::path& GetExecutionPath() const { return m_executionPath; }
+		const std::filesystem::path& GetProjectPath() const { return m_projectPath; }
+
 	private:
 		std::filesystem::path m_executionPath;
 		std::filesystem::path m_projectPath;
