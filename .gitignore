@@ -1,10 +1,8 @@
 .vs/*
+.claude/*
+
 Build/*
 Install/*
 Publish/*
 
-Tools/AssetCooker/.vs/*
-
-Resources/*
-
-.claude/*
+ExampleProject/*

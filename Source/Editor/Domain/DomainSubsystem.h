@@ -1,6 +1,9 @@
 #pragma once
 
 #include <Engine/Core/Subsystem.h>
+#include <Editor/Domain/DomainFolder.h>
+
+#include <filesystem>
 
 namespace Horizon
 {
@@ -14,9 +17,10 @@ namespace Horizon
 		void OnSync();
 		void OnDetach();
 
-		void GetInitializeOrder(OrderRules& rules) const final;
 		void GetExecutionOrder(OrderRules& rules) const final;
 
 	private:
+		std::filesystem::path m_rootPath;
+		DomainFolder* m_rootFolder;
 	};
 }

@@ -69,6 +69,9 @@ namespace Horizon
 
 		std::vector<Subsystem*> initOrder = BuildOrder(m_activeSystems, true);
 
+		m_initOrder = initOrder;
+		m_activeSystems = initOrder;
+
 		if (!m_exitRequested)
 		{
 			Terminal::Log("Engine", "### Subsystem Initialize Order ###");
@@ -109,7 +112,7 @@ namespace Horizon
 
 	void Engine::Shutdown()
 	{
-		for (auto it = m_activeSystems.rbegin(); it != m_activeSystems.rend(); ++it)
+		for (auto it = m_initOrder.rbegin(); it != m_initOrder.rend(); ++it)
 		{
 			(*it)->OnDetach();
 			Allocator::Delete(*it);
@@ -119,6 +122,7 @@ namespace Horizon
 			Allocator::Delete(system);
 
 		m_activeSystems.clear();
+		m_initOrder.clear();
 		m_initPendingSystems.clear();
 		m_removePendingSystems.clear();
 		m_lookup.clear();

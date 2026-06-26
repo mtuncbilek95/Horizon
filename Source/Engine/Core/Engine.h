@@ -77,6 +77,7 @@ namespace Horizon
 
 	private:
 		std::vector<Subsystem*> m_activeSystems;
+		std::vector<Subsystem*> m_initOrder;
 		std::vector<Subsystem*> m_initPendingSystems;
 		std::vector<Subsystem*> m_removePendingSystems;
 
