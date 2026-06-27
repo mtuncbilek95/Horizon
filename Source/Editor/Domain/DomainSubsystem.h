@@ -21,6 +21,7 @@ namespace Horizon
 
 	private:
 		void RecursiveDebugChecker(DomainFolder* folder);
+		void UpdateFolder(DomainFolder* pTarget);
 
 	private:
 		std::filesystem::path m_rootPath;

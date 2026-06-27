@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Editor/Domain/DomainObject.h>
+
 #include <filesystem>
 #include <string>
 
@@ -15,7 +17,7 @@ namespace Horizon
 		DomainFolder* pParent = nullptr;
 	};
 
-	class H_EXPORT DomainFolder
+	class H_EXPORT DomainFolder : public DomainObject
 	{
 	public:
 		DomainFolder(const DomainFolderDesc& desc, Engine* pEngine);
@@ -33,6 +35,15 @@ namespace Horizon
 
 		b8 HasFile(const std::string& fileName);
 		b8 HasFolder(const std::string& folderName);
+
+		DomainFile* FindFile(const std::string& name);
+		DomainFolder* FindFolder(const std::string& name);
+
+		void ResetChildMarks();
+		void SweepUnmarked();
+
+		void AddFile(DomainFile* pFile) { m_files.push_back(pFile); }
+		void AddSubfolder(DomainFolder* pSub) { m_subFolders.push_back(pSub); }
 
 	private:
 		std::vector<DomainFolder*> m_subFolders;

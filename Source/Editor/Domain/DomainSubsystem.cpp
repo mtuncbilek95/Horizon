@@ -40,6 +40,7 @@ namespace Horizon
 
 	void DomainSubsystem::OnSync()
 	{
+		UpdateFolder(m_rootFolder);
 	}
 
 	void DomainSubsystem::OnDetach()
@@ -59,5 +60,50 @@ namespace Horizon
 
 		for (auto* fd : folder->GetSubfolders())
 			RecursiveDebugChecker(fd);
+	}
+
+	void DomainSubsystem::UpdateFolder(DomainFolder* pTarget)
+	{
+		pTarget->ResetChildMarks();
+
+		for (const auto& entry : std::filesystem::directory_iterator(pTarget->GetPath()))
+		{
+			if (entry.is_directory())
+			{
+				DomainFolder* pFolder = pTarget->FindFolder(entry.path().filename().string());
+				if (!pFolder)
+				{
+					DomainFolderDesc desc = {};
+					desc.folderPath = entry.path();
+					desc.pParent = pTarget;
+					pFolder = Allocator::Create<DomainFolder>(CurrLoc(), desc, m_engine);
+					pTarget->AddSubfolder(pFolder);
+
+					Terminal::Info("DomainSubsystem", "{} folder has been added as {}", pFolder->GetName(), pFolder->GetPath().string());
+				}
+				pFolder->Mark();
+			}
+			else if (entry.is_regular_file())
+			{
+				DomainFile* pFile = pTarget->FindFile(entry.path().filename().string());
+				if (!pFile)
+				{
+					DomainFileDesc desc = {};
+					desc.fileId = Guid::Generate();
+					desc.pParent = pTarget;
+					desc.metaPath = entry.path();
+					pFile = Allocator::Create<DomainFile>(CurrLoc(), desc, m_engine);
+					pTarget->AddFile(pFile);
+
+					Terminal::Info("DomainSubsystem", "{} file has been added as {}", pFile->GetName(), pFile->GetMetaPath().string());
+				}
+				pFile->Mark();
+			}
+		}
+
+		pTarget->SweepUnmarked();
+
+		for (auto* sub : pTarget->GetSubfolders())
+			UpdateFolder(sub);
 	}
 }

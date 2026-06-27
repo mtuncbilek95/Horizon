@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Runtime/Containers/Guid.h>
+#include <Editor/Domain/DomainObject.h>
 
 #include <filesystem>
 #include <string>
@@ -20,7 +21,7 @@ namespace Horizon
 		std::filesystem::path binaryPath;
 	};
 
-	class H_EXPORT DomainFile
+	class H_EXPORT DomainFile : public DomainObject
 	{
 	public:
 		DomainFile(const DomainFileDesc& desc, Engine* pEngine);

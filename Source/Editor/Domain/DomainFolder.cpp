@@ -80,4 +80,50 @@ namespace Horizon
 
 		return false;
 	}
+
+	DomainFile* DomainFolder::FindFile(const std::string& name)
+	{
+		for (auto* file : m_files)
+		{
+			if (file->GetName() == name)
+				return file;
+		}
+
+		return nullptr;
+	}
+
+	DomainFolder* DomainFolder::FindFolder(const std::string& name)
+	{
+		for (auto* folder : m_subFolders)
+		{
+			if (folder->GetName() == name)
+				return folder;
+		}
+
+		return nullptr;
+	}
+
+	void DomainFolder::ResetChildMarks()
+	{
+		for (auto* file : m_files)
+			file->Unmark();
+
+		for (auto* folder : m_subFolders)
+			folder->Unmark();
+	}
+
+	void DomainFolder::SweepUnmarked()
+	{
+		std::erase_if(m_files, [](DomainFile* f)
+			{
+				if (!f->IsMarked()) { Allocator::Delete(f); return true; }
+				return false;
+			});
+
+		std::erase_if(m_subFolders, [](DomainFolder* d)
+			{
+				if (!d->IsMarked()) { Allocator::Delete(d); return true; }
+				return false;
+			});
+	}
 }
