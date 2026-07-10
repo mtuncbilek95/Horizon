@@ -34,6 +34,9 @@ namespace Horizon
 	public:
 		virtual ~GfxDevice() = default;
 
+		virtual void InitializeImGui(GfxQueue* pQueue, GfxTextureFormat fmt = GfxTextureFormat::RGBA8, u32 framesInFlight = MaxFramesInFlight) = 0;
+		virtual void ShutdownImGui() = 0;
+
 		virtual GfxTexture* CreateTexture(const GfxTextureDesc& desc) = 0;
 		virtual GfxBuffer* CreateBuffer(const GfxBufferDesc& desc) = 0;
 		virtual GfxPipeline* CreatePipeline(const GfxGraphicsPipelineDesc& desc) = 0;

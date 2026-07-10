@@ -39,10 +39,7 @@ namespace Horizon
 		void OnResizeWindow(u32 width, u32 height);
 
 		b8 BeginRender(f32 dt);
-		b8 EndRender(GfxTexture* backbuffer);
-
-	private:
-		void CreatePipeline();
+		b8 EndRender(GfxTexture* backbuffer, u32 imgIndex);
 
 	private:
 		GfxDevice* m_device;
@@ -50,10 +47,6 @@ namespace Horizon
 
 		RenderContext m_context;
 
-		GfxPipeline* m_pipeline = nullptr;
-
-		GfxFence* m_fence = nullptr;
-		u64 m_frameFenceValues[MaxFramesInFlight] = {};
-		u32 m_frameIndex = 0;
+		std::vector<GfxCommandList*> m_commandLists;
 	};
 }

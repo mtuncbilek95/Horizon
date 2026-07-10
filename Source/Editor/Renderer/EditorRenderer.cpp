@@ -13,34 +13,13 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include <backends/imgui_impl_dx12.h>
+
 #include <fstream>
 #include <vector>
 
 namespace Horizon
 {
-	namespace
-	{
-		struct ImGuiVertexPush
-		{
-			f32 scale[2];
-			f32 translate[2];
-			u32 vertexBufferIndex;
-			u32 textureIndex;
-		};
-
-		std::vector<u8> ReadShaderFile(const c8* path)
-		{
-			std::ifstream file(path, std::ios::binary | std::ios::ate);
-			std::streamsize size = file.tellg();
-			file.seekg(0, std::ios::beg);
-
-			std::vector<u8> buffer(static_cast<usize>(size));
-			file.read((c8*)buffer.data(), size);
-
-			return buffer;
-		}
-	}
-
 	EditorRenderer::EditorRenderer(const EditorRendererDesc& desc) : m_device(desc.pDevice),
 		m_graphicsQueue(desc.pQueue)
 	{
@@ -54,21 +33,19 @@ namespace Horizon
 		io.DisplaySize = { 512.f, 512.f };
 		io.DisplayFramebufferScale = { 1.0f, 1.0f };
 
-		m_fence = m_device->CreateFence();
+		m_device->InitializeImGui(m_graphicsQueue);
 
-		//CreatePipeline();
+		m_commandLists.resize(3);
+		for (u32 i = 0; i < 3; i++)
+			m_commandLists[i] = m_device->CreateCommandList(GfxQueueType::Graphics);
 	}
 
 	EditorRenderer::~EditorRenderer()
 	{
-		if (m_fence)
-		{
-			for (u32 i = 0; i < MaxFramesInFlight; i++)
-				m_fence->WaitCPU(m_frameFenceValues[i]);
-		}
+		for (GfxCommandList* cmd : m_commandLists)
+			Allocator::Delete(cmd);
 
-		Allocator::Delete(m_pipeline);
-		Allocator::Delete(m_fence);
+		m_device->ShutdownImGui();
 
 		ImGui::DestroyContext((ImGuiContext*)m_context);
 	}
@@ -144,55 +121,41 @@ namespace Horizon
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = dt;
 
+		// No need to flex. Just call this shit. Its Windows only editor.
+		ImGui_ImplDX12_NewFrame();
 		ImGui::NewFrame();
 
 		return true;
 	}
 
-	b8 EditorRenderer::EndRender(GfxTexture* backbuffer)
+	b8 EditorRenderer::EndRender(GfxTexture* backbuffer, u32 imgIndex)
 	{
 		ImGui::Render();
-		ImDrawData* drawData = ImGui::GetDrawData();
 
-		const u32 slot = m_frameIndex % MaxFramesInFlight;
-		m_fence->WaitCPU(m_frameFenceValues[slot]);
+		GfxCommandList* cmd = m_commandLists[imgIndex];
+		cmd->Begin();
+		cmd->SetupBindless();
 
-		const u32 totalVtx = u32(drawData->TotalVtxCount);
-		const u32 totalIdx = u32(drawData->TotalIdxCount);
+		GfxTextureBarrier toTarget = { backbuffer, GfxResourceState::Present, GfxResourceState::RenderTarget };
+		cmd->Barrier(&toTarget, 1);
 
-		m_graphicsQueue->Submit(nullptr, 0);
-		m_frameFenceValues[slot] = m_graphicsQueue->Signal(m_fence);
+		const GfxTextureDesc& bbDesc = backbuffer->GetDesc();
 
-		m_frameIndex++;
+		GfxRenderBeginDesc pass = {};
+		pass.addColorTarget(backbuffer, GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
+			.setSize(bbDesc.width, bbDesc.height);
+		cmd->BeginRendering(pass);
+
+		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), (ID3D12GraphicsCommandList6*)cmd->GetAPIHandle());
+
+		GfxTextureBarrier toPresent = { backbuffer, GfxResourceState::RenderTarget, GfxResourceState::Present };
+		cmd->Barrier(&toPresent, 1);
+
+		cmd->End();
+
+		GfxCommandList* submitList[] = { cmd };
+		m_graphicsQueue->Submit(submitList, 1);
+
 		return true;
-	}
-
-	void EditorRenderer::CreatePipeline()
-	{
-		std::vector<u8> vertexBytes = ReadShaderFile("ImGui.vert");
-		std::vector<u8> pixelBytes = ReadShaderFile("ImGui.frag");
-
-		GfxGraphicsPipelineDesc pipeDesc = {};
-		pipeDesc.vertexShader = { vertexBytes.data(), vertexBytes.size() };
-		pipeDesc.pixelShader = { pixelBytes.data(), pixelBytes.size() };
-		pipeDesc.colorFormats[0] = GfxTextureFormat::RGBA8;
-		pipeDesc.colorTargetCount = 1;
-		pipeDesc.depthFormat = GfxTextureFormat::Undefined;
-		pipeDesc.topology = GfxPrimitiveTopology::TriangleList;
-		pipeDesc.cullMode = GfxCullMode::None;
-		pipeDesc.fillMode = GfxFillMode::Solid;
-		pipeDesc.depthTest = false;
-		pipeDesc.depthWrite = false;
-
-		pipeDesc.blend.enable = true;
-		pipeDesc.blend.srcColor = GfxBlendFactor::SrcAlpha;
-		pipeDesc.blend.dstColor = GfxBlendFactor::InvSrcAlpha;
-		pipeDesc.blend.colorOp = GfxBlendOp::Add;
-		pipeDesc.blend.srcAlpha = GfxBlendFactor::One;
-		pipeDesc.blend.dstAlpha = GfxBlendFactor::InvSrcAlpha;
-		pipeDesc.blend.alphaOp = GfxBlendOp::Add;
-		pipeDesc.blend.writeMask = GfxColorWrite::All;
-
-		m_pipeline = m_device->CreatePipeline(pipeDesc);
 	}
 }

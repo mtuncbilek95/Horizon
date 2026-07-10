@@ -13,6 +13,8 @@ namespace Horizon
 	public:
 		~D3D12CommandList() final;
 
+		void* GetAPIHandle() const final { return m_list; }
+
 		void Begin() final;
 		void End() final;
 		void SetupBindless() final;

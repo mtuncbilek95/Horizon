@@ -74,10 +74,6 @@ namespace Horizon
 
 		if (!m_exitRequested)
 		{
-			Terminal::Log("Engine", "### Subsystem Initialize Order ###");
-			for (usize i = 0; i < initOrder.size(); i++)
-				Terminal::Log("Engine", "Index ({}) - {}", i, initOrder[i]->GetName());
-
 			for (Subsystem* system : initOrder)
 			{
 				if (attaching.contains(system))
@@ -103,11 +99,6 @@ namespace Horizon
 
 		if (m_exitRequested)
 			return;
-
-		Terminal::Log("Engine", "### Subsystem Execution Order ###");
-		for (usize i = 0; i < m_activeSystems.size(); i++)
-			Terminal::Log("Engine", "Index ({}) - {}", i, m_activeSystems[i]->GetName());
-
 	}
 
 	void Engine::Shutdown()

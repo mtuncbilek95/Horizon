@@ -9,7 +9,7 @@ target_include_directories(Runtime PRIVATE "${CMAKE_SOURCE_DIR}/Source")
 
 target_link_libraries(Runtime
 	PUBLIC
-		nlohmann_json::nlohmann_json
+		nlohmann_json::nlohmann_json Imgui
 )
 
 target_link_libraries(Runtime

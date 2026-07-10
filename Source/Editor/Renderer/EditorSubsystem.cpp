@@ -119,7 +119,7 @@ namespace Horizon
 
 		ImGui::ShowDemoWindow();
 
-		m_editorRenderer->EndRender(m_presentationSub->GetBackbuffer(imageIndex));
+		m_editorRenderer->EndRender(m_presentationSub->GetBackbuffer(imageIndex), imageIndex);
 		m_presentationSub->Present(imageIndex);
 	}
 

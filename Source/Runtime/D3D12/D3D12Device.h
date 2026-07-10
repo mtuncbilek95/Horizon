@@ -16,6 +16,9 @@ namespace Horizon
 		void Init();
 		~D3D12Device() final;
 
+		void InitializeImGui(GfxQueue* pQueue, GfxTextureFormat fmt = GfxTextureFormat::RGBA8, u32 framesInFlight = MaxFramesInFlight) final;
+		void ShutdownImGui() final;
+
 		GfxTexture* CreateTexture(const GfxTextureDesc& desc) final;
 		GfxBuffer* CreateBuffer(const GfxBufferDesc& desc) final;
 		GfxPipeline* CreatePipeline(const GfxGraphicsPipelineDesc& desc) final;
@@ -30,6 +33,8 @@ namespace Horizon
 
 		ID3D12RootSignature* GetRootSignature() const { return m_rootSignature; }
 		ID3D12DescriptorHeap* GetResourceHeap() const { return m_resourceHeap.pHeap; }
+
+		D3D12DescriptorHeap* GetResourceHeapRHI() { return &m_resourceHeap; }
 
 		D3D12Texture* CreateBackbufferTexture(ID3D12Resource* resource, u32 width, u32 height, DXGI_FORMAT format);
 		void DestroyBackbufferTexture(D3D12Texture* texture);

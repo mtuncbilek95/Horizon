@@ -33,7 +33,7 @@ namespace Horizon
 		swapDesc.imageCount = 3;
 		swapDesc.width = windowRect.width;
 		swapDesc.height = windowRect.height;
-		swapDesc.vSync = true;
+		swapDesc.vSync = false;
 		swapDesc.bAllowTearing = false;
 		m_swapchain = pGraphSub->GetDevice()->CreateSwapchain(swapDesc, pGraphSub->GetGraphicsQueue());
 		if (!m_swapchain)

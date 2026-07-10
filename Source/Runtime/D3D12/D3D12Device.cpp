@@ -8,8 +8,33 @@
 #include <Runtime/D3D12/D3D12Swapchain.h>
 #include <Runtime/D3D12/D3D12Texture.h>
 
+#include <imgui.h>
+#include <imgui_impl_dx12.h>
+
 namespace Horizon
 {
+	namespace
+	{
+		void ImGuiAlloc(ImGui_ImplDX12_InitInfo* pInfo, D3D12_CPU_DESCRIPTOR_HANDLE* pOutCpu, D3D12_GPU_DESCRIPTOR_HANDLE* pOutGpu)
+		{
+			auto* device = static_cast<D3D12Device*>(pInfo->UserData);
+			D3D12DescriptorHeap& heap = *device->GetResourceHeapRHI();
+
+			const u32 index = heap.Allocate();
+
+			*pOutCpu = heap.CpuAt(index);
+			*pOutGpu = heap.GpuAt(index);
+		}
+
+		void ImGuiFree(ImGui_ImplDX12_InitInfo* pInfo, D3D12_CPU_DESCRIPTOR_HANDLE cpu, D3D12_GPU_DESCRIPTOR_HANDLE)
+		{
+			auto* device = static_cast<D3D12Device*>(pInfo->UserData);
+			D3D12DescriptorHeap& heap = *device->GetResourceHeapRHI();
+
+			heap.Free(heap.IndexOf(cpu));
+		}
+	}
+
 	GfxDevice* CreateGfxDevice()
 	{
 		auto* device = Allocator::Create<D3D12Device>(CurrLoc());
@@ -97,6 +122,29 @@ namespace Horizon
 
 		if (m_factory)
 			m_factory->Release();
+	}
+
+	void D3D12Device::InitializeImGui(GfxQueue* pQueue, GfxTextureFormat fmt, u32 framesInFlight)
+	{
+		auto* pD3DQueue = static_cast<D3D12Queue*>(pQueue);
+
+		ImGui_ImplDX12_InitInfo info = {};
+		info.Device = m_device;
+		info.CommandQueue = pD3DQueue->Handle();
+		info.NumFramesInFlight = i32(framesInFlight);
+		info.RTVFormat = Helpers::ToDXGIFormat(fmt);
+		info.DSVFormat = DXGI_FORMAT_UNKNOWN;
+		info.SrvDescriptorHeap = m_resourceHeap.pHeap;
+		info.SrvDescriptorAllocFn = &ImGuiAlloc;
+		info.SrvDescriptorFreeFn = &ImGuiFree;
+		info.UserData = this;
+
+		ImGui_ImplDX12_Init(&info);
+	}
+
+	void D3D12Device::ShutdownImGui()
+	{
+		ImGui_ImplDX12_Shutdown();
 	}
 
 	GfxTexture* D3D12Device::CreateTexture(const GfxTextureDesc& desc)

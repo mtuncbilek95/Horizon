@@ -60,6 +60,8 @@ namespace Horizon
 		virtual void Begin() = 0;
 		virtual void End() = 0;
 
+		virtual void* GetAPIHandle() const = 0;
+
 		virtual void SetupBindless() = 0;
 		virtual void Barrier(const GfxTextureBarrier* barriers, u32 count) = 0;
 		virtual void BeginRendering(const GfxRenderBeginDesc& desc) = 0;
