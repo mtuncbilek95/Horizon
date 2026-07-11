@@ -69,15 +69,7 @@ add_library(ImNodes STATIC ${TARGET_IMNODE_FILES})
 target_include_directories(ImNodes PUBLIC ${imnodes_SOURCE_DIR})
 target_link_libraries(ImNodes PUBLIC Imgui)
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    include(SetupWindows)
-        SetupD3D(Imgui)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    enable_language(OBJCXX)
-    target_link_libraries(Imgui PUBLIC
-        "-framework Metal"
-        "-framework MetalKit"
-        "-framework AppKit"
-        "-framework QuartzCore"
-    )
+if(WIN32)
+    include(ConfigureWindows)
+    ConfigureD3D12Library(Imgui)
 endif()

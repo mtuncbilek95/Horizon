@@ -1,18 +1,18 @@
-#include "DomainSubsystem.h"
+#include "DomainSystem.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Asset/AssetSubsystem.h>
-#include <Engine/Command/CommandSubsystem.h>
+#include <Engine/Asset/AssetSystem.h>
+#include <Engine/Command/CommandSystem.h>
 
 #include <Editor/Domain/DomainFile.h>
 
 namespace Horizon
 {
-	EngineReport DomainSubsystem::OnAttach(Engine* pEngine)
+	SystemReport DomainSystem::OnAttach(Engine* pEngine)
 	{
-		Subsystem::OnAttach(pEngine);
+		System::OnAttach(pEngine);
 
-		auto* pCommandSub = m_engine->TryGetSubsystem<CommandSubsystem>();
+		auto* pCommandSub = m_engine->TryGetSystem<CommandSystem>();
 		const auto& startPoint = pCommandSub->GetProjectPath();
 
 		m_rootPath = startPoint / "Project";
@@ -35,25 +35,25 @@ namespace Horizon
 		}
 #endif
 
-		return EngineReport();
+		return SystemReport();
 	}
 
-	void DomainSubsystem::OnSync()
+	void DomainSystem::OnSync()
 	{
 		UpdateFolder(m_rootFolder);
 	}
 
-	void DomainSubsystem::OnDetach()
+	void DomainSystem::OnDetach()
 	{
 		Allocator::Delete(m_rootFolder);
 	}
 
-	void DomainSubsystem::GetExecutionOrder(OrderRules& rules) const
+	void DomainSystem::GetExecutionOrder(OrderRules& rules) const
 	{
-		Requires<AssetSubsystem>(rules.after);
+		Requires<AssetSystem>(rules.after);
 	}
 
-	void DomainSubsystem::RecursiveDebugChecker(DomainFolder* folder)
+	void DomainSystem::RecursiveDebugChecker(DomainFolder* folder)
 	{
 		for (auto* file : folder->GetFiles())
 			Terminal::Log(folder->GetName(), "{}", file->GetName());
@@ -62,7 +62,7 @@ namespace Horizon
 			RecursiveDebugChecker(fd);
 	}
 
-	void DomainSubsystem::UpdateFolder(DomainFolder* pTarget)
+	void DomainSystem::UpdateFolder(DomainFolder* pTarget)
 	{
 		pTarget->ResetChildMarks();
 
@@ -79,7 +79,7 @@ namespace Horizon
 					pFolder = Allocator::Create<DomainFolder>(CurrLoc(), desc, m_engine);
 					pTarget->AddSubfolder(pFolder);
 
-					Terminal::Info("DomainSubsystem", "{} folder has been added as {}", pFolder->GetName(), pFolder->GetPath().string());
+					Terminal::Info("DomainSystem", "{} folder has been added as {}", pFolder->GetName(), pFolder->GetPath().string());
 				}
 				pFolder->Mark();
 			}
@@ -95,7 +95,7 @@ namespace Horizon
 					pFile = Allocator::Create<DomainFile>(CurrLoc(), desc, m_engine);
 					pTarget->AddFile(pFile);
 
-					Terminal::Info("DomainSubsystem", "{} file has been added as {}", pFile->GetName(), pFile->GetMetaPath().string());
+					Terminal::Info("DomainSystem", "{} file has been added as {}", pFile->GetName(), pFile->GetMetaPath().string());
 				}
 				pFile->Mark();
 			}

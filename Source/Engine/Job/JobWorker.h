@@ -10,7 +10,7 @@
 
 namespace Horizon
 {
-	class JobSubsystem;
+	class JobSystem;
 
 	class H_EXPORT JobWorker
 	{
@@ -23,7 +23,7 @@ namespace Horizon
 		};
 
 	public:
-		JobWorker(JobSubsystem* pSubsystem, usize index);
+		JobWorker(JobSystem* pSystem, usize index);
 		~JobWorker();
 
 		void Run();
@@ -41,7 +41,7 @@ namespace Horizon
 		b8 TryPopJob(Job& out);
 
 	private:
-		JobSubsystem* m_owner;
+		JobSystem* m_owner;
 		usize m_index;
 
 		WorkStealingDeque<JobNode*> m_deque;

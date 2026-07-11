@@ -21,7 +21,7 @@ namespace Horizon
 			if (m_exitRequested)
 				break;
 
-			for (Subsystem* system : m_activeSystems)
+			for (System* system : m_activeSystems)
 				system->OnSync();
 		}
 
@@ -39,7 +39,7 @@ namespace Horizon
 	{
 		b8 changed = !m_removePendingSystems.empty() || !m_initPendingSystems.empty();
 
-		for (Subsystem* system : m_removePendingSystems)
+		for (System* system : m_removePendingSystems)
 		{
 			system->OnDetach();
 
@@ -58,32 +58,32 @@ namespace Horizon
 		}
 		m_removePendingSystems.clear();
 
-		std::unordered_set<Subsystem*> attaching(m_initPendingSystems.begin(), m_initPendingSystems.end());
+		std::unordered_set<System*> attaching(m_initPendingSystems.begin(), m_initPendingSystems.end());
 
-		for (Subsystem* system : m_initPendingSystems)
+		for (System* system : m_initPendingSystems)
 			m_activeSystems.push_back(system);
 		m_initPendingSystems.clear();
 
 		if (!changed)
 			return;
 
-		std::vector<Subsystem*> initOrder = BuildOrder(m_activeSystems, true);
+		std::vector<System*> initOrder = BuildOrder(m_activeSystems, true);
 
 		m_initOrder = initOrder;
 		m_activeSystems = initOrder;
 
 		if (!m_exitRequested)
 		{
-			for (Subsystem* system : initOrder)
+			for (System* system : initOrder)
 			{
 				if (attaching.contains(system))
 				{
-					EngineReport report = system->OnAttach(this);
+					SystemReport report = system->OnAttach(this);
 					if (report)
 					{
 						Terminal::Error("Engine", "{} failed to attach: {}", system->GetName(), report.GetMessage());
 
-						RequestExit("Subsystem attach failed.");
+						RequestExit("System attach failed.");
 						return;
 					}
 				}
@@ -109,7 +109,7 @@ namespace Horizon
 			Allocator::Delete(*it);
 		}
 
-		for (Subsystem* system : m_initPendingSystems)
+		for (System* system : m_initPendingSystems)
 			Allocator::Delete(system);
 
 		m_activeSystems.clear();
@@ -119,7 +119,7 @@ namespace Horizon
 		m_lookup.clear();
 	}
 
-	std::vector<Subsystem*> Engine::BuildOrder(const std::vector<Subsystem*>& systems, b8 initialize)
+	std::vector<System*> Engine::BuildOrder(const std::vector<System*>& systems, b8 initialize)
 	{
 		const usize count = systems.size();
 
@@ -132,11 +132,11 @@ namespace Horizon
 				systems[i]->GetExecutionOrder(rules[i]);
 		}
 
-		std::unordered_map<Subsystem*, usize> indexOf;
+		std::unordered_map<System*, usize> indexOf;
 		for (usize i = 0; i < count; i++)
 			indexOf[systems[i]] = i;
 
-		std::vector<std::unordered_set<Subsystem*>> afterDeps(count);
+		std::vector<std::unordered_set<System*>> afterDeps(count);
 
 		for (usize a = 0; a < count; a++)
 		{
@@ -152,7 +152,7 @@ namespace Horizon
 
 		for (usize i = 0; i < count; i++)
 		{
-			Subsystem* system = systems[i];
+			System* system = systems[i];
 
 			for (const std::type_index& a : rules[i].after)
 			{
@@ -163,7 +163,7 @@ namespace Horizon
 						Terminal::Error("Engine", "{} declares After and Before on the same type {} ({} order).",
 							system->GetName(), a.name(), initialize ? "Initialize" : "Execution");
 
-						RequestExit("Subsystem ordering contradiction.");
+						RequestExit("System ordering contradiction.");
 						return systems;
 					}
 				}
@@ -184,11 +184,11 @@ namespace Horizon
 			}
 		}
 
-		std::vector<Subsystem*> ordered;
+		std::vector<System*> ordered;
 		ordered.reserve(count);
 
 		std::vector<b8> placed(count, false);
-		std::unordered_set<Subsystem*> placedSet;
+		std::unordered_set<System*> placedSet;
 
 		while (ordered.size() < count)
 		{
@@ -200,7 +200,7 @@ namespace Horizon
 					continue;
 
 				b8 ready = true;
-				for (Subsystem* dep : afterDeps[i])
+				for (System* dep : afterDeps[i])
 				{
 					if (!placedSet.contains(dep))
 					{
@@ -228,7 +228,7 @@ namespace Horizon
 							systems[i]->GetName(), initialize ? "Initialize" : "Execution");
 				}
 
-				RequestExit("Subsystem ordering could not be resolved.");
+				RequestExit("System ordering could not be resolved.");
 				return systems;
 			}
 		}

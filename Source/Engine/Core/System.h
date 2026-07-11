@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Core/EngineReport.h>
+#include <Engine/Core/SystemReport.h>
 
 #include <vector>
 #include <typeindex>
@@ -23,16 +23,16 @@ namespace Horizon
 		std::vector<std::type_index> before;
 	};
 
-	class H_EXPORT Subsystem
+	class H_EXPORT System
 	{
 	public:
-		Subsystem() = default;
-		virtual ~Subsystem() = default;
+		System() = default;
+		virtual ~System() = default;
 
-		Subsystem(const Subsystem&) = delete;
-		Subsystem& operator=(const Subsystem&) = delete;
+		System(const System&) = delete;
+		System& operator=(const System&) = delete;
 
-		virtual EngineReport OnAttach(Engine* engine) { m_engine = engine; return EngineReport(); }
+		virtual SystemReport OnAttach(Engine* engine) { m_engine = engine; return SystemReport(); }
 		virtual void OnSync() {}
 		virtual void OnDetach() {}
 

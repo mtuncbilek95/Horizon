@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Core/Subsystem.h>
+#include <Engine/Core/System.h>
 
 namespace Horizon
 {
@@ -9,13 +9,13 @@ namespace Horizon
 	class GfxFence;
 	class GfxQueue;
 
-	class H_EXPORT PresentationSubsystem final : public Subsystem
+	class H_EXPORT PresentationSystem final : public System
 	{
 	public:
-		PresentationSubsystem() = default;
-		~PresentationSubsystem() = default;
+		PresentationSystem() = default;
+		~PresentationSystem() = default;
 
-		EngineReport OnAttach(Engine* engine) final;
+		SystemReport OnAttach(Engine* engine) final;
 		void OnDetach() final;
 
 		void GetInitializeOrder(OrderRules& rules) const final;

@@ -1,21 +1,23 @@
 #pragma once
 
-#include <Engine/Core/Subsystem.h>
+#include <Engine/Core/System.h>
 
 #include <Runtime/PAL/Window/Window.h>
 
 namespace Horizon
 {
 	class EditorRenderer;
-	class PresentationSubsystem;
+	class WidgetRegistry;
 
-	class H_EXPORT EditorSubsystem final : public Subsystem
+	class PresentationSystem;
+
+	class H_EXPORT EditorSystem final : public System
 	{
 	public:
-		EditorSubsystem() = default;
-		~EditorSubsystem() = default;
+		EditorSystem() = default;
+		~EditorSystem() = default;
 
-		EngineReport OnAttach(Engine* engine) final;
+		SystemReport OnAttach(Engine* engine) final;
 		void OnSync() final;
 		void OnDetach() final;
 
@@ -25,7 +27,8 @@ namespace Horizon
 	private:
 		PAL::Window* m_engineWindow = nullptr;
 		EditorRenderer* m_editorRenderer = nullptr;
+		WidgetRegistry* m_widgetSystem = nullptr;
 
-		PresentationSubsystem* m_presentationSub = nullptr;
+		PresentationSystem* m_presentationSub = nullptr;
 	};
 }

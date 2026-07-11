@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Core/Subsystem.h>
+#include <Engine/Core/System.h>
 #include <Engine/Job/Job.h>
 #include <Engine/Job/JobWorker.h>
 
@@ -12,11 +12,11 @@ namespace Horizon
 	 * First module that always needs to be run, so every other modules can 
 	 * use this whenever they want.
 	 */
-	class H_EXPORT JobSubsystem : public Subsystem
+	class H_EXPORT JobSystem : public System
 	{
 		friend class JobWorker;
 	public:
-		EngineReport OnAttach(Engine* pEngine) final;
+		SystemReport OnAttach(Engine* pEngine) final;
 		void OnDetach() final;
 
 		void SubmitJob(Job&& job);

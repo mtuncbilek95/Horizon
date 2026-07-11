@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Core/Subsystem.h>
+#include <Engine/Core/System.h>
 
 #include <string_view>
 #include <vector>
@@ -15,20 +15,20 @@ namespace Horizon
 		Engine();
 		~Engine();
 
-		template<typename TSubsystem, typename... Args>
-			requires std::is_base_of_v<Subsystem, TSubsystem>
-		TSubsystem& AddSubsystem(Args&&... args)
+		template<typename TSystem, typename... Args>
+			requires std::is_base_of_v<System, TSystem>
+		TSystem& AddSystem(Args&&... args)
 		{
-			std::type_index key = std::type_index(typeid(TSubsystem));
+			std::type_index key = std::type_index(typeid(TSystem));
 
 			auto it = m_lookup.find(key);
 			if (it != m_lookup.end())
 			{
 				Terminal::Warn("Engine", "{} has already been registered.", key.name());
-				return *static_cast<TSubsystem*>(it->second);
+				return *static_cast<TSystem*>(it->second);
 			}
 
-			auto* system = Allocator::Create<TSubsystem>(CurrLoc(), std::forward<Args>(args)...);
+			auto* system = Allocator::Create<TSystem>(CurrLoc(), std::forward<Args>(args)...);
 
 			m_lookup.emplace(key, system);
 			m_initPendingSystems.push_back(system);
@@ -36,13 +36,13 @@ namespace Horizon
 			return *system;
 		}
 
-		template<typename TSubsystem>
-		void RemoveSubsystem()
+		template<typename TSystem>
+		void RemoveSystem()
 		{
-			auto it = m_lookup.find(std::type_index(typeid(TSubsystem)));
+			auto it = m_lookup.find(std::type_index(typeid(TSystem)));
 			if (it == m_lookup.end())
 			{
-				Terminal::Warn("Engine", "{} is not registered.", typeid(TSubsystem).name());
+				Terminal::Warn("Engine", "{} is not registered.", typeid(TSystem).name());
 				return;
 			}
 
@@ -50,16 +50,16 @@ namespace Horizon
 		}
 
 		template<typename TModule>
-		TModule& GetSubsystem()
+		TModule& GetSystem()
 		{
 			auto it = m_lookup.find(std::type_index(typeid(TModule)));
-			Terminal::Assert(it != m_lookup.end(), "Engine", "Subsystem not found");
+			Terminal::Assert(it != m_lookup.end(), "Engine", "System not found");
 
 			return *static_cast<TModule*>(it->second);
 		}
 
 		template<typename TModule>
-		TModule* TryGetSubsystem()
+		TModule* TryGetSystem()
 		{
 			auto it = m_lookup.find(std::type_index(typeid(TModule)));
 			return it == m_lookup.end() ? nullptr : static_cast<TModule*>(it->second);
@@ -73,15 +73,15 @@ namespace Horizon
 		void SortActive();
 		void Shutdown();
 
-		std::vector<Subsystem*> BuildOrder(const std::vector<Subsystem*>& systems, b8 initialize);
+		std::vector<System*> BuildOrder(const std::vector<System*>& systems, b8 initialize);
 
 	private:
-		std::vector<Subsystem*> m_activeSystems;
-		std::vector<Subsystem*> m_initOrder;
-		std::vector<Subsystem*> m_initPendingSystems;
-		std::vector<Subsystem*> m_removePendingSystems;
+		std::vector<System*> m_activeSystems;
+		std::vector<System*> m_initOrder;
+		std::vector<System*> m_initPendingSystems;
+		std::vector<System*> m_removePendingSystems;
 
-		std::unordered_map<std::type_index, Subsystem*> m_lookup;
+		std::unordered_map<std::type_index, System*> m_lookup;
 		b8 m_exitRequested = false;
 	};
 }

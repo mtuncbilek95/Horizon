@@ -1,20 +1,20 @@
 #pragma once
 
-#include <Engine/Core/Subsystem.h>
+#include <Engine/Core/System.h>
 
 #include <Runtime/PAL/Window/Window.h>
 
 namespace Horizon
 {
-	class H_EXPORT WindowSubsystem final : public Subsystem
+	class H_EXPORT WindowSystem final : public System
 	{
 	public:
-		WindowSubsystem() = default;
-		~WindowSubsystem() = default;
+		WindowSystem() = default;
+		~WindowSystem() = default;
 
 		PAL::Window* GetWindow() const { return m_window; }
 
-		EngineReport OnAttach(Engine* engine) final;
+		SystemReport OnAttach(Engine* engine) final;
 		void OnSync() final;
 		void OnDetach() final;
 

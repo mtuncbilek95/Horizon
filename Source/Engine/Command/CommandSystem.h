@@ -1,18 +1,18 @@
 #pragma once
 
-#include <Engine/Core/Subsystem.h>
+#include <Engine/Core/System.h>
 
 #include <filesystem>
 
 namespace Horizon
 {
-	class H_EXPORT CommandSubsystem : public Subsystem
+	class H_EXPORT CommandSystem : public System
 	{
 	public:
-		CommandSubsystem(i32 argC, c8** argV);
-		~CommandSubsystem() = default;
+		CommandSystem(i32 argC, c8** argV);
+		~CommandSystem() = default;
 
-		EngineReport OnAttach(Engine* pEngine);
+		SystemReport OnAttach(Engine* pEngine);
 		void OnDetach();
 
 		void GetInitializeOrder(OrderRules& rules) const final;

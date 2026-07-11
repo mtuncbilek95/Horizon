@@ -1,7 +1,7 @@
 #include "DomainFolder.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Asset/AssetSubsystem.h>
+#include <Engine/Asset/AssetSystem.h>
 
 #include <Editor/Domain/DomainFile.h>
 
@@ -10,10 +10,10 @@ namespace Horizon
 	DomainFolder::DomainFolder(const DomainFolderDesc& desc, Engine* pEngine) : m_path(desc.folderPath),
 		m_parent(desc.pParent), m_engine(pEngine)
 	{
-		auto* pAssetSub = m_engine->TryGetSubsystem<AssetSubsystem>();
+		auto* pAssetSub = m_engine->TryGetSystem<AssetSystem>();
 		if (!pAssetSub)
 		{
-			Terminal::Error("DomainFile", "Could not catch asset subsystem");
+			Terminal::Error("DomainFile", "Could not catch asset System");
 			return;
 		}
 

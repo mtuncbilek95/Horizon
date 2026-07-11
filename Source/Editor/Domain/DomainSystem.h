@@ -1,19 +1,19 @@
 #pragma once
 
-#include <Engine/Core/Subsystem.h>
+#include <Engine/Core/System.h>
 #include <Editor/Domain/DomainFolder.h>
 
 #include <filesystem>
 
 namespace Horizon
 {
-	class H_EXPORT DomainSubsystem : public Subsystem
+	class H_EXPORT DomainSystem : public System
 	{
 	public:
-		DomainSubsystem() = default;
-		~DomainSubsystem() = default;
+		DomainSystem() = default;
+		~DomainSystem() = default;
 
-		EngineReport OnAttach(Engine* pEngine);
+		SystemReport OnAttach(Engine* pEngine);
 		void OnSync();
 		void OnDetach();
 

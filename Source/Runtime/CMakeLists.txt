@@ -12,20 +12,11 @@ target_link_libraries(Runtime
 		nlohmann_json::nlohmann_json Imgui
 )
 
-target_link_libraries(Runtime
-	PUBLIC
-		WinPixEventRuntime
-)
-target_compile_definitions(Runtime 
-	PUBLIC 
-		$<$<CONFIG:Debug>:USE_PIX>
-)
-
 target_precompile_headers(Runtime PUBLIC "pch.h")
 
 if(WIN32)
-    include(SetupWindows)
-    SetupWin32(Runtime)
-	SetupD3D(Runtime)
+    ConfigureWindowsLibrary(Runtime)
+	ConfigureD3D12Library(Runtime)
+
 	target_link_libraries(Runtime PUBLIC D3D12MemoryAllocator)
 endif()

@@ -1,8 +1,8 @@
-#include "PresentationSubsystem.h"
+#include "PresentationSystem.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Window/WindowSubsystem.h>
-#include <Engine/Graphics/GraphicsSubsystem.h>
+#include <Engine/Window/WindowSystem.h>
+#include <Engine/Graphics/GraphicsSystem.h>
 
 #include <Runtime/PAL/Window/Window.h>
 #include <Runtime/RHI/Device/GfxDevice.h>
@@ -12,17 +12,17 @@
 
 namespace Horizon
 {
-	EngineReport PresentationSubsystem::OnAttach(Engine* engine)
+	SystemReport PresentationSystem::OnAttach(Engine* engine)
 	{
-		Subsystem::OnAttach(engine);
+		System::OnAttach(engine);
 
-		auto* pWindowSub = m_engine->TryGetSubsystem<WindowSubsystem>();
+		auto* pWindowSub = m_engine->TryGetSystem<WindowSystem>();
 		if (!pWindowSub)
-			return EngineReport("Failed to get WindowSubsystem. Nothing will work...");
+			return SystemReport("Failed to get WindowSystem. Nothing will work...");
 
-		auto* pGraphSub = m_engine->TryGetSubsystem<GraphicsSubsystem>();
+		auto* pGraphSub = m_engine->TryGetSystem<GraphicsSystem>();
 		if (!pGraphSub)
-			return EngineReport("Failed to get GraphicsSubsystem. Nothing will work...");
+			return SystemReport("Failed to get GraphicsSystem. Nothing will work...");
 
 		m_graphicsQueue = pGraphSub->GetGraphicsQueue();
 
@@ -37,35 +37,35 @@ namespace Horizon
 		swapDesc.bAllowTearing = false;
 		m_swapchain = pGraphSub->GetDevice()->CreateSwapchain(swapDesc, pGraphSub->GetGraphicsQueue());
 		if (!m_swapchain)
-			return EngineReport("Failed to create GfxSwapchain");
+			return SystemReport("Failed to create GfxSwapchain");
 
 		m_frameFence = pGraphSub->GetDevice()->CreateFence();
 		if (!m_frameFence)
-			return EngineReport("Failed to create present fence");
+			return SystemReport("Failed to create present fence");
 
 		m_imageCount = swapDesc.imageCount;
 
-		Terminal::Debug("PresentationSubsystem", "Swapchain has been initialized!");
-		return EngineReport();
+		Terminal::Debug("PresentationSystem", "Swapchain has been initialized!");
+		return SystemReport();
 	}
 
-	void PresentationSubsystem::OnDetach()
+	void PresentationSystem::OnDetach()
 	{
 		Allocator::Delete(m_frameFence);
 		Allocator::Delete(m_swapchain);
 	}
 
-	void PresentationSubsystem::GetInitializeOrder(OrderRules& rules) const
+	void PresentationSystem::GetInitializeOrder(OrderRules& rules) const
 	{
-		Requires<WindowSubsystem, GraphicsSubsystem>(rules.after);
+		Requires<WindowSystem, GraphicsSystem>(rules.after);
 	}
 
-	void PresentationSubsystem::GetExecutionOrder(OrderRules& rules) const
+	void PresentationSystem::GetExecutionOrder(OrderRules& rules) const
 	{
 		rules.tier = OrderTier::Last;
 	}
 
-	i8 PresentationSubsystem::AcquireImageIndex()
+	i8 PresentationSystem::AcquireImageIndex()
 	{
 		if (!m_swapchain)
 			return -1;
@@ -77,12 +77,12 @@ namespace Horizon
 		return i8(index);
 	}
 
-	GfxTexture* PresentationSubsystem::GetBackbuffer(u8 index) const
+	GfxTexture* PresentationSystem::GetBackbuffer(u8 index) const
 	{
 		return m_swapchain->GetBackbuffer(index);
 	}
 
-	void PresentationSubsystem::Present(u8 index)
+	void PresentationSystem::Present(u8 index)
 	{
 		m_swapchain->Present();
 		m_imageFenceValues[index] = m_graphicsQueue->Signal(m_frameFence);

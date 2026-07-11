@@ -19,6 +19,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 # ------------------------------------------------------------
  
 # --------------------- SETUP CONFIG -------------------------
+if(WIN32)
+	include(ConfigureWindows)
+	ConfigureWindowsDefinitions()
+endif()
+
 include(SetupConfig)
 SetupConfig()
 

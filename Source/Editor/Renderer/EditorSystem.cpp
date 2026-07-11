@@ -1,13 +1,12 @@
-#include "EditorSubsystem.h"
+#include "EditorSystem.h"
 
 #include <Editor/Renderer/EditorRenderer.h>
+#include <Editor/Widget/WidgetRegistry.h>
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Window/WindowSubsystem.h>
-#include <Engine/Graphics/GraphicsSubsystem.h>
-#include <Engine/Presentation/PresentationSubsystem.h>
-
-#include <imgui.h>
+#include <Engine/Window/WindowSystem.h>
+#include <Engine/Graphics/GraphicsSystem.h>
+#include <Engine/Presentation/PresentationSystem.h>
 
 #include <chrono>
 
@@ -15,23 +14,23 @@ using Clock = std::chrono::high_resolution_clock;
 
 namespace Horizon
 {
-	EngineReport EditorSubsystem::OnAttach(Engine* engine)
+	SystemReport EditorSystem::OnAttach(Engine* engine)
 	{
-		Subsystem::OnAttach(engine);
+		System::OnAttach(engine);
 
-		auto* pWindowSub = m_engine->TryGetSubsystem<WindowSubsystem>();
+		auto* pWindowSub = m_engine->TryGetSystem<WindowSystem>();
 		if (!pWindowSub)
-			return EngineReport("Failed to get WindowSubsystem. Nothing will work...");
+			return SystemReport("Failed to get WindowSystem. Nothing will work...");
 
 		m_engineWindow = pWindowSub->GetWindow();
 
-		auto* pGraphSub = m_engine->TryGetSubsystem<GraphicsSubsystem>();
+		auto* pGraphSub = m_engine->TryGetSystem<GraphicsSystem>();
 		if (!pGraphSub)
-			return EngineReport("Failed to get GraphicsSubsystem. Nothing will work...");
+			return SystemReport("Failed to get GraphicsSystem. Nothing will work...");
 
-		auto* pOutputSub = m_engine->TryGetSubsystem<PresentationSubsystem>();
+		auto* pOutputSub = m_engine->TryGetSystem<PresentationSystem>();
 		if (!pOutputSub)
-			return EngineReport("Failed to get PresentationSubsystem. Nothing will work...");
+			return SystemReport("Failed to get PresentationSystem. Nothing will work...");
 
 		m_presentationSub = pOutputSub;
 
@@ -40,12 +39,18 @@ namespace Horizon
 		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
 
 		m_editorRenderer = Allocator::Create<EditorRenderer>(CurrLoc(), renderDesc);
-		Terminal::Debug("EditorSubsystem", "EditorRenderer has been initialized!");
+		Terminal::Debug("EditorSystem", "EditorRenderer has been initialized!");
 
-		return EngineReport();
+		m_widgetSystem = Allocator::Create<WidgetRegistry>(CurrLoc(), m_engine);
+		if (!m_widgetSystem)
+			return SystemReport("Failed to create WidgetRegistry");
+
+		m_widgetSystem->Invalidate();
+
+		return SystemReport();
 	}
 
-	void EditorSubsystem::OnSync()
+	void EditorSystem::OnSync()
 	{
 		static auto lastTime = Clock::now();
 
@@ -117,24 +122,24 @@ namespace Horizon
 		// Render ui work
 		m_editorRenderer->BeginRender(deltaTime);
 
-		ImGui::ShowDemoWindow();
+		m_widgetSystem->Render();
 
 		m_editorRenderer->EndRender(m_presentationSub->GetBackbuffer(imageIndex), imageIndex);
 		m_presentationSub->Present(imageIndex);
 	}
 
-	void EditorSubsystem::OnDetach()
+	void EditorSystem::OnDetach()
 	{
 		Allocator::Delete(m_editorRenderer);
 	}
 
-	void EditorSubsystem::GetInitializeOrder(OrderRules& rules) const
+	void EditorSystem::GetInitializeOrder(OrderRules& rules) const
 	{
-		Requires<PresentationSubsystem>(rules.after);
+		Requires<PresentationSystem>(rules.after);
 	}
 
-	void EditorSubsystem::GetExecutionOrder(OrderRules& rules) const
+	void EditorSystem::GetExecutionOrder(OrderRules& rules) const
 	{
-		Requires<PresentationSubsystem>(rules.before);
+		Requires<PresentationSystem>(rules.before);
 	}
 }

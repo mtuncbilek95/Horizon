@@ -1,13 +1,13 @@
-#include "WindowSubsystem.h"
+#include "WindowSystem.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Job/JobSubsystem.h>
+#include <Engine/Job/JobSystem.h>
 
 namespace Horizon
 {
-	EngineReport WindowSubsystem::OnAttach(Engine* pEngine)
+	SystemReport WindowSystem::OnAttach(Engine* pEngine)
 	{
-		Subsystem::OnAttach(pEngine);
+		System::OnAttach(pEngine);
 
 		PAL::WindowDesc winDesc = {};
 		winDesc.width = 1920;
@@ -21,17 +21,17 @@ namespace Horizon
 
 		m_window = Allocator::Create<PAL::Window>(CurrLoc(), winDesc);
 		if (!m_window)
-			return EngineReport("Window has not been initialize. Just kill yourself!");
+			return SystemReport("Window has not been initialize. Just kill yourself!");
 
 		m_window->Show();
 
 #if defined(HORIZON_WINDOWS)
-		Terminal::Info("WindowSubsystem", "Win32 based window has been initialized!");
+		Terminal::Info("WindowSystem", "Win32 based window has been initialized!");
 #endif
-		return EngineReport();
+		return SystemReport();
 	}
 
-	void WindowSubsystem::OnSync()
+	void WindowSystem::OnSync()
 	{
 		m_window->PollEvents();
 
@@ -39,19 +39,19 @@ namespace Horizon
 			m_engine->RequestExit("Main window is no longer active!");
 	}
 
-	void WindowSubsystem::OnDetach()
+	void WindowSystem::OnDetach()
 	{
 		Allocator::Delete(m_window);
 	}
 
-	void WindowSubsystem::GetInitializeOrder(OrderRules& rules) const
+	void WindowSystem::GetInitializeOrder(OrderRules& rules) const
 	{
-		Requires<JobSubsystem>(rules.after);
+		Requires<JobSystem>(rules.after);
 	}
 
-	void WindowSubsystem::GetExecutionOrder(OrderRules& rules) const
+	void WindowSystem::GetExecutionOrder(OrderRules& rules) const
 	{
-		Requires<JobSubsystem>(rules.after);
+		Requires<JobSystem>(rules.after);
 	}
 
 }
