@@ -6,6 +6,7 @@
 #include <Engine/Graphics/GraphicsSystem.h>
 #include <Engine/Asset/AssetSystem.h>
 #include <Engine/Presentation/PresentationSystem.h>
+#include <Engine/ECS/EntityComponentSystem.h>
 #include <Editor/Renderer/EditorSystem.h>
 #include <Editor/Domain/DomainSystem.h>
 
@@ -20,6 +21,7 @@ i32 main(i32 argC, c8** argV)
 	engine.AddSystem<JobSystem>();
 	engine.AddSystem<GraphicsSystem>();
 	engine.AddSystem<PresentationSystem>();
+	engine.AddSystem<EntityComponentSystem>();
 	engine.AddSystem<EditorSystem>();
 	engine.AddSystem<DomainSystem>();
 	engine.AddSystem<AssetSystem>();

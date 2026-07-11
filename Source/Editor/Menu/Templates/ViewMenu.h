@@ -9,4 +9,10 @@ namespace Horizon
 	public:
 		void OnInvoke() final;
 	};
+
+	class SceneHierarchyMenu : public IMenuItem
+	{
+	public:
+		void OnInvoke() final;
+	};
 }
