@@ -19,6 +19,8 @@ namespace Horizon
 
 		void GetExecutionOrder(OrderRules& rules) const final;
 
+		void ImportDefault(const std::filesystem::path& source);
+
 	private:
 		void RecursiveDebugChecker(DomainFolder* folder);
 		void UpdateFolder(DomainFolder* pTarget);

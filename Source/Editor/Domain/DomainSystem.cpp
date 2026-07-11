@@ -5,6 +5,9 @@
 #include <Engine/Command/CommandSystem.h>
 
 #include <Editor/Domain/DomainFile.h>
+#include <Editor/Domain/Importer/ImporterRegistry.h>
+#include <Editor/Domain/Importer/IAssetImporter.h>
+#include <Editor/Domain/Importer/AssetImportContext.h>
 
 namespace Horizon
 {
@@ -51,6 +54,28 @@ namespace Horizon
 	void DomainSystem::GetExecutionOrder(OrderRules& rules) const
 	{
 		Requires<AssetSystem>(rules.after);
+	}
+
+	void DomainSystem::ImportDefault(const std::filesystem::path& source)
+	{
+		std::string ext = source.extension().string();
+
+		const ImporterTypeInfo* pInfo = ImporterRegistry::Get().Find(ext);
+		if (!pInfo)
+		{
+			Terminal::Warn("DomainSystem", "No importer registered for '{}'", ext);
+			return;
+		}
+
+		IAssetImporter* pImporter = pInfo->CreateImporter();
+
+		AssetImportContext context(source, Guid::Generate());
+		pImporter->OnImportDefault(context);
+
+		Terminal::Log("DomainSystem", "Default-imported '{}' -> '{}'",
+			source.string(), context.BinaryPath().string());
+
+		Allocator::Delete(pImporter);
 	}
 
 	void DomainSystem::RecursiveDebugChecker(DomainFolder* folder)
