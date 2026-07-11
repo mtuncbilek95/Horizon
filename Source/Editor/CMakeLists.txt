@@ -12,5 +12,7 @@ target_link_libraries(Editor
 		Engine Runtime Imgui
 )
 
-
+if(USE_TEST_ENVIRONMENT)
+    target_compile_definitions(Editor PRIVATE USE_TEST_ENVIRONMENT)
+endif()
 

@@ -13,6 +13,7 @@ namespace Horizon
 		if(!m_ecs)
 			m_ecs = GetEngine()->TryGetSystem<EntityComponentSystem>();
 
+#if defined(USE_TEST_ENVIRONMENT)
 		m_ecs->GetWorld().CreateEntity();
 		m_ecs->GetWorld().CreateEntity();
 		m_ecs->GetWorld().CreateEntity();
@@ -21,6 +22,7 @@ namespace Horizon
 		m_ecs->GetWorld().CreateEntity();
 		m_ecs->GetWorld().CreateEntity();
 		m_ecs->GetWorld().CreateEntity();
+#endif
 	}
 
 	void SceneHierarchyWidget::OnDraw()

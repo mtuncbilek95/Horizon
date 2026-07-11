@@ -19,20 +19,21 @@
       }
     },
     {
-      "name": "Linux-Debug",
-      "displayName": "Linux-Debug",
+      "name": "Win64-TestDebug",
+      "displayName": "Win64-TestDebug",
       "binaryDir": "${sourceDir}/Build/${presetName}",
       "installDir": "${sourceDir}/Install/${presetName}",
       "generator": "Ninja",
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
-        "rhs": "Linux"
+        "rhs": "Windows"
       },
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++",
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "USE_TEST_ENVIRONMENT": "ON"
       }
     }
   ]
