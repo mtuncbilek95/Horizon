@@ -4,14 +4,11 @@
 
 namespace Horizon
 {
-	class Engine;
-
-	class IWidget : public IEditorItem
+	class IMenuItem : public IEditorItem
 	{
 	public:
-		virtual ~IWidget() = default;
+		virtual ~IMenuItem() = default;
 
 		virtual void OnInvoke() = 0;
-		virtual void OnDraw() = 0;
 	};
 }

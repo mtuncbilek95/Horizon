@@ -259,4 +259,29 @@ namespace Horizon
 			return ImGuiMouseButton_Middle;
 		}
 	}
+
+	ImVec4 ImGuiUtils::Hex(std::string_view hex)
+	{
+		auto nib = [](char c) -> u32
+			{
+				if (c >= '0' && c <= '9') return u32(c - '0');
+				if (c >= 'a' && c <= 'f') return u32(c - 'a' + 10);
+				if (c >= 'A' && c <= 'F') return u32(c - 'A' + 10);
+				return 0u;
+			};
+
+		usize i = (!hex.empty() && hex[0] == '#') ? 1u : 0u;
+
+		auto byteAt = [&](usize idx) -> f32
+			{
+				return f32((nib(hex[idx]) << 4) | nib(hex[idx + 1])) / 255.0f;
+			};
+
+		f32 r = byteAt(i + 0);
+		f32 g = byteAt(i + 2);
+		f32 b = byteAt(i + 4);
+		f32 a = (hex.size() - i >= 8) ? byteAt(i + 6) : 1.0f;
+
+		return ImVec4(r, g, b, a);
+	}
 }

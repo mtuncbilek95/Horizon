@@ -42,6 +42,10 @@ namespace Horizon
 		b8 EndRender(GfxTexture* backbuffer, u32 imgIndex);
 
 	private:
+		void LoadFonts();
+		void DefaultStyle();
+
+	private:
 		GfxDevice* m_device;
 		GfxQueue* m_graphicsQueue;
 

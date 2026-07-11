@@ -12,5 +12,6 @@ namespace Horizon
 		static ImGuiKey GetKeyboardKey(const PAL::KeyCode key);
 		static ImGuiKey GetModifierKey(const PAL::KeyCode key);
 		static ImGuiMouseButton GetMouseButton(const PAL::MouseButton button);
+		static ImVec4 Hex(std::string_view hex);
 	};
 }

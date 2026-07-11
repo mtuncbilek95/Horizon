@@ -2,6 +2,7 @@
 
 #include <print>
 #include <chrono>
+#include <cassert>
 
 namespace Horizon
 {
@@ -47,7 +48,7 @@ namespace Horizon
 	void Terminal::IntendedAssert(b8 result, std::string_view titleName, std::string_view message)
 	{
 		Print(Level::Fatal, titleName, message);
-		std::abort();
+		assert(result);
 	}
 
 }

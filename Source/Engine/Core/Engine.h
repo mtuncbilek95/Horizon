@@ -49,20 +49,20 @@ namespace Horizon
 			m_removePendingSystems.push_back(it->second);
 		}
 
-		template<typename TModule>
-		TModule& GetSystem()
+		template<typename TSystem>
+		TSystem& GetSystem()
 		{
-			auto it = m_lookup.find(std::type_index(typeid(TModule)));
+			auto it = m_lookup.find(std::type_index(typeid(TSystem)));
 			Terminal::Assert(it != m_lookup.end(), "Engine", "System not found");
 
-			return *static_cast<TModule*>(it->second);
+			return *static_cast<TSystem*>(it->second);
 		}
 
-		template<typename TModule>
-		TModule* TryGetSystem()
+		template<typename TSystem>
+		TSystem* TryGetSystem()
 		{
-			auto it = m_lookup.find(std::type_index(typeid(TModule)));
-			return it == m_lookup.end() ? nullptr : static_cast<TModule*>(it->second);
+			auto it = m_lookup.find(std::type_index(typeid(TSystem)));
+			return it == m_lookup.end() ? nullptr : static_cast<TSystem*>(it->second);
 		}
 
 		void Run();
