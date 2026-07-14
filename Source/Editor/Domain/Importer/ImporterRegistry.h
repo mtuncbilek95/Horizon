@@ -11,6 +11,7 @@ namespace Horizon
 
 	struct ImporterTypeInfo
 	{
+		std::string_view defaultName;
 		std::string_view extension;
 		u32 version;
 		IAssetImporter* (*CreateImporter)();

@@ -6,21 +6,24 @@
 
 namespace Horizon
 {
+	struct AssetImportContextDesc
+	{
+		const std::filesystem::path& metaPath;
+		const std::filesystem::path& cookedPath;
+	};
+
 	class AssetImportContext
 	{
 	public:
-		AssetImportContext(const std::filesystem::path& source, const Guid& guid);
+		AssetImportContext(const AssetImportContextDesc& desc, const Guid& guid);
 
 		const Guid& AssetGuid() const { return m_guid; }
-		const std::filesystem::path& SourcePath() const { return m_source; }
-		const std::filesystem::path& BinaryPath() const { return m_binaryPath; }
-
-		void SetBinaryPath(const std::filesystem::path& path) { m_binaryPath = path; }
-
+		const std::filesystem::path& GetMetaPath() const { return m_metaPath; }
+		const std::filesystem::path& GetCookPath() const { return m_cookPath; }
 
 	private:
 		Guid m_guid;
-		std::filesystem::path m_source;
-		std::filesystem::path m_binaryPath;
+		std::filesystem::path m_metaPath;
+		std::filesystem::path m_cookPath;
 	};
 }

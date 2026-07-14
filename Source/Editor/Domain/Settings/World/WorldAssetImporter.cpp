@@ -14,4 +14,4 @@ namespace Horizon
 	}
 }
 
-HORIZON_SCRIPTED_IMPORTER(WorldAssetImporter, ".hworld", 1);
+HORIZON_SCRIPTED_IMPORTER(WorldAssetImporter, "DefaultScene", ".hworld", 1);

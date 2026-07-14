@@ -13,8 +13,11 @@ namespace Horizon
 
 	struct DomainFolderDesc
 	{
-		std::filesystem::path folderPath;
 		DomainFolder* pParent = nullptr;
+
+		std::string folderName;
+		std::filesystem::path relativePath;
+		std::filesystem::path absolutePath;
 	};
 
 	class H_EXPORT DomainFolder : public DomainObject
@@ -28,8 +31,9 @@ namespace Horizon
 
 		DomainFolder* GetParentFolder() const { return m_parent; }
 
-		const std::filesystem::path& GetPath() const { return m_path; }
 		const std::string& GetName() const { return m_name; }
+		const std::filesystem::path& GetRelativePath() const { return m_relativePath; }
+		const std::filesystem::path& GetAbsolutePath() const { return m_absolutePath; }
 
 		b8 IsRoot() const { return m_parent == nullptr; }
 
@@ -53,6 +57,7 @@ namespace Horizon
 		DomainFolder* m_parent;
 
 		std::string m_name;
-		std::filesystem::path m_path;
+		std::filesystem::path m_relativePath;
+		std::filesystem::path m_absolutePath;
 	};
 }

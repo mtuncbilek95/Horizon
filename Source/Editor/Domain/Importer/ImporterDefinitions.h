@@ -3,7 +3,7 @@
 #include <Editor/Domain/Importer/IAssetImporter.h>
 #include <Editor/Domain/Importer/ImporterRegistry.h>
 
-#define HORIZON_SCRIPTED_IMPORTER(Type, Extension, Version)								\
+#define HORIZON_SCRIPTED_IMPORTER(Type, DefName, Extension, Version)								\
 	namespace																			\
 	{																					\
 		Horizon::IAssetImporter* Type##_Create()										\
@@ -16,7 +16,8 @@
 			Type##_Registrar()															\
 			{																			\
 				Horizon::ImporterRegistry::Get().Register(								\
-					Horizon::ImporterTypeInfo{ Extension, Version, &Type##_Create });	\
+					Horizon::ImporterTypeInfo{ DefName,									\
+						Extension, Version, &Type##_Create });							\
 			}																			\
 		};																				\
 																						\

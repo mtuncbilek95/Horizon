@@ -7,8 +7,8 @@
 
 namespace Horizon
 {
-	DomainFolder::DomainFolder(const DomainFolderDesc& desc, Engine* pEngine) : m_path(desc.folderPath),
-		m_parent(desc.pParent), m_engine(pEngine)
+	DomainFolder::DomainFolder(const DomainFolderDesc& desc, Engine* pEngine) : m_relativePath(desc.relativePath),
+		m_parent(desc.pParent), m_engine(pEngine), m_absolutePath(desc.absolutePath), m_name(desc.folderName)
 	{
 		auto* pAssetSub = m_engine->TryGetSystem<AssetSystem>();
 		if (!pAssetSub)
@@ -17,13 +17,16 @@ namespace Horizon
 			return;
 		}
 
-		for (const auto& entry : std::filesystem::directory_iterator(m_path))
+		for (const auto& entry : std::filesystem::directory_iterator(m_absolutePath))
 		{
 			if (entry.is_directory())
 			{
 				DomainFolderDesc desc = {};
-				desc.folderPath = entry.path();
+				desc.absolutePath = entry.path();
+				desc.relativePath = m_relativePath / entry.path().filename();
+				desc.folderName = entry.path().filename().string();
 				desc.pParent = this;
+
 				auto* newFolder = Allocator::Create<DomainFolder>(CurrLoc(), desc, pEngine);
 				m_subFolders.push_back(newFolder);
 				continue;
@@ -31,21 +34,17 @@ namespace Horizon
 
 			if (entry.is_regular_file())
 			{
-				// TODO: Request metadata information from the file itself.
-				// Fill the below.
-				DomainFileDesc desc = {};
-				desc.fileId = Guid::Generate(); // TODO: Not feasible if guid is already there.
-				desc.pParent = this;
-				desc.binaryPath = ""; // TODO: Fill this or find another way to handle this
-				desc.metaPath = entry.path();
+				// Check if its other than hmeta
+				if (entry.path().extension() != ".hmeta")
+				{
+					Terminal::Warn("DomainFolder", "{} folder has unsupported file {}", m_relativePath, entry.path().string());
+					continue;
+				}
 
-				auto* newFile = Allocator::Create<DomainFile>(CurrLoc(), desc, pEngine);
-				m_files.push_back(newFile);
-				continue;
+				// Read meta file
+
 			}
 		}
-
-		m_name = desc.folderPath.filename().string();
 	}
 
 	DomainFolder::~DomainFolder()

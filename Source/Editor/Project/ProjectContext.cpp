@@ -51,6 +51,8 @@ namespace Horizon
 		if (!std::filesystem::exists(m_settingsPath))
 			std::filesystem::create_directory(m_settingsPath);
 		Terminal::Info(GetName(), "Project Settings Path - {}", m_settingsPath);
+
+
 	}
 
 	EngineReport ProjectContext::OnAttach(Engine* pEngine)

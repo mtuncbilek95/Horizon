@@ -19,14 +19,16 @@ namespace Horizon
 
 		void GetExecutionOrder(OrderRules& rules) const final;
 
-		void ImportDefault(const std::filesystem::path& source);
+		DomainFolder* GetRootFolder() const { return m_rootFolder; }
+
+		void AddNewFolder(DomainFolder* targetFolder);
+		void ImportDefault(DomainFolder* targetFolder, const std::string& fileTypeExt);
 
 	private:
-		void RecursiveDebugChecker(DomainFolder* folder);
 		void UpdateFolder(DomainFolder* pTarget);
 
 	private:
 		std::filesystem::path m_rootPath;
-		DomainFolder* m_rootFolder;
+		DomainFolder* m_rootFolder = nullptr;
 	};
 }

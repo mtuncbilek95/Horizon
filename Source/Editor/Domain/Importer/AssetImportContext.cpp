@@ -2,7 +2,8 @@
 
 namespace Horizon
 {
-	AssetImportContext::AssetImportContext(const std::filesystem::path& source, const Guid& guid) : m_source(source), m_guid(guid)
+	AssetImportContext::AssetImportContext(const AssetImportContextDesc& desc, const Guid& guid) : m_metaPath(desc.metaPath), 
+		m_cookPath(desc.cookedPath), m_guid(guid)
 	{
 	}
 }

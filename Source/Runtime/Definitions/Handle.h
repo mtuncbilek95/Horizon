@@ -12,16 +12,23 @@ namespace Horizon
 	template<typename Tag>
 	struct Handle
 	{
-		u32 index = kInvalid32;
+		u64 index = kInvalid64;
 
-		b8 IsValid() const { return index != kInvalid32; }
+		b8 IsValid() const { return index != kInvalid64; }
 
 		explicit operator b8() const { return IsValid(); }
 
 		b8 operator==(const Handle& other) const { return index == other.index; }
 		b8 operator!=(const Handle& other) const { return index != other.index; }
 
-		u32 Index() const { return index; }
+		u64 Index() const { return index; }
+
+		static Handle Generate(u64 index)
+		{
+			Handle hndl;
+			hndl.index = index;
+			return hndl;
+		}
 	};
 
 	template<typename Tag>

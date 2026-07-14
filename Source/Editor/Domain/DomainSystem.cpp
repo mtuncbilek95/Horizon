@@ -1,5 +1,7 @@
 #include "DomainSystem.h"
 
+#include <Runtime/PAL/File/File.h>
+
 #include <Engine/Core/Engine.h>
 #include <Engine/Asset/AssetSystem.h>
 
@@ -9,6 +11,10 @@
 #include <Editor/Domain/Importer/IAssetImporter.h>
 #include <Editor/Domain/Importer/AssetImportContext.h>
 
+#include <regex>
+#include <algorithm>
+#include <string>
+
 namespace Horizon
 {
 	EngineReport DomainSystem::OnAttach(Engine* pEngine)
@@ -16,26 +22,22 @@ namespace Horizon
 		System::OnAttach(pEngine);
 
 		auto* pProjectSub = pEngine->TryGetContext<ProjectContext>();
+		if (!pProjectSub)
+			return EngineReport("There is no Project Context");
 
 		m_rootPath = pProjectSub->GetDomainPath();
 		if (!std::filesystem::exists(m_rootPath))
 			std::filesystem::create_directory(m_rootPath);
 
 		DomainFolderDesc rootDesc = {};
-		rootDesc.folderPath = m_rootPath;
+		rootDesc.absolutePath = m_rootPath;
+		rootDesc.relativePath = m_rootPath.filename();
+		rootDesc.folderName = m_rootPath.filename().string();
 		rootDesc.pParent = nullptr;
 		m_rootFolder = Allocator::Create<DomainFolder>(CurrLoc(), rootDesc, m_engine);
 
-#if defined(HORIZON_DEBUG)
-		for (auto* file : m_rootFolder->GetFiles())
-			Terminal::Log(m_rootFolder->GetName(), "{}", file->GetName());
-
-		for (auto* folder : m_rootFolder->GetSubfolders())
-		{
-			Terminal::Log(m_rootFolder->GetName(), "{}", folder->GetName());
-			RecursiveDebugChecker(folder);
-		}
-#endif
+		if (!m_rootFolder)
+			return EngineReport("Could not create root domain folder.");
 
 		return EngineReport();
 	}
@@ -55,42 +57,87 @@ namespace Horizon
 		Requires<AssetSystem>(rules.after);
 	}
 
-	void DomainSystem::ImportDefault(const std::filesystem::path& source)
+	void DomainSystem::AddNewFolder(DomainFolder* targetFolder)
 	{
-		std::string ext = source.extension().string();
+		if (!targetFolder)
+		{
+			Terminal::Warn(GetName(), "target folder is a valid folder in vfs");
+			return;
+		}
 
-		const ImporterTypeInfo* pInfo = ImporterRegistry::Get().Find(ext);
+		// Some magic regex stuff (WTF?)
+		const std::regex reg(R"(^New\s*Folder(?:\s*\((\d+)\))?$)", std::regex::icase);
+
+		i64 nameCounter = -1;
+		for (const auto& entry : std::filesystem::directory_iterator(targetFolder->GetAbsolutePath()))
+		{
+			if (!entry.is_directory())
+				continue;
+
+			std::smatch newMatch;
+
+			const std::string name = entry.path().filename().string();
+			if (std::regex_match(name, newMatch, reg))
+			{
+				i64 n = newMatch[1].matched ? std::stoi(newMatch[1].str()) : 0;
+				nameCounter = std::max(nameCounter, n);
+			}
+		}
+
+		std::filesystem::path newPath = targetFolder->GetAbsolutePath();
+		if (nameCounter < 0)
+			newPath /= "New Folder";
+		else
+			newPath /= "New Folder (" + std::to_string(nameCounter + 1) + ")";
+
+		std::filesystem::create_directory(newPath);
+	}
+
+	void DomainSystem::ImportDefault(DomainFolder* targetFolder, const std::string& fileTypeExt)
+	{
+		auto& projSub = m_engine->GetContext<ProjectContext>();
+
+		const ImporterTypeInfo* pInfo = ImporterRegistry::Get().Find(fileTypeExt);
 		if (!pInfo)
 		{
-			Terminal::Warn("DomainSystem", "No importer registered for '{}'", ext);
+			Terminal::Warn("DomainSystem", "No importer registered for '{}'", fileTypeExt);
 			return;
 		}
 
 		IAssetImporter* pImporter = pInfo->CreateImporter();
 
-		AssetImportContext context(source, Guid::Generate());
+		Guid newId = Guid::Generate();
+		std::filesystem::path targetMetaPath = targetFolder->GetAbsolutePath() / (std::string(pInfo->defaultName) + ".hmeta");
+		std::filesystem::path targetCookPath = projSub.GetCookedPath() / (newId.ToString() + fileTypeExt);
+
+		AssetImportContext context({ targetMetaPath, targetCookPath }, newId);
+
+		// TODO: TEMPORARY SOLUTION
+		// 117-125 feels a bit hardcoded work. Look for a better approach before go for AssetSystem::RegisterAsset(AssetRegistryFile);
+		auto fileReq = PAL::File::RequestAccess(targetMetaPath, PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::Exclusive);
+		if (!PAL::File::Create(targetMetaPath))
+			Terminal::Error(GetName(), "You're fucked for {}", targetMetaPath);
+		PAL::File::ReleaseAccess(fileReq);
+
+		fileReq = PAL::File::RequestAccess(targetCookPath, PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::Exclusive);
+		if (!PAL::File::Create(targetCookPath))
+			Terminal::Error(GetName(), "You're fucked for {}", targetCookPath);
+		PAL::File::ReleaseAccess(fileReq);
+
+		// This mf will fill the h<file>.
 		pImporter->OnImportDefault(context);
 
-		Terminal::Log("DomainSystem", "Default-imported '{}' -> '{}'",
-			source.string(), context.BinaryPath().string());
+		/*Terminal::Log("DomainSystem", "Default-imported '{}' -> '{}'",
+			fullPath, context.BinaryPath().string());*/
 
 		Allocator::Delete(pImporter);
-	}
-
-	void DomainSystem::RecursiveDebugChecker(DomainFolder* folder)
-	{
-		for (auto* file : folder->GetFiles())
-			Terminal::Log(folder->GetName(), "{}", file->GetName());
-
-		for (auto* fd : folder->GetSubfolders())
-			RecursiveDebugChecker(fd);
 	}
 
 	void DomainSystem::UpdateFolder(DomainFolder* pTarget)
 	{
 		pTarget->ResetChildMarks();
 
-		for (const auto& entry : std::filesystem::directory_iterator(pTarget->GetPath()))
+		for (const auto& entry : std::filesystem::directory_iterator(pTarget->GetAbsolutePath()))
 		{
 			if (entry.is_directory())
 			{
@@ -98,24 +145,31 @@ namespace Horizon
 				if (!pFolder)
 				{
 					DomainFolderDesc desc = {};
-					desc.folderPath = entry.path();
+					desc.absolutePath = entry.path();
+					desc.relativePath = pTarget->GetRelativePath() / entry.path().filename();
+					desc.folderName = entry.path().filename().string();
 					desc.pParent = pTarget;
 					pFolder = Allocator::Create<DomainFolder>(CurrLoc(), desc, m_engine);
 					pTarget->AddSubfolder(pFolder);
 
-					Terminal::Info("DomainSystem", "{} folder has been added as {}", pFolder->GetName(), pFolder->GetPath().string());
+					Terminal::Info("DomainSystem", "{} folder has been added as {}", pFolder->GetName(), pFolder->GetRelativePath());
 				}
 				pFolder->Mark();
 			}
 			else if (entry.is_regular_file())
 			{
-				DomainFile* pFile = pTarget->FindFile(entry.path().filename().string());
+				if (entry.path().extension() != ".hmeta")
+					continue;
+
+				DomainFile* pFile = pTarget->FindFile(entry.path().stem().string());
 				if (!pFile)
 				{
+					// Read with a serializer or read json here with nlohmann.
+
 					DomainFileDesc desc = {};
 					desc.fileId = Guid::Generate();
+					desc.fileName = entry.path().stem().string();
 					desc.pParent = pTarget;
-					desc.metaPath = entry.path();
 					pFile = Allocator::Create<DomainFile>(CurrLoc(), desc, m_engine);
 					pTarget->AddFile(pFile);
 
