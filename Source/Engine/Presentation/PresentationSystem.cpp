@@ -57,7 +57,7 @@ namespace Horizon
 
 	void PresentationSystem::GetInitializeOrder(OrderRules& rules) const
 	{
-		Requires<WindowSystem>(rules.after);
+		Requires<WindowSystem, GraphicsContext>(rules.after);
 	}
 
 	void PresentationSystem::GetExecutionOrder(OrderRules& rules) const

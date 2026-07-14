@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <format>
+#include <filesystem>
 
 namespace Horizon
 {
@@ -76,3 +77,10 @@ namespace Horizon
 		static void IntendedAssert(b8 result, std::string_view titleName, std::string_view message);
 	};
 }
+
+template <>
+struct std::formatter<std::filesystem::path> : std::formatter<std::string> {
+	auto format(const std::filesystem::path& p, std::format_context& ctx) const {
+		return std::formatter<std::string>::format(p.string(), ctx);
+	}
+};

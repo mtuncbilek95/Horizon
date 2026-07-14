@@ -3,6 +3,7 @@
 #include <Engine/Core/Context.h>
 
 #include <filesystem>
+#include <string>
 
 namespace Horizon
 {
@@ -23,6 +24,7 @@ namespace Horizon
 		const std::filesystem::path& GetDomainPath() const { return m_domainPath; }
 		const std::filesystem::path& GetSettingsPath() const { return m_settingsPath; }
 		const std::filesystem::path& GetCookedPath() const { return m_cookedPath; }
+		const std::filesystem::path& GetEditorResourcePath() const { return m_editorResourcePath; }
 
 		const std::string& GetProjectName() const { return m_projectName; }
 
@@ -33,6 +35,7 @@ namespace Horizon
 		std::filesystem::path m_domainPath;
 		std::filesystem::path m_settingsPath;
 		std::filesystem::path m_cookedPath;
+		std::filesystem::path m_editorResourcePath;
 
 		std::string m_projectName;
 	};

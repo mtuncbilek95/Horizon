@@ -27,7 +27,8 @@ endif()
 include(SetupConfig)
 SetupConfig()
 
-option(ENABLE_CATCH_TEST "Enable testing" ON)
+option(ENABLE_CATCH_TEST "Enable testing" OFF)
+option(DEV_MODE "Enable developer mode" OFF)
 
 if(ENABLE_CATCH_TEST)
 	enable_testing()

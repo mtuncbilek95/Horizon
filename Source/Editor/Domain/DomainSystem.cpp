@@ -2,8 +2,8 @@
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Asset/AssetSystem.h>
-#include <Engine/Command/CommandContext.h>
 
+#include <Editor/Project/ProjectContext.h>
 #include <Editor/Domain/DomainFile.h>
 #include <Editor/Domain/Importer/ImporterRegistry.h>
 #include <Editor/Domain/Importer/IAssetImporter.h>
@@ -15,10 +15,9 @@ namespace Horizon
 	{
 		System::OnAttach(pEngine);
 
-		auto* pCommandSub = m_engine->TryGetContext<CommandContext>();
-		const auto& startPoint = pCommandSub->GetProjectPath();
+		auto* pProjectSub = pEngine->TryGetContext<ProjectContext>();
 
-		m_rootPath = startPoint / "Project";
+		m_rootPath = pProjectSub->GetDomainPath();
 		if (!std::filesystem::exists(m_rootPath))
 			std::filesystem::create_directory(m_rootPath);
 

@@ -12,7 +12,16 @@ target_link_libraries(Editor
 		Engine Runtime Imgui
 )
 
+target_compile_definitions(Editor PRIVATE HORIZON_RESOURCE_DIR="${CMAKE_SOURCE_DIR}/Resources")
+
+
 if(USE_TEST_ENVIRONMENT)
     target_compile_definitions(Editor PRIVATE USE_TEST_ENVIRONMENT)
+endif()
+
+if(DEV_MODE)
+    message(STATUS "DEV_MODE is ON")
+	target_compile_definitions(Editor PRIVATE DEVELOPMENT_PROJECT="${CMAKE_SOURCE_DIR}/ExampleProject/ExampleProject.hproject")
+	target_compile_definitions(Editor PRIVATE USE_DEV_MODE)
 endif()
 
