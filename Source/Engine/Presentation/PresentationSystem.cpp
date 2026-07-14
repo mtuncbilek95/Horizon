@@ -2,7 +2,7 @@
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowSystem.h>
-#include <Engine/Graphics/GraphicsSystem.h>
+#include <Engine/Graphics/GraphicsContext.h>
 
 #include <Runtime/PAL/Window/Window.h>
 #include <Runtime/RHI/Device/GfxDevice.h>
@@ -12,17 +12,17 @@
 
 namespace Horizon
 {
-	SystemReport PresentationSystem::OnAttach(Engine* engine)
+	EngineReport PresentationSystem::OnAttach(Engine* engine)
 	{
 		System::OnAttach(engine);
 
 		auto* pWindowSub = m_engine->TryGetSystem<WindowSystem>();
 		if (!pWindowSub)
-			return SystemReport("Failed to get WindowSystem. Nothing will work...");
+			return EngineReport("Failed to get WindowSystem. Nothing will work...");
 
-		auto* pGraphSub = m_engine->TryGetSystem<GraphicsSystem>();
+		auto* pGraphSub = m_engine->TryGetContext<GraphicsContext>();
 		if (!pGraphSub)
-			return SystemReport("Failed to get GraphicsSystem. Nothing will work...");
+			return EngineReport("Failed to get GraphicsContext. Nothing will work...");
 
 		m_graphicsQueue = pGraphSub->GetGraphicsQueue();
 
@@ -37,16 +37,16 @@ namespace Horizon
 		swapDesc.bAllowTearing = false;
 		m_swapchain = pGraphSub->GetDevice()->CreateSwapchain(swapDesc, pGraphSub->GetGraphicsQueue());
 		if (!m_swapchain)
-			return SystemReport("Failed to create GfxSwapchain");
+			return EngineReport("Failed to create GfxSwapchain");
 
 		m_frameFence = pGraphSub->GetDevice()->CreateFence();
 		if (!m_frameFence)
-			return SystemReport("Failed to create present fence");
+			return EngineReport("Failed to create present fence");
 
 		m_imageCount = swapDesc.imageCount;
 
 		Terminal::Debug("PresentationSystem", "Swapchain has been initialized!");
-		return SystemReport();
+		return EngineReport();
 	}
 
 	void PresentationSystem::OnDetach()
@@ -57,7 +57,7 @@ namespace Horizon
 
 	void PresentationSystem::GetInitializeOrder(OrderRules& rules) const
 	{
-		Requires<WindowSystem, GraphicsSystem>(rules.after);
+		Requires<WindowSystem>(rules.after);
 	}
 
 	void PresentationSystem::GetExecutionOrder(OrderRules& rules) const

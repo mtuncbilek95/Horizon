@@ -9,7 +9,7 @@ namespace Horizon
 	class EntityComponentSystem : public System
 	{
 	public:
-		SystemReport OnAttach(Engine* engine) final;
+		EngineReport OnAttach(Engine* engine) final;
 		void OnDetach() final;
 
 		void GetInitializeOrder(OrderRules& rules) const final;

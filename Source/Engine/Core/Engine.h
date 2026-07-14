@@ -1,6 +1,8 @@
 #pragma once
 
+#include <Engine/Core/EngineModule.h>
 #include <Engine/Core/System.h>
+#include <Engine/Core/Context.h>
 
 #include <string_view>
 #include <vector>
@@ -21,22 +23,14 @@ namespace Horizon
 		{
 			std::type_index key = std::type_index(typeid(TSystem));
 
-			auto it = m_lookup.find(key);
-			if (it != m_lookup.end())
-			{
-				Terminal::Warn("Engine", "{} has already been registered.", key.name());
-				return *static_cast<TSystem*>(it->second);
-			}
+			auto* pSystem = Allocator::Create<TSystem>(CurrLoc(), std::forward<Args>(args)...);
+			m_initPending.push_back(pSystem);
 
-			auto* system = Allocator::Create<TSystem>(CurrLoc(), std::forward<Args>(args)...);
-
-			m_lookup.emplace(key, system);
-			m_initPendingSystems.push_back(system);
-
-			return *system;
+			return *pSystem;
 		}
 
 		template<typename TSystem>
+			requires std::is_base_of_v<System, TSystem>
 		void RemoveSystem()
 		{
 			auto it = m_lookup.find(std::type_index(typeid(TSystem)));
@@ -46,10 +40,36 @@ namespace Horizon
 				return;
 			}
 
-			m_removePendingSystems.push_back(it->second);
+			m_removePending.push_back(it->second);
+		}
+
+		template<typename TContext, typename... Args>
+			requires std::is_base_of_v<Context, TContext>
+		TContext& AddContext(Args&&... args)
+		{
+			std::type_index key = std::type_index(typeid(TContext));
+
+			auto* context = Allocator::Create<TContext>(CurrLoc(), std::forward<Args>(args)...);
+			m_initPending.push_back(context);
+			return *context;
+		}
+
+		template<typename TContext, typename... Args>
+			requires std::is_base_of_v<Context, TContext>
+		void RemoveContext()
+		{
+			auto it = m_lookup.find(std::type_index(typeid(TContext)));
+			if (it == m_lookup.end())
+			{
+				Terminal::Warn("Engine", "{} is not registered.", typeid(TContext).name());
+				return;
+			}
+
+			m_removePending.push_back(it->second);
 		}
 
 		template<typename TSystem>
+			requires std::is_base_of_v<System, TSystem>
 		TSystem& GetSystem()
 		{
 			auto it = m_lookup.find(std::type_index(typeid(TSystem)));
@@ -59,10 +79,29 @@ namespace Horizon
 		}
 
 		template<typename TSystem>
+			requires std::is_base_of_v<System, TSystem>
 		TSystem* TryGetSystem()
 		{
 			auto it = m_lookup.find(std::type_index(typeid(TSystem)));
 			return it == m_lookup.end() ? nullptr : static_cast<TSystem*>(it->second);
+		}
+
+		template<typename TContext>
+			requires std::is_base_of_v<Context, TContext>
+		TContext& GetContext()
+		{
+			auto it = m_lookup.find(std::type_index(typeid(TContext)));
+			Terminal::Assert(it != m_lookup.end(), "Engine", "System not found");
+
+			return *static_cast<TContext*>(it->second);
+		}
+
+		template<typename TContext>
+			requires std::is_base_of_v<Context, TContext>
+		TContext* TryGetContext()
+		{
+			auto it = m_lookup.find(std::type_index(typeid(TContext)));
+			return it == m_lookup.end() ? nullptr : static_cast<TContext*>(it->second);
 		}
 
 		void Run();
@@ -73,15 +112,18 @@ namespace Horizon
 		void SortActive();
 		void Shutdown();
 
-		std::vector<System*> BuildOrder(const std::vector<System*>& systems, b8 initialize);
+		std::vector<EngineModule*> Build(const std::vector<EngineModule*>& modules,
+			void(*getRules)(EngineModule*, OrderRules&)) const;
 
 	private:
 		std::vector<System*> m_activeSystems;
-		std::vector<System*> m_initOrder;
-		std::vector<System*> m_initPendingSystems;
-		std::vector<System*> m_removePendingSystems;
+		std::vector<Context*> m_activeContexts;
 
-		std::unordered_map<std::type_index, System*> m_lookup;
+		std::vector<EngineModule*> m_initOrder;
+		std::vector<EngineModule*> m_initPending;
+		std::vector<EngineModule*> m_removePending;
+
+		std::unordered_map<std::type_index, EngineModule*> m_lookup;
 		b8 m_exitRequested = false;
 	};
 }

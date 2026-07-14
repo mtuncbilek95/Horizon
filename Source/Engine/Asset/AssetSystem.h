@@ -10,7 +10,7 @@ namespace Horizon
 		AssetSystem() = default;
 		~AssetSystem() = default;
 
-		SystemReport OnAttach(Engine* pEngine);
+		EngineReport OnAttach(Engine* pEngine);
 		void OnSync();
 		void OnDetach();
 

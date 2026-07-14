@@ -37,203 +37,156 @@ namespace Horizon
 
 	void Engine::FlushPending()
 	{
-		b8 changed = !m_removePendingSystems.empty() || !m_initPendingSystems.empty();
-
-		for (System* system : m_removePendingSystems)
+		for (EngineModule* pModule : m_removePending)
 		{
-			system->OnDetach();
+			pModule->OnDetach();
 
-			std::erase(m_activeSystems, system);
+			std::erase_if(m_activeSystems, [pModule](System* s) { return static_cast<EngineModule*>(s) == pModule; });
+			std::erase_if(m_activeContexts, [pModule](Context* c) { return static_cast<EngineModule*>(c) == pModule; });
+			std::erase(m_initOrder, pModule);
+			m_lookup.erase(pModule->GetTypeId());
 
-			for (auto it = m_lookup.begin(); it != m_lookup.end(); ++it)
-			{
-				if (it->second == system)
-				{
-					m_lookup.erase(it);
-					break;
-				}
-			}
-
-			Allocator::Delete(system);
+			Allocator::Delete(pModule);
 		}
-		m_removePendingSystems.clear();
+		m_removePending.clear();
 
-		std::unordered_set<System*> attaching(m_initPendingSystems.begin(), m_initPendingSystems.end());
-
-		for (System* system : m_initPendingSystems)
-			m_activeSystems.push_back(system);
-		m_initPendingSystems.clear();
-
-		if (!changed)
+		if (m_initPending.empty())
 			return;
 
-		std::vector<System*> initOrder = BuildOrder(m_activeSystems, true);
+		std::vector<EngineModule*> added = m_initPending;
 
-		m_initOrder = initOrder;
-		m_activeSystems = initOrder;
-
-		if (!m_exitRequested)
+		for (EngineModule* pModule : m_initPending)
 		{
-			for (System* system : initOrder)
-			{
-				if (attaching.contains(system))
-				{
-					SystemReport report = system->OnAttach(this);
-					if (report)
-					{
-						Terminal::Error("Engine", "{} failed to attach: {}", system->GetName(), report.GetMessage());
+			pModule->m_engine = this;
+			m_lookup[pModule->GetTypeId()] = pModule;
+			m_initOrder.push_back(pModule);
 
-						RequestExit("System attach failed.");
-						return;
-					}
-				}
-			}
+			if (auto* pSystem = dynamic_cast<System*>(pModule))
+				m_activeSystems.push_back(pSystem);
+			else if (auto* pContext = dynamic_cast<Context*>(pModule))
+				m_activeContexts.push_back(pContext);
 		}
+		m_initPending.clear();
 
 		SortActive();
+
+		for (EngineModule* pModule : m_initOrder)
+		{
+			if (std::find(added.begin(), added.end(), pModule) == added.end())
+				continue;
+
+			EngineReport report = pModule->OnAttach(this);
+			if (report)
+				Terminal::Warn("Engine", "{} attach failed: {}", pModule->GetName(), report.GetMessage());
+		}
 	}
 
 	void Engine::SortActive()
 	{
-		m_activeSystems = BuildOrder(m_activeSystems, false);
-
 		if (m_exitRequested)
 			return;
+
+		m_initOrder = Build(m_initOrder,
+			[](EngineModule* pModule, OrderRules& rules) { pModule->GetInitializeOrder(rules); });
+
+		std::vector<EngineModule*> systems(m_activeSystems.begin(), m_activeSystems.end());
+		systems = Build(systems, [](EngineModule* pModule, OrderRules& rules) { static_cast<System*>(pModule)->GetExecutionOrder(rules); });
+
+		m_activeSystems.clear();
+		m_activeSystems.reserve(systems.size());
+
+		for (EngineModule* pModule : systems)
+			m_activeSystems.push_back(static_cast<System*>(pModule));
 	}
 
 	void Engine::Shutdown()
 	{
 		for (auto it = m_initOrder.rbegin(); it != m_initOrder.rend(); ++it)
-		{
 			(*it)->OnDetach();
-			Allocator::Delete(*it);
-		}
 
-		for (System* system : m_initPendingSystems)
-			Allocator::Delete(system);
+		for (auto it = m_initOrder.rbegin(); it != m_initOrder.rend(); ++it)
+			Allocator::Delete(*it);
 
 		m_activeSystems.clear();
+		m_activeContexts.clear();
 		m_initOrder.clear();
-		m_initPendingSystems.clear();
-		m_removePendingSystems.clear();
 		m_lookup.clear();
 	}
 
-	std::vector<System*> Engine::BuildOrder(const std::vector<System*>& systems, b8 initialize)
+	std::vector<EngineModule*> Engine::Build(const std::vector<EngineModule*>& modules, void(*getRules)(EngineModule*, OrderRules&)) const
 	{
-		const usize count = systems.size();
+		usize n = modules.size();
 
-		std::vector<OrderRules> rules(count);
-		for (usize i = 0; i < count; i++)
+		std::unordered_map<std::type_index, usize> indexOf;
+		for (usize i = 0; i < n; ++i)
+			indexOf[modules[i]->GetTypeId()] = i;
+
+		std::vector<std::vector<usize>> adjacency(n);
+		std::vector<u32> indegree(n, 0);
+		std::vector<OrderTier> tiers(n, OrderTier::Default);
+
+		for (usize i = 0; i < n; ++i)
 		{
-			if (initialize)
-				systems[i]->GetInitializeOrder(rules[i]);
-			else
-				systems[i]->GetExecutionOrder(rules[i]);
-		}
+			OrderRules rules;
+			getRules(modules[i], rules);
+			tiers[i] = rules.tier;
 
-		std::unordered_map<System*, usize> indexOf;
-		for (usize i = 0; i < count; i++)
-			indexOf[systems[i]] = i;
-
-		std::vector<std::unordered_set<System*>> afterDeps(count);
-
-		for (usize a = 0; a < count; a++)
-		{
-			for (usize b = 0; b < count; b++)
+			for (const std::type_index& dep : rules.after)
 			{
-				if (a == b)
-					continue;
-
-				if (rules[a].tier < rules[b].tier)
-					afterDeps[b].insert(systems[a]);
-			}
-		}
-
-		for (usize i = 0; i < count; i++)
-		{
-			System* system = systems[i];
-
-			for (const std::type_index& a : rules[i].after)
-			{
-				for (const std::type_index& b : rules[i].before)
+				auto it = indexOf.find(dep);
+				if (it != indexOf.end())
 				{
-					if (a == b)
-					{
-						Terminal::Error("Engine", "{} declares After and Before on the same type {} ({} order).",
-							system->GetName(), a.name(), initialize ? "Initialize" : "Execution");
-
-						RequestExit("System ordering contradiction.");
-						return systems;
-					}
+					adjacency[it->second].push_back(i);
+					indegree[i]++;
 				}
 			}
 
-			for (const std::type_index& t : rules[i].after)
+			for (const std::type_index& other : rules.before)
 			{
-				auto it = m_lookup.find(t);
-				if (it != m_lookup.end() && indexOf.contains(it->second))
-					afterDeps[i].insert(it->second);
-			}
-
-			for (const std::type_index& t : rules[i].before)
-			{
-				auto it = m_lookup.find(t);
-				if (it != m_lookup.end() && indexOf.contains(it->second))
-					afterDeps[indexOf[it->second]].insert(system);
+				auto it = indexOf.find(other);
+				if (it != indexOf.end())
+				{
+					adjacency[i].push_back(it->second);
+					indegree[it->second]++;
+				}
 			}
 		}
 
-		std::vector<System*> ordered;
-		ordered.reserve(count);
-
-		std::vector<b8> placed(count, false);
-		std::unordered_set<System*> placedSet;
-
-		while (ordered.size() < count)
+		std::vector<usize> ready;
+		for (usize i = 0; i < n; ++i)
 		{
-			b8 progressed = false;
+			if (indegree[i] == 0)
+				ready.push_back(i);
+		}
 
-			for (usize i = 0; i < count; i++)
+		std::vector<EngineModule*> ordered;
+		ordered.reserve(n);
+
+		while (!ready.empty())
+		{
+			usize best = 0;
+			for (usize k = 1; k < ready.size(); ++k)
 			{
-				if (placed[i])
-					continue;
-
-				b8 ready = true;
-				for (System* dep : afterDeps[i])
-				{
-					if (!placedSet.contains(dep))
-					{
-						ready = false;
-						break;
-					}
-				}
-
-				if (!ready)
-					continue;
-
-				ordered.push_back(systems[i]);
-				placedSet.insert(systems[i]);
-				placed[i] = true;
-				progressed = true;
-				break;
+				if (tiers[ready[k]] < tiers[ready[best]])
+					best = k;
 			}
 
-			if (!progressed)
-			{
-				for (usize i = 0; i < count; i++)
-				{
-					if (!placed[i])
-						Terminal::Error("Engine", "{} is stuck in a {} ordering cycle or tier conflict.",
-							systems[i]->GetName(), initialize ? "Initialize" : "Execution");
-				}
+			usize node = ready[best];
+			ready[best] = ready.back();
+			ready.pop_back();
 
-				RequestExit("System ordering could not be resolved.");
-				return systems;
+			ordered.push_back(modules[node]);
+
+			for (usize next : adjacency[node])
+			{
+				if (--indegree[next] == 0)
+					ready.push_back(next);
 			}
 		}
+
+		if (ordered.size() != n)
+			Terminal::Warn("Engine", "Cyclic module dependency; only {} of {} ordered", ordered.size(), n);
 
 		return ordered;
 	}
-
 }

@@ -4,11 +4,11 @@
 
 namespace Horizon
 {
-	SystemReport EntityComponentSystem::OnAttach(Engine* engine)
+	EngineReport EntityComponentSystem::OnAttach(Engine* engine)
 	{
 		m_currentWorld = Allocator::Create<WorldRegistry>(CurrLoc());
 
-		return SystemReport();
+		return EngineReport();
 	}
 
 	void EntityComponentSystem::OnDetach()

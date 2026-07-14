@@ -1,4 +1,4 @@
-#include "JobSystem.h"
+#include "JobContext.h"
 
 #include <Engine/Core/Engine.h>
 
@@ -6,9 +6,9 @@
 
 namespace Horizon
 {
-	SystemReport JobSystem::OnAttach(Engine* pEngine)
+	EngineReport JobContext::OnAttach(Engine* pEngine)
 	{
-		System::OnAttach(pEngine);
+		Context::OnAttach(pEngine);
 
 		for (usize i = 0; i < PAL::Thread::HardwareConcurrency() - 1; i++)
 			m_workers.push_back(Allocator::Create<JobWorker>(CurrLoc(), this, i));
@@ -19,15 +19,15 @@ namespace Horizon
 			const PAL::CoreInfo& core = cores[i % cores.size()];
 			m_workers[i]->SetThreadAffinity(1ull << core.logicalIndex);
 
-			Terminal::Info("JobSystem", "Thread{} pinned to {}-Core",
+			Terminal::Info("JobContext", "Thread{} pinned to {}-Core",
 				i, core.isPerformance ? "Performance" : "Efficiency");
 		}
 
-		Terminal::Debug("JobSystem", "{} amount of thread has been initialized for multi-threading", m_workers.size());
-		return SystemReport();
+		Terminal::Debug("JobContext", "{} amount of thread has been initialized for multi-threading", m_workers.size());
+		return EngineReport();
 	}
 
-	void JobSystem::OnDetach()
+	void JobContext::OnDetach()
 	{
 		for (usize i = 0; i < m_workers.size(); i++)
 			m_workers[i]->Stop();
@@ -36,13 +36,13 @@ namespace Horizon
 			Allocator::Delete(worker);
 	}
 
-	void JobSystem::SubmitJob(Job&& job)
+	void JobContext::SubmitJob(Job&& job)
 	{
 		usize index = m_nextWorker.FetchAdd(1) % m_workers.size();
 		m_workers[index]->AddJob(std::move(job));
 	}
 
-	void JobSystem::Dispatch(JobCounter& counter, Job&& job)
+	void JobContext::Dispatch(JobCounter& counter, Job&& job)
 	{
 		counter.remaining.FetchAdd(1);
 
@@ -53,7 +53,7 @@ namespace Horizon
 			});
 	}
 
-	void JobSystem::Wait(JobCounter& counter)
+	void JobContext::Wait(JobCounter& counter)
 	{
 		while (counter.remaining.Load() > 0)
 		{
@@ -62,17 +62,12 @@ namespace Horizon
 		}
 	}
 
-	void JobSystem::GetInitializeOrder(OrderRules& rules) const
+	void JobContext::GetInitializeOrder(OrderRules& rules) const
 	{
 		rules.tier = OrderTier::First;
 	}
 
-	void JobSystem::GetExecutionOrder(OrderRules& rules) const
-	{
-		rules.tier = OrderTier::First;
-	}
-
-	JobWorker* JobSystem::GetRandomVictim(JobWorker* avoidWorker)
+	JobWorker* JobContext::GetRandomVictim(JobWorker* avoidWorker)
 	{
 		if (m_workers.size() <= 1)
 			return nullptr;
@@ -87,7 +82,7 @@ namespace Horizon
 		return m_workers[index];
 	}
 
-	b8 JobSystem::TryRunOneJob()
+	b8 JobContext::TryRunOneJob()
 	{
 		for (auto& worker : m_workers)
 		{

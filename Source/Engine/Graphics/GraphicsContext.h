@@ -1,7 +1,6 @@
 #pragma once
 
-#include <Engine/Core/System.h>
-
+#include <Engine/Core/Context.h>
 #include <Runtime/RHI/GfxTypes.h>
 
 namespace Horizon
@@ -12,17 +11,16 @@ namespace Horizon
 	class GfxFence;
 	class GfxCommandList;
 
-	class H_EXPORT GraphicsSystem final : public System
+	class H_EXPORT GraphicsContext final : public Context
 	{
 	public:
-		GraphicsSystem() = default;
-		~GraphicsSystem() = default;
+		GraphicsContext() = default;
+		~GraphicsContext() = default;
 
-		SystemReport OnAttach(Engine* engine) final;
+		EngineReport OnAttach(Engine* engine) final;
 		void OnDetach() final;
 
 		void GetInitializeOrder(OrderRules& rules) const final;
-		void GetExecutionOrder(OrderRules& rules) const final;
 
 		GfxDevice* GetDevice() const { return m_device; }
 		GfxQueue* GetGraphicsQueue() const { return m_graphicsQueue; }

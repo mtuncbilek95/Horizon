@@ -1,4 +1,4 @@
-#include "GraphicsSystem.h"
+#include "GraphicsContext.h"
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowSystem.h>
@@ -13,35 +13,35 @@
 
 namespace Horizon
 {
-	SystemReport GraphicsSystem::OnAttach(Engine* pEngine)
+	EngineReport GraphicsContext::OnAttach(Engine* pEngine)
 	{
-		System::OnAttach(pEngine);
+		Context::OnAttach(pEngine);
 
 		auto* pWindowSub = m_engine->TryGetSystem<WindowSystem>();
 		if(!pWindowSub)
-			return SystemReport("Failed to get WindowSystem. Nothing will work...");
+			return EngineReport("Failed to get WindowSystem. Nothing will work...");
 
 		m_device = CreateGfxDevice();
 		if (!m_device)
-			return SystemReport("Failed to create GfxDevice");
+			return EngineReport("Failed to create GfxDevice");
 
 		m_graphicsQueue = m_device->CreateQueue(GfxQueueType::Graphics);
 		if (!m_graphicsQueue)
-			return SystemReport("Failed to create GfxQueue(Graphics)");
+			return EngineReport("Failed to create GfxQueue(Graphics)");
 
 		m_computeQueue = m_device->CreateQueue(GfxQueueType::Compute);
 		if (!m_computeQueue)
-			return SystemReport("Failed to create GfxQueue(Compute)");
+			return EngineReport("Failed to create GfxQueue(Compute)");
 
 		m_transferQueue = m_device->CreateQueue(GfxQueueType::Transfer);
 		if (!m_transferQueue)
-			return SystemReport("Failed to create GfxQueue(Transfer)");
+			return EngineReport("Failed to create GfxQueue(Transfer)");
 
-		Terminal::Debug("GraphicsSystem", "Device, Graphics Queue, Compute Queue and Transfer Queue has been initialized!");
-		return SystemReport();
+		Terminal::Debug("GraphicsContext", "Device, Graphics Queue, Compute Queue and Transfer Queue has been initialized!");
+		return EngineReport();
 	}
 
-	void GraphicsSystem::OnDetach()
+	void GraphicsContext::OnDetach()
 	{
 		Allocator::Delete(m_graphicsQueue);
 		Allocator::Delete(m_computeQueue);
@@ -50,14 +50,8 @@ namespace Horizon
 		Allocator::Delete(m_device);
 	}
 
-	void GraphicsSystem::GetInitializeOrder(OrderRules& rules) const
+	void GraphicsContext::GetInitializeOrder(OrderRules& rules) const
 	{
 		Requires<WindowSystem>(rules.after);
 	}
-
-	void GraphicsSystem::GetExecutionOrder(OrderRules& rules) const
-	{
-		Requires<WindowSystem>(rules.after);
-	}
-
 }

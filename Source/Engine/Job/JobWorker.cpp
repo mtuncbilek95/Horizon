@@ -1,6 +1,6 @@
 #include "JobWorker.h"
 
-#include <Engine/Job/JobSystem.h>
+#include <Engine/Job/JobContext.h>
 
 #include <Runtime/Containers/ScopedLock.h>
 
@@ -13,7 +13,7 @@ namespace Horizon
 		((JobWorker*)userData)->Run();
 	}
 
-	JobWorker::JobWorker(JobSystem* pSystem, usize index) : m_owner(pSystem), m_index(index), m_inbox(nullptr), 
+	JobWorker::JobWorker(JobContext* pContext, usize index) : m_owner(pContext), m_index(index), m_inbox(nullptr),
 		m_signal(0), m_working(true), m_worker(&JobWorker::ThreadEntryPoint, this, "Thread")
 	{
 	}

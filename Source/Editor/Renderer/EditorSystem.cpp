@@ -6,7 +6,7 @@
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowSystem.h>
-#include <Engine/Graphics/GraphicsSystem.h>
+#include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Presentation/PresentationSystem.h>
 
 #include <chrono>
@@ -15,23 +15,23 @@ using Clock = std::chrono::high_resolution_clock;
 
 namespace Horizon
 {
-	SystemReport EditorSystem::OnAttach(Engine* engine)
+	EngineReport EditorSystem::OnAttach(Engine* engine)
 	{
 		System::OnAttach(engine);
 
 		auto* pWindowSub = m_engine->TryGetSystem<WindowSystem>();
 		if (!pWindowSub)
-			return SystemReport("Failed to get WindowSystem. Nothing will work...");
+			return EngineReport("Failed to get WindowSystem. Nothing will work...");
 
 		m_engineWindow = pWindowSub->GetWindow();
 
-		auto* pGraphSub = m_engine->TryGetSystem<GraphicsSystem>();
+		auto* pGraphSub = m_engine->TryGetContext<GraphicsContext>();
 		if (!pGraphSub)
-			return SystemReport("Failed to get GraphicsSystem. Nothing will work...");
+			return EngineReport("Failed to get GraphicsContext. Nothing will work...");
 
 		auto* pOutputSub = m_engine->TryGetSystem<PresentationSystem>();
 		if (!pOutputSub)
-			return SystemReport("Failed to get PresentationSystem. Nothing will work...");
+			return EngineReport("Failed to get PresentationSystem. Nothing will work...");
 
 		m_presentationSub = pOutputSub;
 
@@ -45,16 +45,16 @@ namespace Horizon
 		// Generate main menus
 		m_menuSystem = Allocator::Create<MenuRegistry>(CurrLoc(), m_engine);
 		if (!m_menuSystem)
-			return SystemReport("Failed to create MenuRegistry");
+			return EngineReport("Failed to create MenuRegistry");
 		m_menuSystem->Invalidate();
 
 		// Generate widgets
 		m_widgetSystem = Allocator::Create<WidgetRegistry>(CurrLoc(), m_engine);
 		if (!m_widgetSystem)
-			return SystemReport("Failed to create WidgetRegistry");
+			return EngineReport("Failed to create WidgetRegistry");
 		m_widgetSystem->Invalidate();
 
-		return SystemReport();
+		return EngineReport();
 	}
 
 	void EditorSystem::OnSync()

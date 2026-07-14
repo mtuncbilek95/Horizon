@@ -5,10 +5,10 @@
 
 namespace Horizon
 {
-	struct SystemReport
+	struct EngineReport
 	{
-		SystemReport() = default;
-		SystemReport(std::string_view message) : m_message(message) {}
+		EngineReport() = default;
+		EngineReport(std::string_view message) : m_message(message) {}
 
 		explicit operator bool() const { return !m_message.empty(); }
 		std::string_view GetMessage() const { return m_message; }

@@ -1,11 +1,11 @@
 #include "WindowSystem.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Job/JobSystem.h>
+#include <Engine/Job/JobContext.h>
 
 namespace Horizon
 {
-	SystemReport WindowSystem::OnAttach(Engine* pEngine)
+	EngineReport WindowSystem::OnAttach(Engine* pEngine)
 	{
 		System::OnAttach(pEngine);
 
@@ -21,14 +21,14 @@ namespace Horizon
 
 		m_window = Allocator::Create<PAL::Window>(CurrLoc(), winDesc);
 		if (!m_window)
-			return SystemReport("Window has not been initialize. Just kill yourself!");
+			return EngineReport("Window has not been initialize. Just kill yourself!");
 
 		m_window->Show();
 
 #if defined(HORIZON_WINDOWS)
 		Terminal::Info("WindowSystem", "Win32 based window has been initialized!");
 #endif
-		return SystemReport();
+		return EngineReport();
 	}
 
 	void WindowSystem::OnSync()
@@ -46,12 +46,9 @@ namespace Horizon
 
 	void WindowSystem::GetInitializeOrder(OrderRules& rules) const
 	{
-		Requires<JobSystem>(rules.after);
 	}
 
 	void WindowSystem::GetExecutionOrder(OrderRules& rules) const
 	{
-		Requires<JobSystem>(rules.after);
 	}
-
 }

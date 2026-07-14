@@ -2,7 +2,7 @@
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Asset/AssetSystem.h>
-#include <Engine/Command/CommandSystem.h>
+#include <Engine/Command/CommandContext.h>
 
 #include <Editor/Domain/DomainFile.h>
 #include <Editor/Domain/Importer/ImporterRegistry.h>
@@ -11,11 +11,11 @@
 
 namespace Horizon
 {
-	SystemReport DomainSystem::OnAttach(Engine* pEngine)
+	EngineReport DomainSystem::OnAttach(Engine* pEngine)
 	{
 		System::OnAttach(pEngine);
 
-		auto* pCommandSub = m_engine->TryGetSystem<CommandSystem>();
+		auto* pCommandSub = m_engine->TryGetContext<CommandContext>();
 		const auto& startPoint = pCommandSub->GetProjectPath();
 
 		m_rootPath = startPoint / "Project";
@@ -38,7 +38,7 @@ namespace Horizon
 		}
 #endif
 
-		return SystemReport();
+		return EngineReport();
 	}
 
 	void DomainSystem::OnSync()

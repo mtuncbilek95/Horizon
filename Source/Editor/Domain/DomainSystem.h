@@ -13,7 +13,7 @@ namespace Horizon
 		DomainSystem() = default;
 		~DomainSystem() = default;
 
-		SystemReport OnAttach(Engine* pEngine);
+		EngineReport OnAttach(Engine* pEngine);
 		void OnSync();
 		void OnDetach();
 

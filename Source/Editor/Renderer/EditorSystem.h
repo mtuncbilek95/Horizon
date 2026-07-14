@@ -21,7 +21,7 @@ namespace Horizon
 		MenuRegistry* GetMenuRegistry() const { return m_menuSystem; }
 		WidgetRegistry* GetWidgetRegistry() const { return m_widgetSystem; }
 
-		SystemReport OnAttach(Engine* engine) final;
+		EngineReport OnAttach(Engine* engine) final;
 		void OnSync() final;
 		void OnDetach() final;
 

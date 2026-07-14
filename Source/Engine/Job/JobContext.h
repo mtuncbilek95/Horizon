@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Core/System.h>
+#include <Engine/Core/Context.h>
 #include <Engine/Job/Job.h>
 #include <Engine/Job/JobWorker.h>
 
@@ -8,15 +8,11 @@
 
 namespace Horizon
 {
-	/*
-	 * First module that always needs to be run, so every other modules can 
-	 * use this whenever they want.
-	 */
-	class H_EXPORT JobSystem : public System
+	class H_EXPORT JobContext : public Context
 	{
 		friend class JobWorker;
 	public:
-		SystemReport OnAttach(Engine* pEngine) final;
+		EngineReport OnAttach(Engine* pEngine) final;
 		void OnDetach() final;
 
 		void SubmitJob(Job&& job);
@@ -24,7 +20,6 @@ namespace Horizon
 		void Wait(JobCounter& counter);
 
 		void GetInitializeOrder(OrderRules& rules) const final;
-		void GetExecutionOrder(OrderRules& rules) const final;
 
 	private:
 		JobWorker* GetRandomVictim(JobWorker* avoidWorker);

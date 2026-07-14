@@ -15,7 +15,7 @@ namespace Horizon
 		PresentationSystem() = default;
 		~PresentationSystem() = default;
 
-		SystemReport OnAttach(Engine* engine) final;
+		EngineReport OnAttach(Engine* engine) final;
 		void OnDetach() final;
 
 		void GetInitializeOrder(OrderRules& rules) const final;

@@ -14,7 +14,7 @@ namespace Horizon
 
 		PAL::Window* GetWindow() const { return m_window; }
 
-		SystemReport OnAttach(Engine* engine) final;
+		EngineReport OnAttach(Engine* engine) final;
 		void OnSync() final;
 		void OnDetach() final;
 
@@ -22,6 +22,6 @@ namespace Horizon
 		void GetExecutionOrder(OrderRules& rules) const final;
 
 	private:
-		PAL::Window* m_window;
+		PAL::Window* m_window = nullptr;
 	};
 }

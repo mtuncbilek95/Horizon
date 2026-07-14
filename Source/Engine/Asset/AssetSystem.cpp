@@ -1,15 +1,14 @@
 #include "AssetSystem.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Job/JobSystem.h>
 
 namespace Horizon
 {
-	SystemReport AssetSystem::OnAttach(Engine* pEngine)
+	EngineReport AssetSystem::OnAttach(Engine* pEngine)
 	{
 		System::OnAttach(pEngine);
 
-		return SystemReport();
+		return EngineReport();
 	}
 
 	void AssetSystem::OnSync()
@@ -22,6 +21,5 @@ namespace Horizon
 
 	void AssetSystem::GetInitializeOrder(OrderRules& rules) const
 	{
-		Requires<JobSystem>(rules.after);
 	}
 }
