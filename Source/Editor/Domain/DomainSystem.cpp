@@ -7,9 +7,6 @@
 
 #include <Editor/Project/ProjectContext.h>
 #include <Editor/Domain/DomainFile.h>
-#include <Editor/Domain/Importer/ImporterRegistry.h>
-#include <Editor/Domain/Importer/IAssetImporter.h>
-#include <Editor/Domain/Importer/AssetImportContext.h>
 
 #include <regex>
 #include <algorithm>
@@ -50,6 +47,11 @@ namespace Horizon
 	void DomainSystem::OnDetach()
 	{
 		Allocator::Delete(m_rootFolder);
+	}
+
+	void DomainSystem::GetInitializeOrder(OrderRules& rules) const
+	{
+		Requires<AssetSystem>(rules.after);
 	}
 
 	void DomainSystem::GetExecutionOrder(OrderRules& rules) const
@@ -95,7 +97,7 @@ namespace Horizon
 
 	void DomainSystem::ImportDefault(DomainFolder* targetFolder, const std::string& fileTypeExt)
 	{
-		auto& projSub = m_engine->GetContext<ProjectContext>();
+/*		auto& projSub = m_engine->GetContext<ProjectContext>();
 
 		const ImporterTypeInfo* pInfo = ImporterRegistry::Get().Find(fileTypeExt);
 		if (!pInfo)
@@ -113,24 +115,23 @@ namespace Horizon
 		AssetImportContext context({ targetMetaPath, targetCookPath }, newId);
 
 		// TODO: TEMPORARY SOLUTION
-		// 117-125 feels a bit hardcoded work. Look for a better approach before go for AssetSystem::RegisterAsset(AssetRegistryFile);
-		auto fileReq = PAL::File::RequestAccess(targetMetaPath, PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::Exclusive);
 		if (!PAL::File::Create(targetMetaPath))
-			Terminal::Error(GetName(), "You're fucked for {}", targetMetaPath);
-		PAL::File::ReleaseAccess(fileReq);
+		{
+			Terminal::Error(GetName(), "Failed to create meta {}", targetMetaPath.string());
+			return;
+		}
 
-		fileReq = PAL::File::RequestAccess(targetCookPath, PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::Exclusive);
 		if (!PAL::File::Create(targetCookPath))
-			Terminal::Error(GetName(), "You're fucked for {}", targetCookPath);
-		PAL::File::ReleaseAccess(fileReq);
+		{
+			Terminal::Error(GetName(), "Failed to create cooked {}", targetCookPath.string());
+			PAL::File::Delete(targetMetaPath);
+			return;
+		}
 
-		// This mf will fill the h<file>.
+		// This mf will fill the .hmeta.
 		pImporter->OnImportDefault(context);
 
-		/*Terminal::Log("DomainSystem", "Default-imported '{}' -> '{}'",
-			fullPath, context.BinaryPath().string());*/
-
-		Allocator::Delete(pImporter);
+		Allocator::Delete(pImporter);*/
 	}
 
 	void DomainSystem::UpdateFolder(DomainFolder* pTarget)

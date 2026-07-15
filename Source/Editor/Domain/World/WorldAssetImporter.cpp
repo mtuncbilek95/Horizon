@@ -1,7 +1,6 @@
 #include "WorldAssetImporter.h"
 
 #include <Editor/Domain/Importer/AssetImportContext.h>
-#include <Editor/Domain/Importer/ImporterDefinitions.h>
 
 namespace Horizon
 {
@@ -14,4 +13,4 @@ namespace Horizon
 	}
 }
 
-HORIZON_SCRIPTED_IMPORTER(WorldAssetImporter, "DefaultScene", ".hworld", 1);
+// HORIZON_SCRIPTED_IMPORTER(WorldAssetImporter, "DefaultScene", ".hworld", 1);

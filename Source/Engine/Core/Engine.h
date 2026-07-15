@@ -11,6 +11,8 @@
 
 namespace Horizon
 {
+	class ModuleContext;
+
 	class H_EXPORT Engine final
 	{
 	public:
@@ -107,6 +109,8 @@ namespace Horizon
 		void Run();
 		void RequestExit(std::string_view reason);
 
+		ModuleContext* GetModuleContext() const { return m_reflectionContext; }
+
 	private:
 		void FlushPending();
 		void SortActive();
@@ -116,6 +120,8 @@ namespace Horizon
 			void(*getRules)(EngineModule*, OrderRules&)) const;
 
 	private:
+		ModuleContext* m_reflectionContext = nullptr;
+
 		std::vector<System*> m_activeSystems;
 		std::vector<Context*> m_activeContexts;
 

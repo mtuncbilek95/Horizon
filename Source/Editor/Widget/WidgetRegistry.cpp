@@ -1,6 +1,9 @@
 #include "WidgetRegistry.h"
 
 #include <Editor/Widget/IWidget.h>
+#include <Editor/Widget/WidgetAttribute.h>
+#include <Engine/Core/Engine.h>
+#include <Engine/Module/ModuleContext.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -13,22 +16,39 @@ namespace Horizon
 
 	WidgetRegistry::~WidgetRegistry()
 	{
-		for (auto& inst : m_widgets)
+		for (OpenWidget& inst : m_open)
 			Allocator::Delete(inst.widget);
 	}
 
 	void WidgetRegistry::Invalidate()
 	{
-		for (auto& inst : m_widgets)
+		for (OpenWidget& inst : m_open)
 			Allocator::Delete(inst.widget);
 
-		m_widgets.clear();
+		m_open.clear();
+		m_types.clear();
 
-		WidgetFactory::Get().ForEach([this](const WidgetTypeInfo& info)
+		ModuleContext* modCtx = m_engine->GetModuleContext();
+		auto manifests = modCtx->GetManifestsByBase(TypeIdOf<IWidget>());
+
+		for (TypeManifest* manifest : manifests)
+		{
+			WidgetTypeAttribute* attr = manifest->GetCustomAttribute<WidgetTypeAttribute>();
+			if (!attr)
 			{
-				if (info.alwaysOpenFirst)
-					Open(info);
-			});
+				Terminal::Warn("WidgetRegistry", "IWidget manifest without WidgetTypeAttribute, skipping");
+				continue;
+			}
+
+			std::string title = std::string(attr->GetIcon()) + "  " + std::string(attr->GetDisplayName());
+			m_types.push_back({ manifest, std::move(title), attr->GetDockLayout(), attr->IsAlwaysOpenFirst() });
+		}
+
+		for (const WidgetType& type : m_types)
+		{
+			if (type.alwaysOpenFirst)
+				Open(type);
+		}
 
 		m_layout = false;
 	}
@@ -40,6 +60,7 @@ namespace Horizon
 		ImGuiDockNodeFlags dockFlags =
 			ImGuiDockNodeFlags_PassthruCentralNode |
 			ImGuiDockNodeFlags_NoWindowMenuButton;
+
 		ImGuiID dockId = ImGui::DockSpaceOverViewport(0, pViewport, dockFlags);
 
 		if (!m_layout)
@@ -48,19 +69,19 @@ namespace Horizon
 			m_layout = true;
 		}
 
-		for (usize i = 0; i < m_widgets.size();)
+		for (usize i = 0; i < m_open.size();)
 		{
-			WidgetInstance& inst = m_widgets[i];
+			OpenWidget& inst = m_open[i];
 
-			if (ImGui::Begin(inst.title.data(), &inst.isOpen))
+			if (ImGui::Begin(inst.title.c_str(), &inst.open))
 				inst.widget->OnDraw();
 
 			ImGui::End();
 
-			if (!inst.isOpen)
+			if (!inst.open)
 			{
 				Allocator::Delete(inst.widget);
-				m_widgets.erase(m_widgets.begin() + i);
+				m_open.erase(m_open.begin() + i);
 				continue;
 			}
 
@@ -68,69 +89,28 @@ namespace Horizon
 		}
 	}
 
-	void WidgetRegistry::Open(const WidgetTypeInfo& info)
+	void WidgetRegistry::Open(const WidgetType& type)
 	{
-		for (auto& inst : m_widgets)
+		for (const OpenWidget& inst : m_open)
 		{
-			if (inst.type == info.type)
+			if (inst.manifest == type.widgetManifest)
 			{
 				ImGui::SetWindowFocus(inst.title.c_str());
 				return;
 			}
 		}
 
-		IWidget* pWidget = info.CreateWidget(m_engine);
-		if (!pWidget)
+		IWidget* widget = static_cast<IWidget*>(type.widgetManifest->Create());
+		if (!widget)
 		{
-			Terminal::Warn("WidgetRegistry", "Factory returned null for a widget type");
+			Terminal::Warn("WidgetRegistry", "manifest->Create() returned null");
 			return;
 		}
 
-		pWidget->OnInvoke();
+		widget->SetEngine(m_engine);
+		widget->OnInvoke();
 
-		std::string title;
-		if (!info.icon.empty())
-		{
-			title += info.icon;
-			title += " ";
-		}
-
-		title += info.name;
-		title += "###";
-		title += info.name;
-
-		m_widgets.emplace_back(pWidget, std::move(title), info.dock, true, info.type);
-		m_lookup[info.type] = m_widgets.size() - 1;
-	}
-
-	void WidgetRegistry::Open(const std::type_index& index)
-	{
-		auto& value = WidgetFactory::Get().GetByInfo(index);
-		Open(value);
-	}
-
-	void WidgetRegistry::Close(const std::type_index& index)
-	{
-		for (usize i = 0; i < m_widgets.size(); ++i)
-		{
-			if (m_widgets[i].type != index)
-				continue;
-
-			Allocator::Delete(m_widgets[i].widget);
-			m_widgets.erase(m_widgets.begin() + i);
-			m_lookup.erase(index);
-			return;
-		}
-	}
-
-	b8 WidgetRegistry::IsOpened(const std::type_index& index)
-	{
-		auto it = m_lookup.find(index);
-		if (it == m_lookup.end())
-			return false;
-
-		auto& inst = m_widgets[it->second];
-		return inst.isOpen;
+		m_open.push_back({ widget, type.widgetManifest, type.widgetDisplayName, true });
 	}
 
 	void WidgetRegistry::BuildDefaultLayout(u32 rootId)
@@ -144,26 +124,26 @@ namespace Horizon
 		ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.25f, nullptr, &center);
 		ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.25f, nullptr, &center);
 
-		for (auto& inst : m_widgets)
+		for (const WidgetType& type : m_types)
 		{
 			ImGuiID target = center;
-			switch (inst.dock)
+			switch (type.dock)
 			{
-			case WidgetDock::Left:
-				target = left;   
+			case DockLayout::Left:
+				target = left;
 				break;
-			case WidgetDock::Right:
-				target = right;  
+			case DockLayout::Right:
+				target = right;
 				break;
-			case WidgetDock::Bottom:
-				target = bottom; 
+			case DockLayout::Bottom:
+				target = bottom;
 				break;
-			case WidgetDock::Center:
-				target = center; 
+			case DockLayout::Center:
+				target = center;
 				break;
 			}
 
-			ImGui::DockBuilderDockWindow(inst.title.data(), target);
+			ImGui::DockBuilderDockWindow(type.widgetDisplayName.c_str(), target);
 		}
 
 		ImGui::DockBuilderFinish(rootId);

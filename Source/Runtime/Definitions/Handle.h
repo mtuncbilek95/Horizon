@@ -54,3 +54,24 @@ namespace Horizon
 		u32 Generation() const { return u32(id >> IndexBits); }
 	};
 }
+
+namespace std
+{
+	template<typename Tag>
+	struct hash<Horizon::Handle<Tag>>
+	{
+		size_t operator()(const Horizon::Handle<Tag>& h) const noexcept
+		{
+			return std::hash<uint64_t>{}(h.index);
+		}
+	};
+
+	template<typename Tag>
+	struct hash<Horizon::HandleEx<Tag>>
+	{
+		size_t operator()(const Horizon::HandleEx<Tag>& h) const noexcept
+		{
+			return std::hash<uint64_t>{}(h.index);
+		}
+	};
+}

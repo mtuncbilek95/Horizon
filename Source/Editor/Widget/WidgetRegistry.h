@@ -1,8 +1,11 @@
 #pragma once
 
-#include <Editor/Widget/WidgetFactory.h>
+#include <Editor/Widget/DockLayout.h>
+#include <Runtime/Reflection/TypeManifest.h>
 
 #include <vector>
+#include <string>
+#include <string_view>
 
 namespace Horizon
 {
@@ -11,13 +14,20 @@ namespace Horizon
 
 	class WidgetRegistry
 	{
-		struct WidgetInstance
+		struct WidgetType
+		{
+			TypeManifest* widgetManifest;
+			std::string widgetDisplayName;
+			DockLayout dock;
+			b8 alwaysOpenFirst = false;
+		};
+
+		struct OpenWidget
 		{
 			IWidget* widget;
+			TypeManifest* manifest;
 			std::string title;
-			WidgetDock dock;
-			b8 isOpen;
-			std::type_index type;
+			b8 open = true;
 		};
 	public:
 		WidgetRegistry(Engine* pEngine);
@@ -26,19 +36,14 @@ namespace Horizon
 		void Invalidate();
 		void Render();
 
-		void Open(const WidgetTypeInfo& info);
-		void Open(const std::type_index& index);
-		void Close(const std::type_index& index);
-
-		b8 IsOpened(const std::type_index& index);
-
 	private:
+		void Open(const WidgetType& type);
 		void BuildDefaultLayout(u32 rootId);
 
 	private:
 		Engine* m_engine;
-		std::vector<WidgetInstance> m_widgets;
-		std::unordered_map<std::type_index, usize> m_lookup;
+		std::vector<WidgetType> m_types;
+		std::vector<OpenWidget> m_open;
 
 		b8 m_layout = false;
 	};

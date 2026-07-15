@@ -22,4 +22,8 @@ namespace Horizon
 	void AssetSystem::GetInitializeOrder(OrderRules& rules) const
 	{
 	}
+
+	void AssetSystem::GetExecutionOrder(OrderRules& rules) const
+	{
+	}
 }

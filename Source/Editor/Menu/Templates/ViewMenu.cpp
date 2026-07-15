@@ -16,11 +16,11 @@ namespace Horizon
 		auto* editorSub = GetEngine()->TryGetSystem<EditorSystem>();
 		auto* widgetReg = editorSub->GetWidgetRegistry();
 
-		std::type_index type = typeid(AssetBrowserWidget);
+		/*std::type_index type = typeid(AssetBrowserWidget);
 		if(widgetReg->IsOpened(type))
 			widgetReg->Close(type);
 		else
-			widgetReg->Open(type);
+			widgetReg->Open(type);*/
 	}
 
 	void SceneHierarchyMenu::OnInvoke()
@@ -28,11 +28,11 @@ namespace Horizon
 		auto* editorSub = GetEngine()->TryGetSystem<EditorSystem>();
 		auto* widgetReg = editorSub->GetWidgetRegistry();
 
-		std::type_index type = typeid(SceneHierarchyWidget);
+		/*std::type_index type = typeid(SceneHierarchyWidget);
 		if (widgetReg->IsOpened(type))
 			widgetReg->Close(type);
 		else
-			widgetReg->Open(type);
+			widgetReg->Open(type);*/
 	}
 }
 

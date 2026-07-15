@@ -6,7 +6,6 @@
 #include <Editor/Domain/DomainFile.h>
 #include <Editor/Domain/DomainFolder.h>
 
-#include <Editor/Widget/WidgetDefinitions.h>
 #include <Editor/Font/IconsFontAwesome6.h>
 
 namespace Horizon
@@ -98,6 +97,7 @@ namespace Horizon
 		ImGui::EndChild();
 
 		// ======================= TEST CONTEXT MENU AREA ======================= //
+#if (USE_DEV_MODE)
 		if (openContext)
 			ImGui::OpenPopup("AssetBrowserContext");
 
@@ -117,7 +117,8 @@ namespace Horizon
 
 			ImGui::EndPopup();
 		}
-
+#else // Use actual version
+#endif
 
 		if (navigateTo)
 		{
@@ -126,5 +127,3 @@ namespace Horizon
 		}
 	}
 }
-
-HORIZON_BIND_WIDGET(AssetBrowserWidget, "Asset Browser", ICON_FA_DATABASE, WidgetDock::Bottom, true);

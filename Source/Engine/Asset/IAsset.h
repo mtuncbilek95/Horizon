@@ -2,7 +2,5 @@
 
 namespace Horizon
 {
-	class AssetImportSettings
-	{
-	};
+
 }

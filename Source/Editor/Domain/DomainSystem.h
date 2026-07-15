@@ -17,6 +17,7 @@ namespace Horizon
 		void OnSync();
 		void OnDetach();
 
+		void GetInitializeOrder(OrderRules& rules) const final;
 		void GetExecutionOrder(OrderRules& rules) const final;
 
 		DomainFolder* GetRootFolder() const { return m_rootFolder; }

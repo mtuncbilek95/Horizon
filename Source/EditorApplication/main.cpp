@@ -12,6 +12,8 @@
 #include <Editor/Renderer/EditorSystem.h>
 #include <Editor/Domain/DomainSystem.h>
 
+#include "TypeManifestation.h"
+
 using namespace Horizon;
 
 i32 main(i32 argC, c8** argV)

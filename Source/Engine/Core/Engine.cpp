@@ -1,11 +1,22 @@
 #include "Engine.h"
 
-#include <unordered_set>
+#include <Engine/Module/ModuleContext.h>
 
 namespace Horizon
 {
 	Engine::Engine()
 	{
+		m_reflectionContext = Allocator::Create<ModuleContext>(CurrLoc());
+		EngineReport report = m_reflectionContext->OnAttach(this);
+		if (report)
+		{
+			Terminal::Error("Engine", "{} attach failed: {}", m_reflectionContext->GetName(), report.GetMessage());
+
+			for (auto* pending : m_initPending)
+				Allocator::Delete(pending);
+
+			m_exitRequested = true;
+		}
 	}
 
 	Engine::~Engine()
@@ -26,6 +37,10 @@ namespace Horizon
 		}
 
 		Shutdown();
+
+		m_reflectionContext->OnDetach();
+		Allocator::Delete(m_reflectionContext);
+
 		Allocator::ReportLeaks();
 	}
 

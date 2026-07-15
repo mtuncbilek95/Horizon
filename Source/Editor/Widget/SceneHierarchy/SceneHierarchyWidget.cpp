@@ -1,7 +1,6 @@
 #include "SceneHierarchyWidget.h"
 
 #include <Engine/Core/Engine.h>
-#include <Editor/Widget/WidgetDefinitions.h>
 #include <Editor/Font/IconsFontAwesome6.h>
 
 #include <imgui.h>
@@ -36,5 +35,3 @@ namespace Horizon
 			});
 	}
 }
-
-HORIZON_BIND_WIDGET(SceneHierarchyWidget, "Scene Hierarchy", ICON_FA_DATABASE, WidgetDock::Left, true);
