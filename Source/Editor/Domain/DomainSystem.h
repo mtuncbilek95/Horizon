@@ -1,12 +1,15 @@
 #pragma once
 
-#include <Engine/Core/System.h>
 #include <Editor/Domain/DomainFolder.h>
+#include <Engine/Core/System.h>
+#include <Runtime/Reflection/TypeManifest.h>
 
 #include <filesystem>
 
 namespace Horizon
 {
+	class IAssetImporter;
+
 	class H_EXPORT DomainSystem : public System
 	{
 	public:
@@ -31,5 +34,7 @@ namespace Horizon
 	private:
 		std::filesystem::path m_rootPath;
 		DomainFolder* m_rootFolder = nullptr;
+
+		std::vector<TypeManifest*> m_importerManifest;
 	};
 }

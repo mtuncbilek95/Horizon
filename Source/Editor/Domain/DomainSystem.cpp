@@ -1,12 +1,14 @@
 #include "DomainSystem.h"
 
-#include <Runtime/PAL/File/File.h>
-
-#include <Engine/Core/Engine.h>
-#include <Engine/Asset/AssetSystem.h>
-
 #include <Editor/Project/ProjectContext.h>
 #include <Editor/Domain/DomainFile.h>
+#include <Editor/Domain/Importer/AssetImporterAttribute.h>
+
+#include <Engine/Core/Engine.h>
+#include <Engine/Module/ModuleContext.h>
+#include <Engine/Asset/AssetSystem.h>
+
+#include <Runtime/PAL/File/File.h>
 
 #include <regex>
 #include <algorithm>
@@ -35,6 +37,11 @@ namespace Horizon
 
 		if (!m_rootFolder)
 			return EngineReport("Could not create root domain folder.");
+
+		auto* manifestCtx = pEngine->GetModuleContext();
+		m_importerManifest = manifestCtx->GetManifestsByBase(TypeIdOf<IAssetImporter>());
+
+		Terminal::Debug(GetName(), "{} importers has been registered to domain system", m_importerManifest.size());
 
 		return EngineReport();
 	}
@@ -97,9 +104,19 @@ namespace Horizon
 
 	void DomainSystem::ImportDefault(DomainFolder* targetFolder, const std::string& fileTypeExt)
 	{
-/*		auto& projSub = m_engine->GetContext<ProjectContext>();
+		auto& projSub = m_engine->GetContext<ProjectContext>();
 
-		const ImporterTypeInfo* pInfo = ImporterRegistry::Get().Find(fileTypeExt);
+		for (auto* manifest : m_importerManifest)
+		{
+			auto* attribute = manifest->GetCustomAttribute<AssetImporterAttribute>();
+			std::vector<std::string_view> extensions = attribute->GetAssetExtension();
+			auto it = std::find(extensions.begin(), extensions.end(), fileTypeExt);
+
+			if (it != extensions.end())
+				Terminal::Debug(GetName(), "{} has been found", fileTypeExt);
+		}
+
+		/*const ImporterTypeInfo* pInfo = ImporterRegistry::Get().Find(fileTypeExt);
 		if (!pInfo)
 		{
 			Terminal::Warn("DomainSystem", "No importer registered for '{}'", fileTypeExt);
