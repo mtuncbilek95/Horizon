@@ -38,7 +38,7 @@ namespace Horizon
 		nlohmann::json meta;
 		meta["guid"] = guid.ToString();
 		meta["name"] = assetName;
-		meta["source"] = "";
+		meta["source"] = context.GetCookPath();
 		meta["info"] = nlohmann::json::object();
 
 		std::string metaText = meta.dump(2);

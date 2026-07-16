@@ -9,6 +9,8 @@
 
 namespace Horizon
 {
+	class WorldAsset;
+
 	class SceneHierarchyWidget : public IWidget
 	{
 	public:
@@ -16,7 +18,11 @@ namespace Horizon
 		void OnDraw() final;
 
 	private:
+		void AddNewEntity(WorldAsset& world);
+
+	private:
 		EntityComponentSystem* m_ecs = nullptr;
+		WorldAsset* m_lastWorld;
 		EntityHandle m_selected;
 	};
 }

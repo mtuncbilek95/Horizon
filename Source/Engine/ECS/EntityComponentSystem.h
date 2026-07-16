@@ -4,6 +4,7 @@
 
 namespace Horizon
 {
+	class WorldAsset;
 	class WorldRegistry;
 
 	class EntityComponentSystem : public System
@@ -15,9 +16,10 @@ namespace Horizon
 		void GetInitializeOrder(OrderRules& rules) const final;
 		void GetExecutionOrder(OrderRules& rules) const final;
 
-		WorldRegistry& GetWorld() { return *m_currentWorld; }
+		void SetActiveWorld(WorldAsset* world) { m_activeWorld = world; }
+		WorldAsset* GetActiveWorld() const { return m_activeWorld; }
 
 	private:
-		WorldRegistry* m_currentWorld;
+		WorldAsset* m_activeWorld = nullptr;
 	};
 }

@@ -1,12 +1,16 @@
 #include "AssetBrowserWidget.h"
 
-#include <Engine/Core/Engine.h>
-
 #include <Editor/Domain/DomainSystem.h>
 #include <Editor/Domain/DomainFile.h>
 #include <Editor/Domain/DomainFolder.h>
 
 #include <Editor/Font/IconsFontAwesome6.h>
+
+#include <Engine/Core/Engine.h>
+#include <Engine/ECS/EntityComponentSystem.h>
+#include <Engine/Asset/AssetSystem.h>
+#include <Engine/Asset/IAsset.h>
+#include <Engine/Asset/Loaders/World/WorldAsset.h>
 
 namespace Horizon
 {
@@ -34,6 +38,7 @@ namespace Horizon
 		i32 itemCount = (i32)(subfolders.size() + files.size());
 
 		DomainFolder* navigateTo = nullptr;
+		DomainFile* activateFile = nullptr;
 
 		b8 isRoot = m_currentFolder->IsRoot();
 		if (isRoot)
@@ -83,7 +88,10 @@ namespace Horizon
 
 				b8 selected = m_selection.Contains((ImGuiID)index);
 				ImGui::SetNextItemSelectionUserData(index);
-				ImGui::Selectable(label, selected);
+				ImGui::Selectable(label, selected, ImGuiSelectableFlags_AllowDoubleClick);
+
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+					activateFile = pFile;
 
 				index++;
 			}
@@ -120,10 +128,44 @@ namespace Horizon
 #else // Use actual version
 #endif
 
+		if (activateFile)
+			ActivateAsset(activateFile);
+
 		if (navigateTo)
 		{
 			m_currentFolder = navigateTo;
 			m_selection.Clear();
 		}
+	}
+
+	void AssetBrowserWidget::ActivateAsset(DomainFile* pFile)
+	{
+		auto* assetSub = GetEngine()->TryGetSystem<AssetSystem>();
+		if (!assetSub)
+		{
+			Terminal::Warn("AssetBrowser", "No AssetSystem");
+			return;
+		}
+
+		IAsset* asset = assetSub->Load(pFile->GetGuid());
+		if (!asset)
+		{
+			Terminal::Warn("AssetBrowser", "Failed to load '{}' (guid {})",
+				pFile->GetName(), pFile->GetGuid().ToString());
+			return;
+		}
+
+		if (WorldAsset* world = dynamic_cast<WorldAsset*>(asset))
+		{
+			auto* ecs = GetEngine()->TryGetSystem<EntityComponentSystem>();
+			if (!ecs)
+				return;
+
+			ecs->SetActiveWorld(world);
+			Terminal::Log("AssetBrowser", "Activated world '{}'", world->GetWorldName());
+			return;
+		}
+
+		Terminal::Warn("AssetBrowser", "'{}' is not a World — nothing to activate", pFile->GetName());
 	}
 }

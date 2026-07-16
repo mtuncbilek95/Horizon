@@ -9,6 +9,7 @@ namespace Horizon
 	class WorldDescriptor : public IAssetDescriptor
 	{
 	public:
+		WorldDescriptor() = default;
 		WorldDescriptor(const std::string& worldName, u32 entityCount);
 		~WorldDescriptor() = default;
 
@@ -16,6 +17,9 @@ namespace Horizon
 
 		void Serialize(std::vector<u8>& out) const final;
 		b8 Deserialize(const u8* data, u64 size) final;
+
+		const std::string GetWorldName() const { return m_worldName; }
+		u32 GetEntityCount() const { return m_entityCount; }
 
 	private:
 		std::string m_worldName;

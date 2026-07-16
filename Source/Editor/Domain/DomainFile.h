@@ -13,10 +13,8 @@ namespace Horizon
 
 	struct DomainFileDesc
 	{
-		Guid fileId;
 		DomainFolder* pParent = nullptr;
-
-		std::string fileName;
+		std::filesystem::path metaPath;
 	};
 
 	class H_EXPORT DomainFile : public DomainObject
@@ -32,6 +30,11 @@ namespace Horizon
 		const std::filesystem::path& GetSourcePath() const { return m_sourcePath; }
 		const std::filesystem::path& GetMetaPath() const { return m_metaPath; }
 
+		b8 IsValid() const { return m_valid; }
+
+	private:
+		b8 LoadMeta();
+
 	private:
 		Guid m_id;
 
@@ -41,5 +44,7 @@ namespace Horizon
 		std::string m_name;
 		std::filesystem::path m_sourcePath;
 		std::filesystem::path m_metaPath;
+
+		b8 m_valid = false;
 	};
 }

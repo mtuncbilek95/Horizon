@@ -204,16 +204,21 @@ namespace Horizon
 				DomainFile* pFile = pTarget->FindFile(entry.path().stem().string());
 				if (!pFile)
 				{
-					// Read with a serializer or read json here with nlohmann.
-
 					DomainFileDesc desc = {};
-					desc.fileId = Guid::Generate();
-					desc.fileName = entry.path().stem().string();
 					desc.pParent = pTarget;
-					pFile = Allocator::Create<DomainFile>(CurrLoc(), desc, m_engine);
-					pTarget->AddFile(pFile);
+					desc.metaPath = entry.path();
 
-					Terminal::Info("DomainSystem", "{} file has been added as {}", pFile->GetName(), pFile->GetMetaPath().string());
+					pFile = Allocator::Create<DomainFile>(CurrLoc(), desc, m_engine);
+
+					if (!pFile->IsValid())
+					{
+						Terminal::Warn("DomainSystem", "Invalid meta, skipping: {}", entry.path().string());
+						Allocator::Delete(pFile);
+						continue;
+					}
+
+					pTarget->AddFile(pFile);
+					Terminal::Info("DomainSystem", "{} added (guid {})", pFile->GetName(), pFile->GetGuid().ToString());
 				}
 				pFile->Mark();
 			}
