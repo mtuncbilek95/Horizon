@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace Horizon
 {
@@ -33,6 +34,7 @@ namespace Horizon
 
 	private:
 		IAssetLoadStrategy* FindStrategy(std::string_view assetType);
+		b8 ReadDependencies(const AssetEntry& entry, std::vector<Guid>& out);
 
 	private:
 		std::unordered_map<Guid, AssetEntry> m_entries;

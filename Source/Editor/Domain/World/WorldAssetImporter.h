@@ -8,7 +8,6 @@
 
 namespace Horizon
 {
-	HCLASS(AssetImporterAttribute({ ".hworld" }, "DefaultWorld", 1));
 	class WorldAssetImporter : public IAssetImporter
 	{
 	public:

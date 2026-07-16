@@ -90,5 +90,7 @@ extern "C" H_EXPORT void GenerateModuleManifestation(std::vector<Horizon::TypeMa
 	// DefaultWorldLoadStrategy
 	outManifests->push_back(
 		Horizon::TypeManifestBuilder::For<Horizon::DefaultWorldLoadStrategy>("DefaultWorldLoadStrategy")
-		.WithBase(Horizon::TypeIdOf<Horizon::IAssetLoadStrategy>()).WithAttribute<Horizon::AssetLoadStrategyAttribute>("World", true).Build());
+		.WithBase(Horizon::TypeIdOf<Horizon::IAssetLoadStrategy>())
+		.WithAttribute<Horizon::AssetLoadStrategyAttribute>("World", true)
+		.Build());
 }

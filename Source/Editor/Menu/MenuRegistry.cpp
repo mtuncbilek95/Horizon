@@ -124,11 +124,11 @@ namespace Horizon
 
 	void MenuRegistry::InsertMenu(TypeManifest* manifest, const MenuItemAttribute& attr)
 	{
-		MenuInstance* node = EnsurePath(attr.GetPath());
+		auto* node = EnsurePath(attr.GetPath());
 		if (!node)
 			return;
 
-		IMenuItem* item = static_cast<IMenuItem*>(manifest->Create());
+		auto* item = static_cast<IMenuItem*>(manifest->Create());
 		if (!item)
 		{
 			Terminal::Warn("MenuRegistry", "manifest->Create() returned null for menu item");

@@ -1,11 +1,14 @@
 #pragma once
 
+#include <string_view>
+#include <vector>
+
 namespace Horizon
 {
-	class AssetImportSettings
+	class IAssetDescriptor
 	{
 	public:
-		virtual ~AssetImportSettings() = default;
+		virtual ~IAssetDescriptor() = default;
 
 		virtual std::string_view GetAssetType() const = 0;
 

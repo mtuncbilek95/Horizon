@@ -3,6 +3,8 @@
 #include <Editor/Project/ProjectContext.h>
 #include <Editor/Domain/DomainFile.h>
 #include <Editor/Domain/Importer/AssetImporterAttribute.h>
+#include <Editor/Domain/Importer/AssetImportContext.h>
+#include <Editor/Domain/Importer/IAssetImporter.h>
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Module/ModuleContext.h>
@@ -104,51 +106,71 @@ namespace Horizon
 
 	void DomainSystem::ImportDefault(DomainFolder* targetFolder, const std::string& fileTypeExt)
 	{
+		if (!targetFolder)
+		{
+			Terminal::Warn(GetName(), "Invalid target folder");
+			return;
+		}
 		auto& projSub = m_engine->GetContext<ProjectContext>();
 
-		for (auto* manifest : m_importerManifest)
-		{
-			auto* attribute = manifest->GetCustomAttribute<AssetImporterAttribute>();
-			std::vector<std::string_view> extensions = attribute->GetAssetExtension();
-			auto it = std::find(extensions.begin(), extensions.end(), fileTypeExt);
+		TypeManifest* foundManifest = nullptr;
+		AssetImporterAttribute* foundAttr = nullptr;
 
-			if (it != extensions.end())
-				Terminal::Debug(GetName(), "{} has been found", fileTypeExt);
+		for (TypeManifest* manifest : m_importerManifest)
+		{
+			AssetImporterAttribute* attr = manifest->GetCustomAttribute<AssetImporterAttribute>();
+			if (!attr)
+				continue;
+
+			const auto& exts = attr->GetAssetExtension();
+			if (std::find(exts.begin(), exts.end(), fileTypeExt) != exts.end())
+			{
+				foundManifest = manifest;
+				foundAttr = attr;
+				break;
+			}
 		}
 
-		/*const ImporterTypeInfo* pInfo = ImporterRegistry::Get().Find(fileTypeExt);
-		if (!pInfo)
+		if (!foundManifest)
 		{
-			Terminal::Warn("DomainSystem", "No importer registered for '{}'", fileTypeExt);
+			Terminal::Warn(GetName(), "No importer for '{}'", fileTypeExt);
 			return;
 		}
-
-		IAssetImporter* pImporter = pInfo->CreateImporter();
 
 		Guid newId = Guid::Generate();
-		std::filesystem::path targetMetaPath = targetFolder->GetAbsolutePath() / (std::string(pInfo->defaultName) + ".hmeta");
-		std::filesystem::path targetCookPath = projSub.GetCookedPath() / (newId.ToString() + fileTypeExt);
+		std::filesystem::path metaPath = targetFolder->GetAbsolutePath() /
+			(std::string(foundAttr->GetDefaultName()) + ".hmeta");
+		std::filesystem::path cookPath = projSub.GetCookedPath() / (newId.ToString() + fileTypeExt);
 
-		AssetImportContext context({ targetMetaPath, targetCookPath }, newId);
-
-		// TODO: TEMPORARY SOLUTION
-		if (!PAL::File::Create(targetMetaPath))
+		if (!PAL::File::Create(metaPath))
 		{
-			Terminal::Error(GetName(), "Failed to create meta {}", targetMetaPath.string());
+			Terminal::Error(GetName(), "Failed to create meta {}", metaPath.string());
 			return;
 		}
 
-		if (!PAL::File::Create(targetCookPath))
+		if (!PAL::File::Create(cookPath))
 		{
-			Terminal::Error(GetName(), "Failed to create cooked {}", targetCookPath.string());
-			PAL::File::Delete(targetMetaPath);
+			Terminal::Error(GetName(), "Failed to create cooked {}", cookPath.string());
+			PAL::File::Delete(metaPath);
 			return;
 		}
 
-		// This mf will fill the .hmeta.
-		pImporter->OnImportDefault(context);
+		IAssetImporter* importer = static_cast<IAssetImporter*>(foundManifest->Create());
+		if (!importer)
+		{
+			Terminal::Error(GetName(), "manifest->Create() returned null for importer");
+			return;
+		}
 
-		Allocator::Delete(pImporter);*/
+		AssetImportContext context({ metaPath, cookPath }, newId);
+		importer->OnImportDefault(context);
+
+		Allocator::Delete(importer);
+
+		if (auto* assetSub = m_engine->TryGetSystem<AssetSystem>())
+			assetSub->RegisterAsset(newId, cookPath);
+
+		Terminal::Log(GetName(), "Created '{}' (guid {})", metaPath.filename().string(), newId.ToString());
 	}
 
 	void DomainSystem::UpdateFolder(DomainFolder* pTarget)

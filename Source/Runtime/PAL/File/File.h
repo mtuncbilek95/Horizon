@@ -16,6 +16,7 @@ namespace Horizon::PAL
 		static b8 Create(const std::filesystem::path& newPath);
 		static b8 Delete(const std::filesystem::path& newPath);
 		static b8 WriteString(FileAccessRequest fileAccess, const std::string& content, usize offset = 0);
-		// TODO: static b8 WriteMemory(const FileAccessRequest fileAccess, const MemoryView& content, usize offset = 0);
+		static b8 WriteMemory(FileAccessRequest fileAccess, const std::vector<u8>& memory, usize offset = 0);
+		static b8 ReadMemory(FileAccessRequest fileAccess, std::vector<u8>& memory, usize startPoint = 0, usize endPoint = 0);
 	};
 }

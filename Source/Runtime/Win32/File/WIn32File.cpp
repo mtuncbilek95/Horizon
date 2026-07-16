@@ -72,6 +72,133 @@ namespace Horizon::PAL
 
 	b8 File::WriteString(FileAccessRequest fileAccess, const std::string& content, usize offset)
 	{
-		return false;
+		std::vector<u8> bytes(content.begin(), content.end());
+		return WriteMemory(fileAccess, bytes, offset);
+	}
+
+
+	b8 File::WriteMemory(FileAccessRequest fileAccess, const std::vector<u8>& memory, usize offset /*= 0*/)
+	{
+		if (!fileAccess.m_handle.IsValid())
+		{
+			Terminal::Error("File::WriteMemory", "Invalid file access handle");
+			return false;
+		}
+
+		if (((u8)fileAccess.GetAccessPolicy() & (u8)FileOperationAccessPolicy::Write) == 0)
+		{
+			Terminal::Error("File::WriteMemory", "File was not opened with Write access");
+			return false;
+		}
+
+		HANDLE fileHandle = (HANDLE)fileAccess.m_handle.index;
+
+		LARGE_INTEGER pos = {};
+		pos.QuadPart = (LONGLONG)offset;
+		if (!SetFilePointerEx(fileHandle, pos, NULL, FILE_BEGIN))
+		{
+			Terminal::Error("File::WriteMemory", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+			return false;
+		}
+
+		usize totalWritten = 0;
+		while (totalWritten < memory.size())
+		{
+			usize remaining = memory.size() - totalWritten;
+			DWORD chunk = (DWORD)(remaining > MAXDWORD ? MAXDWORD : remaining);
+
+			DWORD written = 0;
+			if (!WriteFile(fileHandle, memory.data() + totalWritten, chunk, &written, NULL))
+			{
+				Terminal::Error("File::WriteMemory", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+				return false;
+			}
+
+			if (written == 0)
+			{
+				Terminal::Error("File::WriteMemory", "Wrote 0 bytes at {} of {}", totalWritten, memory.size());
+				return false;
+			}
+
+			totalWritten += written;
+		}
+
+		return true;
+	}
+
+	b8 File::ReadMemory(FileAccessRequest fileAccess, std::vector<u8>& memory, usize startPoint, usize endPoint)
+	{
+		if (!fileAccess.m_handle.IsValid())
+		{
+			Terminal::Error("File::ReadMemory", "Invalid file access handle");
+			return false;
+		}
+
+		if (((u8)fileAccess.GetAccessPolicy() & (u8)FileOperationAccessPolicy::Read) == 0)
+		{
+			Terminal::Error("File::ReadMemory", "File was not opened with Read access");
+			return false;
+		}
+
+		HANDLE fileHandle = (HANDLE)fileAccess.m_handle.index;
+
+		LARGE_INTEGER fileSize = {};
+		if (!GetFileSizeEx(fileHandle, &fileSize))
+		{
+			Terminal::Error("File::ReadMemory", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+			return false;
+		}
+
+		usize fileEnd = (usize)fileSize.QuadPart;
+		usize readEnd = (endPoint == 0) ? fileEnd : endPoint;
+
+		if (startPoint > readEnd || readEnd > fileEnd)
+		{
+			Terminal::Error("File::ReadMemory", "Range [{}, {}) out of bounds, file size is {}",
+				startPoint, readEnd, fileEnd);
+			return false;
+		}
+
+		usize readSize = readEnd - startPoint;
+
+		memory.clear();
+		if (readSize == 0)
+			return true;
+
+		LARGE_INTEGER pos = {};
+		pos.QuadPart = (LONGLONG)startPoint;
+		if (!SetFilePointerEx(fileHandle, pos, NULL, FILE_BEGIN))
+		{
+			Terminal::Error("File::ReadMemory", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+			return false;
+		}
+
+		memory.resize(readSize);
+
+		usize totalRead = 0;
+		while (totalRead < readSize)
+		{
+			usize remaining = readSize - totalRead;
+			DWORD chunk = (DWORD)(remaining > MAXDWORD ? MAXDWORD : remaining);
+
+			DWORD bytesRead = 0;
+			if (!ReadFile(fileHandle, memory.data() + totalRead, chunk, &bytesRead, NULL))
+			{
+				Terminal::Error("File::ReadMemory", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+				memory.clear();
+				return false;
+			}
+
+			if (bytesRead == 0)
+			{
+				Terminal::Error("File::ReadMemory", "Unexpected EOF at {} of {}", totalRead, readSize);
+				memory.clear();
+				return false;
+			}
+
+			totalRead += bytesRead;
+		}
+
+		return true;
 	}
 }

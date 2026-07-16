@@ -1,127 +1,69 @@
 #pragma once
 
-#include <string>
-#include <vector>
+#include <string_view>
 #include <cstring>
+#include <type_traits>
 
 namespace Horizon
 {
 	struct AssetHeader
 	{
-		static constexpr u32 Magic = 0x485A4131; // 'HZA1'
+		static constexpr u32 Magic = 0x485A4131;      // 'HZA1'
+		static constexpr u32 CurrentVersion = 1;
+		static constexpr usize MaxTypeLength = 64;
 
 		u32 magic = Magic;
-		u32 version = 1;
+		u32 version = CurrentVersion;
+
 		Guid guid;
-		std::string type;
 
-		u64 settingsOffset = 0, settingsSize = 0;
-		u64 payloadOffset = 0, payloadSize = 0;
+		u64 depsOffset = 0;
+		u64 descriptorOffset = 0;
+		u64 descriptorSize = 0;
+		u64 payloadOffset = 0;
+		u64 payloadSize = 0;
 
-		std::vector<Guid> dependencies;
+		u32 depsCount = 0;
+		u32 reserved = 0;
 
-		u64 ComputeSize() const
+		c8 type[MaxTypeLength] = {};
+
+		b8 IsValid() const { return magic == Magic; }
+
+		std::string_view GetType() const
 		{
-			return sizeof(u32) * 2 +
-				sizeof(Guid) + sizeof(u32) + type.size() +
-				sizeof(u64) * 4 + sizeof(u32) +
-				dependencies.size() * sizeof(Guid);
-		}
-	};
+			usize len = 0;
+			while (len < MaxTypeLength && type[len] != '\0')
+				++len;
 
-	namespace Detail
-	{
-		template<typename T>
-		void Append(std::vector<u8>& out, const T& value)
-		{
-			const u8* p = reinterpret_cast<const u8*>(&value);
-			out.insert(out.end(), p, p + sizeof(T));
+			return std::string_view(type, len);
 		}
 
-
-		template<typename T>
-		b8 ReadRaw(const u8*& cursor, const u8* end, T& out)
+		template<usize N>
+		void SetType(const char(&value)[N])
 		{
-			if (cursor + sizeof(T) > end)
+			static_assert(N - 1 <= MaxTypeLength, "Asset type name exceeds AssetHeader::MaxTypeLength");
+
+			std::memset(type, 0, MaxTypeLength);
+			std::memcpy(type, value, N - 1);
+		}
+
+		[[nodiscard]] b8 SetType(std::string_view value)
+		{
+			if (value.size() > MaxTypeLength)
+			{
+				Terminal::Error("AssetHeader", "Asset type '{}' is {} chars — max {}",
+					value, value.size(), MaxTypeLength);
 				return false;
+			}
 
-			std::memcpy(&out, cursor, sizeof(T));
-			cursor += sizeof(T);
+			std::memset(type, 0, MaxTypeLength);
+			std::memcpy(type, value.data(), value.size());
 			return true;
 		}
-	}
 
-	inline std::vector<u8> SerializeHeader(AssetHeader& header)
-	{
-		u64 headerSize = header.ComputeSize();
-		header.settingsOffset = headerSize;
-		header.payloadOffset = headerSize + header.settingsSize;
+	};
 
-		std::vector<u8> out;
-		out.reserve((usize)headerSize);
-
-		Detail::Append(out, header.magic);
-		Detail::Append(out, header.version);
-		Detail::Append(out, header.guid);
-
-		u32 typeLen = (u32)header.type.size();
-		Detail::Append(out, typeLen);
-		out.insert(out.end(), header.type.begin(), header.type.end());
-
-		Detail::Append(out, header.settingsOffset);
-		Detail::Append(out, header.settingsSize);
-		Detail::Append(out, header.payloadOffset);
-		Detail::Append(out, header.payloadSize);
-
-		u32 depCount = (u32)header.dependencies.size();
-		Detail::Append(out, depCount);
-
-		for (const Guid& dep : header.dependencies)
-			Detail::Append(out, dep);
-
-		return out;
-	}
-
-	inline b8 DeserializeHeader(const u8* data, u64 size, AssetHeader& out)
-	{
-		const u8* cursor = data;
-		const u8* end = data + size;
-
-		if (!Detail::ReadRaw(cursor, end, out.magic) || out.magic != AssetHeader::Magic)
-			return false;
-
-		if (!Detail::ReadRaw(cursor, end, out.version))
-			return false;
-		if (!Detail::ReadRaw(cursor, end, out.guid))
-			return false;
-
-		u32 typeLen = 0;
-		if (!Detail::ReadRaw(cursor, end, typeLen) || cursor + typeLen > end)
-			return false;
-
-		out.type.assign((const char*)(cursor), typeLen);
-		cursor += typeLen;
-
-		if (!Detail::ReadRaw(cursor, end, out.settingsOffset))
-			return false;
-		if (!Detail::ReadRaw(cursor, end, out.settingsSize))
-			return false;
-		if (!Detail::ReadRaw(cursor, end, out.payloadOffset))
-			return false;
-		if (!Detail::ReadRaw(cursor, end, out.payloadSize))
-			return false;
-
-		u32 depCount = 0;
-		if (!Detail::ReadRaw(cursor, end, depCount))
-			return false;
-
-		out.dependencies.resize(depCount);
-		for (u32 i = 0; i < depCount; ++i)
-		{
-			if (!Detail::ReadRaw(cursor, end, out.dependencies[i]))
-				return false;
-		}
-
-		return true;
-	}
+	static_assert(sizeof(AssetHeader) == 136, "AssetHeader size drifted — it is a wire format");
+	static_assert(std::is_trivially_copyable_v<AssetHeader>, "AssetHeader is memcpy'd to/from disk");
 }

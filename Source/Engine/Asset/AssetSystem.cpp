@@ -7,6 +7,10 @@
 #include <Engine/Asset/IAssetLoadStrategy.h>
 #include <Engine/Asset/AssetLoadStrategyAttribute.h>
 
+#include <Runtime/PAL/File/File.h>
+
+#include <cstring>
+
 namespace Horizon
 {
 	EngineReport AssetSystem::OnAttach(Engine* pEngine)
@@ -38,9 +42,7 @@ namespace Horizon
 					c.defaultManifest = manifest;
 			}
 			else
-			{
 				c.overrides.push_back(manifest);
-			}
 		}
 
 		for (auto& [assetType, c] : candidates)
@@ -59,9 +61,7 @@ namespace Horizon
 				winner = c.defaultManifest;
 			}
 			else
-			{
 				winner = c.defaultManifest;
-			}
 
 			if (!winner)
 			{
@@ -77,6 +77,7 @@ namespace Horizon
 
 	void AssetSystem::OnSync()
 	{
+		// TODO: free pending load/stream
 	}
 
 	void AssetSystem::OnDetach()
@@ -104,13 +105,31 @@ namespace Horizon
 
 	void AssetSystem::RegisterAsset(const Guid& guid, const std::filesystem::path& cookedPath)
 	{
-		// TODO: PAL::File needs ReadFileRange a.k.a ReadBytes(offset);
-		std::vector<u8> headerBytes;
+		auto req = PAL::File::RequestAccess(cookedPath,
+			PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
+
+		if (!req.IsValid())
+		{
+			Terminal::Warn("AssetSystem", "Cannot open cooked file: {}", cookedPath.string());
+			return;
+		}
+
+		std::vector<u8> bytes;
+		b8 ok = PAL::File::ReadMemory(req, bytes, 0, sizeof(AssetHeader));
+		PAL::File::ReleaseAccess(req);
+
+		if (!ok || bytes.size() != sizeof(AssetHeader))
+		{
+			Terminal::Warn("AssetSystem", "Cannot read header: {}", cookedPath.string());
+			return;
+		}
 
 		AssetHeader header;
-		if (!DeserializeHeader(headerBytes.data(), headerBytes.size(), header))
+		std::memcpy(&header, bytes.data(), sizeof(AssetHeader));
+
+		if (!header.IsValid())
 		{
-			Terminal::Warn("AssetSystem", "Invalid cooked header: {}", cookedPath.string());
+			Terminal::Warn("AssetSystem", "Not a Horizon asset: {}", cookedPath.string());
 			return;
 		}
 
@@ -122,11 +141,12 @@ namespace Horizon
 
 		AssetEntry entry;
 		entry.m_guid = header.guid;
-		entry.m_type = header.type;
+		entry.m_type = std::string(header.GetType());
 		entry.m_cookedPath = cookedPath;
-		entry.m_dependencies = header.dependencies;
-		entry.m_settingsOffset = header.settingsOffset;
-		entry.m_settingsSize = header.settingsSize;
+		entry.m_depsOffset = header.depsOffset;
+		entry.m_depsCount = header.depsCount;
+		entry.m_descriptorOffset = header.descriptorOffset;
+		entry.m_descriptorSize = header.descriptorSize;
 		entry.m_payloadOffset = header.payloadOffset;
 		entry.m_payloadSize = header.payloadSize;
 		entry.m_state = AssetState::Registered;
@@ -162,8 +182,17 @@ namespace Horizon
 
 		entry.m_state = AssetState::Loading;
 
-		for (const Guid& dep : entry.m_dependencies)
-			Load(dep);
+		if (entry.m_depsCount > 0)
+		{
+			std::vector<Guid> deps;
+			if (ReadDependencies(entry, deps))
+			{
+				for (const Guid& dep : deps)
+					Load(dep);
+			}
+			else
+				Terminal::Warn("AssetSystem", "Cannot read dependencies of {}", entry.m_cookedPath.string());
+		}
 
 		IAssetLoadStrategy* strategy = FindStrategy(entry.m_type);
 		if (!strategy)
@@ -202,6 +231,34 @@ namespace Horizon
 	{
 		auto it = m_strategies.find(std::string(assetType));
 		return it == m_strategies.end() ? nullptr : it->second;
+	}
+
+	b8 AssetSystem::ReadDependencies(const AssetEntry& entry, std::vector<Guid>& out)
+	{
+		out.clear();
+
+		if (entry.m_depsCount == 0)
+			return true;
+
+		auto req = PAL::File::RequestAccess(entry.m_cookedPath,
+			PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
+
+		if (!req.IsValid())
+			return false;
+
+		u64 size = u64(entry.m_depsCount) * sizeof(Guid);
+
+		std::vector<u8> bytes;
+		b8 ok = PAL::File::ReadMemory(req, bytes, entry.m_depsOffset, entry.m_depsOffset + size);
+		PAL::File::ReleaseAccess(req);
+
+		if (!ok || bytes.size() != size)
+			return false;
+
+		out.resize(entry.m_depsCount);
+		std::memcpy(out.data(), bytes.data(), size);
+
+		return true;
 	}
 
 }

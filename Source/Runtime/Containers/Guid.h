@@ -15,9 +15,10 @@ namespace Horizon
 	public:
 		Guid();
 		Guid(u32 a, u16 b, u16 c, u64 d);
-		Guid(const Guid& other);
 		Guid(const std::string& str);
-		~Guid();
+
+		Guid(const Guid& other) = default;
+		~Guid() = default;
 
 		u32 GetA() const { return m_a; }
 		u16 GetB() const { return m_b; }
