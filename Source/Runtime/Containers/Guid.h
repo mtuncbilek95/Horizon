@@ -20,9 +20,9 @@ namespace Horizon
 		~Guid();
 
 		u32 GetA() const { return m_a; }
-		u32 GetB() const { return m_b; }
-		u32 GetC() const { return m_c; }
-		u32 GetD() const { return m_d; }
+		u16 GetB() const { return m_b; }
+		u16 GetC() const { return m_c; }
+		u64 GetD() const { return m_d; }
 
 		std::string ToString() const;
 
@@ -51,9 +51,9 @@ namespace std
 				};
 
 			seed = hashCombine(seed, hash<uint32_t>{}(other.GetA()));
-			seed = hashCombine(seed, hash<uint32_t>{}(other.GetB()));
-			seed = hashCombine(seed, hash<uint32_t>{}(other.GetC()));
-			seed = hashCombine(seed, hash<uint32_t>{}(other.GetD()));
+			seed = hashCombine(seed, hash<uint16_t>{}(other.GetB()));
+			seed = hashCombine(seed, hash<uint16_t>{}(other.GetC()));
+			seed = hashCombine(seed, hash<uint64_t>{}(other.GetD()));
 
 			return seed;
 		}

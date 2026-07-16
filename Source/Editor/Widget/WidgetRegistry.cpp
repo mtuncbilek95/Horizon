@@ -89,6 +89,52 @@ namespace Horizon
 		}
 	}
 
+	void WidgetRegistry::Open(ReflectionTypeHandle typeId)
+	{
+		for (const WidgetType& type : m_types)
+		{
+			if (type.widgetManifest->GetTypeId() == typeId)
+			{
+				Open(type);
+				return;
+			}
+		}
+
+		Terminal::Warn("WidgetRegistry", "No registered widget type for the given handle");
+	}
+
+	void WidgetRegistry::Close(ReflectionTypeHandle typeId)
+	{
+		for (usize i = 0; i < m_open.size(); ++i)
+		{
+			if (m_open[i].manifest->GetTypeId() != typeId)
+				continue;
+
+			Allocator::Delete(m_open[i].widget);
+			m_open.erase(m_open.begin() + i);
+			return;
+		}
+	}
+
+	void WidgetRegistry::Toggle(ReflectionTypeHandle typeId)
+	{
+		if (IsOpened(typeId))
+			Close(typeId);
+		else
+			Open(typeId);
+	}
+
+	b8 WidgetRegistry::IsOpened(ReflectionTypeHandle typeId) const
+	{
+		for (const OpenWidget& inst : m_open)
+		{
+			if (inst.manifest->GetTypeId() == typeId)
+				return true;
+		}
+
+		return false;
+	}
+
 	void WidgetRegistry::Open(const WidgetType& type)
 	{
 		for (const OpenWidget& inst : m_open)

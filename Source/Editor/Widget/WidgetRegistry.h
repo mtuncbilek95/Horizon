@@ -36,6 +36,11 @@ namespace Horizon
 		void Invalidate();
 		void Render();
 
+		void Open(ReflectionTypeHandle typeId);
+		void Close(ReflectionTypeHandle typeId);
+		void Toggle(ReflectionTypeHandle typeId);
+		b8 IsOpened(ReflectionTypeHandle typeId) const;
+
 	private:
 		void Open(const WidgetType& type);
 		void BuildDefaultLayout(u32 rootId);

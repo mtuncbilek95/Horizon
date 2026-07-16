@@ -61,6 +61,19 @@ namespace Horizon
 			return nullptr;
 		}
 
+		template<typename TAttr>
+		std::vector<TAttr*> GetCustomAttributes()
+		{
+			std::vector<TAttr*> out;
+			for (TypeAttribute* attr : m_attributes)
+			{
+				if (attr->GetTypeId() == TypeIdOf<TAttr>())
+					out.push_back(static_cast<TAttr*>(attr));
+			}
+
+			return out;
+		}
+
 	private:
 		void MoveFrom(TypeManifest&& o) noexcept
 		{

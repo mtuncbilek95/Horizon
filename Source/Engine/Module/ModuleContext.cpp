@@ -65,4 +65,23 @@ namespace Horizon
 
 		return result;
 	}
+
+	std::vector<TypeManifest*> ModuleContext::GetManifestsByAttribute(ReflectionTypeHandle attrHandle)
+	{
+		std::vector<TypeManifest*> result;
+
+		for (TypeManifest& manifest : m_manifests)
+		{
+			for (TypeAttribute* attr : manifest.GetAttributes())
+			{
+				if (attr->GetTypeId() == attrHandle)
+				{
+					result.push_back(&manifest);
+					break;
+				}
+			}
+		}
+
+		return result;
+	}
 }

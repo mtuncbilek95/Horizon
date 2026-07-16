@@ -18,7 +18,8 @@ namespace Horizon
 
 		TypeManifest* GetManifest(ReflectionTypeHandle handl);
 		std::vector<TypeManifest*> GetManifestsByBase(ReflectionTypeHandle handl);
-		
+		std::vector<TypeManifest*> GetManifestsByAttribute(ReflectionTypeHandle attrHandle);
+
 	private:
 		std::vector<TypeManifest> m_manifests;
 		std::unordered_map<ReflectionTypeHandle, u32> m_lookup;

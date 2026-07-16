@@ -1,14 +1,21 @@
 #include "MenuRegistry.h"
 
 #include <Editor/Menu/IMenuItem.h>
+#include <Editor/Menu/MenuAttribute.h>
+
+#include <Engine/Core/Engine.h>
+#include <Engine/Module/ModuleContext.h>
 
 #include <imgui.h>
-#include <imgui_internal.h>
-
 #include <algorithm>
 
 namespace Horizon
 {
+	namespace
+	{
+		constexpr usize UndefinedOrder = 100000;
+	}
+
 	MenuRegistry::MenuRegistry(Engine* pEngine) : m_engine(pEngine)
 	{
 	}
@@ -21,20 +28,32 @@ namespace Horizon
 
 	void MenuRegistry::Invalidate()
 	{
-		for (auto& menu : m_menus)
+		for (MenuInstance& menu : m_menus)
 			ClearRecursive(menu);
 
 		m_menus.clear();
 
-		MenuFactory::Get().ForEachCategory([this](const MenuCategoryInfo& cat)
-			{
-				EnsureCategory(cat);
-			});
+		ModuleContext* modCtx = m_engine->GetModuleContext();
 
-		MenuFactory::Get().ForEachMenu([this](const MenuTypeInfo& info)
+		// Containers
+		for (TypeManifest* manifest : modCtx->GetManifestsByAttribute(TypeIdOf<MainMenuAttribute>()))
+		{
+			for (MainMenuAttribute* attr : manifest->GetCustomAttributes<MainMenuAttribute>())
+				EnsureCategory(attr->GetPath(), attr->GetOrder());
+		}
+
+		// Leafs
+		for (TypeManifest* manifest : modCtx->GetManifestsByBase(TypeIdOf<IMenuItem>()))
+		{
+			MenuItemAttribute* attr = manifest->GetCustomAttribute<MenuItemAttribute>();
+			if (!attr)
 			{
-				InsertMenu(info);
-			});
+				Terminal::Warn("MenuRegistry", "IMenuItem manifest without MenuItemAttribute, skipping");
+				continue;
+			}
+
+			InsertMenu(manifest, *attr);
+		}
 
 		SortRecursive(m_menus);
 	}
@@ -56,7 +75,7 @@ namespace Horizon
 		ImGui::PopStyleVar(3);
 	}
 
-	MenuRegistry::MenuInstance* MenuRegistry::EnsurePath(std::string_view path, b8 terminalIsContainer)
+	MenuRegistry::MenuInstance* MenuRegistry::EnsurePath(std::string_view path)
 	{
 		std::vector<MenuInstance>* level = &m_menus;
 		MenuInstance* node = nullptr;
@@ -71,7 +90,7 @@ namespace Horizon
 			std::string segment(path.substr(start, end - start));
 
 			node = nullptr;
-			for (auto& candidate : *level)
+			for (MenuInstance& candidate : *level)
 			{
 				if (candidate.title == segment)
 				{
@@ -82,10 +101,7 @@ namespace Horizon
 
 			if (!node)
 			{
-				b8 isContainer = (!last || terminalIsContainer);
-				usize order = isContainer ? MenuFactory::Get().OrderOf(path.substr(0, end)) : 0;
-
-				level->push_back(MenuInstance{ nullptr, segment, order, {} });
+				level->push_back(MenuInstance{ nullptr, segment, UndefinedOrder, {} });
 				node = &level->back();
 			}
 
@@ -99,25 +115,30 @@ namespace Horizon
 		return node;
 	}
 
-	void MenuRegistry::EnsureCategory(const MenuCategoryInfo& cat)
+	void MenuRegistry::EnsureCategory(std::string_view path, usize order)
 	{
-		auto* node = EnsurePath(cat.path, true);
-		node->order = cat.order;
+		MenuInstance* node = EnsurePath(path);
+		if (node)
+			node->order = order;
 	}
 
-	void MenuRegistry::InsertMenu(const MenuTypeInfo& info)
+	void MenuRegistry::InsertMenu(TypeManifest* manifest, const MenuItemAttribute& attr)
 	{
-		auto* node = EnsurePath(info.path, false);
+		MenuInstance* node = EnsurePath(attr.GetPath());
+		if (!node)
+			return;
 
-		IMenuItem* pItem = info.CreateMenuItem(m_engine);
-		if (!pItem)
+		IMenuItem* item = static_cast<IMenuItem*>(manifest->Create());
+		if (!item)
 		{
-			Terminal::Warn("MenuRegistry", "Factory returned null for a menu item. Skipping.");
+			Terminal::Warn("MenuRegistry", "manifest->Create() returned null for menu item");
 			return;
 		}
 
-		node->menuItem = pItem;
-		node->order = info.order;
+		item->SetEngine(m_engine);
+
+		node->menuItem = item;
+		node->order = attr.GetOrder();
 	}
 
 	void MenuRegistry::SortRecursive(std::vector<MenuInstance>& level)
