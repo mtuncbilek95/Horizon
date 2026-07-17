@@ -6,7 +6,7 @@
 
 namespace Horizon
 {
-	HCLASS(MenuItemAttribute["View/Widgets/Asset Browser", 1u])
+	HCLASS(MenuItemAttribute["View/Widgets/Asset Browser", 1u]);
 	class AssetBrowserMenu : public IMenuItem
 	{
 		HORIZON_REFLECT;

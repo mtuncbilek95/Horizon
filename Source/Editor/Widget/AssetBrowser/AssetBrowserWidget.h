@@ -14,7 +14,7 @@ namespace Horizon
 	class DomainFile;
 	class DomainFolder;
 
-	HCLASS(WidgetAttribute["Asset Browser", ICON_FA_DATABASE, DockLayout::Bottom, true])
+	HCLASS(WidgetAttribute["Asset Browser", ICON_FA_DATABASE, DockLayout::Bottom, true]);
 	class AssetBrowserWidget : public IWidget
 	{
 		HORIZON_REFLECT;

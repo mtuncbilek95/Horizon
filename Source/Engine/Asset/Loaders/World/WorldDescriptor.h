@@ -7,6 +7,7 @@
 
 namespace Horizon
 {
+	HCLASS();
 	class WorldDescriptor : public IAssetDescriptor
 	{
 		HORIZON_REFLECT;
@@ -24,7 +25,9 @@ namespace Horizon
 		u32 GetEntityCount() const { return m_entityCount; }
 
 	private:
+		HFIELD();
 		std::string m_worldName;
+		HFIELD();
 		u32 m_entityCount = 0;
 	};
 }

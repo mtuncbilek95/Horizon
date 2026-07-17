@@ -6,7 +6,7 @@
 
 namespace Horizon
 {
-	HCLASS(AssetLoadStrategyAttribute["World", true])
+	HCLASS(AssetLoadStrategyAttribute["World", true]);
 	class DefaultWorldLoadStrategy : public IAssetLoadStrategy 
 	{ 
 		HORIZON_REFLECT;

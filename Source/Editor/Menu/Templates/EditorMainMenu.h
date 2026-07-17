@@ -5,10 +5,10 @@
 
 namespace Horizon
 {
-	HCLASS(MainMenuAttribute["File", 10u], 
-		MainMenuAttribute["Edit", 20u], 
-		MainMenuAttribute["View", 40u], 
-		MainMenuAttribute["View/Widgets", 1u])
+	HCLASS(MainMenuAttribute["File", 10u],
+		MainMenuAttribute["Edit", 20u],
+		MainMenuAttribute["View", 40u],
+		MainMenuAttribute["View/Widgets", 1u]);
 	struct EditorMainMenu
 	{
 		HORIZON_REFLECT;

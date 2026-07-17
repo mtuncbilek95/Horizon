@@ -10,7 +10,7 @@
 
 namespace Horizon
 {
-	HCLASS(AssetImporterAttribute[std::vector<std::string_view>{ ".hworld" }, "DefaultScene", 1u])
+	HCLASS(AssetImporterAttribute[std::vector<std::string_view>{ ".hworld" }, "DefaultScene", 1u]);
 	class WorldAssetImporter : public IAssetImporter
 	{
 		HORIZON_REFLECT;

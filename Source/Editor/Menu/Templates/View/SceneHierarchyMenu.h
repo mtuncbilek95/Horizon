@@ -6,7 +6,7 @@
 
 namespace Horizon
 {
-	HCLASS(MenuItemAttribute["View/Widgets/Scene Hierarchy", 2u])
+	HCLASS(MenuItemAttribute["View/Widgets/Scene Hierarchy", 2u]);
 	class SceneHierarchyMenu : public IMenuItem
 	{
 		HORIZON_REFLECT;

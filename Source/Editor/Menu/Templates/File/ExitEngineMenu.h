@@ -6,7 +6,7 @@
 
 namespace Horizon
 {
-	HCLASS(MenuItemAttribute["File/Exit", 100u])
+	HCLASS(MenuItemAttribute["File/Exit", 100u]);
 	class ExitEngineMenu : public IMenuItem
 	{
 		HORIZON_REFLECT;

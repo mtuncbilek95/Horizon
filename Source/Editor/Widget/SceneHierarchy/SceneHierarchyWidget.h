@@ -16,7 +16,7 @@ namespace Horizon
 {
 	class WorldAsset;
 
-	HCLASS(WidgetTypeAttribute["Scene Hierarchy", ICON_FA_SITEMAP, DockLayout::Left, true])
+	HCLASS(WidgetTypeAttribute["Scene Hierarchy", ICON_FA_SITEMAP, DockLayout::Left, true]);
 	class SceneHierarchyWidget : public IWidget
 	{
 		HORIZON_REFLECT;
