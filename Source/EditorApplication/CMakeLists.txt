@@ -9,8 +9,5 @@ target_include_directories(EditorApplication PRIVATE "${CMAKE_SOURCE_DIR}/Source
 
 target_link_libraries(EditorApplication
     PUBLIC
-        Engine Runtime
+        Engine Runtime Editor
 )
-
-include(LinkWholeArchive)
-LinkWholeArchive(EditorApplication Editor)

@@ -6,6 +6,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${SUBDIRECTORIES})
 add_library(Engine STATIC ${SUBDIRECTORIES})
 
 target_include_directories(Engine PRIVATE "${CMAKE_SOURCE_DIR}/Source")
+target_include_directories(Engine PUBLIC "${CMAKE_SOURCE_DIR}/Intermediate/Engine")
 
 target_link_libraries(Engine
 	PUBLIC

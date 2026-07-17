@@ -2,6 +2,7 @@
 
 #include <Runtime/Reflection/Type.h>
 #include <Runtime/Reflection/TypeAttribute.h>
+#include <Runtime/Reflection/FieldManifest.h>
 
 namespace Horizon
 {
@@ -48,6 +49,7 @@ namespace Horizon
 		ReflectionTypeHandle GetBaseTypeId() const { return m_baseTypeId; }
 
 		const std::vector<TypeAttribute*>& GetAttributes() const { return m_attributes; }
+		const std::vector<FieldManifest>& GetFields() const { return m_fields; }
 
 		template<typename TAttr>
 		TAttr* GetCustomAttribute()
@@ -98,5 +100,6 @@ namespace Horizon
 		void (*m_destroyFunc)(void*) = nullptr;
 
 		std::vector<TypeAttribute*> m_attributes;
+		std::vector<FieldManifest> m_fields;
 	};
 }

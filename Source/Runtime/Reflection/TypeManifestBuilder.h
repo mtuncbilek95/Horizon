@@ -4,6 +4,8 @@
 #include <Runtime/Reflection/TypeAttribute.h>
 #include <Runtime/Reflection/TypeManifest.h>
 
+#include <Runtime/Serialization/Archive.h>
+
 namespace Horizon
 {
 	class TypeManifestBuilder
@@ -39,6 +41,21 @@ namespace Horizon
 		{
 			m_manifest.m_attributes.push_back(
 				Allocator::Create<TAttr>(CurrLoc(), std::forward<Args>(args)...));
+			return *this;
+		}
+
+		template<typename TOwner, typename TField>
+		TypeManifestBuilder& WithField(std::string name, TField TOwner::* member)
+		{
+			FieldManifest field;
+			field.name = name;
+
+			field.serialize = [key = std::move(name), member](void* owner, Archive& archive)
+				{
+					archive.Field(key, static_cast<TOwner*>(owner)->*member);
+				};
+
+			m_manifest.m_fields.push_back(std::move(field));
 			return *this;
 		}
 

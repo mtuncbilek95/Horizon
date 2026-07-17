@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Asset/IAssetDescriptor.h>
+#include <Runtime/Reflection/Reflect.h>
 
 #include <string>
 
@@ -8,6 +9,7 @@ namespace Horizon
 {
 	class WorldDescriptor : public IAssetDescriptor
 	{
+		HORIZON_REFLECT;
 	public:
 		WorldDescriptor() = default;
 		WorldDescriptor(const std::string& worldName, u32 entityCount);
