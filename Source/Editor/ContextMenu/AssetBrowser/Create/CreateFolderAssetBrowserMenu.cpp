@@ -20,7 +20,7 @@ namespace Horizon
 		const std::regex reg(R"(^New\s*Folder(?:\s*\((\d+)\))?$)", std::regex::icase);
 
 		i64 nameCounter = -1;
-		for (const auto& entry : std::filesystem::directory_iterator(context.currentFolder->GetAbsolutePath()))
+		for (const auto& entry : std::filesystem::directory_iterator(context.currentFolder->GetFolderPath()))
 		{
 			if (!entry.is_directory())
 				continue;
@@ -35,7 +35,7 @@ namespace Horizon
 			}
 		}
 
-		std::filesystem::path newPath = context.currentFolder->GetAbsolutePath();
+		std::filesystem::path newPath = context.currentFolder->GetFolderPath();
 		if (nameCounter < 0)
 			newPath /= "New Folder";
 		else

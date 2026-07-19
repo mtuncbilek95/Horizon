@@ -10,6 +10,11 @@
 
 namespace Horizon
 {
+	AssetBrowserWidget::~AssetBrowserWidget()
+	{
+		Allocator::Delete(m_menuRegistry);
+	}
+
 	void AssetBrowserWidget::OnInvoke()
 	{
 		if (!m_menuRegistry)
@@ -28,7 +33,7 @@ namespace Horizon
 		if (!m_currentFolder)
 			return;
 
-		const auto& folders = m_currentFolder->GetSubfolders();
+		const auto& folders = m_currentFolder->GetSubFolders();
 		const auto& files = m_currentFolder->GetFiles();
 		const i32 itemCount = (i32)(folders.size() + files.size());
 

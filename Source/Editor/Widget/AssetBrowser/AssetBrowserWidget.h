@@ -17,6 +17,9 @@ namespace Horizon
 	{
 		HORIZON_TYPE_REFLECT;
 	public:
+		AssetBrowserWidget() = default;
+		~AssetBrowserWidget() final;
+
 		void OnInvoke() final;
 		void OnDraw() final;
 

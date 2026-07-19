@@ -30,11 +30,9 @@ namespace Horizon
 
 	private:
 		void UpdateFolder(DomainFolder* pTarget);
+		void UpdateFile(DomainFile* pTarget);
 
 	private:
-		std::filesystem::path m_rootPath;
 		DomainFolder* m_rootFolder = nullptr;
-
-		std::vector<Reflect::Type*> m_importerManifest;
 	};
 }

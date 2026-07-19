@@ -39,18 +39,12 @@ namespace Horizon
 		Terminal::Info(GetName(), "Project Name - {}", m_projectName);
 		
 		m_domainPath = m_projectFolderPath / "Assets";
-		if (!std::filesystem::exists(m_domainPath))
-			std::filesystem::create_directory(m_domainPath);
 		Terminal::Info(GetName(), "Project Assets Path - {}", m_domainPath);
 
 		m_cookedPath = m_projectFolderPath / "Cooked";
-		if (!std::filesystem::exists(m_cookedPath))
-			std::filesystem::create_directory(m_cookedPath);
 		Terminal::Info(GetName(), "Project Cooked File Path - {}", m_cookedPath);
 
 		m_settingsPath = m_projectFolderPath / "Settings";
-		if (!std::filesystem::exists(m_settingsPath))
-			std::filesystem::create_directory(m_settingsPath);
 		Terminal::Info(GetName(), "Project Settings Path - {}", m_settingsPath);
 
 

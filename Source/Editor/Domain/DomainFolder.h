@@ -1,9 +1,10 @@
 #pragma once
 
-#include <Editor/Domain/DomainObject.h>
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
 
 #include <filesystem>
 #include <string>
+#include <span>
 
 namespace Horizon
 {
@@ -13,51 +14,46 @@ namespace Horizon
 
 	struct DomainFolderDesc
 	{
-		DomainFolder* pParent = nullptr;
-
-		std::string folderName;
+		DomainFolder* parentFolder;
+		std::filesystem::path folderPath;
 		std::filesystem::path relativePath;
-		std::filesystem::path absolutePath;
+		std::string folderName;
 	};
 
-	class H_EXPORT DomainFolder : public DomainObject
+	class H_EXPORT DomainFolder final
 	{
+		friend class DomainSystem;
 	public:
 		DomainFolder(const DomainFolderDesc& desc, Engine* pEngine);
 		~DomainFolder();
 
-		const std::vector<DomainFolder*>& GetSubfolders() const { return m_subFolders; }
-		const std::vector<DomainFile*>& GetFiles() const { return m_files; }
+		Engine* GetEngine() const { return m_engine; }
 
-		DomainFolder* GetParentFolder() const { return m_parent; }
-
-		const std::string& GetName() const { return m_name; }
+		const std::filesystem::path& GetFolderPath() const { return m_folderPath; }
 		const std::filesystem::path& GetRelativePath() const { return m_relativePath; }
-		const std::filesystem::path& GetAbsolutePath() const { return m_absolutePath; }
+		const std::string& GetName() const { return m_name; }
+		
+		std::span<DomainFolder* const> GetSubFolders() const { return m_subFolders; }
+		std::span<DomainFile* const> GetFiles() const { return m_files; }
 
-		b8 IsRoot() const { return m_parent == nullptr; }
+		DomainFolder* GetParentFolder() const { return m_parentFolder; }
 
+		b8 IsRoot() const { return !m_parentFolder; }
 		b8 HasFile(const std::string& fileName);
 		b8 HasFolder(const std::string& folderName);
-
 		DomainFile* FindFile(const std::string& name);
 		DomainFolder* FindFolder(const std::string& name);
 
-		void ResetChildMarks();
-		void SweepUnmarked();
-
-		void AddFile(DomainFile* pFile) { m_files.push_back(pFile); }
-		void AddSubfolder(DomainFolder* pSub) { m_subFolders.push_back(pSub); }
-
 	private:
+		Engine* m_engine;
+
+		std::filesystem::path m_folderPath;
+		std::filesystem::path m_relativePath; // This needs to be there to refer asset properly in metadata.
+		std::string m_name;
+
 		std::vector<DomainFolder*> m_subFolders;
 		std::vector<DomainFile*> m_files;
 
-		Engine* m_engine;
-		DomainFolder* m_parent;
-
-		std::string m_name;
-		std::filesystem::path m_relativePath;
-		std::filesystem::path m_absolutePath;
+		DomainFolder* m_parentFolder;
 	};
 }

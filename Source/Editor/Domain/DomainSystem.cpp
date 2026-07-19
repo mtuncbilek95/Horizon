@@ -24,26 +24,26 @@ namespace Horizon
 			return EngineReport("There is no Project Context");
 
 		// Get root path and check if its created in Project Context.
-		m_rootPath = pProjectSub->GetDomainPath();
-		if (!std::filesystem::exists(m_rootPath))
-			std::filesystem::create_directory(m_rootPath);
+		const auto& projectPath = pProjectSub->GetProjectFolderPath();
+
+		const auto& assetFolderPath = pProjectSub->GetDomainPath();
+		if (!std::filesystem::exists(assetFolderPath))
+			std::filesystem::create_directory(assetFolderPath);
 
 		// Create root folder as virtual.
 		DomainFolderDesc rootDesc = {};
-		rootDesc.absolutePath = m_rootPath;
-		rootDesc.relativePath = m_rootPath.filename();
-		rootDesc.folderName = m_rootPath.filename().string();
-		rootDesc.pParent = nullptr;
+		rootDesc.folderPath = assetFolderPath;
+		rootDesc.relativePath = std::filesystem::relative(assetFolderPath, projectPath);
+		rootDesc.folderName = assetFolderPath.filename().string();
+		rootDesc.parentFolder = nullptr;
 		m_rootFolder = Allocator::Create<DomainFolder>(CurrLoc(), rootDesc, m_engine);
 
 		if (!m_rootFolder)
 			return EngineReport("Could not create root domain folder.");
+		UpdateFolder(m_rootFolder);
 
 		// Get all the IAssetImporters from reflection.
-		auto* manifestCtx = pEngine->GetModuleContext();
-		m_importerManifest = manifestCtx->GetTypeByBase(Reflect::TypeOf<IAssetImporter>());
-
-		Terminal::Debug(GetName(), "{} importers has been registered to domain system", m_importerManifest.size());
+		auto* pModCtx = pEngine->GetModuleContext();
 
 		return EngineReport();
 	}
@@ -68,71 +68,6 @@ namespace Horizon
 		Requires<AssetSystem>(rules.after);
 	}
 
-/*	void DomainSystem::ImportDefault(DomainFolder* targetFolder, const std::string& fileTypeExt)
-	{
-		
-		auto& projSub = m_engine->GetContext<ProjectContext>();
-
-		Type* foundManifest = nullptr;
-		FileImportAttribute* foundAttr = nullptr;
-
-		for (Type* manifest : m_importerManifest)
-		{
-			FileImportAttribute* attr = manifest->GetCustomAttribute<FileImportAttribute>();
-			if (!attr)
-				continue;
-
-			const auto& exts = attr->GetAssetExtension();
-			if (std::find(exts.begin(), exts.end(), fileTypeExt) != exts.end())
-			{
-				foundManifest = manifest;
-				foundAttr = attr;
-				break;
-			}
-		}
-
-		if (!foundManifest)
-		{
-			Terminal::Warn(GetName(), "No importer for '{}'", fileTypeExt);
-			return;
-		}
-
-		Guid newId = Guid::Generate();
-		std::filesystem::path metaPath = targetFolder->GetAbsolutePath() /
-			(std::string(foundAttr->GetDefaultName()) + ".hmeta");
-		std::filesystem::path cookPath = projSub.GetCookedPath() / (newId.ToString() + fileTypeExt);
-
-		if (!PAL::File::Create(metaPath))
-		{
-			Terminal::Error(GetName(), "Failed to create meta {}", metaPath.string());
-			return;
-		}
-
-		if (!PAL::File::Create(cookPath))
-		{
-			Terminal::Error(GetName(), "Failed to create cooked {}", cookPath.string());
-			PAL::File::Delete(metaPath);
-			return;
-		}
-
-		IAssetImporter* importer = static_cast<IAssetImporter*>(foundManifest->Create());
-		if (!importer)
-		{
-			Terminal::Error(GetName(), "manifest->Create() returned null for importer");
-			return;
-		}
-
-		//AssetImportContext context({ metaPath, cookPath }, newId);
-		//importer->OnImportDefault(context);
-
-		Allocator::Delete(importer);
-
-		if (auto* assetSub = m_engine->TryGetSystem<AssetSystem>())
-			assetSub->RegisterAsset(newId, cookPath);
-
-		Terminal::Log(GetName(), "Created '{}' (guid {})", metaPath.filename().string(), newId.ToString());
-	}*/
-
 	void DomainSystem::ImportDefault(DomainFolder* targetFolder, const ImportDescriptor& importInfo)
 	{
 		// Check if the targeted folder is valid
@@ -145,58 +80,59 @@ namespace Horizon
 
 	void DomainSystem::UpdateFolder(DomainFolder* pTarget)
 	{
-		pTarget->ResetChildMarks();
-
-		for (const auto& entry : std::filesystem::directory_iterator(pTarget->GetAbsolutePath()))
+		// Check if its valid in OS side
+		if (!std::filesystem::exists(pTarget->GetFolderPath()))
 		{
-			if (entry.is_directory())
-			{
-				DomainFolder* pFolder = pTarget->FindFolder(entry.path().filename().string());
-				if (!pFolder)
-				{
-					DomainFolderDesc desc = {};
-					desc.absolutePath = entry.path();
-					desc.relativePath = pTarget->GetRelativePath() / entry.path().filename();
-					desc.folderName = entry.path().filename().string();
-					desc.pParent = pTarget;
-					pFolder = Allocator::Create<DomainFolder>(CurrLoc(), desc, m_engine);
-					pTarget->AddSubfolder(pFolder);
-
-					Terminal::Info("DomainSystem", "{} folder has been added as {}", pFolder->GetName(), pFolder->GetRelativePath());
-				}
-				pFolder->Mark();
-			}
-			else if (entry.is_regular_file())
-			{
-				if (entry.path().extension() != ".hmeta")
-					continue;
-
-				DomainFile* pFile = pTarget->FindFile(entry.path().stem().string());
-				if (!pFile)
-				{
-					DomainFileDesc desc = {};
-					desc.pParent = pTarget;
-					desc.metaPath = entry.path();
-
-					pFile = Allocator::Create<DomainFile>(CurrLoc(), desc, m_engine);
-
-					if (!pFile->IsValid())
-					{
-						Terminal::Warn("DomainSystem", "Invalid meta, skipping: {}", entry.path().string());
-						Allocator::Delete(pFile);
-						continue;
-					}
-
-					pTarget->AddFile(pFile);
-					Terminal::Info("DomainSystem", "{} added (guid {})", pFile->GetName(), pFile->GetGuid().ToString());
-				}
-				pFile->Mark();
-			}
+			Allocator::Delete(pTarget);
+			return;
 		}
 
-		pTarget->SweepUnmarked();
+		// Add if there is a new child folder
+		for (const auto& entry : std::filesystem::directory_iterator(pTarget->GetFolderPath()))
+		{
+			if (!entry.is_directory())
+				continue;
 
-		for (auto* sub : pTarget->GetSubfolders())
-			UpdateFolder(sub);
+			if (pTarget->HasFolder(entry.path().filename().string()))
+				continue;
+
+			DomainFolderDesc folderDesc = {};
+			folderDesc.folderPath = entry.path();
+			folderDesc.relativePath = pTarget->GetRelativePath() / entry.path().filename().string();
+			folderDesc.folderName = entry.path().filename().string();
+			folderDesc.parentFolder = pTarget;
+			pTarget->m_subFolders.push_back(Allocator::Create<DomainFolder>(CurrLoc(), folderDesc, m_engine));
+		}
+
+		// Check folders one by one.
+		for (auto* pNewTarget : pTarget->GetSubFolders())
+			UpdateFolder(pNewTarget);
+
+		// Add if there is a new child folder
+		for (const auto& entry : std::filesystem::directory_iterator(pTarget->GetFolderPath()))
+		{
+			if (entry.is_directory() || entry.path().extension() != ".hmeta")
+				continue;
+
+			DomainFileDesc fileDesc = {};
+			fileDesc.name = entry.path().filename().string();
+			fileDesc.assetType = nullptr;
+			fileDesc.assetTypeName = "Unknown";
+			fileDesc.parentFolder = pTarget;
+			pTarget->m_files.push_back(Allocator::Create<DomainFile>(CurrLoc(), fileDesc, m_engine));
+		}
+
+		// Check files one by one
+		for (auto* pFile : pTarget->GetFiles())
+			UpdateFile(pFile);
+	}
+
+	void DomainSystem::UpdateFile(DomainFile* pTarget)
+	{
+		// Check if meta or cook is missing
+		if (!std::filesystem::exists(pTarget->GetMetaPath()) || !std::filesystem::exists(pTarget->GetCookedPath()))
+			Allocator::Delete(pTarget);
+
+		// If corrupt file, we're doomed.
 	}
 }
