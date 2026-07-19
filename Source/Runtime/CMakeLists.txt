@@ -12,8 +12,6 @@ target_link_libraries(Runtime
 		nlohmann_json::nlohmann_json Imgui
 )
 
-target_precompile_headers(Runtime PUBLIC "pch.h")
-
 if(WIN32)
     ConfigureWindowsLibrary(Runtime)
 	ConfigureD3D12Library(Runtime)

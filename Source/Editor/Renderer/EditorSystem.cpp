@@ -138,6 +138,9 @@ namespace Horizon
 
 	void EditorSystem::OnDetach()
 	{
+		if (m_presentationSub)
+			m_presentationSub->WaitIdle();
+
 		Allocator::Delete(m_widgetSystem);
 		Allocator::Delete(m_menuSystem);
 		Allocator::Delete(m_editorRenderer);

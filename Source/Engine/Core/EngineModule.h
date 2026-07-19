@@ -13,19 +13,19 @@ namespace Horizon
 	public:
 		virtual ~EngineModule() = default;
 
-		virtual EngineReport OnAttach(Engine*) { return {}; }
+		virtual EngineReport OnAttach(Engine* pEngine) { return {}; }
 		virtual void OnDetach() {}
 
-		virtual void GetInitializeOrder(OrderRules&) const {}
+		virtual void GetInitializeOrder(OrderRules& rules) const {}
 
 		std::string_view GetName() const
 		{
 			std::string_view name = typeid(*this).name();
 
-			if (size_t pos = name.rfind("::"); pos != std::string_view::npos)
+			if (usize pos = name.rfind("::"); pos != std::string_view::npos)
 				return name.substr(pos + 2);
 
-			if (size_t pos = name.find(' '); pos != std::string_view::npos)
+			if (usize pos = name.find(' '); pos != std::string_view::npos)
 				return name.substr(pos + 1);
 
 			return name;

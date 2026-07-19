@@ -6,7 +6,15 @@ namespace Horizon
 {
 	Engine::Engine()
 	{
-		m_reflectionContext = Allocator::Create<ModuleContext>(CurrLoc());
+		m_hostLibrary = Allocator::Create<PAL::SymbolLibrary>(CurrLoc(), PAL::SymbolLibraryDesc());
+		if (!m_hostLibrary)
+		{
+			Terminal::Error("Engine", "Host Library could not been created");
+			m_exitRequested = true;
+			return;
+		}
+
+		m_reflectionContext = Allocator::Create<ModuleContext>(CurrLoc(), m_hostLibrary);
 		EngineReport report = m_reflectionContext->OnAttach(this);
 		if (report)
 		{
@@ -40,6 +48,7 @@ namespace Horizon
 
 		m_reflectionContext->OnDetach();
 		Allocator::Delete(m_reflectionContext);
+		Allocator::Delete(m_hostLibrary);
 
 		Allocator::ReportLeaks();
 	}
@@ -116,6 +125,9 @@ namespace Horizon
 
 	void Engine::Shutdown()
 	{
+		for(auto it = m_initPending.rbegin(); it != m_initPending.rend(); ++it)
+			Allocator::Delete(*it);
+
 		for (auto it = m_initOrder.rbegin(); it != m_initOrder.rend(); ++it)
 			(*it)->OnDetach();
 

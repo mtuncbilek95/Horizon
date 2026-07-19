@@ -87,4 +87,15 @@ namespace Horizon
 		m_swapchain->Present();
 		m_imageFenceValues[index] = m_graphicsQueue->Signal(m_frameFence);
 	}
+
+	void PresentationSystem::WaitIdle()
+	{
+		if (!m_frameFence)
+			return;
+
+		const u64 value = m_graphicsQueue->Signal(m_frameFence);
+
+		m_frameFence->WaitCPU(value);
+	}
+
 }

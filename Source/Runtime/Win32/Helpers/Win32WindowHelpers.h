@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/PAL/Window/KeyCode.h>
 #include <Runtime/PAL/Window/MouseButton.h>
 #include <Runtime/PAL/Window/InputModifiers.h>

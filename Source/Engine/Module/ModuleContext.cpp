@@ -1,82 +1,83 @@
 #include "ModuleContext.h"
 
+#include <Runtime/Log/Terminal.h>
+
 #include <string_view>
 #include <string>
 
 namespace Horizon
 {
-	EngineReport ModuleContext::OnAttach(Engine*)
+	ModuleContext::ModuleContext(PAL::SymbolLibrary* pLibrary) : m_module(pLibrary)
 	{
-		// TODO: Temporary Test for SymbolLibrary
-		m_module = Allocator::Create<PAL::SymbolLibrary>(CurrLoc(), PAL::SymbolLibraryDesc());
-		if (!m_module)
-			return EngineReport("Could not create the symbol library");
+	}
 
-		using GenerateFn = void(*)(std::vector<TypeManifest>*);
+	EngineReport ModuleContext::OnAttach(Engine* pEngine)
+	{
+		if (!m_module)
+			return EngineReport("Could not create the symbol library in Engine");
+
+		using GenerateFn = void(*)(std::vector<Reflect::Type>*);
 		auto* GenerateManifests = reinterpret_cast<GenerateFn>(m_module->GetSymbol("GenerateModuleManifestation"));
 
 		if (!GenerateManifests)
 			return EngineReport("GenerateModuleManifestation symbol not found");
 
-		GenerateManifests(&m_manifests);
+		GenerateManifests(&m_registeredTypes);
 
 		usize index = 0;
-		for (const auto& manifest : m_manifests)
+		for (const auto& manifest : m_registeredTypes)
 		{
 			m_lookup[manifest.GetTypeId()] = index;
-			Terminal::Debug(GetName(), "{} has been registered \n\tSize: {} \n\tAbstract: {}, \n\tAttributeCount: {}", manifest.GetName(), 
-				manifest.GetSize(), manifest.IsAbstract(), manifest.GetAttributes().size());
+			Terminal::Debug(GetName(), "{} has been registered \n\tSize: {} \n\tAbstract: {}, \n\tAttributeCount: {} \n\tFieldCount: {}", manifest.GetName(), 
+				manifest.GetSizeInBytes(), manifest.GetIsAbstract(), manifest.GetAttributes().size(), manifest.GetFields().size());
 
 			index++;
 		}
 
-		Terminal::Info(GetName(), "Loaded {} type manifests", m_manifests.size());
+		Terminal::Info(GetName(), "Loaded {} type manifests", m_registeredTypes.size());
 		return EngineReport();
 	}
 
 	void ModuleContext::OnDetach()
 	{
-		m_lookup.clear();
-		m_manifests.clear();
-		Allocator::Delete(m_module);
 	}
 
-	TypeManifest* ModuleContext::GetManifest(ReflectionTypeHandle handl)
+	Reflect::Type* ModuleContext::GetType(Reflect::TypeHandle handl)
 	{
 		auto it = m_lookup.find(handl);
 		if (it == m_lookup.end())
 		{
-			Terminal::Log(GetName(), "Reflection Handle could not resolve a TypeManifest");
+			Terminal::Error(GetName(), "Reflect::TypeHandle could not found. I hope you found it xD");
 			return nullptr;
 		}
 
-		return &m_manifests[it->second];
+		return &m_registeredTypes.at(it->second);
 	}
 
-	std::vector<TypeManifest*> ModuleContext::GetManifestsByBase(ReflectionTypeHandle handl)
+	std::vector<Reflect::Type*> ModuleContext::GetTypeByBase(Reflect::TypeHandle handl)
 	{
-		std::vector<TypeManifest*> result;
+		std::vector<Reflect::Type*> result;
 
-		for (TypeManifest& manifest : m_manifests)
+		for (auto& pType : m_registeredTypes)
 		{
-			if (manifest.GetBaseTypeId() == handl)
-				result.push_back(&manifest);
+			if (pType.GetBaseId() == handl)
+				result.push_back(&pType);
 		}
 
 		return result;
 	}
 
-	std::vector<TypeManifest*> ModuleContext::GetManifestsByAttribute(ReflectionTypeHandle attrHandle)
+	std::vector<Horizon::Reflect::Type*> ModuleContext::GetTypeByAttribute(Reflect::TypeHandle attrHandle)
 	{
-		std::vector<TypeManifest*> result;
+		std::vector<Reflect::Type*> result;
 
-		for (TypeManifest& manifest : m_manifests)
+		for (auto& pType : m_registeredTypes)
 		{
-			for (TypeAttribute* attr : manifest.GetAttributes())
+			for (auto* pAttr : pType.GetAttributes())
 			{
-				if (attr->GetTypeId() == attrHandle)
+				if (pAttr->GetTypeId() == attrHandle)
 				{
-					result.push_back(&manifest);
+					result.push_back(&pType);
 					break;
 				}
 			}

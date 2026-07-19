@@ -3,6 +3,9 @@
 #include <Engine/Core/EngineModule.h>
 #include <Engine/Core/System.h>
 #include <Engine/Core/Context.h>
+#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Log/Terminal.h>
+#include <Runtime/PAL/Module/SymbolLibrary.h>
 
 #include <string_view>
 #include <vector>
@@ -121,6 +124,7 @@ namespace Horizon
 
 	private:
 		ModuleContext* m_reflectionContext = nullptr;
+		PAL::SymbolLibrary* m_hostLibrary = nullptr;
 
 		std::vector<System*> m_activeSystems;
 		std::vector<Context*> m_activeContexts;

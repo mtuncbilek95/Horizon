@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Runtime/Containers/Guid.h>
+
 #include <filesystem>
 #include <string>
 

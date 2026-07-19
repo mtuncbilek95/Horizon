@@ -4,6 +4,7 @@
 #include <Runtime/PAL/Window/MouseButton.h>
 
 #include <imgui.h>
+#include <string_view>
 
 namespace Horizon
 {

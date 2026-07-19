@@ -1,26 +1,18 @@
 #pragma once
 
-#include <Runtime/Reflection/Reflect.h>
-#include <Runtime/Reflection/FieldManifest.h>
-#include <Runtime/Reflection/TypeAttribute.h>
-#include <Runtime/Reflection/TypeManifest.h>
-#include <Runtime/Reflection/TypeManifestBuilder.h>
+#include <Editor/Menu/Templates/File/ExitEngineMenu.h>
 
-namespace Horizon
+namespace Horizon::Reflect
 {
-	class ExitEngineMenu;
-
 	template<>
-	struct Reflector<ExitEngineMenu>
+	struct TypeAccessor<Horizon::ExitEngineMenu>
 	{
-		static TypeManifest Build()
+		static Type Build()
 		{
-			TypeManifestBuilder builder;
-
-			return builder.For<ExitEngineMenu>("ExitEngineMenu")
-				.WithBase(TypeIdOf<IMenuItem>())
-				.WithAttribute<MenuItemAttribute>("File/Exit", 100u)
-				.Build();
+				return TypeBuilder<Horizon::ExitEngineMenu>::ForType("ExitEngineMenu")
+					.WithBase<Horizon::IMenuItem>()
+					.WithAttribute<Horizon::MenuItemAttribute>("File/Exit", 100u)
+					.Build();
 		}
 	};
 }

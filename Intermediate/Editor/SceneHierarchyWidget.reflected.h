@@ -1,29 +1,18 @@
 #pragma once
 
-#include <Editor/Font/IconsFontAwesome6.h>
+#include <Editor/Widget/SceneHierarchy/SceneHierarchyWidget.h>
 
-#include <Runtime/Reflection/Reflect.h>
-#include <Runtime/Reflection/FieldManifest.h>
-#include <Runtime/Reflection/TypeAttribute.h>
-#include <Runtime/Reflection/TypeManifest.h>
-#include <Runtime/Reflection/TypeManifestBuilder.h>
-
-namespace Horizon
+namespace Horizon::Reflect
 {
-	class SceneHierarchyWidget;
-
 	template<>
-	struct Reflector<SceneHierarchyWidget>
+	struct TypeAccessor<Horizon::SceneHierarchyWidget>
 	{
-		static TypeManifest Build()
+		static Type Build()
 		{
-			TypeManifestBuilder builder;
-
-			return builder.For<SceneHierarchyWidget>("SceneHierarchyWidget")
-				.WithBase(TypeIdOf<IWidget>())
-				.WithAttribute<WidgetTypeAttribute>(
-					"Scene Hierarchy", ICON_FA_SITEMAP, DockLayout::Left, true)
-				.Build();
+				return TypeBuilder<Horizon::SceneHierarchyWidget>::ForType("SceneHierarchyWidget")
+					.WithBase<Horizon::IWidget>()
+					.WithAttribute<Horizon::WidgetTypeAttribute>("Scene Hierarchy", ICON_FA_SITEMAP, DockLayout::Left, true)
+					.Build();
 		}
 	};
 }

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/RTTR/Reflection.h>
+
 #include <vector>
 #include <string>
 #include <string_view>
@@ -8,7 +11,7 @@ namespace Horizon
 {
 	class Engine;
 	class IMenuItem;
-	class TypeManifest;
+	class Type;
 	class MenuItemAttribute;
 
 	class MenuRegistry
@@ -33,7 +36,7 @@ namespace Horizon
 	private:
 		MenuInstance* EnsurePath(std::string_view path);
 		void EnsureCategory(std::string_view path, usize order);
-		void InsertMenu(TypeManifest* manifest, const MenuItemAttribute& attr);
+		void InsertMenu(Reflect::Type* pType, const MenuItemAttribute& attr);
 		void SortRecursive(std::vector<MenuInstance>& level);
 		void ClearRecursive(MenuInstance& inst);
 

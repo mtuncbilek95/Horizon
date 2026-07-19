@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/PAL/Window/WindowMode.h>
 #include <Runtime/PAL/Window/WindowFlags.h>
 #include <Runtime/PAL/Window/InputMessage.h>

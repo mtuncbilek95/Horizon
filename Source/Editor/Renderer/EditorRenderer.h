@@ -5,6 +5,8 @@
 
 #include <Runtime/RHI/GfxTypes.h>
 
+#include <vector>
+
 namespace Horizon
 {
 	using RenderContext = void*;

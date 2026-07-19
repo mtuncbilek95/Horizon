@@ -1,4 +1,6 @@
 #include <Runtime/PAL/Window/Window.h>
+
+#include <Runtime/Log/Terminal.h>
 #include <Runtime/Win32/Helpers/Win32WindowHelpers.h>
 
 #include <Windows.h>

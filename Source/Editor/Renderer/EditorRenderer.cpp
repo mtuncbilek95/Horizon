@@ -137,27 +137,34 @@ namespace Horizon
 		ImGui::Render();
 
 		GfxCommandList* cmd = m_commandLists[imgIndex];
+
 		cmd->Begin();
 		cmd->SetupBindless();
 
 		GfxTextureBarrier toTarget = { backbuffer, GfxResourceState::Present, GfxResourceState::RenderTarget };
+
 		cmd->Barrier(&toTarget, 1);
 
 		const GfxTextureDesc& bbDesc = backbuffer->GetDesc();
 
 		GfxRenderBeginDesc pass = {};
-		pass.addColorTarget(backbuffer, GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
-			.setSize(bbDesc.width, bbDesc.height);
+
+		pass.AddColorTarget(backbuffer, GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
+			.SetSize(bbDesc.width, bbDesc.height);
 		cmd->BeginRendering(pass);
 
 		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), (ID3D12GraphicsCommandList6*)cmd->GetAPIHandle());
 
+		cmd->EndRendering();
+
 		GfxTextureBarrier toPresent = { backbuffer, GfxResourceState::RenderTarget, GfxResourceState::Present };
+
 		cmd->Barrier(&toPresent, 1);
 
 		cmd->End();
 
 		GfxCommandList* submitList[] = { cmd };
+
 		m_graphicsQueue->Submit(submitList, 1);
 
 		return true;

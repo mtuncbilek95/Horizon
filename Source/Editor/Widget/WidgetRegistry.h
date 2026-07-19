@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Editor/Widget/DockLayout.h>
-#include <Runtime/Reflection/TypeManifest.h>
+#include <Runtime/RTTR/Reflection.h>
 
 #include <vector>
 #include <string>
@@ -16,7 +16,7 @@ namespace Horizon
 	{
 		struct WidgetType
 		{
-			TypeManifest* widgetManifest;
+			Reflect::Type* widgetManifest;
 			std::string widgetDisplayName;
 			DockLayout dock;
 			b8 alwaysOpenFirst = false;
@@ -25,7 +25,7 @@ namespace Horizon
 		struct OpenWidget
 		{
 			IWidget* widget;
-			TypeManifest* manifest;
+			Reflect::Type* manifest;
 			std::string title;
 			b8 open = true;
 		};
@@ -36,10 +36,10 @@ namespace Horizon
 		void Invalidate();
 		void Render();
 
-		void Open(ReflectionTypeHandle typeId);
-		void Close(ReflectionTypeHandle typeId);
-		void Toggle(ReflectionTypeHandle typeId);
-		b8 IsOpened(ReflectionTypeHandle typeId) const;
+		void Open(Reflect::TypeHandle typeId);
+		void Close(Reflect::TypeHandle typeId);
+		void Toggle(Reflect::TypeHandle typeId);
+		b8 IsOpened(Reflect::TypeHandle typeId) const;
 
 	private:
 		void Open(const WidgetType& type);

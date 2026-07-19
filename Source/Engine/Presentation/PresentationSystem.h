@@ -24,6 +24,7 @@ namespace Horizon
 		i8 AcquireImageIndex();
 		GfxTexture* GetBackbuffer(u8 index) const;
 		void Present(u8 index);
+		void WaitIdle();
 
 	private:
 		GfxSwapchain* m_swapchain = nullptr;

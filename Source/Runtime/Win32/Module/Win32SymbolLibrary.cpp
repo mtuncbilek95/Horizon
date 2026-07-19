@@ -1,5 +1,7 @@
 #include <Runtime/PAL/Module/SymbolLibrary.h>
 
+#include <Runtime/Log/Terminal.h>
+
 #include <Windows.h>
 
 #include <filesystem>

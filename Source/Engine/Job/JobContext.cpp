@@ -17,6 +17,8 @@ namespace Horizon
 		for (usize i = 0; i < m_workers.size(); ++i)
 		{
 			const PAL::CoreInfo& core = cores[i % cores.size()];
+
+			m_workers[i]->Start();
 			m_workers[i]->SetThreadAffinity(1ull << core.logicalIndex);
 
 			Terminal::Info("JobContext", "Thread{} pinned to {}-Core",

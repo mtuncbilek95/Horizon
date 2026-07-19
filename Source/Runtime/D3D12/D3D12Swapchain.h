@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Runtime/RHI/Swapchain/GfxSwapchain.h>
-#include <Runtime/D3D12/D3D12Backend.h>
+#include <Runtime/D3D12/Utils/D3D12Helpers.h>
 
 #include <vector>
 
@@ -31,9 +31,6 @@ namespace Horizon
 
 		std::vector<D3D12Texture*> m_backbuffers;
 
-		u32 m_width = 0;
-		u32 m_height = 0;
-		b8 m_vSync = true;
 		b8 m_allowTearing = false;
 	};
 }

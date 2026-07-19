@@ -1,5 +1,7 @@
 #include <Runtime/PAL/Sync/Thread.h>
 
+#include <Runtime/Definitions/Allocator.h>
+
 #include <Windows.h>
 #include <process.h>
 

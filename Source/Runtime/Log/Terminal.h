@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
+
 #include <string>
 #include <string_view>
 #include <format>

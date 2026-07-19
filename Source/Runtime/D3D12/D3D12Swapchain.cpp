@@ -25,8 +25,8 @@ namespace Horizon
 
 	void D3D12Swapchain::Present()
 	{
-		const u32 syncInterval = m_vSync ? 1 : 0;
-		const u32 presentFlags = (!m_vSync && m_allowTearing) ? DXGI_PRESENT_ALLOW_TEARING : 0;
+		const u32 syncInterval = m_desc.vSync ? 1 : 0;
+		const u32 presentFlags = (!m_desc.vSync && m_allowTearing) ? DXGI_PRESENT_ALLOW_TEARING : 0;
 
 		HRESULT hr = m_swapchain->Present(syncInterval, presentFlags);
 		CHECK_REASON(hr, "IDXGISwapChain4 - Present");
@@ -34,40 +34,43 @@ namespace Horizon
 
 	void D3D12Swapchain::Resize(u32 width, u32 height)
 	{
-		if (width == m_width && height == m_height)
+		if (width == m_desc.width && height == m_desc.height)
 			return;
 
 		ReleaseBackbuffers();
 
 		const u32 resizeFlags = m_allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-		HRESULT hr = m_swapchain->ResizeBuffers(m_imageCount, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, resizeFlags);
+
+		HRESULT hr = m_swapchain->ResizeBuffers(m_desc.imageCount, width, height,
+			Helpers::ToDXGIFormat(m_desc.format), resizeFlags);
 		CHECK_HR(hr, "IDXGISwapChain4 - ResizeBuffers");
 
-		m_width = width;
-		m_height = height;
+		m_desc.width = width;
+		m_desc.height = height;
 
 		AcquireBackbuffers();
 	}
 
 	void D3D12Swapchain::AcquireBackbuffers()
 	{
-		m_backbuffers.resize(m_imageCount);
+		m_backbuffers.resize(m_desc.imageCount);
 
-		for (u32 index = 0; index < m_imageCount; index++)
+		for (u32 index = 0; index < m_desc.imageCount; index++)
 		{
 			ID3D12Resource* resource = nullptr;
+
 			HRESULT hr = m_swapchain->GetBuffer(index, IID_PPV_ARGS(&resource));
 			CHECK_HR(hr, "IDXGISwapChain4 - GetBuffer");
 
-			m_backbuffers[index] = m_device->CreateBackbufferTexture(resource, m_width, m_height,
-				DXGI_FORMAT_R8G8B8A8_UNORM);
+			m_backbuffers[index] = m_device->CreateBackbufferTexture(resource, m_desc.width, m_desc.height,
+				Helpers::ToDXGIFormat(m_desc.format));
 		}
 	}
 
 	void D3D12Swapchain::ReleaseBackbuffers()
 	{
-		for (D3D12Texture* backbuffer : m_backbuffers)
-			m_device->DestroyBackbufferTexture(backbuffer);
+		for (D3D12Texture* pBackbuffer : m_backbuffers)
+			m_device->DestroyBackbufferTexture(pBackbuffer);
 
 		m_backbuffers.clear();
 	}

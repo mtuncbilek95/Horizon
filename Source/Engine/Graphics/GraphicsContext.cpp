@@ -21,7 +21,7 @@ namespace Horizon
 		if(!pWindowSub)
 			return EngineReport("Failed to get WindowSystem. Nothing will work...");
 
-		m_device = CreateGfxDevice();
+		m_device = CreateGfxDevice(GfxDeviceDesc());
 		if (!m_device)
 			return EngineReport("Failed to create GfxDevice");
 

@@ -29,9 +29,9 @@ namespace Horizon
 		m_types.clear();
 
 		ModuleContext* modCtx = m_engine->GetModuleContext();
-		auto manifests = modCtx->GetManifestsByBase(TypeIdOf<IWidget>());
+		auto manifests = modCtx->GetTypeByBase(Reflect::TypeOf<IWidget>());
 
-		for (TypeManifest* manifest : manifests)
+		for (Reflect::Type* manifest : manifests)
 		{
 			WidgetTypeAttribute* attr = manifest->GetCustomAttribute<WidgetTypeAttribute>();
 			if (!attr)
@@ -89,7 +89,7 @@ namespace Horizon
 		}
 	}
 
-	void WidgetRegistry::Open(ReflectionTypeHandle typeId)
+	void WidgetRegistry::Open(Reflect::TypeHandle typeId)
 	{
 		for (const WidgetType& type : m_types)
 		{
@@ -103,7 +103,7 @@ namespace Horizon
 		Terminal::Warn("WidgetRegistry", "No registered widget type for the given handle");
 	}
 
-	void WidgetRegistry::Close(ReflectionTypeHandle typeId)
+	void WidgetRegistry::Close(Reflect::TypeHandle typeId)
 	{
 		for (usize i = 0; i < m_open.size(); ++i)
 		{
@@ -116,7 +116,7 @@ namespace Horizon
 		}
 	}
 
-	void WidgetRegistry::Toggle(ReflectionTypeHandle typeId)
+	void WidgetRegistry::Toggle(Reflect::TypeHandle typeId)
 	{
 		if (IsOpened(typeId))
 			Close(typeId);
@@ -124,7 +124,7 @@ namespace Horizon
 			Open(typeId);
 	}
 
-	b8 WidgetRegistry::IsOpened(ReflectionTypeHandle typeId) const
+	b8 WidgetRegistry::IsOpened(Reflect::TypeHandle typeId) const
 	{
 		for (const OpenWidget& inst : m_open)
 		{
@@ -146,7 +146,7 @@ namespace Horizon
 			}
 		}
 
-		IWidget* widget = static_cast<IWidget*>(type.widgetManifest->Create());
+		IWidget* widget = static_cast<IWidget*>(type.widgetManifest->CreateFromMemory());
 		if (!widget)
 		{
 			Terminal::Warn("WidgetRegistry", "manifest->Create() returned null");

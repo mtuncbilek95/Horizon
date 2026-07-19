@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Runtime/RHI/GfxTypes.h>
-#include <Runtime/RHI/Object/GfxResource.h>
+#include <Runtime/RHI/Object/GfxObject.h>
 
 namespace Horizon
 {
@@ -9,15 +9,20 @@ namespace Horizon
 	{
 		u32 width = 1, height = 1;
 		u32 depth = 1, mipLevels = 1;
+		u32 arraySize = 1;
 
 		GfxTextureFormat format = GfxTextureFormat::RGBA8;
 		GfxTextureUsage usage = GfxTextureUsage::Sampled;
 		GfxTextureType type = GfxTextureType::Tex2D;
+		GfxTextureTypeFlags typeFlags = GfxTextureTypeFlags::None;
+		GfxSampleCount sampleCount = GfxSampleCount::Count1;
 
 		GfxColor clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+		f32 clearDepth = 1.0f;
+		u8 clearStencil = 0;
 	};
 
-	class GfxTexture : public GfxResource
+	class GfxTexture : public GfxObject
 	{
 	public:
 		const GfxTextureDesc& GetDesc() const { return m_desc; }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Runtime/Definitions/Handle.h>
+#include <atomic>
 #include <bitset>
 
 namespace Horizon

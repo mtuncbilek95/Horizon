@@ -1,6 +1,7 @@
 #pragma once
+
 #include <Runtime/RHI/Queue/GfxQueue.h>
-#include <Runtime/D3D12/D3D12Backend.h>
+#include <Runtime/D3D12/Utils/D3D12Helpers.h>
 
 namespace Horizon
 {
@@ -10,9 +11,9 @@ namespace Horizon
 	public:
 		~D3D12Queue() final;
 
-		void Submit(GfxCommandList* const* lists, u32 count) final;
-		u64 Signal(GfxFence* fence) final;
-		void Wait(GfxFence* fence, u64 value) final;
+		void Submit(GfxCommandList* const* ppLists, u32 count) final;
+		u64 Signal(GfxFence* pFence) final;
+		void Wait(GfxFence* pFence, u64 value) final;
 
 		ID3D12CommandQueue* Handle() const { return m_queue; }
 

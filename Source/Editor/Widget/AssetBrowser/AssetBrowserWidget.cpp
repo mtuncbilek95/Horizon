@@ -1,31 +1,26 @@
 #include "AssetBrowserWidget.h"
 
+#include <Editor/ContextMenu/AssetBrowser/AssetBrowserMenuRegistry.h>
 #include <Editor/Domain/DomainSystem.h>
-#include <Editor/Domain/DomainFile.h>
-#include <Editor/Domain/DomainFolder.h>
-
-#include <Editor/Font/IconsFontAwesome6.h>
+#include <Editor/Widget/AssetBrowser/AssetBrowserContext.h>
 
 #include <Engine/Core/Engine.h>
-#include <Engine/ECS/EntityComponentSystem.h>
-#include <Engine/Asset/AssetSystem.h>
-#include <Engine/Asset/IAsset.h>
-#include <Engine/Asset/Loaders/World/WorldAsset.h>
+
+#include <cstdio>
 
 namespace Horizon
 {
-	namespace
-	{
-		static const char* IconForFile(DomainFile* pFile)
-		{
-			return ICON_FA_FILE;
-		}
-	}
-
 	void AssetBrowserWidget::OnInvoke()
 	{
+		if (!m_menuRegistry)
+			m_menuRegistry = Allocator::Create<AssetBrowserMenuRegistry>(CurrLoc(), GetEngine());
+
+		m_menuRegistry->Invalidate();
+
 		auto& domainSub = GetEngine()->GetSystem<DomainSystem>();
-		m_currentFolder = domainSub.GetRootFolder();
+
+		if (!m_currentFolder)
+			m_currentFolder = domainSub.GetRootFolder();
 	}
 
 	void AssetBrowserWidget::OnDraw()
@@ -33,139 +28,127 @@ namespace Horizon
 		if (!m_currentFolder)
 			return;
 
-		const auto& subfolders = m_currentFolder->GetSubfolders();
+		const auto& folders = m_currentFolder->GetSubfolders();
 		const auto& files = m_currentFolder->GetFiles();
-		i32 itemCount = (i32)(subfolders.size() + files.size());
-
-		DomainFolder* navigateTo = nullptr;
-		DomainFile* activateFile = nullptr;
-
-		b8 isRoot = m_currentFolder->IsRoot();
-		if (isRoot)
-			ImGui::BeginDisabled();
+		const i32 itemCount = (i32)(folders.size() + files.size());
 
 		if (ImGui::Button(ICON_FA_ARROW_LEFT))
-			navigateTo = m_currentFolder->GetParentFolder();
-
-		if (isRoot)
-			ImGui::EndDisabled();
+			m_currentFolder = m_currentFolder->IsRoot() ? m_currentFolder : m_currentFolder->GetParentFolder();
 
 		ImGui::SameLine();
-		ImGui::TextUnformatted(m_currentFolder->GetRelativePath().string().c_str());
 
+		ImGui::TextUnformatted(m_currentFolder->GetName().c_str());
 		ImGui::Separator();
 
+		DomainFolder* navigateTo = nullptr;
 		b8 openContext = false;
+		i32 rightClickIndex = -1;
 
-		if (ImGui::BeginChild("AssetBrowserBody"))
+		ImGui::BeginChild("AssetBrowserBody");
+
+		ImGuiMultiSelectFlags msFlags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_BoxSelect1d;
+		ImGuiMultiSelectIO* io = ImGui::BeginMultiSelect(msFlags, m_selection.Size, itemCount);
+		m_selection.ApplyRequests(io);
+
+		i32 index = 0;
+
+		// Folders
+		for (DomainFolder* folder : folders)
 		{
-			ImGuiMultiSelectFlags flags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_BoxSelect1d;
+			ImGui::PushID(index);
+			ImGui::SetNextItemSelectionUserData(index);
 
-			ImGuiMultiSelectIO* pIo = ImGui::BeginMultiSelect(flags, m_selection.Size, itemCount);
-			m_selection.ApplyRequests(pIo);
+			b8 selected = m_selection.Contains((ImGuiID)index);
 
-			i32 index = 0;
+			c8 label[256];
+			std::snprintf(label, sizeof(label), "%s  %s", ICON_FA_FOLDER, folder->GetName().c_str());
+			ImGui::Selectable(label, selected, ImGuiSelectableFlags_AllowDoubleClick);
 
-			for (DomainFolder* pFolder : subfolders)
+			if (ImGui::IsItemHovered())
 			{
-				char label[256];
-				std::snprintf(label, sizeof(label), "%s  %s", ICON_FA_FOLDER, pFolder->GetName().c_str());
-
-				b8 selected = m_selection.Contains((ImGuiID)index);
-				ImGui::SetNextItemSelectionUserData(index);
-				ImGui::Selectable(label, selected, ImGuiSelectableFlags_AllowDoubleClick);
-
-				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-					navigateTo = pFolder;
-
-				index++;
+				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+					navigateTo = folder;
+				else if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+				{
+					rightClickIndex = index;
+					openContext = true;
+				}
 			}
 
-			for (DomainFile* pFile : files)
-			{
-				char label[256];
-				std::snprintf(label, sizeof(label), "%s  %s", IconForFile(pFile), pFile->GetName().c_str());
-
-				b8 selected = m_selection.Contains((ImGuiID)index);
-				ImGui::SetNextItemSelectionUserData(index);
-				ImGui::Selectable(label, selected, ImGuiSelectableFlags_AllowDoubleClick);
-
-				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-					activateFile = pFile;
-
-				index++;
-			}
-
-			pIo = ImGui::EndMultiSelect();
-			m_selection.ApplyRequests(pIo);
-
-			if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-				openContext = true;
+			ImGui::PopID();
+			index++;
 		}
+
+		for (DomainFile* file : files)
+		{
+			ImGui::PushID(index);
+			ImGui::SetNextItemSelectionUserData(index);
+
+			b8 selected = m_selection.Contains((ImGuiID)index);
+
+			c8 label[256];
+			std::snprintf(label, sizeof(label), "%s  %s", ICON_FA_FILE, file->GetName().c_str());
+			ImGui::Selectable(label, selected, ImGuiSelectableFlags_AllowDoubleClick);
+
+			if (ImGui::IsItemHovered())
+			{
+				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				{
+					// TODO: ActivateAsset(file) — sen ekleyeceksin
+				}
+				else if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+				{
+					rightClickIndex = index;
+					openContext = true;
+				}
+			}
+
+			ImGui::PopID();
+			index++;
+		}
+
+		if (!openContext && ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered() &&
+			ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+		{
+			openContext = true;
+			rightClickIndex = -1;
+		}
+
+		io = ImGui::EndMultiSelect();
+		m_selection.ApplyRequests(io);
+
 		ImGui::EndChild();
 
-		// ======================= TEST CONTEXT MENU AREA ======================= //
-#if (USE_DEV_MODE)
 		if (openContext)
-			ImGui::OpenPopup("AssetBrowserContext");
-
-		if (ImGui::BeginPopup("AssetBrowserContext"))
 		{
-			if (ImGui::MenuItem("Create New Folder"))
+			if (rightClickIndex >= 0 && !m_selection.Contains((ImGuiID)rightClickIndex))
 			{
-				auto& domainSub = GetEngine()->GetSystem<DomainSystem>();
-				domainSub.AddNewFolder(m_currentFolder);
+				m_selection.Clear();
+				m_selection.SetItemSelected((ImGuiID)rightClickIndex, true);
+			}
+			else if (rightClickIndex < 0)
+			{
+				m_selection.Clear();
 			}
 
-			if (ImGui::MenuItem("Create Empty Scene"))
-			{
-				auto& domainSub = GetEngine()->GetSystem<DomainSystem>();
-				domainSub.ImportDefault(m_currentFolder, ".hworld");
-			}
-
-			ImGui::EndPopup();
+			m_menuRegistry->Open();
 		}
-#else // Use actual version
-#endif
 
-		if (activateFile)
-			ActivateAsset(activateFile);
+		std::vector<DomainFile*> selectedFiles;
+		for (usize f = 0; f < files.size(); ++f)
+		{
+			i32 fileIndex = (i32)(folders.size() + f);
+			if (m_selection.Contains((ImGuiID)fileIndex))
+				selectedFiles.push_back(files[f]);
+		}
+
+		AssetBrowserContext ctx{ m_currentFolder, std::move(selectedFiles) };
+		m_menuRegistry->Render(ctx);
 
 		if (navigateTo)
 		{
 			m_currentFolder = navigateTo;
 			m_selection.Clear();
 		}
-	}
-
-	void AssetBrowserWidget::ActivateAsset(DomainFile* pFile)
-	{
-		auto* assetSub = GetEngine()->TryGetSystem<AssetSystem>();
-		if (!assetSub)
-		{
-			Terminal::Warn("AssetBrowser", "No AssetSystem");
-			return;
-		}
-
-		IAsset* asset = assetSub->Load(pFile->GetGuid());
-		if (!asset)
-		{
-			Terminal::Warn("AssetBrowser", "Failed to load '{}' (guid {})",
-				pFile->GetName(), pFile->GetGuid().ToString());
-			return;
-		}
-
-		if (WorldAsset* world = dynamic_cast<WorldAsset*>(asset))
-		{
-			auto* ecs = GetEngine()->TryGetSystem<EntityComponentSystem>();
-			if (!ecs)
-				return;
-
-			ecs->SetActiveWorld(world);
-			Terminal::Log("AssetBrowser", "Activated world '{}'", world->GetWorldName());
-			return;
-		}
-
-		Terminal::Warn("AssetBrowser", "'{}' is not a World — nothing to activate", pFile->GetName());
 	}
 }

@@ -1,5 +1,7 @@
 #include <Runtime/PAL/File/File.h>
 
+#include <Runtime/Log/Terminal.h>
+
 #include <Runtime/Win32/Helpers/Win32FileHelpers.h>
 #include <Runtime/Win32/Helpers/Win32ErrorHelpers.h>
 

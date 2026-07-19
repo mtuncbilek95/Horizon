@@ -1,13 +1,12 @@
 #pragma once
 
-#include <Runtime/Reflection/Type.h>
-#include <Runtime/Reflection/TypeAttribute.h>
+#include <Runtime/RTTR/Reflection.h>
 
 #include <string_view>
 
 namespace Horizon
 {
-	class MainMenuAttribute : public TypeAttribute
+	class MainMenuAttribute : public Reflect::Attribute
 	{
 	public:
 		MainMenuAttribute(std::string_view path, usize order) : m_path(path),
@@ -18,14 +17,14 @@ namespace Horizon
 		std::string_view GetPath() const { return m_path; }
 		usize GetOrder() const { return m_order; }
 
-		ReflectionTypeHandle GetTypeId() const final { return TypeIdOf<MainMenuAttribute>(); }
+		Reflect::TypeHandle GetTypeId() const final { return Reflect::TypeOf<MainMenuAttribute>(); }
 
 	private:
 		std::string_view m_path;
 		usize m_order = 0;
 	};
 
-	class MenuItemAttribute : public TypeAttribute
+	class MenuItemAttribute : public Reflect::Attribute
 	{
 	public:
 		MenuItemAttribute(std::string_view path, usize order) : m_path(path), m_order(order)
@@ -35,7 +34,7 @@ namespace Horizon
 		std::string_view GetPath() const { return m_path; }
 		usize GetOrder() const { return m_order; }
 
-		ReflectionTypeHandle GetTypeId() const final { return TypeIdOf<MenuItemAttribute>(); }
+		Reflect::TypeHandle GetTypeId() const final { return Reflect::TypeOf<MenuItemAttribute>(); }
 
 	private:
 		std::string_view m_path;

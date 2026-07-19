@@ -1,7 +1,7 @@
 #include "JobWorker.h"
 
 #include <Engine/Job/JobContext.h>
-
+#include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Containers/ScopedLock.h>
 
 #include <utility>
@@ -14,7 +14,7 @@ namespace Horizon
 	}
 
 	JobWorker::JobWorker(JobContext* pContext, usize index) : m_owner(pContext), m_index(index), m_inbox(nullptr),
-		m_signal(0), m_working(true), m_worker(&JobWorker::ThreadEntryPoint, this, "Thread")
+		m_signal(0), m_working(true)
 	{
 	}
 
@@ -30,6 +30,11 @@ namespace Horizon
 			Allocator::Delete(nod);
 			nod = next;
 		}
+	}
+
+	void JobWorker::Start()
+	{
+		m_worker = PAL::Thread(&JobWorker::ThreadEntryPoint, this, "Thread");
 	}
 
 	void JobWorker::Run()

@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Editor/Domain/DomainFolder.h>
+#include <Editor/Domain/ImportDescriptor.h>
 #include <Engine/Core/System.h>
-#include <Runtime/Reflection/TypeManifest.h>
+#include <Runtime/RTTR/Reflection.h>
 
 #include <filesystem>
 
@@ -25,8 +26,7 @@ namespace Horizon
 
 		DomainFolder* GetRootFolder() const { return m_rootFolder; }
 
-		void AddNewFolder(DomainFolder* targetFolder);
-		void ImportDefault(DomainFolder* targetFolder, const std::string& fileTypeExt);
+		void ImportDefault(DomainFolder* targetFolder, const ImportDescriptor& importInfo);
 
 	private:
 		void UpdateFolder(DomainFolder* pTarget);
@@ -35,6 +35,6 @@ namespace Horizon
 		std::filesystem::path m_rootPath;
 		DomainFolder* m_rootFolder = nullptr;
 
-		std::vector<TypeManifest*> m_importerManifest;
+		std::vector<Reflect::Type*> m_importerManifest;
 	};
 }

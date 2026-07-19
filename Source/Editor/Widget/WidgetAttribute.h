@@ -1,11 +1,11 @@
 #pragma once
 
 #include <Editor/Widget/DockLayout.h>
-#include <Runtime/Reflection/TypeAttribute.h>
+#include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon
 {
-	class WidgetTypeAttribute : public TypeAttribute
+	class WidgetTypeAttribute : public Reflect::Attribute
 	{
 	public:
 		WidgetTypeAttribute(std::string_view name, std::string_view icon, DockLayout dock, b8 alwaysOpenFirst)
@@ -18,7 +18,7 @@ namespace Horizon
 		DockLayout GetDockLayout() const { return m_dock; }
 		b8 IsAlwaysOpenFirst() const { return m_alwaysOpenFirst; }
 
-		ReflectionTypeHandle GetTypeId() const final { return TypeIdOf<WidgetTypeAttribute>(); }
+		Reflect::TypeHandle GetTypeId() const final { return Reflect::TypeOf<WidgetTypeAttribute>(); }
 
 	private:
 		std::string_view m_name;

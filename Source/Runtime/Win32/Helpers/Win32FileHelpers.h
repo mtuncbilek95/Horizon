@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/PAL/File/FileOperationPolicies.h>
 
 #include <Windows.h>

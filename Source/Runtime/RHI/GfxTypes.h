@@ -1,12 +1,14 @@
 #pragma once
 
+#include <Runtime/Definitions/BitwiseOperators.h>
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
+
 namespace Horizon
 {
-	inline constexpr u32 MaxFramesInFlight = 2;
-
 	enum class GfxDescriptorHeapType : u8
 	{
 		Resource,
+		Sampler,
 		Color,
 		Depth
 	};
@@ -22,21 +24,36 @@ namespace Horizon
 	enum class GfxTextureFormat : u8
 	{
 		Undefined,
-		R8, RG8, RGB8, RGBA8, RGBA8_sRGB,
+
+		R8, RG8, RGBA8, RGBA8_sRGB,
 		BGRA8, BGRA8_sRGB,
+		R8_SNORM, RG8_SNORM,
 		R16F, RG16F, RGBA16F,
 		R32F, RG32F, RGBA32F,
-		R11G11B10F, RGB10A2,
+		R11G11B10F, RGB10A2, RGB9E5,
+		R8U, R16U,
 		R32U, RG32U,
-		D16, D32, D24S8,
+		D16, D32, D24S8, D32S8,
+		BC1, BC1_sRGB,
+		BC3, BC3_sRGB,
+		BC4,
+		BC5,
+		BC6H,
 		BC7, BC7_sRGB
 	};
 
 	enum class GfxTextureType : u8
 	{
+		Tex1D,
 		Tex2D,
-		Tex2DArray,
 		Tex3D
+	};
+
+	enum class GfxTextureTypeFlags : u8
+	{
+		None = 0,
+		Array = 1 << 0,
+		Cube = 1 << 1
 	};
 
 	enum class GfxTextureUsage : u32
@@ -52,12 +69,12 @@ namespace Horizon
 
 	enum class GfxMemoryType : u8
 	{
-		GPU,
-		CPU,
-		HostVisible
+		GpuOnly,
+		Upload,
+		Readback
 	};
 
-	enum class GfxBufferUsage : u8
+	enum class GfxBufferUsage : u32
 	{
 		None = 0,
 		Vertex = 1 << 0,
@@ -66,10 +83,26 @@ namespace Horizon
 		Storage = 1 << 3,
 		Indirect = 1 << 4,
 		CopySrc = 1 << 5,
-		CopyDst = 1 << 6
+		CopyDst = 1 << 6,
+		AccelerationStructure = 1 << 7,
+		ShaderDeviceAddress = 1 << 8
+	};
+
+	enum class GfxSampleCount : u8
+	{
+		Count1 = 1,
+		Count2 = 2,
+		Count4 = 4,
+		Count8 = 8
 	};
 
 	enum class GfxFilter : u8
+	{
+		Nearest,
+		Linear
+	};
+
+	enum class GfxMipFilter : u8
 	{
 		Nearest,
 		Linear
@@ -93,19 +126,36 @@ namespace Horizon
 	enum class GfxShaderStage : u32
 	{
 		None = 0,
+
 		Vertex = 1 << 0,
-		Geometry = 1 << 1,
-		Pixel = 1 << 2,
-		Compute = 1 << 3,
-		Mesh = 1 << 4,
-		Task = 1 << 5,
-		All = 0x7FFFFFFF
+		TessCtrl = 1 << 1,
+		TessEval = 1 << 2,
+		Geometry = 1 << 3,
+		Pixel = 1 << 4,
+
+		Compute = 1 << 5,
+
+		Task = 1 << 6,
+		Mesh = 1 << 7,
+
+		RayGeneration = 1 << 8,
+		Miss = 1 << 9,
+		ClosestHit = 1 << 10,
+		AnyHit = 1 << 11,
+		Intersection = 1 << 12,
+		Callable = 1 << 13,
+
+		AllGraphics = Vertex | TessCtrl | TessEval | Geometry | Pixel,
+		AllMesh = Task | Mesh,
+		AllRayTracing = RayGeneration | Miss | ClosestHit | AnyHit | Intersection | Callable,
+		All = AllGraphics | Compute | AllMesh | AllRayTracing
 	};
 
 	enum class GfxPipelineType : u8
 	{
 		Graphics,
-		Compute
+		Compute,
+		Raytracing
 	};
 
 	enum class GfxPrimitiveTopology : u8
@@ -171,33 +221,74 @@ namespace Horizon
 
 	enum class GfxResourceState : u32
 	{
-		Undefined,
-		Common,
-		VertexBuffer,
-		IndexBuffer,
-		ConstantBuffer,
-		IndirectArg,
-		ShaderResource,
-		UnorderedAccess,
-		RenderTarget,
-		DepthWrite,
-		DepthRead,
-		CopySrc,
-		CopyDst,
-		Present
+		Undefined = 0,
+		Common = 1 << 0,
+		VertexBuffer = 1 << 1,
+		IndexBuffer = 1 << 2,
+		ConstantBuffer = 1 << 3,
+		IndirectArg = 1 << 4,
+		ShaderResource = 1 << 5,
+		UnorderedAccess = 1 << 6,
+		RenderTarget = 1 << 7,
+		DepthWrite = 1 << 8,
+		DepthRead = 1 << 9,
+		CopySrc = 1 << 10,
+		CopyDst = 1 << 11,
+		ResolveSrc = 1 << 12,
+		ResolveDst = 1 << 13,
+		AccelerationStructure = 1 << 14,
+		Present = 1 << 15,
 	};
 
-	enum class GfxLoadOp : u8 
-	{ 
-		Load, 
-		Clear, 
-		DontCare 
+	enum class GfxLoadOp : u8
+	{
+		Load,
+		Clear,
+		DontCare
 	};
 
-	enum class GfxStoreOp : u8 
-	{ 
-		Store, 
-		DontCare 
+	enum class GfxStoreOp : u8
+	{
+		Store,
+		DontCare
+	};
+
+	enum class GfxIndexType : u8
+	{
+		Index16,
+		Index32
+	};
+
+	enum class GfxStaticSampler : u8
+	{
+		PointClamp,
+		PointWrap,
+		LinearClamp,
+		LinearWrap,
+		LinearMirror,
+		AnisoClamp,
+		AnisoWrap,
+		ShadowCompare,
+		RevShadowCompare,
+		Count
+	};
+
+	struct GfxSamplerDesc
+	{
+		GfxFilter minFilter = GfxFilter::Linear;
+		GfxFilter magFilter = GfxFilter::Linear;
+		GfxMipFilter mipFilter = GfxMipFilter::Linear;
+		GfxAddressMode addressU = GfxAddressMode::Repeat;
+		GfxAddressMode addressV = GfxAddressMode::Repeat;
+		GfxAddressMode addressW = GfxAddressMode::Repeat;
+		GfxBorderColor borderColor = GfxBorderColor::OpaqueBlack;
+		b8 anisotropyEnable = false;
+		u8 maxAnisotropy = 1;
+		b8 compareEnable = false;
+		GfxCompareOp compareOp = GfxCompareOp::Never;
+		f32 mipLodBias = 0.0f;
+		f32 minLod = 0.0f;
+		f32 maxLod = 1000.0f;
 	};
 
 	struct GfxBlendState

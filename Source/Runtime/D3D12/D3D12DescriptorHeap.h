@@ -1,37 +1,35 @@
 #pragma once
 
-#include <Runtime/D3D12/D3D12Backend.h>
+#include <Runtime/RHI/Descriptor/GfxDescriptorHeap.h>
+#include <Runtime/D3D12/Utils/D3D12Helpers.h>
+
+#include <vector>
 
 namespace Horizon
 {
-	struct D3D12DescriptorHeap
+	class D3D12Device;
+
+	class D3D12DescriptorHeap final : public GfxDescriptorHeap
 	{
-		ID3D12DescriptorHeap* pHeap = nullptr;
-		D3D12_CPU_DESCRIPTOR_HANDLE cpuStart{};
-		D3D12_GPU_DESCRIPTOR_HANDLE gpuStart{};
-		u32 descriptorSize = 0;
-		u32 capacity = 0;
-		u32 top = 0;
-		std::vector<u32> freeList;
+		friend class D3D12Device;
+	public:
+		~D3D12DescriptorHeap() final;
 
-		u32 Allocate()
-		{
-			if (!freeList.empty())
-			{
-				u32 idx = freeList.back();
-				freeList.pop_back();
-				return idx;
-			}
+		u32 Allocate() final;
+		void Free(u32 index) final;
 
-			assert(top < capacity && "Heap is full");
-			return top++;
-		}
+		ID3D12DescriptorHeap* Handle() const { return m_heap; }
 
-		void Free(u32 index) { freeList.push_back(index); }
+		D3D12_CPU_DESCRIPTOR_HANDLE CpuAt(u32 index) const { return { m_cpuStart.ptr + usize(index) * m_descriptorSize }; }
+		D3D12_GPU_DESCRIPTOR_HANDLE GpuAt(u32 index) const { return { m_gpuStart.ptr + u64(index) * m_descriptorSize }; }
+		u32 IndexOf(D3D12_CPU_DESCRIPTOR_HANDLE handle) const { return u32((handle.ptr - m_cpuStart.ptr) / m_descriptorSize); }
 
-		D3D12_CPU_DESCRIPTOR_HANDLE CpuAt(u32 i) const { return { cpuStart.ptr + usize(i) * descriptorSize }; }
-		D3D12_GPU_DESCRIPTOR_HANDLE GpuAt(u32 i) const { return { gpuStart.ptr + u64(i) * descriptorSize }; }
-
-		u32 IndexOf(D3D12_CPU_DESCRIPTOR_HANDLE handle) const { return u32((handle.ptr - cpuStart.ptr) / descriptorSize); }
+	private:
+		ID3D12DescriptorHeap* m_heap = nullptr;
+		D3D12_CPU_DESCRIPTOR_HANDLE m_cpuStart{};
+		D3D12_GPU_DESCRIPTOR_HANDLE m_gpuStart{};
+		u32 m_descriptorSize = 0;
+		u32 m_top = 0;
+		std::vector<u32> m_freeList;
 	};
 }

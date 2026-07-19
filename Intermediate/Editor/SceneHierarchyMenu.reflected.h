@@ -1,26 +1,18 @@
 #pragma once
 
-#include <Runtime/Reflection/Reflect.h>
-#include <Runtime/Reflection/FieldManifest.h>
-#include <Runtime/Reflection/TypeAttribute.h>
-#include <Runtime/Reflection/TypeManifest.h>
-#include <Runtime/Reflection/TypeManifestBuilder.h>
+#include <Editor/Menu/Templates/Window/SceneHierarchyMenu.h>
 
-namespace Horizon
+namespace Horizon::Reflect
 {
-	class SceneHierarchyMenu;
-
 	template<>
-	struct Reflector<SceneHierarchyMenu>
+	struct TypeAccessor<Horizon::SceneHierarchyMenu>
 	{
-		static TypeManifest Build()
+		static Type Build()
 		{
-			TypeManifestBuilder builder;
-
-			return builder.For<SceneHierarchyMenu>("SceneHierarchyMenu")
-				.WithBase(TypeIdOf<IMenuItem>())
-				.WithAttribute<MenuItemAttribute>("View/Widgets/Scene Hierarchy", 2u)
-				.Build();
+				return TypeBuilder<Horizon::SceneHierarchyMenu>::ForType("SceneHierarchyMenu")
+					.WithBase<Horizon::IMenuItem>()
+					.WithAttribute<Horizon::MenuItemAttribute>("Window/Panels/Scene Hierarchy", 2u)
+					.Build();
 		}
 	};
 }

@@ -1,7 +1,8 @@
 #include "Guid.h"
 
-#include <format>
+#include <Runtime/Log/Terminal.h>
 
+#include <format>
 #if defined(HORIZON_WINDOWS)
 #include <objbase.h>
 #endif

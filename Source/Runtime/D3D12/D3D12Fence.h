@@ -1,6 +1,7 @@
 #pragma once
+
 #include <Runtime/RHI/Fence/GfxFence.h>
-#include <Runtime/D3D12/D3D12Backend.h>
+#include <Runtime/D3D12/Utils/D3D12Helpers.h>
 
 namespace Horizon
 {
@@ -9,7 +10,7 @@ namespace Horizon
 		friend class D3D12Device;
 		friend class D3D12Queue;
 	public:
-		~D3D12Fence();
+		~D3D12Fence() final;
 
 		u64 GetCompletedValue() final { return m_fence->GetCompletedValue(); }
 		void WaitCPU(u64 value) final;

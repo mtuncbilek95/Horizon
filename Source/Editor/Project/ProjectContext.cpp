@@ -1,6 +1,7 @@
 #include "ProjectContext.h"
 
 #include <Editor/Domain/DomainSystem.h>
+#include <Runtime/Log/Terminal.h>
 
 namespace Horizon
 {

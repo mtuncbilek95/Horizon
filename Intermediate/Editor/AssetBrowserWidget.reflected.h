@@ -1,27 +1,18 @@
 #pragma once
 
-#include <Runtime/Reflection/Reflect.h>
-#include <Runtime/Reflection/FieldManifest.h>
-#include <Runtime/Reflection/TypeAttribute.h>
-#include <Runtime/Reflection/TypeManifest.h>
-#include <Runtime/Reflection/TypeManifestBuilder.h>
+#include <Editor/Widget/AssetBrowser/AssetBrowserWidget.h>
 
-namespace Horizon
+namespace Horizon::Reflect
 {
-	class AssetBrowserWidget;
-
 	template<>
-	struct Reflector<AssetBrowserWidget>
+	struct TypeAccessor<Horizon::AssetBrowserWidget>
 	{
-		static TypeManifest Build()
+		static Type Build()
 		{
-			TypeManifestBuilder builder;
-
-			return builder.For<AssetBrowserWidget>("AssetBrowserWidget")
-				.WithBase(TypeIdOf<IWidget>())
-				.WithAttribute<WidgetTypeAttribute>(
-					"Asset Browser", ICON_FA_DATABASE, DockLayout::Bottom, true)
-				.Build();
+				return TypeBuilder<Horizon::AssetBrowserWidget>::ForType("AssetBrowserWidget")
+					.WithBase<Horizon::IWidget>()
+					.WithAttribute<Horizon::WidgetTypeAttribute>("Asset Browser", ICON_FA_DATABASE, DockLayout::Bottom, true)
+					.Build();
 		}
 	};
 }

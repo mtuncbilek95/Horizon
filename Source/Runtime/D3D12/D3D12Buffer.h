@@ -1,9 +1,7 @@
 #pragma once
 
 #include <Runtime/RHI/Buffer/GfxBuffer.h>
-#include <Runtime/D3D12/D3D12Backend.h>
-
-namespace D3D12MA { class Allocation; }
+#include <Runtime/D3D12/Utils/D3D12Helpers.h>
 
 namespace Horizon
 {
@@ -15,9 +13,11 @@ namespace Horizon
 	public:
 		~D3D12Buffer() final;
 
+		void SetDebugName(const char* pName) final;
+
 		ID3D12Resource* GetResource() const { return m_resource; }
 
-	protected:
+	private:
 		ID3D12Resource* m_resource = nullptr;
 		D3D12MA::Allocation* m_allocation = nullptr;
 	};

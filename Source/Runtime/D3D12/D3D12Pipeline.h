@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Runtime/RHI/Pipeline/GfxPipeline.h>
-#include <Runtime/D3D12/D3D12Backend.h>
+#include <Runtime/D3D12/Utils/D3D12Helpers.h>
 
 namespace Horizon
 {

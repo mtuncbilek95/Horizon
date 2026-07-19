@@ -26,6 +26,7 @@ namespace Horizon
 		JobWorker(JobContext* pContext, usize index);
 		~JobWorker();
 
+		void Start();
 		void Run();
 		void Stop();
 

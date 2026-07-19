@@ -2,6 +2,8 @@
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 
+#include <xhash>
+
 namespace Horizon
 {
 	using HandleId = u64;

@@ -1,7 +1,6 @@
 #include <Engine/Core/Engine.h>
 
 #include <Engine/Job/JobContext.h>
-#include <Engine/Command/CommandContext.h>
 #include <Editor/Project/ProjectContext.h>
 
 #include <Engine/Window/WindowSystem.h>
@@ -16,7 +15,7 @@
 
 using namespace Horizon;
 
-i32 main(i32 argC, c8** argV)
+int main(int argC, char** argV)
 {
 	Engine engine;
 
@@ -25,11 +24,11 @@ i32 main(i32 argC, c8** argV)
 	engine.AddContext<ProjectContext>(argC, argV);
 
 	engine.AddSystem<WindowSystem>();
-	engine.AddSystem<PresentationSystem>();
 	engine.AddSystem<EntityComponentSystem>();
-	engine.AddSystem<EditorSystem>();
 	engine.AddSystem<DomainSystem>();
 	engine.AddSystem<AssetSystem>();
+	engine.AddSystem<EditorSystem>();
+	engine.AddSystem<PresentationSystem>();
 
 	engine.Run();
 }

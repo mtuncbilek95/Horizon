@@ -32,6 +32,9 @@ namespace Horizon
 
 		static void ReportLeaks();
 
+		static void SetContext(void* tracker);
+		static void* GetContext();
+
 	private:
 		static void* AllocateRaw(usize size, usize align, SourceLocation loc);
 		static void FreeRaw(void* p);

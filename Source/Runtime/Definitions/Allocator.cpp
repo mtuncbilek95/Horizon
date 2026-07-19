@@ -4,11 +4,18 @@
 
 #include <mutex>
 #include <unordered_map>
+#include <cstddef>
 
 namespace Horizon
 {
 	namespace
 	{
+		struct AllocHeader
+		{
+			usize size;
+			usize align;
+		};
+
 		struct MemoryRecord
 		{
 			usize size;
@@ -19,24 +26,23 @@ namespace Horizon
 		class LeakTracker
 		{
 		public:
-			void OnAllocation(void* pAdress, usize size, usize align, SourceLocation loc)
+			void OnAllocation(void* p, usize size, usize align, SourceLocation loc)
 			{
 				std::lock_guard lock(m_mutex);
-				m_live.emplace(pAdress, MemoryRecord{ size, align, loc });
+				m_live.emplace(p, MemoryRecord{ size, align, loc });
 				m_liveBytes += size;
 			}
 
-			MemoryRecord OnFree(void* pAdress)
+			void OnFree(void* p)
 			{
 				std::lock_guard lock(m_mutex);
 
-				auto it = m_live.find(pAdress);
+				auto it = m_live.find(p);
+				if (it == m_live.end())
+					return;
 
-				MemoryRecord rec = it->second;
-				m_liveBytes -= rec.size;
+				m_liveBytes -= it->second.size;
 				m_live.erase(it);
-
-				return rec;
 			}
 
 			void Report()
@@ -44,7 +50,7 @@ namespace Horizon
 				std::lock_guard lock(m_mutex);
 				if (m_live.empty())
 				{
-					Terminal::Info("Allocator", "No leaks. {} live allocations.", m_live.size());
+					Terminal::Info("Allocator", "No leaks.");
 					return;
 				}
 
@@ -57,37 +63,57 @@ namespace Horizon
 		private:
 			std::unordered_map<void*, MemoryRecord> m_live;
 			std::mutex m_mutex;
-
 			usize m_liveBytes = 0;
 		};
 
-		LeakTracker& Tracker()
+		LeakTracker& LocalTracker()
 		{
 			static LeakTracker instance;
 			return instance;
 		}
+
+		LeakTracker* g_active = nullptr;
+		LeakTracker& Tracker() { return g_active ? *g_active : LocalTracker(); }
+
+		usize AlignUp(usize v, usize a) { return (v + (a - 1)) & ~(a - 1); }
 	}
 
-	void Allocator::ReportLeaks()
-	{
-		Tracker().Report();
-	}
+	void Allocator::SetContext(void* tracker) { g_active = static_cast<LeakTracker*>(tracker); }
+	void* Allocator::GetContext() { return &Tracker(); }
+
+	void Allocator::ReportLeaks() { Tracker().Report(); }
 
 	void* Allocator::AllocateRaw(usize size, usize align, SourceLocation loc)
 	{
-		void* pAdr = ::operator new(size, std::align_val_t{ align });
+		usize eff = align < alignof(std::max_align_t) ? alignof(std::max_align_t) : align;
+		usize headerSize = AlignUp(sizeof(AllocHeader), eff);
+
+		void* base = ::operator new(headerSize + size, std::align_val_t{ eff });
+		void* user = static_cast<c8*>(base) + headerSize;
+
+		AllocHeader* h = reinterpret_cast<AllocHeader*>(static_cast<c8*>(user) - sizeof(AllocHeader));
+		h->size = size;
+		h->align = eff;
 
 #if defined(HORIZON_DEBUG)
-		Tracker().OnAllocation(pAdr, size, align, loc);
+		Tracker().OnAllocation(user, size, eff, loc);
 #endif
-		return pAdr;
+		return user;
 	}
 
-	void Allocator::FreeRaw(void* pAddress)
+	void Allocator::FreeRaw(void* user)
 	{
+		if (!user)
+			return;
+
+		AllocHeader* h = reinterpret_cast<AllocHeader*>(static_cast<c8*>(user) - sizeof(AllocHeader));
+		usize eff = h->align;
+		usize headerSize = AlignUp(sizeof(AllocHeader), eff);
+		void* base = static_cast<c8*>(user) - headerSize;
+
 #if defined(HORIZON_DEBUG)
-		MemoryRecord rec = Tracker().OnFree(pAddress);
+		Tracker().OnFree(user);
 #endif
-		::operator delete(pAddress, std::align_val_t{ rec.align });
+		::operator delete(base, std::align_val_t{ eff });
 	}
 }

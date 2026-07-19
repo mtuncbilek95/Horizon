@@ -36,23 +36,23 @@ namespace Horizon
 		ModuleContext* modCtx = m_engine->GetModuleContext();
 
 		// Containers
-		for (TypeManifest* manifest : modCtx->GetManifestsByAttribute(TypeIdOf<MainMenuAttribute>()))
+		for (Reflect::Type* pType : modCtx->GetTypeByAttribute(Reflect::TypeOf<MainMenuAttribute>()))
 		{
-			for (MainMenuAttribute* attr : manifest->GetCustomAttributes<MainMenuAttribute>())
+			for (MainMenuAttribute* attr : pType->GetCustomAttributes<MainMenuAttribute>())
 				EnsureCategory(attr->GetPath(), attr->GetOrder());
 		}
 
 		// Leafs
-		for (TypeManifest* manifest : modCtx->GetManifestsByBase(TypeIdOf<IMenuItem>()))
+		for (Reflect::Type* pType : modCtx->GetTypeByBase(Reflect::TypeOf<IMenuItem>()))
 		{
-			MenuItemAttribute* attr = manifest->GetCustomAttribute<MenuItemAttribute>();
+			MenuItemAttribute* attr = pType->GetCustomAttribute<MenuItemAttribute>();
 			if (!attr)
 			{
 				Terminal::Warn("MenuRegistry", "IMenuItem manifest without MenuItemAttribute, skipping");
 				continue;
 			}
 
-			InsertMenu(manifest, *attr);
+			InsertMenu(pType, *attr);
 		}
 
 		SortRecursive(m_menus);
@@ -122,13 +122,13 @@ namespace Horizon
 			node->order = order;
 	}
 
-	void MenuRegistry::InsertMenu(TypeManifest* manifest, const MenuItemAttribute& attr)
+	void MenuRegistry::InsertMenu(Reflect::Type* pType, const MenuItemAttribute& attr)
 	{
 		auto* node = EnsurePath(attr.GetPath());
 		if (!node)
 			return;
 
-		auto* item = static_cast<IMenuItem*>(manifest->Create());
+		auto* item = static_cast<IMenuItem*>(pType->CreateFromMemory());
 		if (!item)
 		{
 			Terminal::Warn("MenuRegistry", "manifest->Create() returned null for menu item");

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Runtime/Definitions/Handle.h>
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/PAL/File/FileOperationPolicies.h>
 
 namespace Horizon::PAL
