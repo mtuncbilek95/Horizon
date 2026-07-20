@@ -40,7 +40,7 @@ def parse_file(path: Path, source_root: Path):
 
     results = []
     for hclass in re.finditer(r'HCLASS\s*\(([^)]*)\)', clean):
-        m = re.search(r'\bclass\s+([A-Za-z_]\w*)\b([^{;]*)\{', clean[hclass.end():])
+        m = re.search(r'\b(?:class|struct)\s+(?:[A-Z_][A-Z0-9_]*\s+)?([A-Za-z_]\w*)\b([^{;]*)\{', clean[hclass.end():])
         if not m:
             continue
 

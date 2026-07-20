@@ -76,6 +76,9 @@ namespace Horizon::Reflect
 			field.m_mode = R::Mode;
 			field.m_typeId = TypeOf<typename R::Element>();
 
+			if constexpr (R::Mode == TypeMode::Array)
+				field.m_arrayOps = VectorOpsFor<typename R::Element>();
+
 			m_type.m_fields.push_back(std::move(field));
 			return *this;
 		}

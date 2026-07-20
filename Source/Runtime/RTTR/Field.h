@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/RTTR/ArrayOps.h>
 #include <Runtime/RTTR/TypeKind.h>
 #include <Runtime/RTTR/TypeMode.h>
 
@@ -29,6 +30,8 @@ namespace Horizon::Reflect
 		TypeMode GetMode() const { return m_mode; }
 
 		TypeHandle GetTypeId() const { return m_typeId; }
+
+		const ArrayOps* GetArrayOps() const { return m_arrayOps; }
 
 		void* GetValue(void* instance) const
 		{
@@ -65,5 +68,7 @@ namespace Horizon::Reflect
 		TypeMode m_mode = TypeMode::Compose;
 
 		TypeHandle m_typeId;
+
+		const ArrayOps* m_arrayOps = nullptr;
 	};
 }

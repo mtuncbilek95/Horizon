@@ -4,7 +4,7 @@
 
 namespace Horizon
 {
-	struct ImportDescriptor final
+	struct H_EXPORT ImportDescriptor final
 	{
 		std::string fileName = "DefaultFile";
 		std::string fileExtension;

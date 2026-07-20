@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Runtime/RTTR/ArrayOps.h>
 #include <Runtime/RTTR/Attribute.h>
 #include <Runtime/RTTR/EnumValue.h>
 #include <Runtime/RTTR/Field.h>

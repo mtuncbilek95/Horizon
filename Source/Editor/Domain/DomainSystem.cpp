@@ -13,6 +13,10 @@
 #include <algorithm>
 #include <string>
 
+#include <Runtime/Serialization/Serializer.h>
+#include <Runtime/Serialization/JsonArchive.h>
+#include <Editor/Domain/MetaHeader.h>
+
 namespace Horizon
 {
 	EngineReport DomainSystem::OnAttach(Engine* pEngine)
@@ -116,8 +120,6 @@ namespace Horizon
 
 			DomainFileDesc fileDesc = {};
 			fileDesc.name = entry.path().filename().string();
-			fileDesc.assetType = nullptr;
-			fileDesc.assetTypeName = "Unknown";
 			fileDesc.parentFolder = pTarget;
 			pTarget->m_files.push_back(Allocator::Create<DomainFile>(CurrLoc(), fileDesc, m_engine));
 		}
@@ -130,7 +132,7 @@ namespace Horizon
 	void DomainSystem::UpdateFile(DomainFile* pTarget)
 	{
 		// Check if meta or cook is missing
-		if (!std::filesystem::exists(pTarget->GetMetaPath()) || !std::filesystem::exists(pTarget->GetCookedPath()))
+		if (!std::filesystem::exists(pTarget->GetMetaPath()) || !std::filesystem::exists(pTarget->GetSourcePath()))
 			Allocator::Delete(pTarget);
 
 		// If corrupt file, we're doomed.
