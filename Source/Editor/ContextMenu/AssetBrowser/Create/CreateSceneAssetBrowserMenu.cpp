@@ -1,7 +1,10 @@
 #include "CreateSceneAssetBrowserMenu.h"
 
 #include <Editor/Domain/DomainSystem.h>
+#include <Editor/Domain/ImportPipeline/ImportDescriptor.h>
+#include <Engine/Asset/World/WorldAsset.h>
 #include <Engine/Core/Engine.h>
+#include <Engine/Module/ModuleContext.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <regex>
@@ -36,15 +39,16 @@ namespace Horizon
 			}
 		}
 
-		std::string sceneName = (nameCounter < 0)
-			? "New Scene"
-			: "New Scene (" + std::to_string(nameCounter + 1) + ")";
+		std::string sceneName = (nameCounter < 0) ? "New Scene" : "New Scene (" + std::to_string(nameCounter + 1) + ")";
 
 		auto& domainSub = GetEngine()->GetSystem<DomainSystem>();
+		auto* moduleCtx = GetEngine()->GetModuleContext();
+
+		Reflect::Type* worldType = moduleCtx->GetType(Reflect::TypeOf<WorldAsset>());
 
 		ImportDescriptor newSceneInfo = {};
 		newSceneInfo.fileName = sceneName;
-		newSceneInfo.fileExtension = ".hworld";
+		newSceneInfo.fileType = worldType;
 
 		domainSub.ImportDefault(context.currentFolder, newSceneInfo);
 	}

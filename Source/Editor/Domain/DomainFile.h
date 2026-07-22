@@ -1,8 +1,7 @@
 #pragma once
 
-#include <Editor/Domain/DomainAsset.h>
-
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/RTTR/Reflection.h>
 
 #include <filesystem>
 #include <string>
@@ -36,24 +35,14 @@ namespace Horizon
 		const std::filesystem::path& GetMetaPath() const { return m_metaPath; }
 		const std::filesystem::path& GetSourcePath() const { return m_sourcePath; }
 
-		std::span<const DomainAsset> GetAssets() const { return m_assets; }
-
-		b8 IsValid() const { return m_valid; }
-
-	private:
-		b8 LoadMeta();
-
 	private:
 		Engine* m_engine = nullptr;
 		DomainFolder* m_parentFolder = nullptr;
 
 		std::filesystem::path m_metaPath;
 		std::filesystem::path m_sourcePath;
-
 		std::string m_name;
 
-		std::vector<DomainAsset> m_assets;
 
-		b8 m_valid = false;
 	};
 }

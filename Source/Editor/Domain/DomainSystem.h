@@ -1,11 +1,13 @@
 #pragma once
 
 #include <Editor/Domain/DomainFolder.h>
-#include <Editor/Domain/ImportDescriptor.h>
+#include <Editor/Domain/ImportPipeline/ImportDescriptor.h>
+#include <Editor/Domain/ImportPipeline/ImportFileSettings.h>
 #include <Engine/Core/System.h>
 #include <Runtime/RTTR/Reflection.h>
 
 #include <filesystem>
+#include <unordered_map>
 
 namespace Horizon
 {
@@ -26,7 +28,7 @@ namespace Horizon
 
 		DomainFolder* GetRootFolder() const { return m_rootFolder; }
 
-		void ImportDefault(DomainFolder* targetFolder, const ImportDescriptor& importInfo);
+		void ImportDefault(DomainFolder* targetFolder, const ImportDescriptor& descriptor);
 
 	private:
 		void UpdateFolder(DomainFolder* pTarget);
@@ -34,5 +36,6 @@ namespace Horizon
 
 	private:
 		DomainFolder* m_rootFolder = nullptr;
+		std::unordered_map<Reflect::TypeHandle, ImportFileSettings*> m_importSettings;
 	};
 }

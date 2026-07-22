@@ -24,6 +24,18 @@ def brace_body(s: str, open_idx: int) -> str:
                 return s[open_idx + 1:i]
     return s[open_idx + 1:]
 
+def extract_parens(s: str, open_idx: int):
+    """s[open_idx] == '(' — dengeli kapanisi bulur. (icerik, kapanis_index) doner."""
+    depth = 0
+    for i in range(open_idx, len(s)):
+        if s[i] == '(':
+            depth += 1
+        elif s[i] == ')':
+            depth -= 1
+            if depth == 0:
+                return s[open_idx + 1:i], i
+    return s[open_idx + 1:], len(s) - 1
+
 class Reflected:
     def __init__(self, ns, name, base, attrs, fields, include, layer):
         self.ns = ns
@@ -39,8 +51,11 @@ def parse_file(path: Path, source_root: Path):
     clean = strip_comments(raw)
 
     results = []
-    for hclass in re.finditer(r'HCLASS\s*\(([^)]*)\)', clean):
-        m = re.search(r'\b(?:class|struct)\s+(?:[A-Z_][A-Z0-9_]*\s+)?([A-Za-z_]\w*)\b([^{;]*)\{', clean[hclass.end():])
+    for hclass in re.finditer(r'\bHCLASS\s*\(', clean):
+        paren_open = hclass.end() - 1
+        hclass_content, paren_close = extract_parens(clean, paren_open)
+
+        m = re.search(r'\b(?:class|struct)\s+(?:[A-Z_][A-Z0-9_]*\s+)?([A-Za-z_]\w*)\b([^{;]*)\{', clean[paren_close:])
         if not m:
             continue
 
@@ -56,15 +71,16 @@ def parse_file(path: Path, source_root: Path):
         ns_matches = re.findall(r'namespace\s+([A-Za-z_][\w:]*)', before)
         ns = ns_matches[-1] if ns_matches else ''
 
-        body_open = hclass.end() + m.end() - 1
+        body_open = paren_close + m.end() - 1
         body = brace_body(clean, body_open)
 
         attrs = []
-        head_attr = parse_attribute(hclass.group(1)) if hclass.group(1).strip() else None
+        head_attr = parse_attribute(hclass_content) if hclass_content.strip() else None
         if head_attr:
             attrs.append(head_attr)
-        for a in re.finditer(r'HATTRIBUTE\s*\(([^)]*)\)', body):
-            pa = parse_attribute(a.group(1))
+        for a in re.finditer(r'\bHATTRIBUTE\s*\(', body):
+            a_content, _ = extract_parens(body, a.end() - 1)
+            pa = parse_attribute(a_content)
             if pa:
                 attrs.append(pa)
 

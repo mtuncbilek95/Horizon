@@ -1,29 +1,22 @@
 #pragma once
 
+#include <Runtime/Containers/Guid.h>
 #include <Runtime/RTTR/Reflection.h>
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
 namespace Horizon
 {
 	HCLASS();
-	struct H_EXPORT MetaAssetEntry
-	{
-		HFIELD();
-		std::string sub;
-		HFIELD();
-		std::string type;
-		HFIELD();
-		std::string guid;
-	};
-
-	HCLASS();
 	struct H_EXPORT MetaHeader
 	{
 		HFIELD();
-		std::string source;
+		Guid id;
 		HFIELD();
-		std::vector<MetaAssetEntry> assets;
+		std::string assetTypeName;
+		HFIELD();
+		std::filesystem::path cookedPath;
 	};
 }
