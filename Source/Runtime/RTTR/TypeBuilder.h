@@ -9,6 +9,8 @@
 #include <Runtime/RTTR/TypeMode.h>
 #include <Runtime/RTTR/TypeResolve.h>
 
+#include <Runtime/Log/Terminal.h>
+
 namespace Horizon::Reflect
 {
 	template<typename TType>
@@ -77,9 +79,30 @@ namespace Horizon::Reflect
 			field.m_typeId = TypeOf<typename R::Element>();
 
 			if constexpr (R::Mode == TypeMode::Array)
-				field.m_arrayOps = VectorOpsFor<typename R::Element>();
+			{
+				using E = typename R::Element;
+
+				field.m_elementSize = sizeof(E);
+
+				if constexpr (!std::is_trivially_copyable_v<E> || !std::is_trivially_default_constructible_v<E>)
+					field.m_elementOps = ElementOpsFor<E>();
+			}
 
 			m_type.m_fields.push_back(std::move(field));
+			return *this;
+		}
+
+		template<typename TAttr, typename... Args>
+		TypeBuilder& WithFieldAttribute(Args&&... args)
+		{
+			if (m_type.m_fields.empty())
+			{
+				Terminal::Error("TypeBuilder", "WithFieldAttribute called before any WithField on '{}'", m_type.m_name);
+				return *this;
+			}
+
+			m_type.m_fields.back().m_attributes.push_back(
+				Allocator::Create<TAttr>(CurrLoc(), std::forward<Args>(args)...));
 			return *this;
 		}
 

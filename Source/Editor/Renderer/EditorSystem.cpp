@@ -1,8 +1,7 @@
 #include "EditorSystem.h"
 
 #include <Editor/Renderer/EditorRenderer.h>
-#include <Editor/Widget/WidgetRegistry.h>
-#include <Editor/Menu/MenuRegistry.h>
+#include <Editor/Views/ViewRegistry.h>
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowSystem.h>
@@ -42,17 +41,8 @@ namespace Horizon
 		m_editorRenderer = Allocator::Create<EditorRenderer>(CurrLoc(), renderDesc);
 		Terminal::Debug("EditorSystem", "EditorRenderer has been initialized!");
 
-		// Generate main menus
-		m_menuSystem = Allocator::Create<MenuRegistry>(CurrLoc(), m_engine);
-		if (!m_menuSystem)
-			return EngineReport("Failed to create MenuRegistry");
-		m_menuSystem->Invalidate();
-
-		// Generate widgets
-		m_widgetSystem = Allocator::Create<WidgetRegistry>(CurrLoc(), m_engine);
-		if (!m_widgetSystem)
-			return EngineReport("Failed to create WidgetRegistry");
-		m_widgetSystem->Invalidate();
+		m_viewRegistry = Allocator::Create<ViewRegistry>(CurrLoc(), m_engine);
+		m_viewRegistry->BootstrapViews();
 
 		return EngineReport();
 	}
@@ -129,8 +119,7 @@ namespace Horizon
 		// Render ui work
 		m_editorRenderer->BeginRender(deltaTime);
 
-		m_menuSystem->Render();
-		m_widgetSystem->Render();
+		m_viewRegistry->RenderGUI();
 
 		m_editorRenderer->EndRender(m_presentationSub->GetBackbuffer(imageIndex), imageIndex);
 		m_presentationSub->Present(imageIndex);
@@ -141,8 +130,6 @@ namespace Horizon
 		if (m_presentationSub)
 			m_presentationSub->WaitIdle();
 
-		Allocator::Delete(m_widgetSystem);
-		Allocator::Delete(m_menuSystem);
 		Allocator::Delete(m_editorRenderer);
 	}
 

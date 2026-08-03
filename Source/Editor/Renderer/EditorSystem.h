@@ -7,9 +7,7 @@
 namespace Horizon
 {
 	class EditorRenderer;
-	class WidgetRegistry;
-	class MenuRegistry;
-
+	class ViewRegistry;
 	class PresentationSystem;
 
 	class H_EXPORT EditorSystem final : public System
@@ -17,9 +15,6 @@ namespace Horizon
 	public:
 		EditorSystem() = default;
 		~EditorSystem() = default;
-
-		MenuRegistry* GetMenuRegistry() const { return m_menuSystem; }
-		WidgetRegistry* GetWidgetRegistry() const { return m_widgetSystem; }
 
 		EngineReport OnAttach(Engine* engine) final;
 		void OnSync() final;
@@ -31,9 +26,7 @@ namespace Horizon
 	private:
 		PAL::Window* m_engineWindow = nullptr;
 		EditorRenderer* m_editorRenderer = nullptr;
-
-		WidgetRegistry* m_widgetSystem = nullptr;
-		MenuRegistry* m_menuSystem = nullptr;
+		ViewRegistry* m_viewRegistry = nullptr;
 
 		PresentationSystem* m_presentationSub = nullptr;
 	};

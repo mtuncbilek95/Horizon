@@ -1,11 +1,10 @@
 #pragma once
 
+#include <Runtime/Containers/List.h>
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/RTTR/TypeKind.h>
 #include <Runtime/RTTR/TypeMode.h>
 
-#include <vector>
-#include <array>
 #include <string>
 #include <type_traits>
 
@@ -55,16 +54,8 @@ namespace Horizon::Reflect
 	};
 
 
-	template<typename E, typename A>
-	struct TypeResolve<std::vector<E, A>>
-	{
-		using Element = E;
-		static constexpr TypeMode Mode = TypeMode::Array;
-		static constexpr TypeKind Kind = KindOf<E>();
-	};
-
-	template<typename E, usize N>
-	struct TypeResolve<std::array<E, N>>
+	template<typename E>
+	struct TypeResolve<List<E>>
 	{
 		using Element = E;
 		static constexpr TypeMode Mode = TypeMode::Array;

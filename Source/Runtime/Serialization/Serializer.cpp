@@ -1,6 +1,7 @@
 #include "Serializer.h"
 
 #include <Runtime/Containers/Guid.h>
+#include <Runtime/Containers/ListBase.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <string>
@@ -27,13 +28,15 @@ namespace Horizon
 
 	void Serializer::WriteField(const void* valuePtr, const Reflect::Field& field, IArchiveWriter& writer)
 	{
-		if (const Reflect::ArrayOps* ops = field.GetArrayOps())
+		if (field.GetMode() == Reflect::TypeMode::Array)
 		{
-			usize count = ops->count(valuePtr);
+			const ListBase* pList = static_cast<const ListBase*>(valuePtr);
+			const usize count = pList->GetCount();
+
 			writer.BeginArray(count);
 
 			for (usize i = 0; i < count; ++i)
-				WriteValue(ops->elementConst(valuePtr, i), field, writer);
+				WriteValue(pList->GetElement(i, field.GetElementSize()), field, writer);
 
 			writer.EndArray();
 			return;
@@ -139,13 +142,15 @@ namespace Horizon
 
 	void Serializer::ReadField(void* valuePtr, const Reflect::Field& field, IArchiveReader& reader)
 	{
-		if (const Reflect::ArrayOps* ops = field.GetArrayOps())
+		if (field.GetMode() == Reflect::TypeMode::Array)
 		{
-			usize count = reader.BeginArray();
-			ops->resize(valuePtr, count);
+			ListBase* pList = static_cast<ListBase*>(valuePtr);
+			const usize count = reader.BeginArray();
+
+			pList->ResizeErased(count, field.GetElementSize(), field.GetElementOps());
 
 			for (usize i = 0; i < count; ++i)
-				ReadValue(ops->element(valuePtr, i), field, reader);
+				ReadValue(pList->GetElement(i, field.GetElementSize()), field, reader);
 
 			reader.EndArray();
 			return;

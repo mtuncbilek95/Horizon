@@ -8,10 +8,59 @@ def strip_comments(text: str) -> str:
     return text
 
 def parse_attribute(content: str):
-    m = re.match(r'\s*([A-Za-z_]\w*)\s*\[(.*)\]\s*$', content.strip(), flags=re.S)
+    m = re.match(r'\s*([A-Za-z_]\w*)\s*(?:\[(.*)\])?\s*$', content.strip(), flags=re.S)
     if not m:
         return None
-    return m.group(1), m.group(2).strip()
+    return m.group(1), (m.group(2) or '').strip()
+
+def split_top_level(s: str):
+    """Virgulle ayrilmis attribute listesini boler; [], (), {} ve string icindeki virgulleri atlar."""
+    parts = []
+    cur = []
+    depth = 0
+    in_str = None
+    i = 0
+    while i < len(s):
+        ch = s[i]
+        if in_str:
+            cur.append(ch)
+            if ch == '\\' and i + 1 < len(s):
+                cur.append(s[i + 1])
+                i += 1
+            elif ch == in_str:
+                in_str = None
+        elif ch in '"\'':
+            in_str = ch
+            cur.append(ch)
+        elif ch in '[({':
+            depth += 1
+            cur.append(ch)
+        elif ch in '])}':
+            depth -= 1
+            cur.append(ch)
+        elif ch == ',' and depth == 0:
+            parts.append(''.join(cur).strip())
+            cur = []
+        else:
+            cur.append(ch)
+        i += 1
+    tail = ''.join(cur).strip()
+    if tail:
+        parts.append(tail)
+    return parts
+
+def parse_attributes(content: str):
+    attrs = []
+    if not content.strip():
+        return attrs
+    for part in split_top_level(content):
+        pa = parse_attribute(part)
+        if pa:
+            attrs.append(pa)
+    return attrs
+
+def attribute_class(name: str) -> str:
+    return name if name.endswith('Attribute') else name + 'Attribute'
 
 def brace_body(s: str, open_idx: int) -> str:
     depth = 0
@@ -74,24 +123,27 @@ def parse_file(path: Path, source_root: Path):
         body_open = paren_close + m.end() - 1
         body = brace_body(clean, body_open)
 
-        attrs = []
-        head_attr = parse_attribute(hclass_content) if hclass_content.strip() else None
-        if head_attr:
-            attrs.append(head_attr)
+        attrs = parse_attributes(hclass_content)
         for a in re.finditer(r'\bHATTRIBUTE\s*\(', body):
             a_content, _ = extract_parens(body, a.end() - 1)
-            pa = parse_attribute(a_content)
-            if pa:
-                attrs.append(pa)
+            attrs.extend(parse_attributes(a_content))
 
         fields = []
-        for f in re.finditer(r'HFIELD\s*\(\s*\)\s*;?\s*([^;{}]+);', body):
-            decl = f.group(1).strip()
+        for f in re.finditer(r'\bHFIELD\s*\(', body):
+            f_content, f_close = extract_parens(body, f.end() - 1)
+
+            decl_m = re.match(r'\s*;?\s*([^;{}]+);', body[f_close + 1:])
+            if not decl_m:
+                continue
+
+            decl = decl_m.group(1).split('=')[0].strip()
             nm = re.search(r'([A-Za-z_]\w*)\s*$', decl)
-            if nm:
-                member = nm.group(1)
-                display = member[2:] if member.startswith('m_') else member
-                fields.append((display, member))
+            if not nm:
+                continue
+
+            member = nm.group(1)
+            display = member[2:] if member.startswith('m_') else member
+            fields.append((display, member, parse_attributes(f_content)))
 
         rel = path.relative_to(source_root).as_posix()
         layer = rel.split('/', 1)[0]
@@ -106,10 +158,15 @@ def emit_reflected(r: Reflected) -> str:
         bq = f'{r.ns}::{r.base}' if r.ns else r.base
         lines.append(f'\t\t\t\t\t.WithBase<{bq}>()')
     for attr_name, args in r.attrs:
-        aq = f'{r.ns}::{attr_name}' if r.ns else attr_name
+        cls = attribute_class(attr_name)
+        aq = f'{r.ns}::{cls}' if r.ns else cls
         lines.append(f'\t\t\t\t\t.WithAttribute<{aq}>({args})')
-    for display, member in r.fields:
+    for display, member, f_attrs in r.fields:
         lines.append(f'\t\t\t\t\t.WithField("{display}", &{q}::{member})')
+        for attr_name, args in f_attrs:
+            cls = attribute_class(attr_name)
+            aq = f'{r.ns}::{cls}' if r.ns else cls
+            lines.append(f'\t\t\t\t\t.WithFieldAttribute<{aq}>({args})')
     lines.append('\t\t\t\t\t.Build();')
     chain = '\n'.join(lines)
 

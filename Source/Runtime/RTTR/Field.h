@@ -1,11 +1,15 @@
 #pragma once
 
+#include <Runtime/Containers/ListBase.h>
+#include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
-#include <Runtime/RTTR/ArrayOps.h>
+#include <Runtime/RTTR/Attribute.h>
 #include <Runtime/RTTR/TypeKind.h>
 #include <Runtime/RTTR/TypeMode.h>
 
 #include <string>
+#include <vector>
+#include <span>
 
 namespace Horizon::Reflect
 {
@@ -13,7 +17,7 @@ namespace Horizon::Reflect
 
 	class H_EXPORT Field
 	{
-		template<typename> 
+		template<typename>
 		friend class TypeBuilder;
 	public:
 		Field() = default;
@@ -21,7 +25,16 @@ namespace Horizon::Reflect
 			m_offset(offset)
 		{
 		}
-		~Field() = default;
+		~Field()
+		{
+			for (Attribute* attr : m_attributes)
+				Allocator::Delete(attr);
+		}
+
+		Field(const Field&) = delete;
+		Field& operator=(const Field&) = delete;
+
+		Field(Field&&) noexcept = default;
 
 		const std::string& GetName() const { return m_name; }
 		usize GetOffset() const { return m_offset; }
@@ -31,7 +44,35 @@ namespace Horizon::Reflect
 
 		TypeHandle GetTypeId() const { return m_typeId; }
 
-		const ArrayOps* GetArrayOps() const { return m_arrayOps; }
+		usize GetElementSize() const { return m_elementSize; }
+		const ListBase::ElementOps* GetElementOps() const { return m_elementOps; }
+
+		std::span<Attribute* const> GetAttributes() const { return m_attributes; }
+
+		template<typename TAttr>
+		TAttr* GetCustomAttribute() const
+		{
+			for (Attribute* attr : m_attributes)
+			{
+				if (attr->GetTypeId() == TypeOf<TAttr>())
+					return static_cast<TAttr*>(attr);
+			}
+
+			return nullptr;
+		}
+
+		template<typename TAttr>
+		std::vector<TAttr*> GetCustomAttributes() const
+		{
+			std::vector<TAttr*> out;
+			for (Attribute* attr : m_attributes)
+			{
+				if (attr->GetTypeId() == TypeOf<TAttr>())
+					out.push_back(static_cast<TAttr*>(attr));
+			}
+
+			return out;
+		}
 
 		void* GetValue(void* instance) const
 		{
@@ -69,6 +110,9 @@ namespace Horizon::Reflect
 
 		TypeHandle m_typeId;
 
-		const ArrayOps* m_arrayOps = nullptr;
+		usize m_elementSize = 0;
+		const ListBase::ElementOps* m_elementOps = nullptr;
+
+		std::vector<Attribute*> m_attributes;
 	};
 }
