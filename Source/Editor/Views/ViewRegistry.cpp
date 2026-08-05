@@ -6,6 +6,7 @@
 #include <Engine/Module/ModuleContext.h>
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 namespace Horizon
 {
@@ -49,6 +50,7 @@ namespace Horizon
 					.displayName = pAttr->GetDisplayName(),
 					.multiInstance = pAttr->GetMultiInstance(),
 					.openOnStart = pAttr->GetOpenOnStart(),
+					.dockZone = pAttr->GetDock(),
 					.pCoreType = type
 				});
 		}
@@ -68,11 +70,60 @@ namespace Horizon
 
 	void ViewRegistry::RenderGUI()
 	{
+		ImGuiViewport* pViewport = ImGui::GetMainViewport();
+
+		ImGuiDockNodeFlags dockFlags =
+			ImGuiDockNodeFlags_PassthruCentralNode |
+			ImGuiDockNodeFlags_NoWindowMenuButton;
+
+		ImGuiID dockId = ImGui::DockSpaceOverViewport(0, pViewport, dockFlags);
+
+		if (!m_layoutDirty)
+		{
+			BuildDefaultLayout(dockId);
+			m_layoutDirty = true;
+		}
+
 		for (auto* view : m_createdViews)
 		{
 			ImGui::Begin(view->m_displayName.c_str());
 			view->OnRender();
 			ImGui::End();
 		}
+	}
+
+	void ViewRegistry::BuildDefaultLayout(u32 rootId)
+	{
+		ImGui::DockBuilderRemoveNode(rootId);
+		ImGui::DockBuilderAddNode(rootId, ImGuiDockNodeFlags_DockSpace);
+		ImGui::DockBuilderSetNodeSize(rootId, ImGui::GetMainViewport()->Size);
+
+		ImGuiID center = rootId;
+		ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.20f, nullptr, &center);
+		ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.25f, nullptr, &center);
+		ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.25f, nullptr, &center);
+
+		for (const auto& view : m_registeredViews)
+		{
+			ImGuiID target = center;
+			switch (view.dockZone)
+			{
+			case DockZone::Left:
+				target = left;
+				break;
+			case DockZone::Right:
+				target = right;
+				break;
+			case DockZone::Bottom:
+				target = bottom;
+				break;
+			default: 
+				break;
+			}
+
+			ImGui::DockBuilderDockWindow(view.displayName.c_str(), target);
+		}
+
+		ImGui::DockBuilderFinish(rootId);
 	}
 }

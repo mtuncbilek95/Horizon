@@ -19,9 +19,14 @@ namespace Horizon
 		void RenderGUI();
 
 	private:
+		void BuildDefaultLayout(u32 rootId);
+
+	private:
 		Engine* m_engine = nullptr;
 
 		List<ViewDescriptor> m_registeredViews;
 		List<ViewObject*> m_createdViews;
+
+		b8 m_layoutDirty = false;
 	};
 }

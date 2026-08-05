@@ -6,8 +6,8 @@
 
 namespace Horizon
 {
-	HCLASS(EditorView[ICON_FA_FOLDER_TREE, "Asset Browser", false, true, DockZone::Bottom]);
-	class H_EXPORT AssetBrowserView : public ViewObject
+	HCLASS(EditorView[ICON_FA_MOUNTAIN_SUN, "Scene View", false, true]);
+	class H_EXPORT SceneView : public ViewObject
 	{
 	public:
 		void OnInvoke() final;
