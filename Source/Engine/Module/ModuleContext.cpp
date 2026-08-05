@@ -22,19 +22,22 @@ namespace Horizon
 		if (!GenerateManifests)
 			return EngineReport("GenerateModuleManifestation symbol not found");
 
-		GenerateManifests(&m_registeredTypes);
+		std::vector<Reflect::Type> registery;
+		GenerateManifests(&registery);
 
 		usize index = 0;
-		for (const auto& manifest : m_registeredTypes)
+		for (auto& manifest : registery)
 		{
-			m_lookup[manifest.GetTypeId()] = index;
-			Terminal::Debug(GetName(), "{} has been registered \n\tSize: {} \n\tAbstract: {}, \n\tAttributeCount: {} \n\tFieldCount: {}", manifest.GetName(), 
-				manifest.GetSizeInBytes(), manifest.GetIsAbstract(), manifest.GetAttributes().size(), manifest.GetFields().size());
+			Terminal::Debug(GetName(), "{} has been registered \n\tSize: {} \n\tAbstract: {}, \n\tAttributeCount: {} \n\tFieldCount: {}",
+				manifest.GetName(), manifest.GetSizeInBytes(), manifest.GetIsAbstract(),
+				manifest.GetAttributes().size(), manifest.GetFields().size());
 
+			m_lookup[manifest.GetTypeId()] = index;
+			m_registeredTypes.PushBack(std::move(manifest));
 			index++;
 		}
 
-		Terminal::Info(GetName(), "Loaded {} type manifests", m_registeredTypes.size());
+		Terminal::Info(GetName(), "Loaded {} type manifests", m_registeredTypes.GetCount());
 		return EngineReport();
 	}
 
@@ -51,25 +54,25 @@ namespace Horizon
 			return nullptr;
 		}
 
-		return &m_registeredTypes.at(it->second);
+		return &m_registeredTypes.At(it->second);
 	}
 
-	std::vector<Reflect::Type*> ModuleContext::GetTypeByBase(Reflect::TypeHandle handl)
+	List<Reflect::Type*> ModuleContext::GetTypeByBase(Reflect::TypeHandle handl)
 	{
-		std::vector<Reflect::Type*> result;
+		List<Reflect::Type*> result;
 
 		for (auto& pType : m_registeredTypes)
 		{
 			if (pType.GetBaseId() == handl)
-				result.push_back(&pType);
+				result.PushBack(&pType);
 		}
 
 		return result;
 	}
 
-	std::vector<Horizon::Reflect::Type*> ModuleContext::GetTypeByAttribute(Reflect::TypeHandle attrHandle)
+	List<Horizon::Reflect::Type*> ModuleContext::GetTypeByAttribute(Reflect::TypeHandle attrHandle)
 	{
-		std::vector<Reflect::Type*> result;
+		List<Reflect::Type*> result;
 
 		for (auto& pType : m_registeredTypes)
 		{
@@ -77,7 +80,7 @@ namespace Horizon
 			{
 				if (pAttr->GetTypeId() == attrHandle)
 				{
-					result.push_back(&pType);
+					result.PushBack(&pType);
 					break;
 				}
 			}

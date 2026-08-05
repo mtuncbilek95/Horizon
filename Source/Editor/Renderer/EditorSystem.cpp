@@ -2,6 +2,7 @@
 
 #include <Editor/Renderer/EditorRenderer.h>
 #include <Editor/Views/ViewRegistry.h>
+#include <Editor/MainMenu/MenuRegistry.h>
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowSystem.h>
@@ -43,6 +44,9 @@ namespace Horizon
 
 		m_viewRegistry = Allocator::Create<ViewRegistry>(CurrLoc(), m_engine);
 		m_viewRegistry->BootstrapViews();
+
+		m_menuRegistry = Allocator::Create<MenuRegistry>(CurrLoc());
+		m_menuRegistry->BootstrapMenus(m_engine);
 
 		return EngineReport();
 	}
@@ -119,6 +123,7 @@ namespace Horizon
 		// Render ui work
 		m_editorRenderer->BeginRender(deltaTime);
 
+		m_menuRegistry->RenderGUI();
 		m_viewRegistry->RenderGUI();
 
 		m_editorRenderer->EndRender(m_presentationSub->GetBackbuffer(imageIndex), imageIndex);
@@ -127,6 +132,9 @@ namespace Horizon
 
 	void EditorSystem::OnDetach()
 	{
+		Allocator::Delete(m_menuRegistry);
+		Allocator::Delete(m_viewRegistry);
+
 		if (m_presentationSub)
 			m_presentationSub->WaitIdle();
 

@@ -15,6 +15,11 @@ namespace Horizon
 
 	ViewRegistry::~ViewRegistry()
 	{
+		for (auto* view : m_createdViews)
+			Allocator::Delete(view);
+
+		m_createdViews.Clear();
+		m_registeredViews.Clear();
 	}
 
 	void ViewRegistry::BootstrapViews()
@@ -25,9 +30,15 @@ namespace Horizon
 			return;
 		}
 
+		for (auto* view : m_createdViews)
+			Allocator::Delete(view);
+
+		m_createdViews.Clear();
+		m_registeredViews.Clear();
+
 		auto* moduleCtx = m_engine->GetModuleContext();
 
-		std::vector<Reflect::Type*> types = moduleCtx->GetTypeByAttribute(Reflect::TypeOf<EditorViewAttribute>());
+		List<Reflect::Type*> types = moduleCtx->GetTypeByAttribute(Reflect::TypeOf<EditorViewAttribute>());
 
 		for (auto* type : types)
 		{

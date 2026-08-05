@@ -31,6 +31,7 @@ namespace Horizon::Reflect
 		Type& operator=(const Type&) = delete;
 
 		Type(Type&&) noexcept = default;
+		Type& operator=(Type&&) noexcept = default;
 
 		VoidObject CreateFromMemory() const { return CreateMemoryFunc(); }
 		void DestroyFromMemory(VoidObject pInstance) const { return DestroyMemoryFunc(pInstance); }
@@ -82,7 +83,7 @@ namespace Horizon::Reflect
 		std::string m_name;
 		usize m_size = 0;
 		usize m_align = 0;
-		TypeKind m_kind;
+		TypeKind m_kind = TypeKind::Object;
 		b8 m_abstractClass = false;
 
 		std::vector<Attribute*> m_attributes;

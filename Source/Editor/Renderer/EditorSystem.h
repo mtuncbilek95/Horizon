@@ -7,8 +7,10 @@
 namespace Horizon
 {
 	class EditorRenderer;
-	class ViewRegistry;
 	class PresentationSystem;
+
+	class ViewRegistry;
+	class MenuRegistry;
 
 	class H_EXPORT EditorSystem final : public System
 	{
@@ -26,7 +28,9 @@ namespace Horizon
 	private:
 		PAL::Window* m_engineWindow = nullptr;
 		EditorRenderer* m_editorRenderer = nullptr;
+
 		ViewRegistry* m_viewRegistry = nullptr;
+		MenuRegistry* m_menuRegistry = nullptr;
 
 		PresentationSystem* m_presentationSub = nullptr;
 	};
