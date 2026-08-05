@@ -74,12 +74,13 @@ namespace Horizon::PAL
 
 	b8 File::WriteString(FileAccessRequest fileAccess, const std::string& content, usize offset)
 	{
-		std::vector<u8> bytes(content.begin(), content.end());
+		List<u8> bytes(content.size());
+		std::memcpy(bytes.GetData(), content.data(), content.size());
 		return WriteMemory(fileAccess, bytes, offset);
 	}
 
 
-	b8 File::WriteMemory(FileAccessRequest fileAccess, const std::vector<u8>& memory, usize offset /*= 0*/)
+	b8 File::WriteMemory(FileAccessRequest fileAccess, const List<u8>& memory, usize offset /*= 0*/)
 	{
 		if (!fileAccess.m_handle.IsValid())
 		{
@@ -104,13 +105,13 @@ namespace Horizon::PAL
 		}
 
 		usize totalWritten = 0;
-		while (totalWritten < memory.size())
+		while (totalWritten < memory.GetCount())
 		{
-			usize remaining = memory.size() - totalWritten;
+			usize remaining = memory.GetCount() - totalWritten;
 			DWORD chunk = (DWORD)(remaining > MAXDWORD ? MAXDWORD : remaining);
 
 			DWORD written = 0;
-			if (!WriteFile(fileHandle, memory.data() + totalWritten, chunk, &written, NULL))
+			if (!WriteFile(fileHandle, memory.GetData() + totalWritten, chunk, &written, NULL))
 			{
 				Terminal::Error("File::WriteMemory", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
 				return false;
@@ -118,7 +119,7 @@ namespace Horizon::PAL
 
 			if (written == 0)
 			{
-				Terminal::Error("File::WriteMemory", "Wrote 0 bytes at {} of {}", totalWritten, memory.size());
+				Terminal::Error("File::WriteMemory", "Wrote 0 bytes at {} of {}", totalWritten, memory.GetCount());
 				return false;
 			}
 
@@ -128,7 +129,7 @@ namespace Horizon::PAL
 		return true;
 	}
 
-	b8 File::ReadMemory(FileAccessRequest fileAccess, std::vector<u8>& memory, usize startPoint, usize endPoint)
+	b8 File::ReadMemory(FileAccessRequest fileAccess, List<u8>& memory, usize startPoint, usize endPoint)
 	{
 		if (!fileAccess.m_handle.IsValid())
 		{
@@ -163,7 +164,7 @@ namespace Horizon::PAL
 
 		usize readSize = readEnd - startPoint;
 
-		memory.clear();
+		memory.Clear();
 		if (readSize == 0)
 			return true;
 
@@ -175,7 +176,7 @@ namespace Horizon::PAL
 			return false;
 		}
 
-		memory.resize(readSize);
+		memory.Resize(readSize);
 
 		usize totalRead = 0;
 		while (totalRead < readSize)
@@ -184,17 +185,17 @@ namespace Horizon::PAL
 			DWORD chunk = (DWORD)(remaining > MAXDWORD ? MAXDWORD : remaining);
 
 			DWORD bytesRead = 0;
-			if (!ReadFile(fileHandle, memory.data() + totalRead, chunk, &bytesRead, NULL))
+			if (!ReadFile(fileHandle, memory.GetData() + totalRead, chunk, &bytesRead, NULL))
 			{
 				Terminal::Error("File::ReadMemory", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
-				memory.clear();
+				memory.Clear();
 				return false;
 			}
 
 			if (bytesRead == 0)
 			{
 				Terminal::Error("File::ReadMemory", "Unexpected EOF at {} of {}", totalRead, readSize);
-				memory.clear();
+				memory.Clear();
 				return false;
 			}
 

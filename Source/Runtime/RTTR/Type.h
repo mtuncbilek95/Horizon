@@ -7,8 +7,9 @@
 #include <Runtime/RTTR/TypeKind.h>
 #include <Runtime/RTTR/TypeMode.h>
 
+#include <Runtime/Containers/List.h>
+
 #include <string>
-#include <vector>
 #include <span>
 
 namespace Horizon::Reflect
@@ -44,9 +45,9 @@ namespace Horizon::Reflect
 		usize GetAlignment() const { return m_align; }
 		b8 GetIsAbstract() const { return m_abstractClass; }
 
-		std::span<Attribute* const> GetAttributes() const { return m_attributes; }
-		std::span<const EnumValue> GetEnumValues() const { return m_enumValues; }
-		std::span<const Field> GetFields() const { return m_fields; }
+		std::span<Attribute* const> GetAttributes() const { return { m_attributes.GetData(), m_attributes.GetCount() }; }
+		std::span<const EnumValue> GetEnumValues() const { return { m_enumValues.GetData(), m_enumValues.GetCount() }; }
+		std::span<const Field> GetFields() const { return { m_fields.GetData(), m_fields.GetCount() }; }
 
 		template<typename TAttr>
 		TAttr* GetCustomAttribute()
@@ -61,13 +62,13 @@ namespace Horizon::Reflect
 		}
 
 		template<typename TAttr>
-		std::vector<TAttr*> GetCustomAttributes()
+		List<TAttr*> GetCustomAttributes()
 		{
-			std::vector<TAttr*> out;
+			List<TAttr*> out;
 			for (Attribute* attr : m_attributes)
 			{
 				if (attr->GetTypeId() == TypeOf<TAttr>())
-					out.push_back(static_cast<TAttr*>(attr));
+					out.PushBack(static_cast<TAttr*>(attr));
 			}
 
 			return out;
@@ -86,8 +87,8 @@ namespace Horizon::Reflect
 		TypeKind m_kind = TypeKind::Object;
 		b8 m_abstractClass = false;
 
-		std::vector<Attribute*> m_attributes;
-		std::vector<EnumValue> m_enumValues;
-		std::vector<Field> m_fields;
+		List<Attribute*> m_attributes;
+		List<EnumValue> m_enumValues;
+		List<Field> m_fields;
 	};
 }

@@ -2,6 +2,7 @@
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/PAL/File/FileAccessRequest.h>
+#include <Runtime/Containers/List.h>
 
 #include <filesystem>
 #include <string>
@@ -16,7 +17,7 @@ namespace Horizon::PAL
 		static b8 Create(const std::filesystem::path& newPath);
 		static b8 Delete(const std::filesystem::path& newPath);
 		static b8 WriteString(FileAccessRequest fileAccess, const std::string& content, usize offset = 0);
-		static b8 WriteMemory(FileAccessRequest fileAccess, const std::vector<u8>& memory, usize offset = 0);
-		static b8 ReadMemory(FileAccessRequest fileAccess, std::vector<u8>& memory, usize startPoint = 0, usize endPoint = 0);
+		static b8 WriteMemory(FileAccessRequest fileAccess, const List<u8>& memory, usize offset = 0);
+		static b8 ReadMemory(FileAccessRequest fileAccess, List<u8>& memory, usize startPoint = 0, usize endPoint = 0);
 	};
 }

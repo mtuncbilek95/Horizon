@@ -5,7 +5,7 @@
 
 #include <Runtime/RHI/GfxTypes.h>
 
-#include <vector>
+#include <Runtime/Containers/List.h>
 
 namespace Horizon
 {
@@ -53,6 +53,6 @@ namespace Horizon
 
 		RenderContext m_context;
 
-		std::vector<GfxCommandList*> m_commandLists;
+		List<GfxCommandList*> m_commandLists;
 	};
 }

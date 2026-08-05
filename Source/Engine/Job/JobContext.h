@@ -5,6 +5,7 @@
 #include <Engine/Job/JobWorker.h>
 
 #include <Runtime/PAL/Sync/Atomic.h>
+#include <Runtime/Containers/List.h>
 
 namespace Horizon
 {
@@ -26,7 +27,7 @@ namespace Horizon
 		b8 TryRunOneJob();
 
 	private:
-		std::vector<JobWorker*> m_workers;
+		List<JobWorker*> m_workers;
 		PAL::Atomic<usize> m_nextWorker = 0;
 	};
 }

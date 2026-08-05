@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Runtime/Containers/ListBase.h>
+#include <Runtime/Containers/List.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/RTTR/Attribute.h>
@@ -8,7 +9,6 @@
 #include <Runtime/RTTR/TypeMode.h>
 
 #include <string>
-#include <vector>
 #include <span>
 
 namespace Horizon::Reflect
@@ -47,7 +47,7 @@ namespace Horizon::Reflect
 		usize GetElementSize() const { return m_elementSize; }
 		const ListBase::ElementOps* GetElementOps() const { return m_elementOps; }
 
-		std::span<Attribute* const> GetAttributes() const { return m_attributes; }
+		std::span<Attribute* const> GetAttributes() const { return { m_attributes.GetData(), m_attributes.GetCount() }; }
 
 		template<typename TAttr>
 		TAttr* GetCustomAttribute() const
@@ -62,13 +62,13 @@ namespace Horizon::Reflect
 		}
 
 		template<typename TAttr>
-		std::vector<TAttr*> GetCustomAttributes() const
+		List<TAttr*> GetCustomAttributes() const
 		{
-			std::vector<TAttr*> out;
+			List<TAttr*> out;
 			for (Attribute* attr : m_attributes)
 			{
 				if (attr->GetTypeId() == TypeOf<TAttr>())
-					out.push_back(static_cast<TAttr*>(attr));
+					out.PushBack(static_cast<TAttr*>(attr));
 			}
 
 			return out;
@@ -113,6 +113,6 @@ namespace Horizon::Reflect
 		usize m_elementSize = 0;
 		const ListBase::ElementOps* m_elementOps = nullptr;
 
-		std::vector<Attribute*> m_attributes;
+		List<Attribute*> m_attributes;
 	};
 }

@@ -3,7 +3,7 @@
 #include <Runtime/RHI/Descriptor/GfxDescriptorHeap.h>
 #include <Runtime/D3D12/Utils/D3D12Helpers.h>
 
-#include <vector>
+#include <Runtime/Containers/List.h>
 
 namespace Horizon
 {
@@ -30,6 +30,6 @@ namespace Horizon
 		D3D12_GPU_DESCRIPTOR_HANDLE m_gpuStart{};
 		u32 m_descriptorSize = 0;
 		u32 m_top = 0;
-		std::vector<u32> m_freeList;
+		List<u32> m_freeList;
 	};
 }

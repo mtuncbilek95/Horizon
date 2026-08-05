@@ -4,8 +4,9 @@
 
 #include <nlohmann/json.hpp>
 
+#include <Runtime/Containers/List.h>
+
 #include <string>
-#include <vector>
 
 namespace Horizon
 {
@@ -25,14 +26,14 @@ namespace Horizon
 		void WriteString(std::string_view value) final;
 
 		std::string ToString() const;
-		std::vector<u8> ToBytes() const;
+		List<u8> ToBytes() const;
 
 	private:
 		nlohmann::json& NextSlot();
 
 	private:
 		nlohmann::json m_root;
-		std::vector<nlohmann::json*> m_stack;
+		List<nlohmann::json*> m_stack;
 		std::string m_pendingKey;
 	};
 
@@ -66,7 +67,7 @@ namespace Horizon
 
 	private:
 		nlohmann::json m_root;
-		std::vector<Frame> m_stack;
+		List<Frame> m_stack;
 		const nlohmann::json* m_current = nullptr;
 		b8 m_hasError = false;
 	};

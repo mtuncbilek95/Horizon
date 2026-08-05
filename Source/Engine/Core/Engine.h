@@ -7,8 +7,9 @@
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/Module/SymbolLibrary.h>
 
+#include <Runtime/Containers/List.h>
+
 #include <string_view>
-#include <vector>
 #include <unordered_map>
 #include <typeindex>
 
@@ -29,7 +30,7 @@ namespace Horizon
 			std::type_index key = std::type_index(typeid(TSystem));
 
 			auto* pSystem = Allocator::Create<TSystem>(CurrLoc(), std::forward<Args>(args)...);
-			m_initPending.push_back(pSystem);
+			m_initPending.PushBack(pSystem);
 
 			return *pSystem;
 		}
@@ -45,7 +46,7 @@ namespace Horizon
 				return;
 			}
 
-			m_removePending.push_back(it->second);
+			m_removePending.PushBack(it->second);
 		}
 
 		template<typename TContext, typename... Args>
@@ -55,7 +56,7 @@ namespace Horizon
 			std::type_index key = std::type_index(typeid(TContext));
 
 			auto* context = Allocator::Create<TContext>(CurrLoc(), std::forward<Args>(args)...);
-			m_initPending.push_back(context);
+			m_initPending.PushBack(context);
 			return *context;
 		}
 
@@ -70,7 +71,7 @@ namespace Horizon
 				return;
 			}
 
-			m_removePending.push_back(it->second);
+			m_removePending.PushBack(it->second);
 		}
 
 		template<typename TSystem>
@@ -119,19 +120,19 @@ namespace Horizon
 		void SortActive();
 		void Shutdown();
 
-		std::vector<EngineModule*> Build(const std::vector<EngineModule*>& modules,
+		List<EngineModule*> Build(const List<EngineModule*>& modules,
 			void(*getRules)(EngineModule*, OrderRules&)) const;
 
 	private:
 		ModuleContext* m_reflectionContext = nullptr;
 		PAL::SymbolLibrary* m_hostLibrary = nullptr;
 
-		std::vector<System*> m_activeSystems;
-		std::vector<Context*> m_activeContexts;
+		List<System*> m_activeSystems;
+		List<Context*> m_activeContexts;
 
-		std::vector<EngineModule*> m_initOrder;
-		std::vector<EngineModule*> m_initPending;
-		std::vector<EngineModule*> m_removePending;
+		List<EngineModule*> m_initOrder;
+		List<EngineModule*> m_initPending;
+		List<EngineModule*> m_removePending;
 
 		std::unordered_map<std::type_index, EngineModule*> m_lookup;
 		b8 m_exitRequested = false;

@@ -2,6 +2,8 @@
 
 #include <Engine/Module/ModuleContext.h>
 
+#include <algorithm>
+
 namespace Horizon
 {
 	Engine::Engine()
@@ -65,32 +67,42 @@ namespace Horizon
 		{
 			pModule->OnDetach();
 
-			std::erase_if(m_activeSystems, [pModule](System* s) { return static_cast<EngineModule*>(s) == pModule; });
-			std::erase_if(m_activeContexts, [pModule](Context* c) { return static_cast<EngineModule*>(c) == pModule; });
-			std::erase(m_initOrder, pModule);
+			for (i64 i = (i64)m_activeSystems.GetCount() - 1; i >= 0; --i)
+			{
+				if (static_cast<EngineModule*>(m_activeSystems[(usize)i]) == pModule)
+					m_activeSystems.RemoveAt((usize)i);
+			}
+
+			for (i64 i = (i64)m_activeContexts.GetCount() - 1; i >= 0; --i)
+			{
+				if (static_cast<EngineModule*>(m_activeContexts[(usize)i]) == pModule)
+					m_activeContexts.RemoveAt((usize)i);
+			}
+
+			m_initOrder.Remove(pModule);
 			m_lookup.erase(pModule->GetTypeId());
 
 			Allocator::Delete(pModule);
 		}
-		m_removePending.clear();
+		m_removePending.Clear();
 
-		if (m_initPending.empty())
+		if (m_initPending.IsEmpty())
 			return;
 
-		std::vector<EngineModule*> added = m_initPending;
+		List<EngineModule*> added = m_initPending;
 
 		for (EngineModule* pModule : m_initPending)
 		{
 			pModule->m_engine = this;
 			m_lookup[pModule->GetTypeId()] = pModule;
-			m_initOrder.push_back(pModule);
+			m_initOrder.PushBack(pModule);
 
 			if (auto* pSystem = dynamic_cast<System*>(pModule))
-				m_activeSystems.push_back(pSystem);
+				m_activeSystems.PushBack(pSystem);
 			else if (auto* pContext = dynamic_cast<Context*>(pModule))
-				m_activeContexts.push_back(pContext);
+				m_activeContexts.PushBack(pContext);
 		}
-		m_initPending.clear();
+		m_initPending.Clear();
 
 		SortActive();
 
@@ -113,14 +125,18 @@ namespace Horizon
 		m_initOrder = Build(m_initOrder,
 			[](EngineModule* pModule, OrderRules& rules) { pModule->GetInitializeOrder(rules); });
 
-		std::vector<EngineModule*> systems(m_activeSystems.begin(), m_activeSystems.end());
+		List<EngineModule*> systems;
+		systems.Reserve(m_activeSystems.GetCount());
+		for (System* pSystem : m_activeSystems)
+			systems.PushBack(pSystem);
+
 		systems = Build(systems, [](EngineModule* pModule, OrderRules& rules) { static_cast<System*>(pModule)->GetExecutionOrder(rules); });
 
-		m_activeSystems.clear();
-		m_activeSystems.reserve(systems.size());
+		m_activeSystems.Clear();
+		m_activeSystems.Reserve(systems.GetCount());
 
 		for (EngineModule* pModule : systems)
-			m_activeSystems.push_back(static_cast<System*>(pModule));
+			m_activeSystems.PushBack(static_cast<System*>(pModule));
 	}
 
 	void Engine::Shutdown()
@@ -134,23 +150,23 @@ namespace Horizon
 		for (auto it = m_initOrder.rbegin(); it != m_initOrder.rend(); ++it)
 			Allocator::Delete(*it);
 
-		m_activeSystems.clear();
-		m_activeContexts.clear();
-		m_initOrder.clear();
+		m_activeSystems.Clear();
+		m_activeContexts.Clear();
+		m_initOrder.Clear();
 		m_lookup.clear();
 	}
 
-	std::vector<EngineModule*> Engine::Build(const std::vector<EngineModule*>& modules, void(*getRules)(EngineModule*, OrderRules&)) const
+	List<EngineModule*> Engine::Build(const List<EngineModule*>& modules, void(*getRules)(EngineModule*, OrderRules&)) const
 	{
-		usize n = modules.size();
+		usize n = modules.GetCount();
 
 		std::unordered_map<std::type_index, usize> indexOf;
 		for (usize i = 0; i < n; ++i)
 			indexOf[modules[i]->GetTypeId()] = i;
 
-		std::vector<std::vector<usize>> adjacency(n);
-		std::vector<u32> indegree(n, 0);
-		std::vector<OrderTier> tiers(n, OrderTier::Default);
+		List<List<usize>> adjacency(n);
+		List<u32> indegree(n, 0);
+		List<OrderTier> tiers(n, OrderTier::Default);
 
 		for (usize i = 0; i < n; ++i)
 		{
@@ -163,7 +179,7 @@ namespace Horizon
 				auto it = indexOf.find(dep);
 				if (it != indexOf.end())
 				{
-					adjacency[it->second].push_back(i);
+					adjacency[it->second].PushBack(i);
 					indegree[i]++;
 				}
 			}
@@ -173,46 +189,46 @@ namespace Horizon
 				auto it = indexOf.find(other);
 				if (it != indexOf.end())
 				{
-					adjacency[i].push_back(it->second);
+					adjacency[i].PushBack(it->second);
 					indegree[it->second]++;
 				}
 			}
 		}
 
-		std::vector<usize> ready;
+		List<usize> ready;
 		for (usize i = 0; i < n; ++i)
 		{
 			if (indegree[i] == 0)
-				ready.push_back(i);
+				ready.PushBack(i);
 		}
 
-		std::vector<EngineModule*> ordered;
-		ordered.reserve(n);
+		List<EngineModule*> ordered;
+		ordered.Reserve(n);
 
-		while (!ready.empty())
+		while (!ready.IsEmpty())
 		{
 			usize best = 0;
-			for (usize k = 1; k < ready.size(); ++k)
+			for (usize k = 1; k < ready.GetCount(); ++k)
 			{
 				if (tiers[ready[k]] < tiers[ready[best]])
 					best = k;
 			}
 
 			usize node = ready[best];
-			ready[best] = ready.back();
-			ready.pop_back();
+			ready[best] = ready.Back();
+			ready.PopBack();
 
-			ordered.push_back(modules[node]);
+			ordered.PushBack(modules[node]);
 
 			for (usize next : adjacency[node])
 			{
 				if (--indegree[next] == 0)
-					ready.push_back(next);
+					ready.PushBack(next);
 			}
 		}
 
-		if (ordered.size() != n)
-			Terminal::Warn("Engine", "Cyclic module dependency; only {} of {} ordered", ordered.size(), n);
+		if (ordered.GetCount() != n)
+			Terminal::Warn("Engine", "Cyclic module dependency; only {} of {} ordered", ordered.GetCount(), n);
 
 		return ordered;
 	}

@@ -16,7 +16,6 @@
 #include <backends/imgui_impl_dx12.h>
 
 #include <fstream>
-#include <vector>
 
 namespace Horizon
 {
@@ -37,7 +36,7 @@ namespace Horizon
 
 		m_device->InitializeImGui(m_graphicsQueue);
 
-		m_commandLists.resize(3);
+		m_commandLists.Resize(3);
 		for (u32 i = 0; i < 3; i++)
 			m_commandLists[i] = m_device->CreateCommandList(GfxQueueType::Graphics);
 

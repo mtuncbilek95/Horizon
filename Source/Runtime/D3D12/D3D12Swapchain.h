@@ -3,7 +3,7 @@
 #include <Runtime/RHI/Swapchain/GfxSwapchain.h>
 #include <Runtime/D3D12/Utils/D3D12Helpers.h>
 
-#include <vector>
+#include <Runtime/Containers/List.h>
 
 namespace Horizon
 {
@@ -29,7 +29,7 @@ namespace Horizon
 		IDXGISwapChain4* m_swapchain = nullptr;
 		D3D12Device* m_device = nullptr;
 
-		std::vector<D3D12Texture*> m_backbuffers;
+		List<D3D12Texture*> m_backbuffers;
 
 		b8 m_allowTearing = false;
 	};

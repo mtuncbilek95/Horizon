@@ -53,7 +53,7 @@ namespace Horizon
 
 	void D3D12Swapchain::AcquireBackbuffers()
 	{
-		m_backbuffers.resize(m_desc.imageCount);
+		m_backbuffers.Resize(m_desc.imageCount);
 
 		for (u32 index = 0; index < m_desc.imageCount; index++)
 		{
@@ -72,6 +72,6 @@ namespace Horizon
 		for (D3D12Texture* pBackbuffer : m_backbuffers)
 			m_device->DestroyBackbufferTexture(pBackbuffer);
 
-		m_backbuffers.clear();
+		m_backbuffers.Clear();
 	}
 }

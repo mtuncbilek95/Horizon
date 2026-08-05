@@ -6,7 +6,6 @@
 #include <Runtime/PAL/Module/SymbolLibrary.h>
 #include <Runtime/RTTR/Reflection.h>
 
-#include <vector>
 #include <unordered_map>
 
 namespace Horizon

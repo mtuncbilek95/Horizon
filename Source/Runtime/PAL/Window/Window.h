@@ -5,8 +5,9 @@
 #include <Runtime/PAL/Window/WindowFlags.h>
 #include <Runtime/PAL/Window/InputMessage.h>
 
+#include <Runtime/Containers/List.h>
+
 #include <string>
-#include <vector>
 #include <span>
 
 namespace Horizon::PAL
@@ -40,7 +41,7 @@ namespace Horizon::PAL
 		Window& operator=(const Window&) = delete;
 		Window& operator=(Window&&) = delete;
 
-		std::span<const InputMessage> GetMessages() const { return m_messages; }
+		std::span<const InputMessage> GetMessages() const { return { m_messages.GetData(), m_messages.GetCount() }; }
 		void SubmitMessage(const InputMessage& msg);
 
 		WindowRect GetRect() const { return { m_desc.width, m_desc.height, m_posX, m_posY }; }
@@ -58,7 +59,7 @@ namespace Horizon::PAL
 	private:
 		WindowDesc m_desc;
 
-		std::vector<InputMessage> m_messages;
+		List<InputMessage> m_messages;
 		OSHandle m_handle = OSHandle{};
 		OSInstance m_instance = OSInstance{};
 

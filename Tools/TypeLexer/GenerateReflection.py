@@ -188,19 +188,19 @@ def emit_reflected(r: Reflected) -> str:
 def emit_manifestation(all_r) -> str:
     includes = '\n'.join(f'#include <{r.layer}/{r.name}.reflected.h>' for r in all_r)
     pushes = '\n'.join(
-        f'\toutTypes->push_back(TypeAccessor<{(r.ns + "::" + r.name) if r.ns else r.name}>::Build());'
+        f'\toutTypes->PushBack(TypeAccessor<{(r.ns + "::" + r.name) if r.ns else r.name}>::Build());'
         for r in all_r
     )
     return (
         '#pragma once\n\n'
         f'{includes}\n\n'
-        '#include <Runtime/Definitions/Allocator.h>\n\n'
-        '#include <vector>\n\n'
+        '#include <Runtime/Definitions/Allocator.h>\n'
+        '#include <Runtime/Containers/List.h>\n\n'
         'extern "C" H_EXPORT void InstallModule(void* allocatorCtx)\n'
         '{\n'
         '\tHorizon::Allocator::SetContext(allocatorCtx);\n'
         '}\n\n'
-        'extern "C" H_EXPORT void GenerateModuleManifestation(std::vector<Horizon::Reflect::Type>* outTypes)\n'
+        'extern "C" H_EXPORT void GenerateModuleManifestation(Horizon::List<Horizon::Reflect::Type>* outTypes)\n'
         '{\n'
         '\tif (!outTypes)\n'
         '\t\treturn;\n\n'

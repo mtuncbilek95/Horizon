@@ -56,13 +56,13 @@ namespace Horizon::Reflect
 		template<typename TAttr, typename... Args>
 		TypeBuilder& WithAttribute(Args&&... args)
 		{
-			m_type.m_attributes.push_back(Allocator::Create<TAttr>(CurrLoc(), std::forward<Args>(args)...));
+			m_type.m_attributes.PushBack(Allocator::Create<TAttr>(CurrLoc(), std::forward<Args>(args)...));
 			return *this;
 		}
 
 		TypeBuilder& WithEnum(const std::string& name, i64 value)
 		{
-			m_type.m_enumValues.push_back({ name, value });
+			m_type.m_enumValues.PushBack({ name, value });
 			return *this;
 		}
 
@@ -88,20 +88,20 @@ namespace Horizon::Reflect
 					field.m_elementOps = ElementOpsFor<E>();
 			}
 
-			m_type.m_fields.push_back(std::move(field));
+			m_type.m_fields.PushBack(std::move(field));
 			return *this;
 		}
 
 		template<typename TAttr, typename... Args>
 		TypeBuilder& WithFieldAttribute(Args&&... args)
 		{
-			if (m_type.m_fields.empty())
+			if (m_type.m_fields.IsEmpty())
 			{
 				Terminal::Error("TypeBuilder", "WithFieldAttribute called before any WithField on '{}'", m_type.m_name);
 				return *this;
 			}
 
-			m_type.m_fields.back().m_attributes.push_back(
+			m_type.m_fields.Back().m_attributes.PushBack(
 				Allocator::Create<TAttr>(CurrLoc(), std::forward<Args>(args)...));
 			return *this;
 		}

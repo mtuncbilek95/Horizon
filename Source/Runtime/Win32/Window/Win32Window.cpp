@@ -199,7 +199,7 @@ namespace Horizon::PAL
 					c8 buffer[MAX_PATH];
 					DragQueryFile(hDrop, it, buffer, MAX_PATH);
 
-					message.filePaths.push_back(std::filesystem::path(buffer));
+					message.filePaths.PushBack(std::filesystem::path(buffer));
 				}
 				DragFinish(hDrop);
 
@@ -296,7 +296,7 @@ namespace Horizon::PAL
 			break;
 		}
 
-		m_messages.push_back(msg);
+		m_messages.PushBack(msg);
 	}
 
 	void Window::Show()
@@ -311,7 +311,7 @@ namespace Horizon::PAL
 
 	void Window::PollEvents()
 	{
-		m_messages.clear();
+		m_messages.Clear();
 
 		MSG msg = {};
 		while (PeekMessage(&msg, ToHWND(m_handle), 0, 0, PM_REMOVE) != 0)

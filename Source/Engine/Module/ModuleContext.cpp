@@ -16,13 +16,13 @@ namespace Horizon
 		if (!m_module)
 			return EngineReport("Could not create the symbol library in Engine");
 
-		using GenerateFn = void(*)(std::vector<Reflect::Type>*);
+		using GenerateFn = void(*)(List<Reflect::Type>*);
 		auto* GenerateManifests = reinterpret_cast<GenerateFn>(m_module->GetSymbol("GenerateModuleManifestation"));
 
 		if (!GenerateManifests)
 			return EngineReport("GenerateModuleManifestation symbol not found");
 
-		std::vector<Reflect::Type> registery;
+		List<Reflect::Type> registery;
 		GenerateManifests(&registery);
 
 		usize index = 0;

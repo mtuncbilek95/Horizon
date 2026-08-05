@@ -2,8 +2,7 @@
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/PAL/Sync/Atomic.h>
-
-#include <vector>
+#include <Runtime/Containers/List.h>
 
 namespace Horizon
 {
@@ -101,7 +100,7 @@ namespace Horizon
 				fresh->Put(i, old->Get(i));
 
 			m_buffer.Store(fresh);
-			m_retired.push_back(old);
+			m_retired.PushBack(old);
 
 			return fresh;
 		}
@@ -109,6 +108,6 @@ namespace Horizon
 		PAL::Atomic<i64> m_top;
 		PAL::Atomic<i64> m_bottom;
 		PAL::Atomic<Buffer*> m_buffer;
-		std::vector<Buffer*> m_retired;
+		List<Buffer*> m_retired;
 	};
 }

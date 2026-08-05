@@ -4,10 +4,10 @@ namespace Horizon
 {
 	nlohmann::json& JsonArchiveWriter::NextSlot()
 	{
-		if (m_stack.empty())
+		if (m_stack.IsEmpty())
 			return m_root;
 
-		nlohmann::json* current = m_stack.back();
+		nlohmann::json* current = m_stack.Back();
 		if (current->is_array())
 		{
 			current->push_back(nlohmann::json{});
@@ -23,12 +23,12 @@ namespace Horizon
 	{
 		nlohmann::json& slot = NextSlot();
 		slot = nlohmann::json::object();
-		m_stack.push_back(&slot);
+		m_stack.PushBack(&slot);
 	}
 
 	void JsonArchiveWriter::EndObject()
 	{
-		m_stack.pop_back();
+		m_stack.PopBack();
 	}
 
 	void JsonArchiveWriter::Key(std::string_view name)
@@ -41,12 +41,12 @@ namespace Horizon
 		(void)count;
 		nlohmann::json& slot = NextSlot();
 		slot = nlohmann::json::array();
-		m_stack.push_back(&slot);
+		m_stack.PushBack(&slot);
 	}
 
 	void JsonArchiveWriter::EndArray()
 	{
-		m_stack.pop_back();
+		m_stack.PopBack();
 	}
 
 	void JsonArchiveWriter::WriteBool(b8 value) { NextSlot() = value; }
@@ -60,10 +60,13 @@ namespace Horizon
 		return m_root.dump(2);
 	}
 
-	std::vector<u8> JsonArchiveWriter::ToBytes() const
+	List<u8> JsonArchiveWriter::ToBytes() const
 	{
 		std::string text = m_root.dump(2);
-		return std::vector<u8>(text.begin(), text.end());
+
+		List<u8> bytes(text.size());
+		std::memcpy(bytes.GetData(), text.data(), text.size());
+		return bytes;
 	}
 
 	JsonArchiveReader::JsonArchiveReader(std::string_view text)
@@ -80,9 +83,9 @@ namespace Horizon
 
 	const nlohmann::json* JsonArchiveReader::Target()
 	{
-		if (!m_stack.empty())
+		if (!m_stack.IsEmpty())
 		{
-			Frame& frame = m_stack.back();
+			Frame& frame = m_stack.Back();
 			if (frame.node && frame.node->is_array())
 			{
 				if (frame.readIndex >= frame.node->size())
@@ -100,20 +103,20 @@ namespace Horizon
 
 	void JsonArchiveReader::BeginObject()
 	{
-		m_stack.push_back({ Target(), 0 });
+		m_stack.PushBack({ Target(), 0 });
 	}
 
 	void JsonArchiveReader::EndObject()
 	{
-		m_stack.pop_back();
+		m_stack.PopBack();
 	}
 
 	b8 JsonArchiveReader::Key(std::string_view name)
 	{
-		if (m_stack.empty())
+		if (m_stack.IsEmpty())
 			return false;
 
-		const nlohmann::json* obj = m_stack.back().node;
+		const nlohmann::json* obj = m_stack.Back().node;
 		if (!obj || !obj->is_object())
 			return false;
 
@@ -134,18 +137,18 @@ namespace Horizon
 		if (!node || !node->is_array())
 		{
 			m_hasError = true;
-			m_stack.push_back({ nullptr, 0 });
+			m_stack.PushBack({ nullptr, 0 });
 			return 0;
 		}
 
 		usize count = node->size();
-		m_stack.push_back({ node, 0 });
+		m_stack.PushBack({ node, 0 });
 		return count;
 	}
 
 	void JsonArchiveReader::EndArray()
 	{
-		m_stack.pop_back();
+		m_stack.PopBack();
 	}
 
 	b8 JsonArchiveReader::ReadBool()

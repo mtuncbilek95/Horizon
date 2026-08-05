@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/Containers/List.h>
 
-#include <vector>
 #include <string_view>
 
 namespace Horizon::PAL
@@ -37,7 +37,7 @@ namespace Horizon::PAL
 		u64 GetId() const { return m_id; }
 
 		void SetAffinity(u64 coreMask);
-		static std::vector<CoreInfo> EnumerateCores();
+		static List<CoreInfo> EnumerateCores();
 
 		static void SleepMs(u32 millisec);
 		static void YieldCurrent();

@@ -39,9 +39,9 @@ namespace Horizon
 
 	protected:
 		template<typename... Ts>
-		static void Requires(std::vector<std::type_index>& out)
+		static void Requires(List<std::type_index>& out)
 		{
-			(out.push_back(typeid(Ts)), ...);
+			(out.PushBack(typeid(Ts)), ...);
 		}
 
 	protected:

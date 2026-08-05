@@ -12,11 +12,11 @@ namespace Horizon
 
 	u32 D3D12DescriptorHeap::Allocate()
 	{
-		if (!m_freeList.empty())
+		if (!m_freeList.IsEmpty())
 		{
-			const u32 index = m_freeList.back();
+			const u32 index = m_freeList.Back();
 
-			m_freeList.pop_back();
+			m_freeList.PopBack();
 			m_allocatedCount++;
 			return index;
 		}
@@ -36,7 +36,7 @@ namespace Horizon
 		if (index == kInvalid32)
 			return;
 
-		m_freeList.push_back(index);
+		m_freeList.PushBack(index);
 		m_allocatedCount--;
 	}
 }

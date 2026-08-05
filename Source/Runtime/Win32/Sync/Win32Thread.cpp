@@ -6,7 +6,6 @@
 #include <process.h>
 
 #include <string>
-#include <vector>
 #include <utility>
 #include <algorithm>
 
@@ -161,18 +160,18 @@ namespace Horizon::PAL
 		return (u64)(::GetCurrentThreadId());
 	}
 
-	std::vector<CoreInfo> Thread::EnumerateCores()
+	List<CoreInfo> Thread::EnumerateCores()
 	{
-		std::vector<CoreInfo> result;
+		List<CoreInfo> result;
 
 		DWORD len = 0;
 		::GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &len);
 		if (len == 0)
 			return result;
 
-		std::vector<u8> buffer(len);
+		List<u8> buffer(len);
 		if (!::GetLogicalProcessorInformationEx(RelationProcessorCore,
-			(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.data()), &len))
+			(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.GetData()), &len))
 			return result;
 
 		auto forEachCore = [&](auto&& fn)
@@ -180,7 +179,7 @@ namespace Horizon::PAL
 				DWORD offset = 0;
 				while (offset < len)
 				{
-					auto* rec = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.data() + offset);
+					auto* rec = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.GetData() + offset);
 					if (rec->Relationship == RelationProcessorCore)
 						fn(*rec);
 					offset += rec->Size;
@@ -205,7 +204,7 @@ namespace Horizon::PAL
 				{
 					if (mask & (KAFFINITY(1) << bit))
 					{
-						result.push_back(CoreInfo{ bit, isPerf });
+						result.PushBack(CoreInfo{ bit, isPerf });
 						break;
 					}
 				}

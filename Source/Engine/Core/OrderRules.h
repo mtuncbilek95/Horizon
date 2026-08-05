@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/Containers/List.h>
 
-#include <vector>
 #include <typeindex>
 
 namespace Horizon
@@ -17,7 +17,7 @@ namespace Horizon
 	struct OrderRules
 	{
 		OrderTier tier = OrderTier::Default;
-		std::vector<std::type_index> after;
-		std::vector<std::type_index> before;
+		List<std::type_index> after;
+		List<std::type_index> before;
 	};
 }
