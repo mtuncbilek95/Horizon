@@ -10,7 +10,6 @@ namespace Horizon
 	public:
 		virtual ~MenuItem() = default;
 
-		virtual b8 IsChecked() const { return false; }
 		virtual void OnExecute() = 0;
 
 	protected:

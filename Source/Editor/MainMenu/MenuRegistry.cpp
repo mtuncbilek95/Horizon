@@ -28,13 +28,6 @@ namespace Horizon
 
 		List<Reflect::Type*> mainList = moduleCtx->GetTypeByAttribute(Reflect::TypeOf<MainMenuItemAttribute>());
 
-		// Sort those File->0, Edit->100, View->200 etc
-		mainList.Sort([](Reflect::Type* pA, Reflect::Type* pB)
-			{
-				return pA->GetCustomAttribute<MainMenuItemAttribute>()->GetOrder()
-					< pB->GetCustomAttribute<MainMenuItemAttribute>()->GetOrder();
-			});
-
 		for (auto* type : mainList)
 		{
 			auto* attr = type->GetCustomAttribute<MainMenuItemAttribute>();
@@ -50,7 +43,6 @@ namespace Horizon
 
 		List<Reflect::Type*> leafList = moduleCtx->GetTypeByAttribute(Reflect::TypeOf<MenuItemAttribute>());
 
-		// Sort leafs
 		for (auto* type : leafList)
 		{
 			auto* attr = type->GetCustomAttribute<MenuItemAttribute>();
@@ -124,8 +116,7 @@ namespace Horizon
 
 		if (inst.isCheckbox)
 		{
-			b8 checked = inst.menu->IsChecked();
-			if (ImGui::MenuItem(inst.displayName.c_str(), nullptr, checked))
+			if (ImGui::MenuItem(inst.displayName.c_str(), nullptr))
 				inst.menu->OnExecute();
 		}
 		else
