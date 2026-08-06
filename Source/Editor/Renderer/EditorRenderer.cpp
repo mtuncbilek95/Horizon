@@ -1,5 +1,8 @@
 #include "EditorRenderer.h"
 
+#include <Editor/Font/IconsFontAudio.h>
+#include <Editor/Font/IconsFontAwesome6.h>
+#include <Editor/Font/IconsKenney.h>
 #include <Editor/Renderer/Utils/ImGuiUtils.h>
 
 #include <Runtime/RHI/Device/GfxDevice.h>
@@ -174,30 +177,39 @@ namespace Horizon
 		ImGuiIO& io = ImGui::GetIO();
 
 		const std::string fontDir = std::string(HORIZON_RESOURCE_DIR) + "/Fonts/";
-
 		constexpr f32 fontSize = 16.0f;
 
 		const std::string bodyPath = fontDir + "SanFranciscoDisplay - Regular.OTF";
-
-		ImFont* pBody = io.Fonts->AddFontFromFileTTF(bodyPath.c_str(), fontSize);
-		if (!pBody)
+		if (!io.Fonts->AddFontFromFileTTF(bodyPath.c_str(), fontSize))
 		{
 			Terminal::Error("EditorRenderer", "Failed to load UI Font: {}", bodyPath);
 			io.Fonts->AddFontDefault();
-			return;
 		}
-
-		const std::string iconPath = fontDir + "fa-solid-900.ttf";
 
 		ImFontConfig iconCfg = {};
 		iconCfg.MergeMode = true;
 		iconCfg.PixelSnapH = true;
 		iconCfg.ExtraSizeScale = 0.85f;
 		iconCfg.GlyphMinAdvanceX = fontSize;
-		iconCfg.GlyphOffset = ImVec2(0.0f, 0.f);
+		iconCfg.GlyphOffset = ImVec2(0.0f, 0.0f);
 
-		static const ImWchar iconRange[] = { 0xe000, 0xf8ff, 0 };
-		io.Fonts->AddFontFromFileTTF(iconPath.c_str(), fontSize, &iconCfg, iconRange);
+		const auto mergeIconFont = [&](const char* file, const ImWchar* range,
+			const ImWchar* exclude = nullptr)
+			{
+				iconCfg.GlyphExcludeRanges = exclude;
+				const std::string path = fontDir + file;
+				if (!io.Fonts->AddFontFromFileTTF(path.c_str(), fontSize, &iconCfg, range))
+					Terminal::Error("EditorRenderer", "Failed to load icon font: {}", path);
+			};
+
+		static const ImWchar faRange[] = { ICON_MIN_FA,  ICON_MAX_FA,  0 };
+		static const ImWchar faExclude[] = { ICON_MIN_FAD, ICON_MAX_FAD, 0 };
+		static const ImWchar fadRange[] = { ICON_MIN_FAD, ICON_MAX_FAD, 0 };
+		static const ImWchar kiRange[] = { ICON_MIN_KI,  ICON_MAX_KI,  0 };
+
+		mergeIconFont("fa-solid-900.ttf", faRange, faExclude);
+		mergeIconFont("fontaudio.ttf", fadRange);
+		mergeIconFont("kenney-icon-font.ttf", kiRange);
 	}
 
 	void EditorRenderer::DefaultStyle()

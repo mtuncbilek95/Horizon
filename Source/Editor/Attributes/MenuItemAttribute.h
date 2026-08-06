@@ -10,7 +10,7 @@ namespace Horizon
 	class H_EXPORT MenuItemAttribute : public Reflect::Attribute
 	{
 	public:
-		MenuItemAttribute(std::string path, i32 order, b8 isCheckbox) : m_path(path), m_order(order), m_isCheckbox(isCheckbox)
+		MenuItemAttribute(std::string path, i32 order, b8 isCheckbox = false) : m_path(path), m_order(order), m_isCheckbox(isCheckbox)
 		{}
 		~MenuItemAttribute() = default;
 
