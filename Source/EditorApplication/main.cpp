@@ -8,6 +8,7 @@
 #include <Engine/Presentation/PresentationSystem.h>
 #include <Engine/ECS/EntityComponentSystem.h>
 #include <Editor/Renderer/EditorSystem.h>
+#include <Editor/Domain/DomainSystem.h>
 
 #include "TypeManifestation.h"
 
@@ -23,7 +24,7 @@ int main(int argC, char** argV)
 
 	engine.AddSystem<WindowSystem>();
 	engine.AddSystem<EntityComponentSystem>();
-	//engine.AddSystem<DomainSystem>();
+	engine.AddSystem<DomainSystem>();
 	engine.AddSystem<AssetSystem>();
 	engine.AddSystem<EditorSystem>();
 	engine.AddSystem<PresentationSystem>();

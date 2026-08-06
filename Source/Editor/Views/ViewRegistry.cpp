@@ -63,6 +63,8 @@ namespace Horizon
 				viewObj->m_engine = m_engine;
 				viewObj->m_displayName = view.displayName;
 
+				viewObj->OnInvoke();
+
 				m_createdViews.PushBack(viewObj);
 			}
 		}

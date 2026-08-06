@@ -202,13 +202,10 @@ namespace Horizon
 					Terminal::Error("EditorRenderer", "Failed to load icon font: {}", path);
 			};
 
-		static const ImWchar faRange[] = { ICON_MIN_FA,  ICON_MAX_FA,  0 };
-		static const ImWchar faExclude[] = { ICON_MIN_FAD, ICON_MAX_FAD, 0 };
-		static const ImWchar fadRange[] = { ICON_MIN_FAD, ICON_MAX_FAD, 0 };
-		static const ImWchar kiRange[] = { ICON_MIN_KI,  ICON_MAX_KI,  0 };
+		static const ImWchar faRange[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+		static const ImWchar kiRange[] = { ICON_MIN_KI, ICON_MAX_KI, 0 };
 
-		mergeIconFont("fa-solid-900.ttf", faRange, faExclude);
-		mergeIconFont("fontaudio.ttf", fadRange);
+		mergeIconFont("fa-solid-900.ttf", faRange);
 		mergeIconFont("kenney-icon-font.ttf", kiRange);
 	}
 
