@@ -7,15 +7,13 @@
 
 #include <filesystem>
 
-namespace fs = std::filesystem;
-
 namespace Horizon
 {
 	void DeleteAssetItem::OnExecute(AssetBrowserMenuContext& context)
 	{
 		if (context.selected.IsEmpty())
 		{
-			Terminal::Warn("DeleteAssetItem", "no asset selected");
+			Terminal::Warn("DeleteAssetItem", "No asset selected");
 			return;
 		}
 
@@ -23,8 +21,8 @@ namespace Horizon
 		{
 			if (node->IsFolder())
 			{
-				fs::remove_all(node->GetSourcePath());
-				Terminal::Info("DeleteAssetItem", "deleted folder {}", node->GetName());
+				std::filesystem::remove_all(node->GetSourcePath());
+				Terminal::Info("DeleteAssetItem", "Deleted Folder {}", node->GetName());
 				continue;
 			}
 
@@ -33,7 +31,7 @@ namespace Horizon
 			if (!node->GetMetaPath().empty())
 				PAL::File::Delete(node->GetMetaPath());
 
-			Terminal::Info("DeleteAssetItem", "deleted {}", node->GetName());
+			Terminal::Info("DeleteAssetItem", "Deleted {}", node->GetName());
 		}
 	}
 

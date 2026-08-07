@@ -91,7 +91,7 @@ namespace Horizon
 		List<DomainNode*> selected;
 		CollectSelected(selected);
 
-		AssetBrowserMenuContext context{ m_engine, selected, &m_renamePath };
+		AssetBrowserMenuContext context{ m_engine, folder, selected, &m_renamePath };
 		m_contextMenu.RenderPopup("asset_browser_ctx", context);
 
 		if (!m_renamePath.empty() && !m_renameOpen)

@@ -1,5 +1,8 @@
 #include "DomainSystem.h"
 
+#include <Engine/Core/Engine.h>
+#include <Engine/Asset/AssetSystem.h>
+
 #include <Runtime/PAL/File/File.h>
 
 #include <Runtime/Definitions/Allocator.h>
@@ -108,7 +111,10 @@ namespace Horizon
 		}
 
 		for (const auto& source : sources)
-			node->m_items.PushBack(BuildAsset(source, node));
+		{
+			if (auto* asset = BuildAsset(source, node))
+				node->m_items.PushBack(asset);
+		}
 
 		for (const auto& dir : subDirs)
 			node->m_items.PushBack(BuildFolder(dir, node));
@@ -118,6 +124,19 @@ namespace Horizon
 
 	DomainNode* DomainSystem::BuildAsset(const std::filesystem::path& sourcePath, DomainNode* parent)
 	{
+		auto* assetSystem = m_engine->TryGetSystem<AssetSystem>();
+
+		if (!assetSystem)
+		{
+			Terminal::Error("DomainSystem", "AssetSystem not available");
+			return nullptr;
+		}
+
+		const AssetTypeDesc* td = assetSystem->GetTypeRegistry().ResolveByExtension(sourcePath.extension().string());
+
+		if (!td)
+			return nullptr;
+
 		std::filesystem::path metaPath;
 		const Guid id = LoadOrCreateMeta(sourcePath, metaPath);
 
@@ -129,9 +148,20 @@ namespace Horizon
 		node->m_id = id;
 		node->m_parent = parent;
 
-		EnsureCooked(id, sourcePath);
-		Register(node);
+		switch (td->origin)
+		{
+		case AssetOrigin::Imported:
+			EnsureCooked(id, sourcePath);
+			break;
 
+		case AssetOrigin::Native:
+			break;
+
+		case AssetOrigin::Generated:
+			break;
+		}
+
+		Register(node);
 		return node;
 	}
 

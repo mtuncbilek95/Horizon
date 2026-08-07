@@ -11,6 +11,8 @@ namespace Horizon
 	{
 		System::OnAttach(pEngine);
 
+		m_typeRegistry.Bootstrap(pEngine);
+
 		return EngineReport();
 	}
 

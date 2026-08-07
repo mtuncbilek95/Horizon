@@ -37,9 +37,9 @@ namespace Horizon
 		std::filesystem::path m_metaFile;
 		std::filesystem::path m_sourceFile;
 
-		DomainNodeType m_type;
+		DomainNodeType m_type = DomainNodeType::File;
 
-		DomainNode* m_parent;
+		DomainNode* m_parent = nullptr;
 		List<DomainNode*> m_items;
 	};
 }

@@ -12,6 +12,7 @@ namespace Horizon
 	struct AssetBrowserMenuContext
 	{
 		Engine* engine;
+		DomainNode* currentNode;
 		const List<DomainNode*>& selected;
 		std::filesystem::path* renameRequest;
 	};

@@ -2,6 +2,7 @@
 
 #include <Engine/Core/System.h>
 #include <Engine/Asset/AssetRegistryDesc.h>
+#include <Engine/Asset/AssetTypeRegistry.h>
 
 #include <filesystem>
 #include <string>
@@ -25,5 +26,10 @@ namespace Horizon
 
 		void RegisterAsset(const AssetRegistryDesc& registerInfo);
 		void UnregisterAsset(const Guid& guid);
+
+		const AssetTypeRegistry& GetTypeRegistry() const { return m_typeRegistry; }
+
+	private:
+		AssetTypeRegistry m_typeRegistry;
 	};
 }
