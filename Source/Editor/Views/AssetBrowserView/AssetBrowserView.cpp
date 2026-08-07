@@ -18,15 +18,18 @@ namespace Horizon
 
 	void AssetBrowserView::OnRender()
 	{
+		// Get domain system 
 		if (!m_domain)
 			m_domain = m_engine->TryGetSystem<DomainSystem>();
 
+		// Kill the area if domain system cant be requested
 		if (!m_domain)
 		{
 			ImGui::TextDisabled("DomainSystem not available");
 			return;
 		}
 
+		// Kill the area if there is no root.
 		DomainNode* root = m_domain->GetRoot();
 		if (!root)
 		{
@@ -38,16 +41,22 @@ namespace Horizon
 		if (!folder)
 			folder = root;
 
-		if (folder->GetParent())
+		// Proper aligned disabled area
+		ImGui::BeginDisabled(folder->IsRoot());
 		{
-			if (ImGui::Button(ICON_FA_ARROW_UP " Up"))
+			if (ImGui::Button(ICON_FA_ARROW_LEFT))
 				m_currentPath = folder->GetParent()->GetSourcePath();
-
-			ImGui::SameLine();
 		}
+		ImGui::EndDisabled();
+
+		// Absolute path
+		ImGui::SameLine();
+		ImGui::AlignTextToFramePadding();
 		ImGui::TextDisabled("%s", folder->GetSourcePath().string().c_str());
+
 		ImGui::Separator();
 
+		// Just to be safe, do this shit every frame :(
 		m_children.Clear();
 		for (auto* child : folder->GetItemList())
 			m_children.PushBack(child);
@@ -70,14 +79,35 @@ namespace Horizon
 			const b8 selected = m_selection.Contains(id);
 
 			const char* icon = child->IsFolder() ? ICON_FA_FOLDER : ICON_FA_FILE;
-			const std::string label = std::string(icon) + " " + child->GetName();
+			const std::string& name = child->GetName();
 
 			ImGui::PushID(i);
 			ImGui::SetNextItemSelectionUserData(i);
-			ImGui::Selectable(label.c_str(), selected, 0, ImVec2(cell, cell));
+
+			const ImVec2 cellMin = ImGui::GetCursorScreenPos();
+			ImGui::Selectable("##cell", selected, 0, ImVec2(cell, cell));
 
 			if (child->IsFolder() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
 				enterFolder = child->GetSourcePath();
+
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			ImFont* font = ImGui::GetFont();
+			const ImU32 textColor = ImGui::GetColorU32(ImGuiCol_Text);
+
+			const f32 iconFontSize = cell * 0.5f;
+			const ImVec2 iconSize = font->CalcTextSizeA(iconFontSize, FLT_MAX, 0.0f, icon);
+			const ImVec2 iconPos(cellMin.x + (cell - iconSize.x) * 0.5f, cellMin.y + cell * 0.14f);
+			drawList->AddText(font, iconFontSize, iconPos, textColor, icon);
+
+			const f32 labelWidth = cell - 6.0f;
+			const std::string label = TruncateToWidth(name, labelWidth);
+
+			const ImVec2 nameSize = ImGui::CalcTextSize(label.c_str());
+			const ImVec2 namePos(cellMin.x + (cell - nameSize.x) * 0.5f, cellMin.y + cell - nameSize.y - 4.0f);
+			drawList->AddText(namePos, textColor, label.c_str());
+
+			if (label != name)
+				ImGui::SetItemTooltip("%s", name.c_str());
 
 			ImGui::PopID();
 
@@ -170,6 +200,33 @@ namespace Horizon
 	{
 		auto* view = static_cast<AssetBrowserView*>(self->UserData);
 		return PathToId(view->m_children[static_cast<usize>(index)]->GetSourcePath());
+	}
+
+	std::string AssetBrowserView::TruncateToWidth(const std::string& text, f32 maxWidth)
+	{
+		if (ImGui::CalcTextSize(text.c_str()).x <= maxWidth)
+			return text;
+
+		const char* ellipsis = "...";
+		const f32 ellipsisWidth = ImGui::CalcTextSize(ellipsis).x;
+
+		std::string result;
+		f32 width = 0.0f;
+
+		for (char c : text)
+		{
+			const char str[2] = { c, 0 };
+			const f32 charWidth = ImGui::CalcTextSize(str).x;
+
+			if (width + charWidth + ellipsisWidth > maxWidth)
+				break;
+
+			result += c;
+			width += charWidth;
+		}
+
+		result += ellipsis;
+		return result;
 	}
 
 	void AssetBrowserView::RenameOnDisk(const std::filesystem::path& sourcePath, const char* newName)

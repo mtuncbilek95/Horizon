@@ -29,6 +29,7 @@ namespace Horizon
 		static DomainNode* FindFolder(DomainNode* node, const std::filesystem::path& path);
 		static ImGuiID PathToId(const std::filesystem::path& path);
 		static ImGuiID AdapterIndexToStorageId(ImGuiSelectionBasicStorage* self, i32 index);
+		static std::string TruncateToWidth(const std::string& text, f32 maxWidth);
 
 		void RenameOnDisk(const std::filesystem::path& sourcePath, const char* newName);
 	private:

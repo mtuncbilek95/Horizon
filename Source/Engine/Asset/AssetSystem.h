@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Engine/Core/System.h>
-#include <Engine/Asset/AssetRegistryDesc.h>
 #include <Engine/Asset/AssetTypeRegistry.h>
 
 #include <filesystem>
@@ -23,9 +22,6 @@ namespace Horizon
 
 		void GetInitializeOrder(OrderRules& rules) const final;
 		void GetExecutionOrder(OrderRules& rules) const final;
-
-		void RegisterAsset(const AssetRegistryDesc& registerInfo);
-		void UnregisterAsset(const Guid& guid);
 
 		const AssetTypeRegistry& GetTypeRegistry() const { return m_typeRegistry; }
 

@@ -53,10 +53,10 @@ namespace Horizon::Reflect
 			return *this;
 		}
 
-		template<typename TAttr, typename... Args>
-		TypeBuilder& WithAttribute(Args&&... args)
+		template<typename TAttr>
+		TypeBuilder& WithAttribute(TAttr attr)
 		{
-			m_type.m_attributes.PushBack(Allocator::Create<TAttr>(CurrLoc(), std::forward<Args>(args)...));
+			m_type.m_attributes.PushBack(Allocator::Create<TAttr>(CurrLoc(), std::move(attr)));
 			return *this;
 		}
 
@@ -92,8 +92,8 @@ namespace Horizon::Reflect
 			return *this;
 		}
 
-		template<typename TAttr, typename... Args>
-		TypeBuilder& WithFieldAttribute(Args&&... args)
+		template<typename TAttr>
+		TypeBuilder& WithFieldAttribute(TAttr attr)
 		{
 			if (m_type.m_fields.IsEmpty())
 			{
@@ -102,7 +102,7 @@ namespace Horizon::Reflect
 			}
 
 			m_type.m_fields.Back().m_attributes.PushBack(
-				Allocator::Create<TAttr>(CurrLoc(), std::forward<Args>(args)...));
+				Allocator::Create<TAttr>(CurrLoc(), std::move(attr)));
 			return *this;
 		}
 

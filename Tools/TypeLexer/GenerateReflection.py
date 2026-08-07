@@ -160,13 +160,13 @@ def emit_reflected(r: Reflected) -> str:
     for attr_name, args in r.attrs:
         cls = attribute_class(attr_name)
         aq = f'{r.ns}::{cls}' if r.ns else cls
-        lines.append(f'\t\t\t\t\t.WithAttribute<{aq}>({args})')
+        lines.append(f'\t\t\t\t\t.WithAttribute({aq}({args}))')
     for display, member, f_attrs in r.fields:
         lines.append(f'\t\t\t\t\t.WithField("{display}", &{q}::{member})')
         for attr_name, args in f_attrs:
             cls = attribute_class(attr_name)
             aq = f'{r.ns}::{cls}' if r.ns else cls
-            lines.append(f'\t\t\t\t\t.WithFieldAttribute<{aq}>({args})')
+            lines.append(f'\t\t\t\t\t.WithFieldAttribute({aq}({args}))')
     lines.append('\t\t\t\t\t.Build();')
     chain = '\n'.join(lines)
 
