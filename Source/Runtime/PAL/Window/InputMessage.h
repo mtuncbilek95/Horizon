@@ -1,15 +1,14 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/Containers/List.h>
 #include <Runtime/PAL/Window/InputMessageType.h>
 #include <Runtime/PAL/Window/InputModifiers.h>
 #include <Runtime/PAL/Window/KeyCode.h>
 #include <Runtime/PAL/Window/MouseButton.h>
 #include <Runtime/PAL/Window/WindowMode.h>
 
-#include <Runtime/Containers/List.h>
-
-#include <filesystem>
+#include <string>
 
 namespace Horizon::PAL
 {
@@ -29,6 +28,6 @@ namespace Horizon::PAL
 
 		InputModifiers modifiers;
 
-		List<std::filesystem::path> filePaths;
+		List<std::string> filePaths;
 	};
 }

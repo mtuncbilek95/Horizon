@@ -101,12 +101,6 @@ namespace Horizon
 				break;
 			}
 
-			if (field.GetTypeId() == Reflect::TypeOf<std::filesystem::path>())
-			{
-				writer.WriteString(static_cast<const std::filesystem::path*>(valuePtr)->string());
-				break;
-			}
-
 			const Reflect::Type* nested = Resolve(field.GetTypeId());
 			if (!nested)
 			{
@@ -186,12 +180,6 @@ namespace Horizon
 			if (field.GetTypeId() == Reflect::TypeOf<Guid>())
 			{
 				*static_cast<Guid*>(valuePtr) = Guid(reader.ReadString());
-				break;
-			}
-
-			if (field.GetTypeId() == Reflect::TypeOf<std::filesystem::path>())
-			{
-				*static_cast<std::filesystem::path*>(valuePtr) = reader.ReadString();
 				break;
 			}
 

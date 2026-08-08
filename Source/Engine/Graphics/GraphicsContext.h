@@ -10,14 +10,17 @@ namespace Horizon
 	class GfxSwapchain;
 	class GfxFence;
 	class GfxCommandList;
+}
 
+namespace Horizon::Engine
+{
 	class H_EXPORT GraphicsContext final : public Context
 	{
 	public:
 		GraphicsContext() = default;
 		~GraphicsContext() = default;
 
-		EngineReport OnAttach(Engine* engine) final;
+		AppReport OnAttach(Application* engine) final;
 		void OnDetach() final;
 
 		void GetInitializeOrder(OrderRules& rules) const final;

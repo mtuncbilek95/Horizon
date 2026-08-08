@@ -199,7 +199,7 @@ namespace Horizon::PAL
 					c8 buffer[MAX_PATH];
 					DragQueryFile(hDrop, it, buffer, MAX_PATH);
 
-					message.filePaths.PushBack(std::filesystem::path(buffer));
+					message.filePaths.PushBack(std::string(buffer));
 				}
 				DragFinish(hDrop);
 

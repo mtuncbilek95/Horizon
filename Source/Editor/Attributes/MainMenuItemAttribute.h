@@ -5,7 +5,7 @@
 #include <string>
 #include <string_view>
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	class H_EXPORT MainMenuItemAttribute : public Reflect::Attribute
 	{

@@ -4,7 +4,7 @@
 
 #include <functional>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	using Job = std::function<void()>;
 

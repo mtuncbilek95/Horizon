@@ -25,7 +25,7 @@ namespace Horizon::Reflect
 		~Type()
 		{
 			for (Attribute* attr : m_attributes)
-				Allocator::Delete(attr);
+				Memory::Allocator::Delete(attr);
 		}
 
 		Type(const Type&) = delete;

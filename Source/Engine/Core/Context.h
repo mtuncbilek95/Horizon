@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Engine/Core/EngineModule.h>
+#include <Engine/Core/AppModule.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	class Engine;
+	class Application;
 
-	class H_EXPORT Context : public EngineModule
+	class H_EXPORT Context : public AppModule
 	{
 	public:
 		Context() = default;

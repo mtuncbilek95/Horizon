@@ -5,7 +5,7 @@
 #include <array>
 #include <cassert>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	class EntityRegistry
 	{

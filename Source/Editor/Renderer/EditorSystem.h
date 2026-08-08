@@ -4,26 +4,30 @@
 
 #include <Runtime/PAL/Window/Window.h>
 
-namespace Horizon
+namespace Horizon::Engine
+{
+	class PresentationSystem;
+}
+
+namespace Horizon::Editor
 {
 	class EditorRenderer;
-	class PresentationSystem;
 
 	class ViewRegistry;
 	class MenuRegistry;
 
-	class H_EXPORT EditorSystem final : public System
+	class H_EXPORT EditorSystem final : public Engine::System
 	{
 	public:
 		EditorSystem() = default;
 		~EditorSystem() = default;
 
-		EngineReport OnAttach(Engine* engine) final;
+		Engine::AppReport OnAttach(Engine::Application* engine) final;
 		void OnSync() final;
 		void OnDetach() final;
 
-		void GetInitializeOrder(OrderRules& rules) const final;
-		void GetExecutionOrder(OrderRules& rules) const final;
+		void GetInitializeOrder(Engine::OrderRules& rules) const final;
+		void GetExecutionOrder(Engine::OrderRules& rules) const final;
 
 	private:
 		PAL::Window* m_engineWindow = nullptr;
@@ -32,6 +36,6 @@ namespace Horizon
 		ViewRegistry* m_viewRegistry = nullptr;
 		MenuRegistry* m_menuRegistry = nullptr;
 
-		PresentationSystem* m_presentationSub = nullptr;
+		Engine::PresentationSystem* m_presentationSub = nullptr;
 	};
 }

@@ -9,8 +9,6 @@
 
 namespace Horizon
 {
-	using RenderContext = void*;
-
 	class GfxDevice;
 	class GfxQueue;
 	class GfxTexture;
@@ -18,6 +16,11 @@ namespace Horizon
 	class GfxBuffer;
 	class GfxCommandList;
 	class GfxFence;
+}
+
+namespace Horizon::Editor
+{
+	using RenderContext = void*;
 
 	struct EditorRendererDesc
 	{

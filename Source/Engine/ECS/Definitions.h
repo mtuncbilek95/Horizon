@@ -4,7 +4,7 @@
 #include <atomic>
 #include <bitset>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	static constexpr u32 MaxEntities = 8192;
 	static constexpr u64 MaxComponents = 64;

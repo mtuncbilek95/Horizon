@@ -1,8 +1,6 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
-
-#include <filesystem>
 #include <string>
 
 namespace Horizon::PAL
@@ -12,7 +10,7 @@ namespace Horizon::PAL
 
 	struct SymbolLibraryDesc
 	{
-		std::filesystem::path path;
+		std::string path;
 		b8 isMain = true;
 	};
 
@@ -22,9 +20,9 @@ namespace Horizon::PAL
 		SymbolLibrary(const SymbolLibraryDesc& desc);
 		~SymbolLibrary() = default;
 
-		const std::filesystem::path& GetPath() const noexcept { return m_desc.path; }
-		b8 GetIsMain() const noexcept { return m_desc.isMain; }
+		const std::string& GetPath() const noexcept { return m_desc.path; }
 		const std::string& GetName() const noexcept { return m_name; }
+		b8 GetIsMain() const noexcept { return m_desc.isMain; }
 
 		SymbolAddress GetSymbol(const std::string& name) const;
 

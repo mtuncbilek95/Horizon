@@ -11,12 +11,6 @@ namespace Horizon::PAL
 	using ThreadHandle = void*;
 	using CustomUserData = void*;
 
-	struct CoreInfo
-	{
-		u32 logicalIndex;
-		b8 isPerformance;
-	};
-
 	class H_EXPORT Thread
 	{
 	public:
@@ -32,20 +26,15 @@ namespace Horizon::PAL
 
 		void Join();
 		void Detach();
+		void SetAffinity(u64 coreMask);
 		b8 IsJoinable() const { return m_handle != nullptr; }
 
 		u64 GetId() const { return m_id; }
-
-		void SetAffinity(u64 coreMask);
-		static List<CoreInfo> EnumerateCores();
 
 		static void SleepMs(u32 millisec);
 		static void YieldCurrent();
 		static u32 HardwareConcurrency();
 		static u64 CurrentId();
-
-		static u32 PerformanceCoreCount();
-		static u32 EfficiencyCoreCount();
 
 	private:
 		ThreadHandle m_handle = nullptr;

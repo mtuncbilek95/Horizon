@@ -14,7 +14,6 @@ def parse_attribute(content: str):
     return m.group(1), (m.group(2) or '').strip()
 
 def split_top_level(s: str):
-    """Virgulle ayrilmis attribute listesini boler; [], (), {} ve string icindeki virgulleri atlar."""
     parts = []
     cur = []
     depth = 0
@@ -62,6 +61,33 @@ def parse_attributes(content: str):
 def attribute_class(name: str) -> str:
     return name if name.endswith('Attribute') else name + 'Attribute'
 
+NS_TAIL_RE = re.compile(r'namespace\s+([A-Za-z_][\w:]*)\s*$')
+
+def namespace_at(clean: str, pos: int) -> str:
+    stack = []
+    i = 0
+    n = min(pos, len(clean))
+    while i < n:
+        ch = clean[i]
+        if ch in '"\'':
+            quote = ch
+            i += 1
+            while i < n:
+                if clean[i] == '\\':
+                    i += 2
+                    continue
+                if clean[i] == quote:
+                    break
+                i += 1
+        elif ch == '{':
+            m = NS_TAIL_RE.search(clean, 0, i)
+            stack.append(m.group(1) if m else None)
+        elif ch == '}':
+            if stack:
+                stack.pop()
+        i += 1
+    return '::'.join(name for name in stack if name)
+
 def brace_body(s: str, open_idx: int) -> str:
     depth = 0
     for i in range(open_idx, len(s)):
@@ -74,7 +100,6 @@ def brace_body(s: str, open_idx: int) -> str:
     return s[open_idx + 1:]
 
 def extract_parens(s: str, open_idx: int):
-    """s[open_idx] == '(' — dengeli kapanisi bulur. (icerik, kapanis_index) doner."""
     depth = 0
     for i in range(open_idx, len(s)):
         if s[i] == '(':
@@ -116,9 +141,7 @@ def parse_file(path: Path, source_root: Path):
         if bm:
             base = bm.group(1)
 
-        before = clean[:hclass.start()]
-        ns_matches = re.findall(r'namespace\s+([A-Za-z_][\w:]*)', before)
-        ns = ns_matches[-1] if ns_matches else ''
+        ns = namespace_at(clean, hclass.start())
 
         body_open = paren_close + m.end() - 1
         body = brace_body(clean, body_open)
@@ -153,20 +176,20 @@ def parse_file(path: Path, source_root: Path):
 
 def emit_reflected(r: Reflected) -> str:
     q = f'{r.ns}::{r.name}' if r.ns else r.name
-    lines = [f'\t\t\t\treturn TypeBuilder<{q}>::ForType("{r.name}")']
+    lines = []
+    if r.ns:
+        lines.append(f'\t\t\t\tusing namespace {r.ns};\n')
+    lines.append(f'\t\t\t\treturn TypeBuilder<{r.name}>::ForType("{r.name}")')
     if r.base:
-        bq = f'{r.ns}::{r.base}' if r.ns else r.base
-        lines.append(f'\t\t\t\t\t.WithBase<{bq}>()')
+        lines.append(f'\t\t\t\t\t.WithBase<{r.base}>()')
     for attr_name, args in r.attrs:
         cls = attribute_class(attr_name)
-        aq = f'{r.ns}::{cls}' if r.ns else cls
-        lines.append(f'\t\t\t\t\t.WithAttribute({aq}({args}))')
+        lines.append(f'\t\t\t\t\t.WithAttribute({cls}({args}))')
     for display, member, f_attrs in r.fields:
-        lines.append(f'\t\t\t\t\t.WithField("{display}", &{q}::{member})')
+        lines.append(f'\t\t\t\t\t.WithField("{display}", &{r.name}::{member})')
         for attr_name, args in f_attrs:
             cls = attribute_class(attr_name)
-            aq = f'{r.ns}::{cls}' if r.ns else cls
-            lines.append(f'\t\t\t\t\t.WithFieldAttribute({aq}({args}))')
+            lines.append(f'\t\t\t\t\t.WithFieldAttribute({cls}({args}))')
     lines.append('\t\t\t\t\t.Build();')
     chain = '\n'.join(lines)
 
@@ -198,7 +221,7 @@ def emit_manifestation(all_r) -> str:
         '#include <Runtime/Containers/List.h>\n\n'
         'extern "C" H_EXPORT void InstallModule(void* allocatorCtx)\n'
         '{\n'
-        '\tHorizon::Allocator::SetContext(allocatorCtx);\n'
+        '\tHorizon::Memory::Allocator::SetContext(allocatorCtx);\n'
         '}\n\n'
         'extern "C" H_EXPORT void GenerateModuleManifestation(Horizon::List<Horizon::Reflect::Type>* outTypes)\n'
         '{\n'

@@ -1,14 +1,14 @@
 #include "AssetTypeRegistry.h"
 
 #include <Engine/Asset/AssetTypeAttribute.h>
-#include <Engine/Core/Engine.h>
+#include <Engine/Core/Application.h>
 #include <Engine/Module/ModuleContext.h>
 
 #include <Runtime/Log/Terminal.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	void AssetTypeRegistry::Bootstrap(Engine* pEngine)
+	void AssetTypeRegistry::Bootstrap(Application* pEngine)
 	{
 	}
 

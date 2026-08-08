@@ -38,7 +38,7 @@ namespace Horizon
 
 	GfxDevice* CreateGfxDevice(const GfxDeviceDesc& desc)
 	{
-		auto* pDevice = Allocator::Create<D3D12Device>(CurrLoc());
+		auto* pDevice = Memory::Allocator::Create<D3D12Device>(Memory::CurrLoc());
 
 		pDevice->Init(desc);
 		return pDevice;
@@ -105,10 +105,10 @@ namespace Horizon
 	{
 		FlushPendingDeletes(kInvalid64);
 
-		Allocator::Delete(m_resourceHeap);
-		Allocator::Delete(m_samplerHeap);
-		Allocator::Delete(m_colorHeap);
-		Allocator::Delete(m_depthHeap);
+		Memory::Allocator::Delete(m_resourceHeap);
+		Memory::Allocator::Delete(m_samplerHeap);
+		Memory::Allocator::Delete(m_colorHeap);
+		Memory::Allocator::Delete(m_depthHeap);
 
 		if (m_drawSignature)
 			m_drawSignature->Release();
@@ -211,7 +211,7 @@ namespace Horizon
 
 		allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
-		auto* pTex = Allocator::Create<D3D12Texture>(CurrLoc());
+		auto* pTex = Memory::Allocator::Create<D3D12Texture>(Memory::CurrLoc());
 
 		pTex->m_ownerDevice = this;
 
@@ -221,7 +221,7 @@ namespace Horizon
 
 		if (FAILED(hr))
 		{
-			Allocator::Delete(pTex);
+			Memory::Allocator::Delete(pTex);
 			return nullptr;
 		}
 
@@ -272,7 +272,7 @@ namespace Horizon
 			desc.memory == GfxMemoryType::Readback ? D3D12_RESOURCE_STATE_COPY_DEST :
 			D3D12_RESOURCE_STATE_COMMON;
 
-		auto* pBuf = Allocator::Create<D3D12Buffer>(CurrLoc());
+		auto* pBuf = Memory::Allocator::Create<D3D12Buffer>(Memory::CurrLoc());
 
 		pBuf->m_ownerDevice = this;
 
@@ -282,7 +282,7 @@ namespace Horizon
 
 		if (FAILED(hr))
 		{
-			Allocator::Delete(pBuf);
+			Memory::Allocator::Delete(pBuf);
 			return nullptr;
 		}
 
@@ -356,7 +356,7 @@ namespace Horizon
 
 		m_device->CreateSampler(&samplerDesc, m_samplerHeap->CpuAt(index));
 
-		auto* pSampler = Allocator::Create<D3D12Sampler>(CurrLoc());
+		auto* pSampler = Memory::Allocator::Create<D3D12Sampler>(Memory::CurrLoc());
 
 		pSampler->m_ownerDevice = this;
 		pSampler->m_desc = desc;
@@ -367,7 +367,7 @@ namespace Horizon
 
 	GfxQueue* D3D12Device::CreateQueue(GfxQueueType type)
 	{
-		auto* pQueue = Allocator::Create<D3D12Queue>(CurrLoc());
+		auto* pQueue = Memory::Allocator::Create<D3D12Queue>(Memory::CurrLoc());
 
 		pQueue->m_ownerDevice = this;
 		pQueue->m_type = type;
@@ -384,7 +384,7 @@ namespace Horizon
 
 	GfxFence* D3D12Device::CreateFence()
 	{
-		auto* pFence = Allocator::Create<D3D12Fence>(CurrLoc());
+		auto* pFence = Memory::Allocator::Create<D3D12Fence>(Memory::CurrLoc());
 
 		pFence->m_ownerDevice = this;
 
@@ -396,7 +396,7 @@ namespace Horizon
 
 	GfxCommandList* D3D12Device::CreateCommandList(GfxQueueType type)
 	{
-		auto* pCmd = Allocator::Create<D3D12CommandList>(CurrLoc());
+		auto* pCmd = Memory::Allocator::Create<D3D12CommandList>(Memory::CurrLoc());
 
 		pCmd->m_ownerDevice = this;
 		pCmd->m_device = this;
@@ -411,7 +411,7 @@ namespace Horizon
 
 	GfxSwapchain* D3D12Device::CreateSwapchain(const GfxSwapchainDesc& desc, GfxQueue* pPresentQueue)
 	{
-		auto* pSwapchain = Allocator::Create<D3D12Swapchain>(CurrLoc());
+		auto* pSwapchain = Memory::Allocator::Create<D3D12Swapchain>(Memory::CurrLoc());
 
 		pSwapchain->m_ownerDevice = this;
 		pSwapchain->m_device = this;
@@ -503,7 +503,7 @@ namespace Horizon
 
 	D3D12Texture* D3D12Device::CreateBackbufferTexture(ID3D12Resource* pResource, u32 width, u32 height, DXGI_FORMAT format)
 	{
-		auto* pTexture = Allocator::Create<D3D12Texture>(CurrLoc());
+		auto* pTexture = Memory::Allocator::Create<D3D12Texture>(Memory::CurrLoc());
 
 		pTexture->m_ownerDevice = this;
 		pTexture->m_resource = pResource;
@@ -521,12 +521,12 @@ namespace Horizon
 
 	void D3D12Device::DestroyBackbufferTexture(D3D12Texture* pTexture)
 	{
-		Allocator::Delete(pTexture);
+		Memory::Allocator::Delete(pTexture);
 	}
 
 	D3D12DescriptorHeap* D3D12Device::CreateDescriptorHeap(GfxDescriptorHeapType type, u32 capacity, b8 shaderVisible)
 	{
-		auto* pHeap = Allocator::Create<D3D12DescriptorHeap>(CurrLoc());
+		auto* pHeap = Memory::Allocator::Create<D3D12DescriptorHeap>(Memory::CurrLoc());
 
 		pHeap->m_ownerDevice = this;
 		pHeap->m_desc = { type, capacity, shaderVisible };

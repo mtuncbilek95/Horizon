@@ -7,14 +7,14 @@
 #include <string>
 #include <unordered_map>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	class Engine;
+	class Application;
 
 	class H_EXPORT AssetTypeRegistry
 	{
 	public:
-		void Bootstrap(Engine* pEngine);
+		void Bootstrap(Application* pEngine);
 
 		const AssetTypeDesc* ResolveByExtension(const std::string& ext) const;
 

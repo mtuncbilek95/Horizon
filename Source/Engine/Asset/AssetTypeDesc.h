@@ -7,7 +7,7 @@
 
 #include <string>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	struct AssetTypeDesc
 	{

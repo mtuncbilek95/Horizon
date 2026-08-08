@@ -1,5 +1,5 @@
 #include "ImGuiContext.h"
 
-namespace Horizon
+namespace Horizon::Editor
 {
 }

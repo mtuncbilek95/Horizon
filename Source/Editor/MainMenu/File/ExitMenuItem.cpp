@@ -1,8 +1,8 @@
 #include "ExitMenuItem.h"
 
-#include <Engine/Core/Engine.h>
+#include <Engine/Core/Application.h>
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	void ExitMenuItem::OnExecute()
 	{

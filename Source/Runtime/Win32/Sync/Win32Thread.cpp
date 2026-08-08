@@ -49,7 +49,7 @@ namespace Horizon::PAL
 		u32 __stdcall ThreadTrampoline(void* arg)
 		{
 			ThreadStartContext local = std::move(*(ThreadStartContext*)(arg));
-			Allocator::Delete((ThreadStartContext*)(arg));
+			Memory::Allocator::Delete((ThreadStartContext*)(arg));
 
 			SetCurrentThreadName(local.name);
 
@@ -62,7 +62,7 @@ namespace Horizon::PAL
 
 	Thread::Thread(ThreadEntry entry, CustomUserData userData, std::string_view name)
 	{
-		ThreadStartContext* ctx = Allocator::Create<ThreadStartContext>(CurrLoc(), entry, userData, std::string(name));
+		ThreadStartContext* ctx = Memory::Allocator::Create<ThreadStartContext>(Memory::CurrLoc(), entry, userData, std::string(name));
 
 		uintptr_t h = ::_beginthreadex(nullptr, 0, &ThreadTrampoline, ctx, 0, nullptr);
 		if (h == 0)
@@ -158,76 +158,5 @@ namespace Horizon::PAL
 	u64 Thread::CurrentId()
 	{
 		return (u64)(::GetCurrentThreadId());
-	}
-
-	List<CoreInfo> Thread::EnumerateCores()
-	{
-		List<CoreInfo> result;
-
-		DWORD len = 0;
-		::GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &len);
-		if (len == 0)
-			return result;
-
-		List<u8> buffer(len);
-		if (!::GetLogicalProcessorInformationEx(RelationProcessorCore,
-			(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.GetData()), &len))
-			return result;
-
-		auto forEachCore = [&](auto&& fn)
-			{
-				DWORD offset = 0;
-				while (offset < len)
-				{
-					auto* rec = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.GetData() + offset);
-					if (rec->Relationship == RelationProcessorCore)
-						fn(*rec);
-					offset += rec->Size;
-				}
-			};
-
-		BYTE maxClass = 0;
-		forEachCore([&](const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX& rec)
-			{
-				maxClass = (std::max)(maxClass, rec.Processor.EfficiencyClass);
-			});
-
-		forEachCore([&](const SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX& rec)
-			{
-				const b8 isPerf = (rec.Processor.EfficiencyClass == maxClass);
-
-				if (rec.Processor.GroupCount == 0)
-					return;
-
-				const KAFFINITY mask = rec.Processor.GroupMask[0].Mask;
-				for (u32 bit = 0; bit < sizeof(KAFFINITY) * 8; ++bit)
-				{
-					if (mask & (KAFFINITY(1) << bit))
-					{
-						result.PushBack(CoreInfo{ bit, isPerf });
-						break;
-					}
-				}
-			});
-
-		return result;
-	}
-
-	u32 Thread::PerformanceCoreCount()
-	{
-		u32 count = 0;
-		for (const CoreInfo& c : EnumerateCores())
-			if (c.isPerformance)
-				++count;
-		return count;
-	}
-
-	u32 Thread::EfficiencyCoreCount()
-	{
-		u32 count = 0;
-		for (const CoreInfo& c : EnumerateCores())
-			if (!c.isPerformance)
-				++count;
-		return count;
 	}
 }

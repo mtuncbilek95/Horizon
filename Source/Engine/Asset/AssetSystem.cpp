@@ -1,19 +1,19 @@
 #include "AssetSystem.h"
 
-#include <Engine/Core/Engine.h>
+#include <Engine/Core/Application.h>
 #include <Engine/Module/ModuleContext.h>
 
 #include <cstring>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	EngineReport AssetSystem::OnAttach(Engine* pEngine)
+	AppReport AssetSystem::OnAttach(Application* pEngine)
 	{
 		System::OnAttach(pEngine);
 
 		m_typeRegistry.Bootstrap(pEngine);
 
-		return EngineReport();
+		return AppReport();
 	}
 
 	void AssetSystem::OnSync()

@@ -8,7 +8,7 @@
 
 #include <unordered_map>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	class ModuleContext : public Context 
 	{
@@ -16,7 +16,7 @@ namespace Horizon
 		ModuleContext(PAL::SymbolLibrary* pLibrary);
 		~ModuleContext() = default;
 
-		EngineReport OnAttach(Engine* pEngine) final;
+		AppReport OnAttach(Application* pEngine) final;
 		void OnDetach() final;
 
 		Reflect::Type* GetType(Reflect::TypeHandle handl);

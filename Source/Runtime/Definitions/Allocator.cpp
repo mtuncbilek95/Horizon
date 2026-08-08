@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <cstddef>
 
-namespace Horizon
+namespace Horizon::Memory
 {
 	namespace
 	{
@@ -78,12 +78,12 @@ namespace Horizon
 		usize AlignUp(usize v, usize a) { return (v + (a - 1)) & ~(a - 1); }
 	}
 
-	void Allocator::SetContext(void* tracker) { g_active = static_cast<LeakTracker*>(tracker); }
-	void* Allocator::GetContext() { return &Tracker(); }
+	void Memory::Allocator::SetContext(void* tracker) { g_active = static_cast<LeakTracker*>(tracker); }
+	void* Memory::Allocator::GetContext() { return &Tracker(); }
 
-	void Allocator::ReportLeaks() { Tracker().Report(); }
+	void Memory::Allocator::ReportLeaks() { Tracker().Report(); }
 
-	void* Allocator::AllocateRaw(usize size, usize align, SourceLocation loc)
+	void* Memory::Allocator::AllocateRaw(usize size, usize align, SourceLocation loc)
 	{
 		usize eff = align < alignof(std::max_align_t) ? alignof(std::max_align_t) : align;
 		usize headerSize = AlignUp(sizeof(AllocHeader), eff);
@@ -101,7 +101,7 @@ namespace Horizon
 		return user;
 	}
 
-	void Allocator::FreeRaw(void* user)
+	void Memory::Allocator::FreeRaw(void* user)
 	{
 		if (!user)
 			return;

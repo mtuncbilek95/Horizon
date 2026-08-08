@@ -1,9 +1,12 @@
 #pragma once
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	class Engine;
+	class Application;
+}
 
+namespace Horizon::Editor
+{
 	class H_EXPORT MenuItem
 	{
 		friend class MenuRegistry;
@@ -13,6 +16,6 @@ namespace Horizon
 		virtual void OnExecute() = 0;
 
 	protected:
-		Engine* m_engine;
+		Engine::Application* m_engine;
 	};
 }

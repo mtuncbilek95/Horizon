@@ -2,17 +2,20 @@
 
 #include <Editor/MainMenu/MenuItemInstance.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	class Engine;
+	class Application;
+}
 
+namespace Horizon::Editor
+{
 	class MenuRegistry
 	{
 	public:
 		MenuRegistry() = default;
 		~MenuRegistry();
 
-		void BootstrapMenus(Engine* pEngine);
+		void BootstrapMenus(Engine::Application* pEngine);
 		void RenderGUI();
 
 	private:

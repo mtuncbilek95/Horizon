@@ -1,17 +1,17 @@
 #include "WindowSystem.h"
 
-#include <Engine/Core/Engine.h>
+#include <Engine/Core/Application.h>
 #include <Engine/Job/JobContext.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	EngineReport WindowSystem::OnAttach(Engine* pEngine)
+	AppReport WindowSystem::OnAttach(Application* pEngine)
 	{
 		System::OnAttach(pEngine);
 
 		PAL::WindowDesc winDesc = {};
-		winDesc.width = 512;
-		winDesc.height = 512;
+		winDesc.width = 1920;
+		winDesc.height = 1080;
 		winDesc.mode = PAL::WindowMode::Windowed;
 		winDesc.titleName = "Horizon Engine";
 
@@ -19,16 +19,16 @@ namespace Horizon
 		winDesc.flags = PAL::WindowFlags::EnableDragDrop;
 #endif
 
-		m_window = Allocator::Create<PAL::Window>(CurrLoc(), winDesc);
+		m_window = Memory::Allocator::Create<PAL::Window>(Memory::CurrLoc(), winDesc);
 		if (!m_window)
-			return EngineReport("Window has not been initialize. Just kill yourself!");
+			return AppReport("Window has not been initialize. Just kill yourself!");
 
 		m_window->Show();
 
 #if defined(HORIZON_WINDOWS)
 		Terminal::Info("WindowSystem", "Win32 based window has been initialized!");
 #endif
-		return EngineReport();
+		return AppReport();
 	}
 
 	void WindowSystem::OnSync()
@@ -41,7 +41,7 @@ namespace Horizon
 
 	void WindowSystem::OnDetach()
 	{
-		Allocator::Delete(m_window);
+		Memory::Allocator::Delete(m_window);
 	}
 
 	void WindowSystem::GetInitializeOrder(OrderRules& rules) const

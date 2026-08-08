@@ -5,22 +5,22 @@
 #include <string_view>
 #include <string>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	ModuleContext::ModuleContext(PAL::SymbolLibrary* pLibrary) : m_module(pLibrary)
 	{
 	}
 
-	EngineReport ModuleContext::OnAttach(Engine* pEngine)
+	AppReport ModuleContext::OnAttach(Application* pEngine)
 	{
 		if (!m_module)
-			return EngineReport("Could not create the symbol library in Engine");
+			return AppReport("Could not create the symbol library in Application");
 
 		using GenerateFn = void(*)(List<Reflect::Type>*);
 		auto* GenerateManifests = reinterpret_cast<GenerateFn>(m_module->GetSymbol("GenerateModuleManifestation"));
 
 		if (!GenerateManifests)
-			return EngineReport("GenerateModuleManifestation symbol not found");
+			return AppReport("GenerateModuleManifestation symbol not found");
 
 		List<Reflect::Type> registery;
 		GenerateManifests(&registery);
@@ -38,7 +38,7 @@ namespace Horizon
 		}
 
 		Terminal::Info(GetName(), "Loaded {} type manifests", m_registeredTypes.GetCount());
-		return EngineReport();
+		return AppReport();
 	}
 
 	void ModuleContext::OnDetach()

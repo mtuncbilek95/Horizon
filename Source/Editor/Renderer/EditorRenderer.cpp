@@ -20,7 +20,7 @@
 
 #include <fstream>
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	EditorRenderer::EditorRenderer(const EditorRendererDesc& desc) : m_device(desc.pDevice),
 		m_graphicsQueue(desc.pQueue)
@@ -49,7 +49,7 @@ namespace Horizon
 	EditorRenderer::~EditorRenderer()
 	{
 		for (GfxCommandList* cmd : m_commandLists)
-			Allocator::Delete(cmd);
+			Memory::Allocator::Delete(cmd);
 
 		m_device->ShutdownImGui();
 

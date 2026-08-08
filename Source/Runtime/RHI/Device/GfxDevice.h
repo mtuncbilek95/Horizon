@@ -101,7 +101,7 @@ namespace Horizon
 
 			while (!m_pending.empty() && m_pending.front().retireFrame + m_desc.framesInFlight <= currentFrame)
 			{
-				Allocator::Delete(m_pending.front().pObject);
+				Memory::Allocator::Delete(m_pending.front().pObject);
 				m_pending.pop();
 			}
 		}

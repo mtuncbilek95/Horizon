@@ -4,7 +4,7 @@
 
 #include <array>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	class IComponentArray
 	{

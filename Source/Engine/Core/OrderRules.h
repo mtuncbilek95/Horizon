@@ -5,7 +5,7 @@
 
 #include <typeindex>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	enum class OrderTier : u8
 	{

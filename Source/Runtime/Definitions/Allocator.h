@@ -6,7 +6,7 @@
 #include <utility>
 #include <new>
 
-namespace Horizon
+namespace Horizon::Memory
 {
 	using SourceLocation = std::source_location;
 	inline constexpr SourceLocation CurrLoc(SourceLocation loc = SourceLocation::current()) noexcept { return loc; }

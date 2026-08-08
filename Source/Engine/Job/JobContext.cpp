@@ -1,19 +1,20 @@
 #include "JobContext.h"
 
-#include <Engine/Core/Engine.h>
+#include <Engine/Core/Application.h>
+#include <Runtime/PAL/Hardware/Processor.h>
 
 #include <random>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	EngineReport JobContext::OnAttach(Engine* pEngine)
+	AppReport JobContext::OnAttach(Application* pEngine)
 	{
 		Context::OnAttach(pEngine);
 
 		for (usize i = 0; i < PAL::Thread::HardwareConcurrency() - 1; i++)
-			m_workers.PushBack(Allocator::Create<JobWorker>(CurrLoc(), this, i));
+			m_workers.PushBack(Memory::Allocator::Create<JobWorker>(Memory::CurrLoc(), this, i));
 
-		auto cores = PAL::Thread::EnumerateCores();
+		auto cores = PAL::Processor::EnumerateCores();
 		for (usize i = 0; i < m_workers.GetCount(); ++i)
 		{
 			const PAL::CoreInfo& core = cores[i % cores.GetCount()];
@@ -26,7 +27,7 @@ namespace Horizon
 		}
 
 		Terminal::Debug("JobContext", "{} amount of thread has been initialized for multi-threading", m_workers.GetCount());
-		return EngineReport();
+		return AppReport();
 	}
 
 	void JobContext::OnDetach()
@@ -35,7 +36,7 @@ namespace Horizon
 			m_workers[i]->Stop();
 
 		for (auto* worker : m_workers)
-			Allocator::Delete(worker);
+			Memory::Allocator::Delete(worker);
 	}
 
 	void JobContext::SubmitJob(Job&& job)

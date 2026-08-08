@@ -3,7 +3,7 @@
 #include <Runtime/Containers/List.h>
 #include <string>
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	class MenuItem;
 

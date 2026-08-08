@@ -9,13 +9,13 @@
 
 namespace Horizon::PAL
 {
-	FileAccessRequest File::RequestAccess(const std::filesystem::path& newPath, FileOperationAccessPolicy accessPol, FileOperationSharePolicy sharePol, b8 asyncOp)
+	FileAccessRequest File::RequestAccess(const std::string& newPath, FileOperationAccessPolicy accessPol, FileOperationSharePolicy sharePol, b8 asyncOp)
 	{
 		DWORD access = PAL::Win32FileHelpers::ToAccessPolicy(accessPol);
 		DWORD share = PAL::Win32FileHelpers::ToSharePolicy(sharePol);
 		DWORD async = PAL::Win32FileHelpers::ToAsyncPolicy(asyncOp);
 
-		HANDLE fileHandle = CreateFileA(newPath.string().data(), access, share, NULL, OPEN_EXISTING, async, NULL);
+		HANDLE fileHandle = CreateFileA(newPath.data(), access, share, NULL, OPEN_EXISTING, async, NULL);
 		if (fileHandle == NULL || fileHandle == INVALID_HANDLE_VALUE)
 		{
 			std::string err = Win32ErrorHelpers::GetLastErrorString(GetLastError());
@@ -44,9 +44,9 @@ namespace Horizon::PAL
 		handle.m_handle = {};
 	}
 
-	b8 File::Create(const std::filesystem::path& newPath)
+	b8 File::Create(const std::string& newPath)
 	{
-		HANDLE fileHandle = CreateFileA(newPath.string().data(), GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		HANDLE fileHandle = CreateFileA(newPath.data(), GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (fileHandle == NULL || fileHandle == INVALID_HANDLE_VALUE)
 		{
 			std::string err = Win32ErrorHelpers::GetLastErrorString(GetLastError());
@@ -60,9 +60,9 @@ namespace Horizon::PAL
 		return true;
 	}
 
-	b8 File::Delete(const std::filesystem::path& newPath)
+	b8 File::Delete(const std::string& newPath)
 	{
-		if (!DeleteFileA(newPath.string().data()))
+		if (!DeleteFileA(newPath.data()))
 		{
 			std::string err = Win32ErrorHelpers::GetLastErrorString(GetLastError());
 			Terminal::Error("File::Delete", "{}", err);
@@ -70,6 +70,12 @@ namespace Horizon::PAL
 		}
 
 		return true;
+	}
+
+	b8 File::Exists(const std::string& newPath)
+	{
+		DWORD dwAttrib = GetFileAttributes(newPath.data());
+		return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 	}
 
 	b8 File::WriteString(FileAccessRequest fileAccess, const std::string& content, usize offset)

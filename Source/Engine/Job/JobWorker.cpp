@@ -6,7 +6,7 @@
 
 #include <utility>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	void JobWorker::ThreadEntryPoint(void* userData)
 	{
@@ -22,12 +22,12 @@ namespace Horizon
 	{
 		JobNode* node = nullptr;
 		while (m_deque.PopBottom(node))
-			Allocator::Delete(node);
+			Memory::Allocator::Delete(node);
 
 		for (JobNode* nod = m_inbox.Exchange(nullptr); nod;)
 		{
 			JobNode* next = nod->next;
-			Allocator::Delete(nod);
+			Memory::Allocator::Delete(nod);
 			nod = next;
 		}
 	}
@@ -86,7 +86,7 @@ namespace Horizon
 
 	void JobWorker::AddJob(Job&& job)
 	{
-		JobNode* node = Allocator::Create<JobNode>(CurrLoc(), std::move(job), nullptr);
+		JobNode* node = Memory::Allocator::Create<JobNode>(Memory::CurrLoc(), std::move(job), nullptr);
 
 		JobNode* head = m_inbox.Load();
 
@@ -113,7 +113,7 @@ namespace Horizon
 			return false;
 
 		out = std::move(node->job);
-		Allocator::Delete(node);
+		Memory::Allocator::Delete(node);
 		return true;
 	}
 
@@ -154,7 +154,7 @@ namespace Horizon
 			return false;
 
 		out = std::move(node->job);
-		Allocator::Delete(node);
+		Memory::Allocator::Delete(node);
 		return true;
 	}
 }

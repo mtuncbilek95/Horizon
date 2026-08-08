@@ -1,6 +1,6 @@
 #include "ImGuiUtils.h"
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	ImGuiKey ImGuiUtils::GetKeyboardKey(const PAL::KeyCode key)
 	{

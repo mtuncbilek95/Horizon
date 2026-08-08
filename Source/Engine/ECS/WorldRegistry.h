@@ -4,7 +4,7 @@
 #include <Engine/ECS/EntityRegistry.h>
 #include <Engine/ECS/ComponentRegistry.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	class WorldRegistry
 	{

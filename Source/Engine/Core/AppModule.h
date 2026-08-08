@@ -1,19 +1,19 @@
 #pragma once
 
-#include <Engine/Core/EngineReport.h>
+#include <Engine/Core/AppReport.h>
 #include <Engine/Core/OrderRules.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	class Engine;
+	class Application;
 
-	class EngineModule
+	class AppModule
 	{
-		friend class Engine;
+		friend class Application;
 	public:
-		virtual ~EngineModule() = default;
+		virtual ~AppModule() = default;
 
-		virtual EngineReport OnAttach(Engine* pEngine) { return {}; }
+		virtual AppReport OnAttach(Application* pEngine) { return {}; }
 		virtual void OnDetach() {}
 
 		virtual void GetInitializeOrder(OrderRules& rules) const {}
@@ -45,6 +45,6 @@ namespace Horizon
 		}
 
 	protected:
-		Engine* m_engine = nullptr;
+		Application* m_engine = nullptr;
 	};
 }

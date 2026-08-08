@@ -2,7 +2,7 @@
 
 #include <Engine/Core/System.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	class WorldAsset;
 	class WorldRegistry;
@@ -10,7 +10,7 @@ namespace Horizon
 	class EntityComponentSystem : public System
 	{
 	public:
-		EngineReport OnAttach(Engine* engine) final;
+		AppReport OnAttach(Application* engine) final;
 		void OnDetach() final;
 
 		void GetInitializeOrder(OrderRules& rules) const final;

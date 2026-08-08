@@ -8,7 +8,7 @@
 #include <Runtime/PAL/Sync/Futex.h>
 #include <Runtime/PAL/Sync/Atomic.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	class JobContext;
 

@@ -5,14 +5,12 @@
 
 #include <Runtime/Containers/List.h>
 
-namespace Horizon
+namespace Horizon::Editor
 {
-	class Engine;
-
 	class H_EXPORT ViewRegistry
 	{
 	public:
-		ViewRegistry(Engine* pEngine);
+		ViewRegistry(Engine::Application* pEngine);
 		~ViewRegistry();
 
 		void BootstrapViews();
@@ -22,7 +20,7 @@ namespace Horizon
 		void BuildDefaultLayout(u32 rootId);
 
 	private:
-		Engine* m_engine = nullptr;
+		Engine::Application* m_engine = nullptr;
 
 		List<ViewDescriptor> m_registeredViews;
 		List<ViewObject*> m_createdViews;

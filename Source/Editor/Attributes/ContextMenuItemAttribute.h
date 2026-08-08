@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	class H_EXPORT ContextMenuItemAttribute : public Reflect::Attribute
 	{

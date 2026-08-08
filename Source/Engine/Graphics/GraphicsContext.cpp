@@ -1,6 +1,6 @@
 #include "GraphicsContext.h"
 
-#include <Engine/Core/Engine.h>
+#include <Engine/Core/Application.h>
 #include <Engine/Window/WindowSystem.h>
 
 #include <Runtime/PAL/Window/Window.h>
@@ -11,43 +11,43 @@
 #include <Runtime/RHI/Swapchain/GfxSwapchain.h>
 #include <Runtime/Definitions/Allocator.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	EngineReport GraphicsContext::OnAttach(Engine* pEngine)
+	AppReport GraphicsContext::OnAttach(Application* pEngine)
 	{
 		Context::OnAttach(pEngine);
 
 		auto* pWindowSub = m_engine->TryGetSystem<WindowSystem>();
 		if(!pWindowSub)
-			return EngineReport("Failed to get WindowSystem. Nothing will work...");
+			return AppReport("Failed to get WindowSystem. Nothing will work...");
 
 		m_device = CreateGfxDevice(GfxDeviceDesc());
 		if (!m_device)
-			return EngineReport("Failed to create GfxDevice");
+			return AppReport("Failed to create GfxDevice");
 
 		m_graphicsQueue = m_device->CreateQueue(GfxQueueType::Graphics);
 		if (!m_graphicsQueue)
-			return EngineReport("Failed to create GfxQueue(Graphics)");
+			return AppReport("Failed to create GfxQueue(Graphics)");
 
 		m_computeQueue = m_device->CreateQueue(GfxQueueType::Compute);
 		if (!m_computeQueue)
-			return EngineReport("Failed to create GfxQueue(Compute)");
+			return AppReport("Failed to create GfxQueue(Compute)");
 
 		m_transferQueue = m_device->CreateQueue(GfxQueueType::Transfer);
 		if (!m_transferQueue)
-			return EngineReport("Failed to create GfxQueue(Transfer)");
+			return AppReport("Failed to create GfxQueue(Transfer)");
 
 		Terminal::Debug("GraphicsContext", "Device, Graphics Queue, Compute Queue and Transfer Queue has been initialized!");
-		return EngineReport();
+		return AppReport();
 	}
 
 	void GraphicsContext::OnDetach()
 	{
-		Allocator::Delete(m_graphicsQueue);
-		Allocator::Delete(m_computeQueue);
-		Allocator::Delete(m_transferQueue);
+		Memory::Allocator::Delete(m_graphicsQueue);
+		Memory::Allocator::Delete(m_computeQueue);
+		Memory::Allocator::Delete(m_transferQueue);
 
-		Allocator::Delete(m_device);
+		Memory::Allocator::Delete(m_device);
 	}
 
 	void GraphicsContext::GetInitializeOrder(OrderRules& rules) const

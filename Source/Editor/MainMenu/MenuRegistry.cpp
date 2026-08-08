@@ -4,12 +4,12 @@
 #include <Editor/Attributes/MenuItemAttribute.h>
 #include <Editor/MainMenu/MenuItem.h>
 
-#include <Engine/Core/Engine.h>
+#include <Engine/Core/Application.h>
 #include <Engine/Module/ModuleContext.h>
 
 #include <imgui.h>
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	MenuRegistry::~MenuRegistry()
 	{
@@ -18,7 +18,7 @@ namespace Horizon
 		m_menus.Clear();
 	}
 
-	void MenuRegistry::BootstrapMenus(Engine* pEngine)
+	void MenuRegistry::BootstrapMenus(Engine::Application* pEngine)
 	{
 		for (auto& inst : m_menus)
 			ClearRecursive(inst);
@@ -128,7 +128,7 @@ namespace Horizon
 
 	void MenuRegistry::ClearRecursive(MenuItemInstance& inst)
 	{
-		Allocator::Delete(inst.menu);
+		Memory::Allocator::Delete(inst.menu);
 
 		for (auto& newInst : inst.subMenus)
 			ClearRecursive(newInst);

@@ -1,6 +1,6 @@
 #include "PresentationSystem.h"
 
-#include <Engine/Core/Engine.h>
+#include <Engine/Core/Application.h>
 #include <Engine/Window/WindowSystem.h>
 #include <Engine/Graphics/GraphicsContext.h>
 
@@ -10,19 +10,19 @@
 #include <Runtime/RHI/Queue/GfxQueue.h>
 #include <Runtime/RHI/Fence/GfxFence.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	EngineReport PresentationSystem::OnAttach(Engine* engine)
+	AppReport PresentationSystem::OnAttach(Application* engine)
 	{
 		System::OnAttach(engine);
 
 		auto* pWindowSub = m_engine->TryGetSystem<WindowSystem>();
 		if (!pWindowSub)
-			return EngineReport("Failed to get WindowSystem. Nothing will work...");
+			return AppReport("Failed to get WindowSystem. Nothing will work...");
 
 		auto* pGraphSub = m_engine->TryGetContext<GraphicsContext>();
 		if (!pGraphSub)
-			return EngineReport("Failed to get GraphicsContext. Nothing will work...");
+			return AppReport("Failed to get GraphicsContext. Nothing will work...");
 
 		m_graphicsQueue = pGraphSub->GetGraphicsQueue();
 
@@ -37,22 +37,22 @@ namespace Horizon
 		swapDesc.bAllowTearing = false;
 		m_swapchain = pGraphSub->GetDevice()->CreateSwapchain(swapDesc, pGraphSub->GetGraphicsQueue());
 		if (!m_swapchain)
-			return EngineReport("Failed to create GfxSwapchain");
+			return AppReport("Failed to create GfxSwapchain");
 
 		m_frameFence = pGraphSub->GetDevice()->CreateFence();
 		if (!m_frameFence)
-			return EngineReport("Failed to create present fence");
+			return AppReport("Failed to create present fence");
 
 		m_imageCount = swapDesc.imageCount;
 
 		Terminal::Debug("PresentationSystem", "Swapchain has been initialized!");
-		return EngineReport();
+		return AppReport();
 	}
 
 	void PresentationSystem::OnDetach()
 	{
-		Allocator::Delete(m_frameFence);
-		Allocator::Delete(m_swapchain);
+		Memory::Allocator::Delete(m_frameFence);
+		Memory::Allocator::Delete(m_swapchain);
 	}
 
 	void PresentationSystem::GetInitializeOrder(OrderRules& rules) const

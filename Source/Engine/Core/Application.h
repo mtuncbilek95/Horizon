@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Core/EngineModule.h>
+#include <Engine/Core/AppModule.h>
 #include <Engine/Core/System.h>
 #include <Engine/Core/Context.h>
 #include <Runtime/Definitions/Allocator.h>
@@ -13,15 +13,15 @@
 #include <unordered_map>
 #include <typeindex>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	class ModuleContext;
 
-	class H_EXPORT Engine final
+	class H_EXPORT Application final
 	{
 	public:
-		Engine();
-		~Engine();
+		Application();
+		~Application();
 
 		template<typename TSystem, typename... Args>
 			requires std::is_base_of_v<System, TSystem>
@@ -29,7 +29,7 @@ namespace Horizon
 		{
 			std::type_index key = std::type_index(typeid(TSystem));
 
-			auto* pSystem = Allocator::Create<TSystem>(CurrLoc(), std::forward<Args>(args)...);
+			auto* pSystem = Memory::Allocator::Create<TSystem>(Memory::CurrLoc(), std::forward<Args>(args)...);
 			m_initPending.PushBack(pSystem);
 
 			return *pSystem;
@@ -42,7 +42,7 @@ namespace Horizon
 			auto it = m_lookup.find(std::type_index(typeid(TSystem)));
 			if (it == m_lookup.end())
 			{
-				Terminal::Warn("Engine", "{} is not registered.", typeid(TSystem).name());
+				Terminal::Warn("Application", "{} is not registered.", typeid(TSystem).name());
 				return;
 			}
 
@@ -55,7 +55,7 @@ namespace Horizon
 		{
 			std::type_index key = std::type_index(typeid(TContext));
 
-			auto* context = Allocator::Create<TContext>(CurrLoc(), std::forward<Args>(args)...);
+			auto* context = Memory::Allocator::Create<TContext>(Memory::CurrLoc(), std::forward<Args>(args)...);
 			m_initPending.PushBack(context);
 			return *context;
 		}
@@ -67,7 +67,7 @@ namespace Horizon
 			auto it = m_lookup.find(std::type_index(typeid(TContext)));
 			if (it == m_lookup.end())
 			{
-				Terminal::Warn("Engine", "{} is not registered.", typeid(TContext).name());
+				Terminal::Warn("Application", "{} is not registered.", typeid(TContext).name());
 				return;
 			}
 
@@ -79,7 +79,7 @@ namespace Horizon
 		TSystem& GetSystem()
 		{
 			auto it = m_lookup.find(std::type_index(typeid(TSystem)));
-			Terminal::Assert(it != m_lookup.end(), "Engine", "System not found");
+			Terminal::Assert(it != m_lookup.end(), "Application", "System not found");
 
 			return *static_cast<TSystem*>(it->second);
 		}
@@ -97,7 +97,7 @@ namespace Horizon
 		TContext& GetContext()
 		{
 			auto it = m_lookup.find(std::type_index(typeid(TContext)));
-			Terminal::Assert(it != m_lookup.end(), "Engine", "System not found");
+			Terminal::Assert(it != m_lookup.end(), "Application", "System not found");
 
 			return *static_cast<TContext*>(it->second);
 		}
@@ -120,8 +120,8 @@ namespace Horizon
 		void SortActive();
 		void Shutdown();
 
-		List<EngineModule*> Build(const List<EngineModule*>& modules,
-			void(*getRules)(EngineModule*, OrderRules&)) const;
+		List<AppModule*> Build(const List<AppModule*>& modules,
+			void(*getRules)(AppModule*, OrderRules&)) const;
 
 	private:
 		ModuleContext* m_reflectionContext = nullptr;
@@ -130,11 +130,11 @@ namespace Horizon
 		List<System*> m_activeSystems;
 		List<Context*> m_activeContexts;
 
-		List<EngineModule*> m_initOrder;
-		List<EngineModule*> m_initPending;
-		List<EngineModule*> m_removePending;
+		List<AppModule*> m_initOrder;
+		List<AppModule*> m_initPending;
+		List<AppModule*> m_removePending;
 
-		std::unordered_map<std::type_index, EngineModule*> m_lookup;
+		std::unordered_map<std::type_index, AppModule*> m_lookup;
 		b8 m_exitRequested = false;
 	};
 }

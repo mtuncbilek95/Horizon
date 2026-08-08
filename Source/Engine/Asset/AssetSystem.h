@@ -3,12 +3,11 @@
 #include <Engine/Core/System.h>
 #include <Engine/Asset/AssetTypeRegistry.h>
 
-#include <filesystem>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	class Asset;
 	class AssetLifetimeStrategy;
@@ -16,7 +15,7 @@ namespace Horizon
 	class H_EXPORT AssetSystem : public System
 	{
 	public:
-		EngineReport OnAttach(Engine* pEngine);
+		AppReport OnAttach(Application* pEngine);
 		void OnSync();
 		void OnDetach();
 

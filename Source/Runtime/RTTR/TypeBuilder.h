@@ -31,11 +31,11 @@ namespace Horizon::Reflect
 			{
 				builder.m_type.CreateMemoryFunc = []() -> VoidObject
 					{
-						return Allocator::Create<TType>(CurrLoc());
+						return Memory::Allocator::Create<TType>(Memory::CurrLoc());
 					};
 				builder.m_type.DestroyMemoryFunc = [](VoidObject instance)
 					{
-						Allocator::Delete(static_cast<TType*>(instance));
+						Memory::Allocator::Delete(static_cast<TType*>(instance));
 					};
 			}
 			else if constexpr (std::is_abstract_v<TType>)
@@ -56,7 +56,7 @@ namespace Horizon::Reflect
 		template<typename TAttr>
 		TypeBuilder& WithAttribute(TAttr attr)
 		{
-			m_type.m_attributes.PushBack(Allocator::Create<TAttr>(CurrLoc(), std::move(attr)));
+			m_type.m_attributes.PushBack(Memory::Allocator::Create<TAttr>(Memory::CurrLoc(), std::move(attr)));
 			return *this;
 		}
 
@@ -102,7 +102,7 @@ namespace Horizon::Reflect
 			}
 
 			m_type.m_fields.Back().m_attributes.PushBack(
-				Allocator::Create<TAttr>(CurrLoc(), std::move(attr)));
+				Memory::Allocator::Create<TAttr>(Memory::CurrLoc(), std::move(attr)));
 			return *this;
 		}
 

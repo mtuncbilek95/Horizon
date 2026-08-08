@@ -6,7 +6,7 @@
 #include <imgui.h>
 #include <string_view>
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	struct H_EXPORT ImGuiUtils final
 	{

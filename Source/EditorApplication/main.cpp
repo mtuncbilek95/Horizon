@@ -1,4 +1,4 @@
-#include <Engine/Core/Engine.h>
+#include <Engine/Core/Application.h>
 
 #include <Engine/Job/JobContext.h>
 
@@ -8,7 +8,6 @@
 #include <Engine/Presentation/PresentationSystem.h>
 #include <Engine/ECS/EntityComponentSystem.h>
 #include <Editor/Renderer/EditorSystem.h>
-#include <Editor/Domain/DomainSystem.h>
 
 #include "TypeManifestation.h"
 
@@ -16,18 +15,18 @@ using namespace Horizon;
 
 int main(int argC, char** argV)
 {
-	Engine engine;
+	Engine::Application engine;
 
-	engine.AddContext<JobContext>();
-	engine.AddContext<GraphicsContext>();
+	engine.AddContext<Engine::JobContext>();
+	engine.AddContext<Engine::GraphicsContext>();
 	//engine.AddContext<ProjectContext>(argC, argV);
 
-	engine.AddSystem<WindowSystem>();
-	engine.AddSystem<EntityComponentSystem>();
-	engine.AddSystem<DomainSystem>();
-	engine.AddSystem<AssetSystem>();
-	engine.AddSystem<EditorSystem>();
-	engine.AddSystem<PresentationSystem>();
+	engine.AddSystem<Engine::WindowSystem>();
+	engine.AddSystem<Engine::EntityComponentSystem>();
+	//engine.AddSystem<DomainSystem>();
+	engine.AddSystem<Engine::AssetSystem>();
+	engine.AddSystem<Editor::EditorSystem>();
+	engine.AddSystem<Engine::PresentationSystem>();
 
 	engine.Run();
 }

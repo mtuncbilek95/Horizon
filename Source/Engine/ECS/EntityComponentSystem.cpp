@@ -2,11 +2,11 @@
 
 #include <Engine/ECS/WorldRegistry.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	EngineReport EntityComponentSystem::OnAttach(Engine* engine)
+	AppReport EntityComponentSystem::OnAttach(Application* engine)
 	{
-		return EngineReport();
+		return AppReport();
 	}
 
 	void EntityComponentSystem::OnDetach()

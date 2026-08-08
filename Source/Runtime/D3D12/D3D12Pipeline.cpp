@@ -108,7 +108,7 @@ namespace Horizon
 		const b8 bUsesMesh = desc.meshShader.IsValid();
 		const DXGI_SAMPLE_DESC sampleDesc = { Helpers::ToSampleCount(desc.sampleCount), 0 };
 
-		auto* pPipe = Allocator::Create<D3D12Pipeline>(CurrLoc());
+		auto* pPipe = Memory::Allocator::Create<D3D12Pipeline>(Memory::CurrLoc());
 
 		pPipe->m_ownerDevice = this;
 
@@ -170,7 +170,7 @@ namespace Horizon
 
 		if (FAILED(hr))
 		{
-			Allocator::Delete(pPipe);
+			Memory::Allocator::Delete(pPipe);
 			return nullptr;
 		}
 
@@ -188,7 +188,7 @@ namespace Horizon
 		psoDesc.pRootSignature = m_rootSignature;
 		psoDesc.CS = { desc.computeShader.pData, desc.computeShader.size };
 
-		auto* pPipe = Allocator::Create<D3D12Pipeline>(CurrLoc());
+		auto* pPipe = Memory::Allocator::Create<D3D12Pipeline>(Memory::CurrLoc());
 
 		pPipe->m_ownerDevice = this;
 
@@ -197,7 +197,7 @@ namespace Horizon
 
 		if (FAILED(hr))
 		{
-			Allocator::Delete(pPipe);
+			Memory::Allocator::Delete(pPipe);
 			return nullptr;
 		}
 

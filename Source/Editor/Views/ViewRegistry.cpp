@@ -2,22 +2,22 @@
 
 #include <Editor/Attributes/EditorViewAttribute.h>
 
-#include <Engine/Core/Engine.h>
+#include <Engine/Core/Application.h>
 #include <Engine/Module/ModuleContext.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>
 
-namespace Horizon
+namespace Horizon::Editor
 {
-	ViewRegistry::ViewRegistry(Engine* pEngine) : m_engine(pEngine)
+	ViewRegistry::ViewRegistry(Engine::Application* pEngine) : m_engine(pEngine)
 	{
 	}
 
 	ViewRegistry::~ViewRegistry()
 	{
 		for (auto* view : m_createdViews)
-			Allocator::Delete(view);
+			Memory::Allocator::Delete(view);
 
 		m_createdViews.Clear();
 		m_registeredViews.Clear();
@@ -32,7 +32,7 @@ namespace Horizon
 		}
 
 		for (auto* view : m_createdViews)
-			Allocator::Delete(view);
+			Memory::Allocator::Delete(view);
 
 		m_createdViews.Clear();
 		m_registeredViews.Clear();

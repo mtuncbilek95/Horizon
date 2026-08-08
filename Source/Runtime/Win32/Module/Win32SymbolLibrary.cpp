@@ -4,7 +4,6 @@
 
 #include <Windows.h>
 
-#include <filesystem>
 #include <cassert>
 
 namespace Horizon::PAL
@@ -31,14 +30,13 @@ namespace Horizon::PAL
 		{
 			assert(!desc.path.empty() && "This should be not empty");
 
-			instance = LoadLibrary(desc.path.string().c_str());
+			instance = LoadLibrary(desc.path.data());
 
 			if (!instance)
 				return;
 		}
 
-		std::filesystem::path newPath = desc.isMain ? std::filesystem::path(tempBuffer) : desc.path;
-		std::string name = newPath.filename().string();
+		std::string name = desc.isMain ? std::string(tempBuffer) : desc.path;
 
 		if (name.empty())
 		{
@@ -63,6 +61,6 @@ namespace Horizon::PAL
 			return nullptr;
 		}
 
-		return GetProcAddress(HINSTANCE(m_instance), name.c_str());
+		return GetProcAddress(HINSTANCE(m_instance), name.data());
 	}
 }

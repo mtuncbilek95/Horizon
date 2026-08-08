@@ -7,13 +7,13 @@
 #include <Runtime/PAL/Sync/Atomic.h>
 #include <Runtime/Containers/List.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	class H_EXPORT JobContext : public Context
 	{
 		friend class JobWorker;
 	public:
-		EngineReport OnAttach(Engine* pEngine) final;
+		AppReport OnAttach(Application* pEngine) final;
 		void OnDetach() final;
 
 		void SubmitJob(Job&& job);

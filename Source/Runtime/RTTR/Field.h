@@ -28,7 +28,7 @@ namespace Horizon::Reflect
 		~Field()
 		{
 			for (Attribute* attr : m_attributes)
-				Allocator::Delete(attr);
+				Memory::Allocator::Delete(attr);
 		}
 
 		Field(const Field&) = delete;

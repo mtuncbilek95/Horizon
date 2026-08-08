@@ -2,7 +2,7 @@
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	enum class DockZone : u8
 	{

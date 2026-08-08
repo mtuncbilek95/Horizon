@@ -3,7 +3,7 @@
 #include <Editor/Attributes/MainMenuItemAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	HCLASS(MainMenuItem["File", 0]);
 	class H_EXPORT FileMenu {};

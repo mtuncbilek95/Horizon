@@ -8,14 +8,17 @@ namespace Horizon
 	class GfxTexture;
 	class GfxFence;
 	class GfxQueue;
+}
 
+namespace Horizon::Engine
+{
 	class H_EXPORT PresentationSystem final : public System
 	{
 	public:
 		PresentationSystem() = default;
 		~PresentationSystem() = default;
 
-		EngineReport OnAttach(Engine* engine) final;
+		AppReport OnAttach(Application* engine) final;
 		void OnDetach() final;
 
 		void GetInitializeOrder(OrderRules& rules) const final;

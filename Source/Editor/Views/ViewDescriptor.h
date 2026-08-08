@@ -5,7 +5,7 @@
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <string>
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	struct H_EXPORT ViewDescriptor
 	{

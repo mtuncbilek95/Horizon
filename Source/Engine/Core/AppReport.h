@@ -3,12 +3,12 @@
 #include <string>
 #include <string_view>
 
-namespace Horizon
+namespace Horizon::Engine
 {
-	struct EngineReport
+	struct AppReport
 	{
-		EngineReport() = default;
-		EngineReport(std::string_view message) : m_message(message) {}
+		AppReport() = default;
+		AppReport(std::string_view message) : m_message(message) {}
 
 		explicit operator bool() const { return !m_message.empty(); }
 		std::string_view GetMessage() const { return m_message; }

@@ -7,7 +7,7 @@
 #include <initializer_list>
 #include <string>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	class H_EXPORT AssetTypeAttribute : public Reflect::Attribute
 	{

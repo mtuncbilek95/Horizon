@@ -1,6 +1,6 @@
 #include "SceneView.h"
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	void SceneView::OnInvoke()
 	{

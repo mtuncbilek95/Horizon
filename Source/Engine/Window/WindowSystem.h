@@ -4,7 +4,7 @@
 
 #include <Runtime/PAL/Window/Window.h>
 
-namespace Horizon
+namespace Horizon::Engine
 {
 	class H_EXPORT WindowSystem final : public System
 	{
@@ -14,7 +14,7 @@ namespace Horizon
 
 		PAL::Window* GetWindow() const { return m_window; }
 
-		EngineReport OnAttach(Engine* engine) final;
+		AppReport OnAttach(Application* engine) final;
 		void OnSync() final;
 		void OnDetach() final;
 
