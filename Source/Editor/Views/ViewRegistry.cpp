@@ -101,9 +101,10 @@ namespace Horizon::Editor
 		ImGui::DockBuilderSetNodeSize(rootId, ImGui::GetMainViewport()->Size);
 
 		ImGuiID center = rootId;
-		ImGuiID left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.20f, nullptr, &center);
-		ImGuiID right = ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.25f, nullptr, &center);
-		ImGuiID bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.25f, nullptr, &center);
+		ImGuiID left, right, bottom;
+		ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.25f, &bottom, &center);
+		ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.20f, &left, &center);
+		ImGui::DockBuilderSplitNode(center, ImGuiDir_Right, 0.25f, &right, &center);
 
 		for (const auto& view : m_registeredViews)
 		{

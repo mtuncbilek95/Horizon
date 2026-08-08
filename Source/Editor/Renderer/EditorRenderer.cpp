@@ -215,10 +215,10 @@ namespace Horizon::Editor
 		ImVec4* colors = style.Colors;
 
 		// Common
-		colors[ImGuiCol_Text] = ImGuiUtils::Hex("#CBCDD0");
-		colors[ImGuiCol_TextDisabled] = ImGuiUtils::Hex("#73767B");
-		colors[ImGuiCol_TextSelectedBg] = ImGuiUtils::Hex("#4C5764");
-		colors[ImGuiCol_Border] = ImGuiUtils::Hex("#333639");
+		colors[ImGuiCol_Text] = ImGuiUtils::Hex("#FFFFFF");
+		colors[ImGuiCol_TextDisabled] = ImGuiUtils::Hex("#808080");
+		colors[ImGuiCol_TextSelectedBg] = ImGuiUtils::Hex("#0E79D0");
+		colors[ImGuiCol_Border] = ImGuiUtils::Hex("#383838");
 		colors[ImGuiCol_BorderShadow] = ImGuiUtils::Hex("#00000000");
 		style.ItemSpacing = { 6.0f, 3.0f };
 		style.ItemInnerSpacing = { 6.0f, 4.0f };
@@ -235,10 +235,10 @@ namespace Horizon::Editor
 		style.WindowTitleAlign = { 0.0f, 0.5f };
 		style.WindowRounding = 0.0f;
 		style.WindowBorderSize = 1.0f;
-		colors[ImGuiCol_WindowBg] = ImGuiUtils::Hex("#26282B");
-		colors[ImGuiCol_TitleBg] = ImGuiUtils::Hex("#1A1B1E");
-		colors[ImGuiCol_TitleBgCollapsed] = ImGuiUtils::Hex("#1A1B1EBF");
-		colors[ImGuiCol_TitleBgActive] = ImGuiUtils::Hex("#151618");
+		colors[ImGuiCol_WindowBg] = ImGuiUtils::Hex("#242424");
+		colors[ImGuiCol_TitleBg] = ImGuiUtils::Hex("#161616");
+		colors[ImGuiCol_TitleBgCollapsed] = ImGuiUtils::Hex("#161616BF");
+		colors[ImGuiCol_TitleBgActive] = ImGuiUtils::Hex("#0E0E0E");
 
 		// Child Window
 		style.ChildRounding = 0.0f;
@@ -246,94 +246,94 @@ namespace Horizon::Editor
 		colors[ImGuiCol_ChildBg] = ImGuiUtils::Hex("#00000000");
 
 		// Main Menu Bar
-		colors[ImGuiCol_MenuBarBg] = ImGuiUtils::Hex("#151618");
+		colors[ImGuiCol_MenuBarBg] = ImGuiUtils::Hex("#161616");
 
 		// Pop-up & Context Menu
 		style.PopupRounding = 2.0f;
 		style.PopupBorderSize = 1.0f;
-		colors[ImGuiCol_PopupBg] = ImGuiUtils::Hex("#1A1B1E");
+		colors[ImGuiCol_PopupBg] = ImGuiUtils::Hex("#1C1C1C");
 
 		// Button
-		colors[ImGuiCol_Button] = ImGuiUtils::Hex("#373A3E");
-		colors[ImGuiCol_ButtonHovered] = ImGuiUtils::Hex("#43474C");
-		colors[ImGuiCol_ButtonActive] = ImGuiUtils::Hex("#5B87B8");
+		colors[ImGuiCol_Button] = ImGuiUtils::Hex("#3C3C3C");
+		colors[ImGuiCol_ButtonHovered] = ImGuiUtils::Hex("#4A4A4A");
+		colors[ImGuiCol_ButtonActive] = ImGuiUtils::Hex("#0E79D0");
 
 		// Frame
 		style.FramePadding = { 4.0f, 3.0f };
 		style.FrameRounding = 2.0f;
 		style.FrameBorderSize = 1.0f;
-		colors[ImGuiCol_FrameBg] = ImGuiUtils::Hex("#0D0E0F");
-		colors[ImGuiCol_FrameBgHovered] = ImGuiUtils::Hex("#1A1B1E");
-		colors[ImGuiCol_FrameBgActive] = ImGuiUtils::Hex("#222427");
+		colors[ImGuiCol_FrameBg] = ImGuiUtils::Hex("#151515");
+		colors[ImGuiCol_FrameBgHovered] = ImGuiUtils::Hex("#1F1F1F");
+		colors[ImGuiCol_FrameBgActive] = ImGuiUtils::Hex("#282828");
 
 		// Header
-		colors[ImGuiCol_Header] = ImGuiUtils::Hex("#2E3134");
-		colors[ImGuiCol_HeaderHovered] = ImGuiUtils::Hex("#383C40");
-		colors[ImGuiCol_HeaderActive] = ImGuiUtils::Hex("#4C5764");
+		colors[ImGuiCol_Header] = ImGuiUtils::Hex("#2E2E2E");
+		colors[ImGuiCol_HeaderHovered] = ImGuiUtils::Hex("#3A3A3A");
+		colors[ImGuiCol_HeaderActive] = ImGuiUtils::Hex("#0E79D0");
 
 		// Scrollbar
 		style.ScrollbarSize = 12.0f;
 		style.ScrollbarRounding = 0.0f;
-		colors[ImGuiCol_ScrollbarBg] = ImGuiUtils::Hex("#1A1B1E");
-		colors[ImGuiCol_ScrollbarGrab] = ImGuiUtils::Hex("#5C6167");
-		colors[ImGuiCol_ScrollbarGrabHovered] = ImGuiUtils::Hex("#71757A");
-		colors[ImGuiCol_ScrollbarGrabActive] = ImGuiUtils::Hex("#8D9095");
+		colors[ImGuiCol_ScrollbarBg] = ImGuiUtils::Hex("#1C1C1C");
+		colors[ImGuiCol_ScrollbarGrab] = ImGuiUtils::Hex("#5A5A5A");
+		colors[ImGuiCol_ScrollbarGrabHovered] = ImGuiUtils::Hex("#6E6E6E");
+		colors[ImGuiCol_ScrollbarGrabActive] = ImGuiUtils::Hex("#868686");
 
 		// Slider & Grab
 		style.GrabMinSize = 8.0f;
 		style.GrabRounding = 2.0f;
-		colors[ImGuiCol_SliderGrab] = ImGuiUtils::Hex("#5B87B8");
-		colors[ImGuiCol_SliderGrabActive] = ImGuiUtils::Hex("#6E96C2");
+		colors[ImGuiCol_SliderGrab] = ImGuiUtils::Hex("#0E79D0");
+		colors[ImGuiCol_SliderGrabActive] = ImGuiUtils::Hex("#3D96E0");
 
 		// Checkbox & Radio
-		colors[ImGuiCol_CheckMark] = ImGuiUtils::Hex("#5B87B8");
+		colors[ImGuiCol_CheckMark] = ImGuiUtils::Hex("#0E79D0");
 
 		// Resize Grip
 		colors[ImGuiCol_ResizeGrip] = ImGuiUtils::Hex("#00000000");
-		colors[ImGuiCol_ResizeGripHovered] = ImGuiUtils::Hex("#4D5257");
-		colors[ImGuiCol_ResizeGripActive] = ImGuiUtils::Hex("#5B87B8");
+		colors[ImGuiCol_ResizeGripHovered] = ImGuiUtils::Hex("#4A4A4A");
+		colors[ImGuiCol_ResizeGripActive] = ImGuiUtils::Hex("#0E79D0");
 
 		// Tab
 		style.TabRounding = 0.0f;
 		style.TabBorderSize = 0.0f;
 		style.TabBarBorderSize = 1.0f;
-		colors[ImGuiCol_Tab] = ImGuiUtils::Hex("#1A1B1E");
-		colors[ImGuiCol_TabHovered] = ImGuiUtils::Hex("#373A3E");
-		colors[ImGuiCol_TabSelected] = ImGuiUtils::Hex("#26282B");
-		colors[ImGuiCol_TabDimmed] = ImGuiUtils::Hex("#161719");
-		colors[ImGuiCol_TabDimmedSelected] = ImGuiUtils::Hex("#222427");
+		colors[ImGuiCol_Tab] = ImGuiUtils::Hex("#191919");
+		colors[ImGuiCol_TabHovered] = ImGuiUtils::Hex("#3C3C3C");
+		colors[ImGuiCol_TabSelected] = ImGuiUtils::Hex("#242424");
+		colors[ImGuiCol_TabDimmed] = ImGuiUtils::Hex("#141414");
+		colors[ImGuiCol_TabDimmedSelected] = ImGuiUtils::Hex("#282828");
 
 		// Separator
-		colors[ImGuiCol_Separator] = ImGuiUtils::Hex("#333639");
-		colors[ImGuiCol_SeparatorHovered] = ImGuiUtils::Hex("#4D5257");
-		colors[ImGuiCol_SeparatorActive] = ImGuiUtils::Hex("#5B87B8");
+		colors[ImGuiCol_Separator] = ImGuiUtils::Hex("#383838");
+		colors[ImGuiCol_SeparatorHovered] = ImGuiUtils::Hex("#4A4A4A");
+		colors[ImGuiCol_SeparatorActive] = ImGuiUtils::Hex("#0E79D0");
 
 		// Table
 		style.CellPadding = { 4.0f, 2.0f };
-		colors[ImGuiCol_TableHeaderBg] = ImGuiUtils::Hex("#2E3134");
-		colors[ImGuiCol_TableBorderStrong] = ImGuiUtils::Hex("#373A3E");
-		colors[ImGuiCol_TableBorderLight] = ImGuiUtils::Hex("#2B2D30");
+		colors[ImGuiCol_TableHeaderBg] = ImGuiUtils::Hex("#2E2E2E");
+		colors[ImGuiCol_TableBorderStrong] = ImGuiUtils::Hex("#3C3C3C");
+		colors[ImGuiCol_TableBorderLight] = ImGuiUtils::Hex("#2A2A2A");
 		colors[ImGuiCol_TableRowBg] = ImGuiUtils::Hex("#00000000");
 		colors[ImGuiCol_TableRowBgAlt] = ImGuiUtils::Hex("#FFFFFF06");
 
 		// Docking
-		colors[ImGuiCol_DockingPreview] = ImGuiUtils::Hex("#5B87B8B2");
-		colors[ImGuiCol_DockingEmptyBg] = ImGuiUtils::Hex("#151618");
+		colors[ImGuiCol_DockingPreview] = ImGuiUtils::Hex("#0E79D0B2");
+		colors[ImGuiCol_DockingEmptyBg] = ImGuiUtils::Hex("#161616");
 
 		// Plot / Graph
-		colors[ImGuiCol_PlotLines] = ImGuiUtils::Hex("#CBCDD0");
-		colors[ImGuiCol_PlotLinesHovered] = ImGuiUtils::Hex("#6E96C2");
-		colors[ImGuiCol_PlotHistogram] = ImGuiUtils::Hex("#5B87B8");
-		colors[ImGuiCol_PlotHistogramHovered] = ImGuiUtils::Hex("#6E96C2");
+		colors[ImGuiCol_PlotLines] = ImGuiUtils::Hex("#FFFFFF");
+		colors[ImGuiCol_PlotLinesHovered] = ImGuiUtils::Hex("#3D96E0");
+		colors[ImGuiCol_PlotHistogram] = ImGuiUtils::Hex("#0E79D0");
+		colors[ImGuiCol_PlotHistogramHovered] = ImGuiUtils::Hex("#3D96E0");
 
 		// Drag & Drop
-		colors[ImGuiCol_DragDropTarget] = ImGuiUtils::Hex("#5B87B8E5");
+		colors[ImGuiCol_DragDropTarget] = ImGuiUtils::Hex("#0E79D0E5");
 
 		// Navigation
 		colors[ImGuiCol_NavCursor] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 		colors[ImGuiCol_NavWindowingHighlight] = ImGuiUtils::Hex("#FFFFFFB2");
-		colors[ImGuiCol_NavWindowingDimBg] = ImGuiUtils::Hex("#CBCDD033");
-		colors[ImGuiCol_ModalWindowDimBg] = ImGuiUtils::Hex("#CBCDD059");
+		colors[ImGuiCol_NavWindowingDimBg] = ImGuiUtils::Hex("#FFFFFF33");
+		colors[ImGuiCol_ModalWindowDimBg] = ImGuiUtils::Hex("#00000099");
 
 		// Shape Rendering
 		style.CircleTessellationMaxError = 0.3f;

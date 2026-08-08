@@ -3,6 +3,8 @@
 #include <Editor/Attributes/EditorViewAttribute.h>
 #include <Editor/Views/ViewObject.h>
 #include <Editor/Font/IconsFontAwesome6.h>
+#include <Editor/ContextMenu/ContextMenuRegistry.h>
+#include <Editor/ContextMenu/AssetBrowserMenu/AssetBrowserContext.h>
 
 namespace Horizon::Editor
 {
@@ -14,5 +16,6 @@ namespace Horizon::Editor
 		void OnRender() final;
 
 	private:
+		ContextMenuRegistry<AssetBrowserContext> m_contextMenu;
 	};
 }
