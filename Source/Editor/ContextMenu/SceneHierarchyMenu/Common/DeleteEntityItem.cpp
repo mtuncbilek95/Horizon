@@ -2,7 +2,7 @@
 
 namespace Horizon::Editor
 {
-	void DeleteEntityItem::OnExecute(const SceneHierarchyContext& context)
+	void DeleteEntityItem::OnExecute(SceneHierarchyContext& context)
 	{
 	}
 

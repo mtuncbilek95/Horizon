@@ -10,7 +10,7 @@ namespace Horizon::Editor
 	public:
 		virtual ~ContextMenuItem() = default;
 
-		virtual void OnExecute(const TCtx& context) = 0;
+		virtual void OnExecute(TCtx& context) = 0;
 		virtual b8 IsEnabled(const TCtx& context) = 0;
 	};
 }

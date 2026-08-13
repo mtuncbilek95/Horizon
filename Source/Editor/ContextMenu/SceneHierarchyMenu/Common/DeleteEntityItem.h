@@ -9,7 +9,7 @@ namespace Horizon::Editor
 	class H_EXPORT DeleteEntityItem : public SceneHierarchyMenuItem
 	{
 	public:
-		void OnExecute(const SceneHierarchyContext& context) final;
+		void OnExecute(SceneHierarchyContext& context) final;
 		b8 IsEnabled(const SceneHierarchyContext& context) final;
 	};
 }

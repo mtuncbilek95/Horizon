@@ -53,4 +53,9 @@ namespace Horizon::PAL
 		FindClose(hFind);
 		return result;
 	}
+
+	b8 Directory::Rename(const std::string oldPath, const std::string newPath)
+	{
+		return MoveFile(oldPath.data(), newPath.data());
+	}
 }

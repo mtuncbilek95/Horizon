@@ -53,7 +53,7 @@ namespace Horizon::Editor
 			SortRecursive(m_menus);
 		}
 
-		void RenderGUI(std::string_view name, const TContext& context)
+		void RenderGUI(std::string_view name, TContext& context)
 		{
 			if (ImGui::BeginPopupContextWindow(name.data(), ImGuiPopupFlags_MouseButtonRight))
 			{
@@ -147,7 +147,7 @@ namespace Horizon::Editor
 				SortRecursive(child.children);
 		}
 
-		void RenderMenuNode(const ContextMenuNode& menu, const TContext& context)
+		void RenderMenuNode(const ContextMenuNode& menu, TContext& context)
 		{
 			if (menu.item == nullptr)
 			{

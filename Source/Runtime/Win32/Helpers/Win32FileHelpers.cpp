@@ -32,6 +32,9 @@ namespace Horizon::PAL
 		if (HasFlag(accessPolicy, FileOperationAccessPolicy::Write))
 			flags |= GENERIC_WRITE;
 
+		if (HasFlag(accessPolicy, FileOperationAccessPolicy::Rename))
+			flags |= DELETE;
+
 		return flags;
 	}
 

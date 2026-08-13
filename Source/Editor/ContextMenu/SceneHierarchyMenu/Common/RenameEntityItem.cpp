@@ -2,7 +2,7 @@
 
 namespace Horizon::Editor
 {
-	void RenameEntityItem::OnExecute(const SceneHierarchyContext& context)
+	void RenameEntityItem::OnExecute(SceneHierarchyContext& context)
 	{
 	}
 

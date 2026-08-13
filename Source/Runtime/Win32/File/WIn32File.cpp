@@ -210,4 +210,51 @@ namespace Horizon::PAL
 
 		return true;
 	}
+
+
+	b8 File::RenameWithLock(FileAccessRequest fileAccess, const std::string oldPath, const std::string newPath)
+	{
+		if (!fileAccess.m_handle.IsValid())
+		{
+			Terminal::Error("File::Rename", "Invalid file access handle");
+			return false;
+		}
+
+		if (((u8)fileAccess.GetAccessPolicy() & (u8)FileOperationAccessPolicy::Rename) == 0)
+		{
+			Terminal::Error("File::Rename", "File was not opened with Rename access");
+			return false;
+		}
+
+		const i32 wideCount = MultiByteToWideChar(CP_UTF8, 0, newPath.data(), (i32)newPath.size(), nullptr, 0);
+
+		if (wideCount <= 0)
+		{
+			Terminal::Error("File::Rename", "Cannot widen path: {}", newPath);
+			return false;
+		}
+
+		const usize bufferSize = sizeof(FILE_RENAME_INFO) + (usize)wideCount * sizeof(WCHAR);
+		List<u8> buffer(bufferSize);
+
+		FILE_RENAME_INFO* pInfo = reinterpret_cast<FILE_RENAME_INFO*>(buffer.GetData());
+		pInfo->ReplaceIfExists = FALSE;
+		pInfo->RootDirectory = NULL;
+		pInfo->FileNameLength = (DWORD)(wideCount * sizeof(WCHAR));
+
+		MultiByteToWideChar(CP_UTF8, 0, newPath.data(), (i32)newPath.size(), pInfo->FileName, wideCount);
+
+		HANDLE fileHandle = (HANDLE)fileAccess.m_handle.index;
+		b8 result = SetFileInformationByHandle(fileHandle, FileRenameInfo, pInfo, (DWORD)bufferSize);
+
+		if (!result)
+			Terminal::Error("File::Rename", "Rename failed: {}", newPath);
+
+		return result;
+	}
+
+	b8 File::Rename(const std::string oldPath, const std::string newPath)
+	{
+		return MoveFile(oldPath.data(), newPath.data());
+	}
 }

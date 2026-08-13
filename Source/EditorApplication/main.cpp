@@ -8,6 +8,7 @@
 #include <Engine/Presentation/PresentationSystem.h>
 #include <Engine/ECS/EntityComponentSystem.h>
 #include <Editor/Renderer/EditorSystem.h>
+#include <Editor/Domain/DomainSystem.h>
 
 #include "TypeManifestation.h"
 
@@ -23,7 +24,8 @@ int main(int argC, char** argV)
 
 	engine.AddSystem<Engine::WindowSystem>();
 	engine.AddSystem<Engine::EntityComponentSystem>();
-	//engine.AddSystem<DomainSystem>();
+	// TODO: This will be argV[1] later.
+	engine.AddSystem<Editor::DomainSystem>("D:/Projects/Horizon/ExampleProject");
 	engine.AddSystem<Engine::AssetSystem>();
 	engine.AddSystem<Editor::EditorSystem>();
 	engine.AddSystem<Engine::PresentationSystem>();

@@ -2,7 +2,7 @@
 
 namespace Horizon::Editor
 {
-	void CreateEntityItem::OnExecute(const SceneHierarchyContext& context)
+	void CreateEntityItem::OnExecute(SceneHierarchyContext& context)
 	{
 	}
 

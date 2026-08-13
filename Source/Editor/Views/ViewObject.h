@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace Horizon::Engine
 {
 	class Application;

@@ -5,8 +5,8 @@
 
 namespace Horizon::Editor
 {
-	HCLASS(ContextMenuItem["AssetBrowserView", "Create/Folder", 0]);
-	class H_EXPORT CreateFolderItem : public AssetBrowserMenuItem
+	HCLASS(ContextMenuItem["AssetBrowserView", "Rename", 2]);
+	class H_EXPORT RenameObjectItem : public AssetBrowserMenuItem
 	{
 	public:
 		void OnExecute(AssetBrowserContext& context) final;

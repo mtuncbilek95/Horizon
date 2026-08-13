@@ -5,8 +5,8 @@
 
 namespace Horizon::Editor
 {
-	HCLASS(ContextMenuItem["AssetBrowserView", "Create/Folder", 0]);
-	class H_EXPORT CreateFolderItem : public AssetBrowserMenuItem
+	HCLASS(ContextMenuItem["AssetBrowserView", "Delete", 1]);
+	class H_EXPORT DeleteObjectItem : public AssetBrowserMenuItem
 	{
 	public:
 		void OnExecute(AssetBrowserContext& context) final;

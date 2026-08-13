@@ -275,6 +275,17 @@ namespace Horizon
 			QuickSortInternal(0, static_cast<i64>(m_count - 1), comp);
 		}
 
+		void ReverseOrder()
+		{
+			if (m_count < 2)
+				return;
+
+			T* pData = GetData();
+
+			for (usize i = 0, j = m_count - 1; i < j; ++i, --j)
+				std::swap(pData[i], pData[j]);
+		}
+
 		b8 operator==(const List& other) const
 		{
 			if (m_count != other.m_count)
