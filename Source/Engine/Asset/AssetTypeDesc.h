@@ -11,7 +11,9 @@ namespace Horizon::Engine
 {
 	struct AssetTypeDesc
 	{
-		Reflect::Type* type = nullptr;
+		Reflect::Type* pType = nullptr;
+		std::string typeName;
+		u32 version = 0;
 		AssetOrigin origin = AssetOrigin::Native;
 		List<std::string> extensions;
 	};

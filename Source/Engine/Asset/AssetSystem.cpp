@@ -32,4 +32,12 @@ namespace Horizon::Engine
 	void AssetSystem::GetExecutionOrder(OrderRules& rules) const
 	{
 	}
+
+	void AssetSystem::RegisterAsset(const AssetEntryDesc& desc)
+	{
+	}
+
+	void AssetSystem::UnregisterAsset(const Guid& id)
+	{
+	}
 }

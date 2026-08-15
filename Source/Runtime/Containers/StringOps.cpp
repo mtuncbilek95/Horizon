@@ -65,4 +65,43 @@ namespace Horizon
 		return path.substr(0, end);
 	}
 
+	std::string StringOps::NoExtension(const std::string& path)
+	{
+		usize index = path.rfind('.');
+		return path.substr(0, index);
+	}
+
+	std::string StringOps::ToRelative(const std::string& absolutePath, const std::string& trimPath, const std::string& rootOf)
+	{
+		if (!StringOps::StartsWithNoCase(absolutePath, trimPath))
+			return std::string();
+
+		usize cursor = trimPath.size();
+
+		while (cursor < absolutePath.size() && StringOps::IsSeparator(absolutePath[cursor]))
+			++cursor;
+
+		return rootOf + "/" + absolutePath.substr(cursor);
+	}
+
+	std::string StringOps::ToAbsolute(const std::string& relativePath, const std::string& missingPath, const std::string& rootOf)
+	{
+		if (!relativePath.starts_with(rootOf))
+			return std::string();
+
+		return missingPath + relativePath.substr(rootOf.size());
+	}
+
+	std::string StringOps::RootOf(const std::string& relativePath)
+	{
+		if (relativePath.empty() || relativePath[0] != '[')
+			return std::string();
+
+		usize close = relativePath.find(']');
+
+		if (close == std::string::npos || close + 1 >= relativePath.size() || relativePath[close + 1] != ':')
+			return std::string();
+
+		return relativePath.substr(0, close + 2);
+	}
 }

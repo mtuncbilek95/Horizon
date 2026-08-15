@@ -1,5 +1,6 @@
 #include "AssetTypeRegistry.h"
 
+#include <Engine/Asset/AssetObject.h>
 #include <Engine/Asset/AssetTypeAttribute.h>
 #include <Engine/Core/Application.h>
 #include <Engine/Module/ModuleContext.h>
@@ -10,18 +11,30 @@ namespace Horizon::Engine
 {
 	void AssetTypeRegistry::Bootstrap(Application* pEngine)
 	{
+		auto* pMod = pEngine->GetModuleContext();
+
+		List<Reflect::Type*> types = pMod->GetTypeByAttribute(Reflect::TypeOf<AssetTypeAttribute>());
+
+		for (auto* type : types)
+		{
+			if (type->GetBaseId() != Reflect::TypeOf<AssetObject>())
+			{
+				Terminal::Error("AssetTypeRegistry", "If you're seeing this, your asset does not inherited from AssetObject -> {}", type->GetName());
+				continue;
+			}
+
+			auto* pAttr = type->GetCustomAttribute<AssetTypeAttribute>();
+			m_registryAuxiliary[type->GetTypeId()] = m_registries.GetCount();
+			m_registries.EmplaceBack(type, pAttr->GetTypeName(), pAttr->GetVersion(), pAttr->GetOrigin(), pAttr->GetExtensions());
+		}
 	}
 
-	const AssetTypeDesc* AssetTypeRegistry::ResolveByExtension(const std::string& ext) const
+	const AssetTypeDesc& AssetTypeRegistry::GetAssetDescriptor(Reflect::TypeHandle handl)
 	{
-		auto it = m_byExtension.find(ext);
+		auto it = m_registryAuxiliary.find(handl);
+		if (it == m_registryAuxiliary.end())
+			throw std::runtime_error("Missing asset auxiliary somehow");
 
-		if (it == m_byExtension.end())
-		{
-			Terminal::Warn("AssetTypeRegistry", "{} has no asset type", ext);
-			return nullptr;
-		}
-
-		return it->second;
+		return m_registries[it->second];
 	}
 }

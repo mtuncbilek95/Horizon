@@ -2,15 +2,16 @@
 
 #include <Engine/Core/System.h>
 #include <Engine/Asset/AssetTypeRegistry.h>
+#include <Engine/Asset/AssetEntryDesc.h>
+#include <Runtime/Containers/Guid.h>
 
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 namespace Horizon::Engine
 {
 	class Asset;
-	class AssetLifetimeStrategy;
+	class AssetEntry;
 
 	class H_EXPORT AssetSystem : public System
 	{
@@ -22,9 +23,11 @@ namespace Horizon::Engine
 		void GetInitializeOrder(OrderRules& rules) const final;
 		void GetExecutionOrder(OrderRules& rules) const final;
 
-		const AssetTypeRegistry& GetTypeRegistry() const { return m_typeRegistry; }
+		void RegisterAsset(const AssetEntryDesc& desc);
+		void UnregisterAsset(const Guid& id);
 
 	private:
 		AssetTypeRegistry m_typeRegistry;
+		std::unordered_map<Guid, AssetEntry*> m_registeredAssets;
 	};
 }

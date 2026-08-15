@@ -3,6 +3,7 @@
 #include <Runtime/Containers/Guid.h>
 #include <Runtime/Containers/ListBase.h>
 #include <Runtime/Log/Terminal.h>
+#include <Runtime/PAL/Timer/DateTime.h>
 
 #include <string>
 
@@ -101,6 +102,12 @@ namespace Horizon
 				break;
 			}
 
+			if (field.GetTypeId() == Reflect::TypeOf<PAL::DateTime>())
+			{
+				writer.WriteString(static_cast<const PAL::DateTime*>(valuePtr)->ToString());
+				break;
+			}
+
 			const Reflect::Type* nested = Resolve(field.GetTypeId());
 			if (!nested)
 			{
@@ -180,6 +187,12 @@ namespace Horizon
 			if (field.GetTypeId() == Reflect::TypeOf<Guid>())
 			{
 				*static_cast<Guid*>(valuePtr) = Guid(reader.ReadString());
+				break;
+			}
+
+			if (field.GetTypeId() == Reflect::TypeOf<PAL::DateTime>())
+			{
+				*static_cast<PAL::DateTime*>(valuePtr) = PAL::DateTime::FromStringToDateTime(reader.ReadString());
 				break;
 			}
 

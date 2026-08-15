@@ -44,7 +44,7 @@ namespace Horizon::PAL
 
 			Entry entry;
 			entry.name = name;
-			entry.fullPath = path + "\\" + name;
+			entry.fullPath = path + "/" + name;
 			entry.isDirectory = (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 			result.PushBack(entry);
 

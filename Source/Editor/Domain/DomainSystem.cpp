@@ -3,29 +3,41 @@
 #include <Editor/Renderer/EditorSystem.h>
 #include <Editor/Domain/DomainFolder.h>
 #include <Editor/Domain/DomainFile.h>
-
+#include <Engine/Core/Application.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
 #include <Runtime/PAL/File/File.h>
+#include <Runtime/PAL/Timer/DateTime.h>
+#include <Runtime/Serialization/JsonArchive.h>
+#include <Runtime/Serialization/Serializer.h>
 
 #include <unordered_set>
 #include <utility>
 
 namespace Horizon::Editor
 {
-	DomainSystem::DomainSystem(const std::string& projectPath) : m_projectPath(projectPath), m_clock(PAL::Timer())
+	namespace
+	{
+		const Reflect::Type* ResolveModuleType(void* pUserData, Reflect::TypeHandle handle)
+		{
+			return static_cast<Engine::ModuleContext*>(pUserData)->GetType(handle);
+		}
+	}
+
+	DomainSystem::DomainSystem(const std::string& projectPath) : m_projectPath(projectPath), m_clock(PAL::Timer()), m_moduleCtx(nullptr)
 	{
 	}
 
 	DomainSystem::~DomainSystem()
 	{
-
 	}
 
 	Engine::AppReport DomainSystem::OnAttach(Engine::Application* pEngine)
 	{
+		m_moduleCtx = m_engine->GetModuleContext();
+
 		m_assetPath = m_projectPath + "/Assets";
 
 		// Check if this is something we have
@@ -206,14 +218,26 @@ namespace Horizon::Editor
 				filesOnDisk.insert(entry.fullPath);
 		}
 
+		// If there is a meta file and no source, eliminate it.
 		for (const PAL::Directory::Entry& entry : entries)
 		{
 			if (entry.isDirectory || !entry.name.ends_with(MetaFileExt))
 				continue;
 
-			std::string sourcePath = entry.fullPath.substr(0, entry.fullPath.size() - MetaFileExt.size());
+			// Check if <FileName>.hmeta has a sourceFile
+			std::string outFile;
 
-			if (filesOnDisk.contains(sourcePath))
+			PAL::FileAccessRequest request = PAL::File::RequestAccess(entry.fullPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::Exclusive);
+			{
+				PAL::File::ReadString(request, outFile);
+			}
+			PAL::File::ReleaseAccess(request);
+
+			DomainMetaDescriptor fileDesc;
+			ReadMeta(outFile, fileDesc);
+
+			std::string fullSourcePath = StringOps::ToAbsolute(fileDesc.sourcePath, m_assetPath, "[Assets]:");
+			if (filesOnDisk.contains(fullSourcePath))
 				continue;
 
 			if (!PAL::File::Delete(entry.fullPath))
@@ -231,12 +255,24 @@ namespace Horizon::Editor
 
 		pTarget->m_files.Clear();
 
+		// If there is source but no meta, generate meta + cook it.
 		for (const PAL::Directory::Entry& entry : entries)
 		{
 			if (entry.isDirectory || entry.name.ends_with(MetaFileExt))
 				continue;
 
-			std::string metaPath = entry.fullPath + std::string(MetaFileExt);
+			std::string metaPath = StringOps::NoExtension(entry.fullPath) + std::string(MetaFileExt);
+
+			// If it exists
+			if (PAL::File::Exists(metaPath))
+			{
+				std::string testOne;
+				PAL::FileAccessRequest request = PAL::File::RequestAccess(metaPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::Exclusive);
+				PAL::File::ReadString(request, testOne);
+				PAL::File::ReleaseAccess(request);
+
+				Terminal::Debug(GetName(), "{}", testOne);
+			}
 
 			// TODO: Guid guid; if (!TryReadOrCreateMetaFile(metaPath, guid)) continue;
 			// pTarget->m_files.PushBack(Memory::Allocator::Create<DomainFile>(CurrLoc(), guid, pTarget, entry.name, metaPath, entry.fullPath));
@@ -352,4 +388,23 @@ namespace Horizon::Editor
 		Terminal::Debug("DomainSystem", "{} folder is not tracked yet", folderName);
 		return nullptr;
 	}
+
+	b8 DomainSystem::ReadMeta(const std::string& textFile, DomainMetaDescriptor& outDescriptor)
+	{
+		Reflect::Type* pType = m_moduleCtx->GetType(Reflect::TypeOf<DomainMetaDescriptor>());
+
+		if (pType == nullptr)
+		{
+			Terminal::Error("DomainSystem", "DomainMetaDescriptor has no reflected type");
+			return false;
+		}
+
+		JsonArchiveReader reader(textFile);
+		Serializer serializer(m_moduleCtx, &ResolveModuleType);
+
+		serializer.Deserialize(&outDescriptor, *pType, reader);
+
+		return !reader.HasError();
+	}
+
 }

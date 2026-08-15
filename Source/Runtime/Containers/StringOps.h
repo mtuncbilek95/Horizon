@@ -14,5 +14,9 @@ namespace Horizon
 		static b8 StartsWithNoCase(const std::string& value, const std::string& prefix);
 		static b8 EqualsNoCase(const std::string& left, const std::string& right);
 		static std::string ParentPathOf(const std::string& path);
+		static std::string NoExtension(const std::string& path);
+		static std::string ToRelative(const std::string& absolutePath, const std::string& trimPath, const std::string& rootOf);
+		static std::string ToAbsolute(const std::string& relativePath, const std::string& missingPath, const std::string& rootOf);
+		static std::string RootOf(const std::string& relativePath);
 	};
 }

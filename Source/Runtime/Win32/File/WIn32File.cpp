@@ -211,6 +211,82 @@ namespace Horizon::PAL
 		return true;
 	}
 
+	b8 File::ReadString(FileAccessRequest fileAccess, std::string& outString, usize startPoint, usize endPoint)
+	{
+		if (!fileAccess.m_handle.IsValid())
+		{
+			Terminal::Error("File::ReadMemory", "Invalid file access handle");
+			return false;
+		}
+
+		if (((u8)fileAccess.GetAccessPolicy() & (u8)FileOperationAccessPolicy::Read) == 0)
+		{
+			Terminal::Error("File::ReadMemory", "File was not opened with Read access");
+			return false;
+		}
+
+		HANDLE fileHandle = (HANDLE)fileAccess.m_handle.index;
+
+		LARGE_INTEGER fileSize = {};
+		if (!GetFileSizeEx(fileHandle, &fileSize))
+		{
+			Terminal::Error("File::ReadMemory", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+			return false;
+		}
+
+		usize fileEnd = (usize)fileSize.QuadPart;
+		usize readEnd = (endPoint == 0) ? fileEnd : endPoint;
+
+		if (startPoint > readEnd || readEnd > fileEnd)
+		{
+			Terminal::Error("File::ReadMemory", "Range [{}, {}) out of bounds, file size is {}",
+				startPoint, readEnd, fileEnd);
+			return false;
+		}
+
+		usize readSize = readEnd - startPoint;
+
+		outString.clear();
+		if (readSize == 0)
+			return true;
+
+		LARGE_INTEGER pos = {};
+		pos.QuadPart = (LONGLONG)startPoint;
+		if (!SetFilePointerEx(fileHandle, pos, NULL, FILE_BEGIN))
+		{
+			Terminal::Error("File::ReadMemory", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+			return false;
+		}
+
+		outString.resize(readSize);
+
+		usize totalRead = 0;
+		while (totalRead < readSize)
+		{
+			usize remaining = readSize - totalRead;
+			DWORD chunk = (DWORD)(remaining > MAXDWORD ? MAXDWORD : remaining);
+
+			DWORD bytesRead = 0;
+			if (!ReadFile(fileHandle, outString.data() + totalRead, chunk, &bytesRead, NULL))
+			{
+				Terminal::Error("File::ReadMemory", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+				outString.clear();
+				return false;
+			}
+
+			if (bytesRead == 0)
+			{
+				Terminal::Error("File::ReadMemory", "Unexpected EOF at {} of {}", totalRead, readSize);
+				outString.clear();
+				return false;
+			}
+
+			totalRead += bytesRead;
+		}
+
+		return true;
+	}
+
 
 	b8 File::RenameWithLock(FileAccessRequest fileAccess, const std::string oldPath, const std::string newPath)
 	{

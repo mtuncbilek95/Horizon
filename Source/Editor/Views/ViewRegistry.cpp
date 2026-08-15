@@ -43,6 +43,12 @@ namespace Horizon::Editor
 
 		for (auto* type : types)
 		{
+			if (type->GetBaseId() != Reflect::TypeOf<ViewObject>())
+			{
+				Terminal::Error("ViewRegistry", "{} has not inherited from ViewObject. Please inherit then restart engine!", type->GetName());
+				continue;
+			}
+
 			auto* pAttr = type->GetCustomAttribute<EditorViewAttribute>();
 
 			m_registeredViews.PushBack(ViewDescriptor

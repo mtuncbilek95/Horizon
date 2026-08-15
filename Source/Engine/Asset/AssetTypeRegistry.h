@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Engine/Asset/AssetTypeDesc.h>
-
 #include <Runtime/Containers/List.h>
+#include <Runtime/RTTR/Reflection.h>
 
 #include <string>
 #include <unordered_map>
@@ -16,10 +16,10 @@ namespace Horizon::Engine
 	public:
 		void Bootstrap(Application* pEngine);
 
-		const AssetTypeDesc* ResolveByExtension(const std::string& ext) const;
+		const AssetTypeDesc& GetAssetDescriptor(Reflect::TypeHandle handl);
 
 	private:
-		List<AssetTypeDesc> m_types;
-		std::unordered_map<std::string, const AssetTypeDesc*> m_byExtension;
+		List<AssetTypeDesc> m_registries;
+		std::unordered_map<Reflect::TypeHandle, u32> m_registryAuxiliary;
 	};
 }

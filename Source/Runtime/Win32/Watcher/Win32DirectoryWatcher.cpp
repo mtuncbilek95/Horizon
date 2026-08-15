@@ -42,6 +42,12 @@ namespace Horizon::PAL
 			std::string result((usize)length, '\0');
 			WideCharToMultiByte(CP_UTF8, 0, pData, (i32)count, result.data(), length, nullptr, nullptr);
 
+			for (c8& character : result)
+			{
+				if (character == '\\')
+					character = '/';
+			}
+
 			return result;
 		}
 
@@ -124,6 +130,7 @@ namespace Horizon::PAL
 
 				DirectoryWatcher::Event event;
 				event.path = absolute;
+				event.path = relative;
 				event.isDirectory = IsDirectoryPath(absolute);
 
 				switch (pInfo->Action)
@@ -183,7 +190,7 @@ namespace Horizon::PAL
 		}
 	}
 
-	DirectoryWatcher::DirectoryWatcher(const std::string& rootPath, b8 recursive)
+	DirectoryWatcher::DirectoryWatcher(const std::string& rootPath, b8 recursive) : m_rootPath(rootPath)
 	{
 		HANDLE hDirectory = ::CreateFileA(m_rootPath.data(), FILE_LIST_DIRECTORY,
 			FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING,

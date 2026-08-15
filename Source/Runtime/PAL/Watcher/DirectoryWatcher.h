@@ -17,7 +17,9 @@ namespace Horizon::PAL
 		{
 			WatcherAction action;
 			std::string path;
+			std::string relativePath;
 			std::string oldPath;
+			std::string oldRelativePath;
 			b8 isDirectory;
 		};
 

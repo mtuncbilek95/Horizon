@@ -1,6 +1,8 @@
 #pragma once
 
+#include <Editor/Domain/DomainMetaDescriptor.h>
 #include <Engine/Core/System.h>
+#include <Engine/Module/ModuleContext.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/PAL/Timer/Timer.h>
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
@@ -55,7 +57,11 @@ namespace Horizon::Editor
 		DomainFolder* ResolveFolder(const std::string& absolutePath, b8& outExact) const;
 		DomainFolder* FindFolder(const List<DomainFolder*>& folders, const std::string& folderName) const;
 
+		b8 ReadMeta(const std::string& textFile, DomainMetaDescriptor& outDescriptor);
+
 	private:
+		Engine::ModuleContext* m_moduleCtx;
+
 		std::string m_projectPath;
 		std::string m_assetPath;
 		DomainFolder* m_root = nullptr;
