@@ -8,6 +8,7 @@ namespace Horizon::Editor
 	HCLASS(ContextMenuItem["SceneHierarchyView", "Rename", 1]);
 	class H_EXPORT RenameEntityItem : public SceneHierarchyMenuItem
 	{
+		HORIZON_TYPE_REFLECT(RenameEntityItem);
 	public:
 		void OnExecute(SceneHierarchyContext& context) final;
 		b8 IsEnabled(const SceneHierarchyContext& context) final;

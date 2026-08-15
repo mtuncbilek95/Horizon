@@ -1,4 +1,6 @@
 #include <Runtime/PAL/File/Directory.h>
+
+#include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Win32/Helpers/Win32ErrorHelpers.h>
 
@@ -8,8 +10,22 @@ namespace Horizon::PAL
 {
 	b8 Directory::Create(const std::string& path)
 	{
-		b8 result = CreateDirectoryA(path.data(), NULL);
-		return result;
+		if (path.empty() || Exists(path))
+			return true;
+
+		// CreateDirectoryA only creates the leaf, so walk the missing parents first.
+		const std::string parent = StringOps::ParentPathOf(path);
+		if (!parent.empty() && !Create(parent))
+			return false;
+
+		if (CreateDirectoryA(path.data(), NULL))
+			return true;
+
+		if (GetLastError() == ERROR_ALREADY_EXISTS)
+			return Exists(path);
+
+		Terminal::Error("Directory", "{} cannot be created: {}", path, Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+		return false;
 	}
 
 	b8 Directory::Delete(const std::string& path)

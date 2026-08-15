@@ -25,7 +25,7 @@ namespace Horizon::Engine
 
 			auto* pAttr = type->GetCustomAttribute<AssetTypeAttribute>();
 			m_registryAuxiliary[type->GetTypeId()] = m_registries.GetCount();
-			m_registries.EmplaceBack(type, pAttr->GetTypeName(), pAttr->GetVersion(), pAttr->GetOrigin(), pAttr->GetExtensions());
+			m_registries.EmplaceBack(type, pAttr->GetTypeName(), pAttr->GetVersion(), pAttr->GetOrigin());
 		}
 	}
 

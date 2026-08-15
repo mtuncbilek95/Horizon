@@ -4,10 +4,11 @@
 
 namespace Horizon::Reflect
 {
-	enum class H_EXPORT TypeMode : u8 
+	enum class H_EXPORT TypeMode : u8
 	{
-		Void,
+		Invalid,
 		Compose,
-		Array
+		Array,
+		Pointer
 	};
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Runtime/RTTR/Attribute.h>
+#include <Runtime/RTTR/Base.h>
 #include <Runtime/RTTR/EnumValue.h>
 #include <Runtime/RTTR/Field.h>
 #include <Runtime/RTTR/Type.h>
@@ -16,9 +17,13 @@ namespace Horizon::Reflect
 	struct TypeAccessor;
 }
 
-#define HORIZON_TYPE_REFLECT							\
-	template<typename>									\
-	friend struct ::Horizon::Reflect::TypeAccessor
+#define HORIZON_TYPE_REFLECT(XClass)																	\
+	template<typename>																					\
+	friend struct Horizon::Reflect::TypeAccessor;														\
+	Horizon::Reflect::TypeHandle GetTypeId() const final { return Horizon::Reflect::TypeOf<XClass>(); }
+
+#define HORIZON_ATTRIBUTE_REFLECT(XClass)																\
+	Horizon::Reflect::TypeHandle GetTypeId() const final { return Horizon::Reflect::TypeOf<XClass>(); }
 
 #define HCLASS(...)
 #define HATTRIBUTE(...)

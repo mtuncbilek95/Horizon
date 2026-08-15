@@ -4,6 +4,7 @@
 #include <Editor/Domain/DomainFolder.h>
 #include <Editor/Domain/DomainFile.h>
 #include <Engine/Core/Application.h>
+#include <Engine/Asset/AssetSystem.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
@@ -26,7 +27,8 @@ namespace Horizon::Editor
 		}
 	}
 
-	DomainSystem::DomainSystem(const std::string& projectPath) : m_projectPath(projectPath), m_clock(PAL::Timer()), m_moduleCtx(nullptr)
+	DomainSystem::DomainSystem(const std::string& projectPath) : m_projectPath(projectPath), m_clock(PAL::Timer()), m_moduleCtx(nullptr),
+		m_importRegistry(ImportSettingsRegistry())
 	{
 	}
 
@@ -36,13 +38,15 @@ namespace Horizon::Editor
 
 	Engine::AppReport DomainSystem::OnAttach(Engine::Application* pEngine)
 	{
+		m_importRegistry.BootstrapImportSettings(pEngine);
+
 		m_moduleCtx = m_engine->GetModuleContext();
 
 		m_assetPath = m_projectPath + "/Assets";
 
 		// Check if this is something we have
-		if (!PAL::Directory::Exists(m_assetPath))
-			PAL::Directory::Create(m_assetPath);
+		if (!PAL::Directory::Create(m_assetPath))
+			Terminal::Error("DomainSystem", "{} cannot be created, asset domain will be empty", m_assetPath);
 
 		// Clock starts ticking motherfucker.
 		m_clock.Start();
@@ -97,12 +101,14 @@ namespace Horizon::Editor
 
 	void DomainSystem::GetInitializeOrder(Engine::OrderRules& rules) const
 	{
-		Requires<EditorSystem>(rules.before); // TODO: Add AssetSystem later
+		Requires<EditorSystem>(rules.before);
+		Requires<Engine::AssetSystem>(rules.after);
 	}
 
 	void DomainSystem::GetExecutionOrder(Engine::OrderRules& rules) const
 	{
-		Requires<EditorSystem>(rules.before); // TODO: Add AssetSystem later
+		Requires<EditorSystem>(rules.before);
+		Requires<Engine::AssetSystem>(rules.after);
 	}
 
 	void DomainSystem::DrainWatcher(f64 now)
@@ -225,18 +231,7 @@ namespace Horizon::Editor
 				continue;
 
 			// Check if <FileName>.hmeta has a sourceFile
-			std::string outFile;
-
-			PAL::FileAccessRequest request = PAL::File::RequestAccess(entry.fullPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::Exclusive);
-			{
-				PAL::File::ReadString(request, outFile);
-			}
-			PAL::File::ReleaseAccess(request);
-
-			DomainMetaDescriptor fileDesc;
-			ReadMeta(outFile, fileDesc);
-
-			std::string fullSourcePath = StringOps::ToAbsolute(fileDesc.sourcePath, m_assetPath, "[Assets]:");
+			std::string fullSourcePath = StringOps::NoExtension(entry.fullPath);
 			if (filesOnDisk.contains(fullSourcePath))
 				continue;
 
@@ -261,21 +256,40 @@ namespace Horizon::Editor
 			if (entry.isDirectory || entry.name.ends_with(MetaFileExt))
 				continue;
 
-			std::string metaPath = StringOps::NoExtension(entry.fullPath) + std::string(MetaFileExt);
+			std::string metaPath = entry.fullPath + std::string(MetaFileExt);
+
+			DomainMetaDescriptor descriptor = {};
 
 			// If it exists
 			if (PAL::File::Exists(metaPath))
 			{
-				std::string testOne;
+				std::string outFile;
 				PAL::FileAccessRequest request = PAL::File::RequestAccess(metaPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::Exclusive);
-				PAL::File::ReadString(request, testOne);
+				{
+					PAL::File::ReadString(request, outFile);
+				}
 				PAL::File::ReleaseAccess(request);
 
-				Terminal::Debug(GetName(), "{}", testOne);
+				ReadMeta(outFile, descriptor);
+			}
+			else
+			{
+				descriptor.id = Guid::Generate();
+				descriptor.assetTypeName = "Unknown";
+				descriptor.pSettings = nullptr;
+
+				std::string outFile;
+				WriteMeta(descriptor, outFile);
+
+				PAL::File::Create(metaPath);
+				PAL::FileAccessRequest request = PAL::File::RequestAccess(metaPath, PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::Exclusive);
+				{
+					PAL::File::WriteString(request, outFile);
+				}
+				PAL::File::ReleaseAccess(request);
 			}
 
-			// TODO: Guid guid; if (!TryReadOrCreateMetaFile(metaPath, guid)) continue;
-			// pTarget->m_files.PushBack(Memory::Allocator::Create<DomainFile>(CurrLoc(), guid, pTarget, entry.name, metaPath, entry.fullPath));
+			pTarget->m_files.PushBack(Memory::Allocator::Create<DomainFile>(Memory::CurrLoc(), descriptor.id, pTarget, entry.name, metaPath, entry.fullPath));
 		}
 
 		pTarget->m_files.Sort([](const DomainFile* pA, const DomainFile* pB)
@@ -407,4 +421,22 @@ namespace Horizon::Editor
 		return !reader.HasError();
 	}
 
+	b8 DomainSystem::WriteMeta(const DomainMetaDescriptor& desc, std::string& textFile)
+	{
+		Reflect::Type* pType = m_moduleCtx->GetType(Reflect::TypeOf<DomainMetaDescriptor>());
+
+		if (pType == nullptr)
+		{
+			Terminal::Error("DomainSystem", "DomainMetaDescriptor has no reflected type");
+			return false;
+		}
+
+		JsonArchiveWriter writer;
+		Serializer serializer(m_moduleCtx, &ResolveModuleType);
+
+		serializer.Serialize(&desc, *pType, writer);
+		textFile = writer.ToString();
+
+		return true;
+	}
 }

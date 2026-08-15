@@ -8,6 +8,7 @@ namespace Horizon::Editor
 	HCLASS(ContextMenuItem["SceneHierarchyView", "Delete", 2]);
 	class H_EXPORT DeleteEntityItem : public SceneHierarchyMenuItem
 	{
+		HORIZON_TYPE_REFLECT(DeleteEntityItem);
 	public:
 		void OnExecute(SceneHierarchyContext& context) final;
 		b8 IsEnabled(const SceneHierarchyContext& context) final;

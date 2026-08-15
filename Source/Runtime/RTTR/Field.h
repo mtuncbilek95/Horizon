@@ -106,7 +106,7 @@ namespace Horizon::Reflect
 		std::string m_name;
 		usize m_offset = 0;
 		TypeKind m_kind = TypeKind::Object;
-		TypeMode m_mode = TypeMode::Compose;
+		TypeMode m_mode = TypeMode::Invalid;
 
 		TypeHandle m_typeId;
 

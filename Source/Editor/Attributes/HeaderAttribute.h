@@ -9,6 +9,7 @@ namespace Horizon::Editor
 {
 	class H_EXPORT HeaderAttribute : public Reflect::Attribute
 	{
+		HORIZON_ATTRIBUTE_REFLECT(HeaderAttribute);
 	public:
 		HeaderAttribute(const std::string& header) : m_header(header) 
 		{
@@ -16,8 +17,6 @@ namespace Horizon::Editor
 		~HeaderAttribute() = default;
 
 		const std::string& GetHeaderName() const { return m_header; }
-
-		Reflect::TypeHandle GetTypeId() const final { return Reflect::TypeOf<HeaderAttribute>(); }
 
 	private:
 		std::string m_header;

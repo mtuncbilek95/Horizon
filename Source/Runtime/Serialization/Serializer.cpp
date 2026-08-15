@@ -29,6 +29,12 @@ namespace Horizon
 
 	void Serializer::WriteField(const void* valuePtr, const Reflect::Field& field, IArchiveWriter& writer)
 	{
+		if (field.GetMode() == Reflect::TypeMode::Pointer)
+		{
+			WritePointer(valuePtr, field, writer);
+			return;
+		}
+
 		if (field.GetMode() == Reflect::TypeMode::Array)
 		{
 			const ListBase* pList = static_cast<const ListBase*>(valuePtr);
@@ -44,6 +50,32 @@ namespace Horizon
 		}
 
 		WriteValue(valuePtr, field, writer);
+	}
+
+	void Serializer::WritePointer(const void* pointerSlot, const Reflect::Field& field, IArchiveWriter& writer)
+	{
+		const Reflect::Base* pTarget = *static_cast<const Reflect::Base* const*>(pointerSlot);
+
+		writer.BeginObject();
+
+		if (pTarget)
+		{
+			const Reflect::Type* pType = Resolve(pTarget->GetTypeId());
+			if (pType)
+			{
+				writer.Key("type");
+				writer.WriteString(pType->GetName());
+
+				writer.Key("data");
+				WriteObject(pTarget, *pType, writer);
+			}
+			else
+			{
+				Terminal::Warn("Serializer", "Unregistered concrete type in field '{}'", field.GetName());
+			}
+		}
+
+		writer.EndObject();
 	}
 
 	void Serializer::WriteValue(const void* valuePtr, const Reflect::Field& field, IArchiveWriter& writer)
@@ -143,6 +175,12 @@ namespace Horizon
 
 	void Serializer::ReadField(void* valuePtr, const Reflect::Field& field, IArchiveReader& reader)
 	{
+		if (field.GetMode() == Reflect::TypeMode::Pointer)
+		{
+			ReadPointer(valuePtr, field, reader);
+			return;
+		}
+
 		if (field.GetMode() == Reflect::TypeMode::Array)
 		{
 			ListBase* pList = static_cast<ListBase*>(valuePtr);
@@ -158,6 +196,30 @@ namespace Horizon
 		}
 
 		ReadValue(valuePtr, field, reader);
+	}
+
+	void Serializer::ReadPointer(void* pointerSlot, const Reflect::Field& field, IArchiveReader& reader)
+	{
+		Reflect::Base* pTarget = *static_cast<Reflect::Base**>(pointerSlot);
+
+		reader.BeginObject();
+
+		if (reader.Key("type"))
+		{
+			const std::string typeName = reader.ReadString();
+			const Reflect::Type* pType = pTarget ? Resolve(pTarget->GetTypeId()) : nullptr;
+
+			if (!pTarget)
+				Terminal::Warn("Serializer", "Field '{}' holds no instance, '{}' data skipped", field.GetName(), typeName);
+			else if (!pType)
+				Terminal::Warn("Serializer", "Unregistered concrete type in field '{}'", field.GetName());
+			else if (pType->GetName() != typeName)
+				Terminal::Warn("Serializer", "Field '{}' holds '{}' but archive has '{}', skipped", field.GetName(), pType->GetName(), typeName);
+			else if (reader.Key("data"))
+				ReadObject(pTarget, *pType, reader);
+		}
+
+		reader.EndObject();
 	}
 
 	void Serializer::ReadValue(void* valuePtr, const Reflect::Field& field, IArchiveReader& reader)
@@ -199,7 +261,8 @@ namespace Horizon
 			const Reflect::Type* nested = Resolve(field.GetTypeId());
 			if (nested)
 				ReadObject(valuePtr, *nested, reader);
-
+			else
+				Terminal::Error("Serializer", "Previous error was related with {}.", field.GetName());
 			break;
 		}
 		}

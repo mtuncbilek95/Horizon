@@ -70,6 +70,15 @@ namespace Horizon
 		usize index = path.rfind('.');
 		return path.substr(0, index);
 	}
+	
+	std::string StringOps::OnlyExtension(const std::string& path)
+	{
+		usize index = path.rfind('.');
+		if (index == std::string::npos)
+			return "";
+
+		return path.substr(index);
+	}
 
 	std::string StringOps::ToRelative(const std::string& absolutePath, const std::string& trimPath, const std::string& rootOf)
 	{

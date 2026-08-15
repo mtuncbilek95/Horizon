@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Runtime/RTTR/Reflection.h>
+
 #include <string>
 
 namespace Horizon::Engine
@@ -9,7 +11,7 @@ namespace Horizon::Engine
 
 namespace Horizon::Editor
 {
-	class H_EXPORT ViewObject
+	class H_EXPORT ViewObject : public Reflect::Base
 	{
 		friend class ViewRegistry;
 	public:

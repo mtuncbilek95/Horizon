@@ -10,6 +10,7 @@ namespace Horizon::Editor
 {
 	class H_EXPORT EditorViewAttribute : public Reflect::Attribute
 	{
+		HORIZON_ATTRIBUTE_REFLECT(EditorViewAttribute);
 	public:
 		EditorViewAttribute(const std::string& iconName, const std::string& displayName, b8 multiInstance = false, b8 openOnStart = false, DockZone dock = DockZone::Center) : m_multiInstance(multiInstance), 
 			m_openOnStart(openOnStart), m_dock(dock)
@@ -23,8 +24,6 @@ namespace Horizon::Editor
 		b8 GetMultiInstance() const { return m_multiInstance; }
 		b8 GetOpenOnStart() const { return m_openOnStart; }
 		DockZone GetDock() const { return m_dock; }
-
-		Reflect::TypeHandle GetTypeId() const final { return Reflect::TypeOf<EditorViewAttribute>(); }
 
 	private:
 		std::string m_displayName;

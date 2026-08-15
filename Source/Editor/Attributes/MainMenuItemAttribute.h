@@ -9,6 +9,7 @@ namespace Horizon::Editor
 {
 	class H_EXPORT MainMenuItemAttribute : public Reflect::Attribute
 	{
+		HORIZON_ATTRIBUTE_REFLECT(MainMenuItemAttribute);
 	public:
 		MainMenuItemAttribute(std::string path, i32 order) : m_path(path), m_order(order)
 		{
@@ -17,8 +18,6 @@ namespace Horizon::Editor
 
 		const std::string& GetPath() const { return m_path; }
 		i32 GetOrder() const { return m_order; }
-
-		Reflect::TypeHandle GetTypeId() const final { return Reflect::TypeOf<MainMenuItemAttribute>(); }
 
 	private:
 		std::string m_path;

@@ -2,6 +2,7 @@
 
 #include <Runtime/Containers/List.h>
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/RTTR/Base.h>
 #include <Runtime/RTTR/TypeKind.h>
 #include <Runtime/RTTR/TypeMode.h>
 
@@ -59,6 +60,17 @@ namespace Horizon::Reflect
 	{
 		using Element = E;
 		static constexpr TypeMode Mode = TypeMode::Array;
+		static constexpr TypeKind Kind = KindOf<E>();
+	};
+
+	template<typename E>
+	struct TypeResolve<E*>
+	{
+		static_assert(std::is_base_of_v<Base, E>,
+			"Reflected pointer fields must point to a Reflect::Base derived type.");
+
+		using Element = E;
+		static constexpr TypeMode Mode = TypeMode::Pointer;
 		static constexpr TypeKind Kind = KindOf<E>();
 	};
 }

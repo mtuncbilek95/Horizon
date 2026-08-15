@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Editor/Domain/DomainMetaDescriptor.h>
+#include <Editor/Domain/ImportSettings/ImportSettingsRegistry.h>
 #include <Engine/Core/System.h>
 #include <Engine/Module/ModuleContext.h>
 #include <Runtime/Containers/List.h>
@@ -58,6 +59,7 @@ namespace Horizon::Editor
 		DomainFolder* FindFolder(const List<DomainFolder*>& folders, const std::string& folderName) const;
 
 		b8 ReadMeta(const std::string& textFile, DomainMetaDescriptor& outDescriptor);
+		b8 WriteMeta(const DomainMetaDescriptor& desc, std::string& textFile);
 
 	private:
 		Engine::ModuleContext* m_moduleCtx;
@@ -77,5 +79,7 @@ namespace Horizon::Editor
 		f64 m_lastFullScan = 0.0;
 
 		PAL::Timer m_clock;
+
+		ImportSettingsRegistry m_importRegistry;
 	};
 }

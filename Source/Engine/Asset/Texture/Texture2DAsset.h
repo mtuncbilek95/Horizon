@@ -5,9 +5,10 @@
 
 namespace Horizon::Engine
 {
-	HCLASS(AssetType["Texture2D", 1, AssetOrigin::Imported, {".tga", ".png"}])
+	HCLASS(AssetType["Texture2D", 1, AssetOrigin::Imported]);
 	class H_EXPORT Texture2DAsset : public AssetObject
 	{
+		HORIZON_TYPE_REFLECT(Texture2DAsset);
 
 	private:
 	};

@@ -1,11 +1,12 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor
 {
 	template<typename TCtx>
-	class ContextMenuItem
+	class ContextMenuItem : public Reflect::Base
 	{
 	public:
 		virtual ~ContextMenuItem() = default;

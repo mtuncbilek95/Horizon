@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Runtime/RTTR/Reflection.h>
+
 namespace Horizon::Engine
 {
 	class Application;
@@ -7,7 +9,7 @@ namespace Horizon::Engine
 
 namespace Horizon::Editor
 {
-	class H_EXPORT MenuItem
+	class H_EXPORT MenuItem : public Reflect::Base
 	{
 		friend class MenuRegistry;
 	public:

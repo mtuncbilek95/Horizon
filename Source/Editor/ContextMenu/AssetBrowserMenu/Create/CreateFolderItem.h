@@ -8,6 +8,7 @@ namespace Horizon::Editor
 	HCLASS(ContextMenuItem["AssetBrowserView", "Create/Folder", 0]);
 	class H_EXPORT CreateFolderItem : public AssetBrowserMenuItem
 	{
+		HORIZON_TYPE_REFLECT(CreateFolderItem);
 	public:
 		void OnExecute(AssetBrowserContext& context) final;
 		b8 IsEnabled(const AssetBrowserContext& context) final;

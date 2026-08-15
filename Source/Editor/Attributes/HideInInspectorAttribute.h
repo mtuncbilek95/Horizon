@@ -6,10 +6,9 @@ namespace Horizon::Editor
 {
 	class H_EXPORT HideInInspectorAttribute : public Reflect::Attribute
 	{
+		HORIZON_ATTRIBUTE_REFLECT(HideInInspectorAttribute);
 	public:
 		HideInInspectorAttribute() = default;
 		~HideInInspectorAttribute() = default;
-
-		Reflect::TypeHandle GetTypeId() const final { return Reflect::TypeOf<HideInInspectorAttribute>(); }
 	};
 }

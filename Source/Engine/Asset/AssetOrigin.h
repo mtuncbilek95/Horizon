@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/Definitions/BitwiseOperators.h>
 
 namespace Horizon::Engine
 {

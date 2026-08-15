@@ -23,8 +23,7 @@ namespace Horizon::Engine
 		void GetInitializeOrder(OrderRules& rules) const final;
 		void GetExecutionOrder(OrderRules& rules) const final;
 
-		void RegisterAsset(const AssetEntryDesc& desc);
-		void UnregisterAsset(const Guid& id);
+
 
 	private:
 		AssetTypeRegistry m_typeRegistry;

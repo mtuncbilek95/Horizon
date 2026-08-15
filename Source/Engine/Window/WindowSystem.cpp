@@ -10,8 +10,8 @@ namespace Horizon::Engine
 		System::OnAttach(pEngine);
 
 		PAL::WindowDesc winDesc = {};
-		winDesc.width = 1920;
-		winDesc.height = 1080;
+		winDesc.width = 1280;
+		winDesc.height = 720;
 		winDesc.mode = PAL::WindowMode::Windowed;
 		winDesc.titleName = "Horizon Engine";
 

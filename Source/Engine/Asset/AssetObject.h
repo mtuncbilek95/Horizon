@@ -3,13 +3,14 @@
 #include <Runtime/Containers/Guid.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/PAL/Sync/Atomic.h>
+#include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Engine
 {
 	class Application;
 	struct AssetTypeDesc;
 
-	class H_EXPORT AssetObject
+	class H_EXPORT AssetObject : public Reflect::Base
 	{
 		friend class AssetSystem;
 	public:

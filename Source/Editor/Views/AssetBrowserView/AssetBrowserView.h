@@ -17,6 +17,8 @@ namespace Horizon::Editor
 	HCLASS(EditorView[ICON_FA_FOLDER_TREE, "Asset Browser", false, true, DockZone::Bottom]);
 	class H_EXPORT AssetBrowserView : public ViewObject
 	{
+		HORIZON_TYPE_REFLECT(AssetBrowserView);
+
 		struct BrowserEntry
 		{
 			DomainFolder* pFolder = nullptr;

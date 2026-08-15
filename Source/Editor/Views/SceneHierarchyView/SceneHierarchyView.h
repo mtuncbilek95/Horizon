@@ -11,6 +11,7 @@ namespace Horizon::Editor
 	HCLASS(EditorView[ICON_FA_DIAGRAM_PROJECT, "Scene Hierarchy", false, true, DockZone::Left]);
 	class H_EXPORT SceneHierarchyView : public ViewObject
 	{
+		HORIZON_TYPE_REFLECT(SceneHierarchyView);
 	public:
 		void OnInvoke() final;
 		void OnRender() final;

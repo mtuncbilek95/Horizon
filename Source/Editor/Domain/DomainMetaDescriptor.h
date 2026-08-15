@@ -1,22 +1,25 @@
 #pragma once
 
+#include <Editor/Domain/ImportSettings/ImportSettings.h>
 #include <Runtime/Containers/Guid.h>
 #include <Runtime/PAL/Timer/DateTime.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <string>
 
-namespace Horizon
+namespace Horizon::Editor
 {
 	HCLASS();
-	struct H_EXPORT DomainMetaDescriptor
+	struct H_EXPORT DomainMetaDescriptor : public Reflect::Base
 	{
+		HORIZON_TYPE_REFLECT(DomainMetaDescriptor);
+
 		HFIELD();
 		Guid id;
 
 		HFIELD();
-		std::string sourcePath;
+		std::string assetTypeName;
 
 		HFIELD();
-		PAL::DateTime lastModifiedTime;
+		ImportSettings* pSettings;
 	};
 }
