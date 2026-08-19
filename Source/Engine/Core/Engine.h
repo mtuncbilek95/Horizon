@@ -86,6 +86,7 @@ namespace Horizon::Engine
 		void RequestExit(std::string_view reason);
 
 		ReflectionSystem* GetReflectionSystem() const noexcept { return m_reflectionSystem; }
+		JobSystem* GetJobSystem() const noexcept { return m_jobSystem; }
 
 	private:
 		b8 IsRegistered(std::type_index index) const;

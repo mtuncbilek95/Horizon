@@ -114,5 +114,4 @@ namespace Horizon::Editor
 		graph.Requires<Engine::WindowService>();
 		graph.Requires<Engine::GraphicsContext>();
 	}
-
 }

@@ -1,6 +1,7 @@
 #include "Engine.h"
 
 #include <Engine/Reflection/ReflectionSystem.h>
+#include <Engine/Job/JobSystem.h>
 
 #include <unordered_set>
 
@@ -9,10 +10,12 @@ namespace Horizon::Engine
 	Engine::Engine()
 	{
 		m_reflectionSystem = Memory::Allocator::Create<ReflectionSystem>(Memory::CurrLoc(), this);
+		m_jobSystem = Memory::Allocator::Create<JobSystem>(Memory::CurrLoc(), this);
 	}
 
 	Engine::~Engine()
 	{
+		Memory::Allocator::Delete(m_jobSystem);
 		Memory::Allocator::Delete(m_reflectionSystem);
 		Memory::Allocator::ReportLeaks();
 	}

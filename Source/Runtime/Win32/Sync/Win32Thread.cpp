@@ -130,7 +130,7 @@ namespace Horizon::PAL
 		m_id = 0;
 	}
 
-	void Thread::SetAffinity(u64 coreMask)
+	void Thread::SetAffinity(u64 coreMask) const
 	{
 		if (m_handle)
 			::SetThreadAffinityMask((HANDLE)(m_handle),
@@ -158,5 +158,49 @@ namespace Horizon::PAL
 	u64 Thread::CurrentId()
 	{
 		return (u64)(::GetCurrentThreadId());
+	}
+
+	void Thread::SetCurrentAffinity(u64 coreMask)
+	{
+		if (coreMask == 0)
+			return;
+
+		::SetThreadAffinityMask(::GetCurrentThread(), (DWORD_PTR)(coreMask));
+	}
+
+	void Thread::SetCurrentPriority(ThreadPriority priority)
+	{
+		i32 native = THREAD_PRIORITY_NORMAL;
+
+		switch (priority)
+		{
+		case ThreadPriority::Low:
+			native = THREAD_PRIORITY_BELOW_NORMAL;
+			break;
+		case ThreadPriority::Normal:
+			native = THREAD_PRIORITY_NORMAL;
+			break;
+		case ThreadPriority::High:
+			native = THREAD_PRIORITY_ABOVE_NORMAL;
+			break;
+		case ThreadPriority::Highest:
+			native = THREAD_PRIORITY_HIGHEST;
+			break;
+		case ThreadPriority::Realtime:
+			native = THREAD_PRIORITY_TIME_CRITICAL;
+			break;
+		}
+
+		::SetThreadPriority(::GetCurrentThread(), native);
+	}
+
+	void Thread::SetCurrentEcoQoS(b8 enabled)
+	{
+		THREAD_POWER_THROTTLING_STATE state = {};
+		state.Version = THREAD_POWER_THROTTLING_CURRENT_VERSION;
+		state.ControlMask = THREAD_POWER_THROTTLING_EXECUTION_SPEED;
+		state.StateMask = enabled ? THREAD_POWER_THROTTLING_EXECUTION_SPEED : 0;
+
+		::SetThreadInformation(::GetCurrentThread(), ThreadPowerThrottling, &state, sizeof(state));
 	}
 }

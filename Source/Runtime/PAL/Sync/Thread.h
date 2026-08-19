@@ -2,6 +2,7 @@
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/Containers/List.h>
+#include <Runtime/PAL/Sync/ThreadPriority.h>
 
 #include <string_view>
 
@@ -26,7 +27,7 @@ namespace Horizon::PAL
 
 		void Join();
 		void Detach();
-		void SetAffinity(u64 coreMask);
+		void SetAffinity(u64 coreMask) const;
 		b8 IsJoinable() const { return m_handle != nullptr; }
 
 		u64 GetId() const { return m_id; }
@@ -35,6 +36,10 @@ namespace Horizon::PAL
 		static void YieldCurrent();
 		static u32 HardwareConcurrency();
 		static u64 CurrentId();
+
+		static void SetCurrentAffinity(u64 coreMask);
+		static void SetCurrentPriority(ThreadPriority priority);
+		static void SetCurrentEcoQoS(b8 enabled);
 
 	private:
 		ThreadHandle m_handle = nullptr;
