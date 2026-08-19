@@ -113,4 +113,31 @@ namespace Horizon
 
 		return relativePath.substr(0, close + 2);
 	}
+
+	std::string_view StringOps::GetNameString(std::string_view name)
+	{
+		constexpr std::string_view prefixes[] = { "class ", "struct ", "enum ", "union " };
+
+		for (std::string_view prefix : prefixes)
+		{
+			if (name.starts_with(prefix))
+			{
+				name.remove_prefix(prefix.size());
+				break;
+			}
+		}
+
+		return name;
+	}
+
+	std::string_view StringOps::ParseName(std::string_view name)
+	{
+		if (usize pos = name.rfind("::"); pos != std::string_view::npos)
+			return name.substr(pos + 2);
+
+		if (usize pos = name.find(' '); pos != std::string_view::npos)
+			return name.substr(pos + 1);
+
+		return name;
+	}
 }

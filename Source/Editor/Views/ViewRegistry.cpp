@@ -2,15 +2,15 @@
 
 #include <Editor/Attributes/EditorViewAttribute.h>
 
-#include <Engine/Core/Application.h>
-#include <Engine/Module/ModuleContext.h>
+#include <Engine/Core/Engine.h>
+#include <Engine/Reflection/ReflectionSystem.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>
 
 namespace Horizon::Editor
 {
-	ViewRegistry::ViewRegistry(Engine::Application* pEngine) : m_engine(pEngine)
+	ViewRegistry::ViewRegistry(Engine::Engine* pEngine) : m_engine(pEngine)
 	{
 	}
 
@@ -37,9 +37,9 @@ namespace Horizon::Editor
 		m_createdViews.Clear();
 		m_registeredViews.Clear();
 
-		auto* moduleCtx = m_engine->GetModuleContext();
+		auto* pReflect = m_engine->GetReflectionSystem();
 
-		List<Reflect::Type*> types = moduleCtx->GetTypeByAttribute(Reflect::TypeOf<EditorViewAttribute>());
+		List<Reflect::Type*> types = pReflect->GetTypeByAttribute(Reflect::TypeOf<EditorViewAttribute>());
 
 		for (auto* type : types)
 		{

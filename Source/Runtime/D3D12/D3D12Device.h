@@ -16,6 +16,7 @@ namespace Horizon
 		~D3D12Device() final;
 
 		void InitializeImGui(GfxQueue* pQueue, GfxTextureFormat fmt = GfxTextureFormat::RGBA8) final;
+		void NewFrameImGui() final;
 		void ShutdownImGui() final;
 
 		GfxTexture* CreateTexture(const GfxTextureDesc& desc) final;

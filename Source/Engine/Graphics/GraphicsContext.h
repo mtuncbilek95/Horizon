@@ -14,16 +14,11 @@ namespace Horizon
 
 namespace Horizon::Engine
 {
-	class H_EXPORT GraphicsContext final : public Context
+	class H_EXPORT GraphicsContext : public Context
 	{
 	public:
 		GraphicsContext() = default;
 		~GraphicsContext() = default;
-
-		AppReport OnAttach(Application* engine) final;
-		void OnDetach() final;
-
-		void GetInitializeOrder(OrderRules& rules) const final;
 
 		GfxDevice* GetDevice() const { return m_device; }
 		GfxQueue* GetGraphicsQueue() const { return m_graphicsQueue; }
@@ -31,13 +26,15 @@ namespace Horizon::Engine
 		GfxQueue* GetTransferQueue() const { return m_transferQueue; }
 		GfxSwapchain* GetSwapchain() const { return m_swapchain; }
 
+		ModuleReport OnInitialize() final;
+		void OnFinalize() final;
+		void DeclareDependencies(ModuleGraph& graph) final;
+
 	private:
 		GfxDevice* m_device = nullptr;
-
 		GfxQueue* m_graphicsQueue = nullptr;
 		GfxQueue* m_computeQueue = nullptr;
 		GfxQueue* m_transferQueue = nullptr;
-
 		GfxSwapchain* m_swapchain = nullptr;
 	};
 }

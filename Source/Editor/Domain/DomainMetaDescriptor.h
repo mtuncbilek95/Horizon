@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Editor/Domain/ImportSettings/ImportSettings.h>
 #include <Runtime/Containers/Guid.h>
 #include <Runtime/PAL/Timer/DateTime.h>
 #include <Runtime/RTTR/Reflection.h>
@@ -18,8 +17,5 @@ namespace Horizon::Editor
 
 		HFIELD();
 		std::string assetTypeName;
-
-		HFIELD();
-		ImportSettings* pSettings;
 	};
 }

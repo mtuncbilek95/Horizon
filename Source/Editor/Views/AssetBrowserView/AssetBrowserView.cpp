@@ -1,7 +1,7 @@
 #include "AssetBrowserView.h"
 
-#include <Editor/Domain/DomainSystem.h>
-#include <Engine/Core/Application.h>
+#include <Editor/Domain/DomainService.h>
+#include <Engine/Core/Engine.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
 
@@ -55,8 +55,8 @@ namespace Horizon::Editor
 
 	void AssetBrowserView::OnInvoke()
 	{
-		auto& domainSys = m_engine->GetSystem<DomainSystem>();
-		m_currentFolder = domainSys.GetRootFolder();
+		auto* pDomain = GetEngine()->RequestService<DomainService>();
+		m_currentFolder = nullptr;
 
 		m_contextMenu.BootstrapContext(m_engine, "AssetBrowserView");
 	}

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Engine/Core/Context.h>
-
 #include <Runtime/Containers/List.h>
 #include <Runtime/PAL/Module/SymbolLibrary.h>
 #include <Runtime/RTTR/Reflection.h>
@@ -10,14 +8,13 @@
 
 namespace Horizon::Engine
 {
-	class ModuleContext : public Context 
+	class Engine;
+
+	class ReflectionSystem final
 	{
 	public:
-		ModuleContext(PAL::SymbolLibrary* pLibrary);
-		~ModuleContext() = default;
-
-		AppReport OnAttach(Application* pEngine) final;
-		void OnDetach() final;
+		ReflectionSystem(Engine* pEngine);
+		~ReflectionSystem();
 
 		Reflect::Type* GetType(Reflect::TypeHandle handl);
 		List<Reflect::Type*> GetTypeByBase(Reflect::TypeHandle handl);
@@ -27,6 +24,6 @@ namespace Horizon::Engine
 		List<Reflect::Type> m_registeredTypes;
 		std::unordered_map<Reflect::TypeHandle, u32> m_lookup;
 
-		PAL::SymbolLibrary* m_module = nullptr;
+		PAL::SymbolLibrary* m_hostLibrary = nullptr;
 	};
 }

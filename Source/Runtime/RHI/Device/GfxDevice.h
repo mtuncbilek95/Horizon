@@ -69,6 +69,7 @@ namespace Horizon
 		virtual ~GfxDevice() = default;
 
 		virtual void InitializeImGui(GfxQueue* pQueue, GfxTextureFormat fmt = GfxTextureFormat::RGBA8) = 0;
+		virtual void NewFrameImGui() = 0;
 		virtual void ShutdownImGui() = 0;
 
 		virtual GfxTexture* CreateTexture(const GfxTextureDesc& desc) = 0;

@@ -4,7 +4,7 @@
 
 namespace Horizon::Engine
 {
-	class Application;
+	class Engine;
 }
 
 namespace Horizon::Editor
@@ -15,7 +15,7 @@ namespace Horizon::Editor
 		MenuRegistry() = default;
 		~MenuRegistry();
 
-		void BootstrapMenus(Engine::Application* pEngine);
+		void BootstrapMenus(Engine::Engine* pEngine);
 		void RenderGUI();
 
 	private:

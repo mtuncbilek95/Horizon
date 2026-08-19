@@ -19,5 +19,16 @@ namespace Horizon
 		static std::string ToRelative(const std::string& absolutePath, const std::string& trimPath, const std::string& rootOf);
 		static std::string ToAbsolute(const std::string& relativePath, const std::string& missingPath, const std::string& rootOf);
 		static std::string RootOf(const std::string& relativePath);
+
+		static std::string_view GetNameString(std::string_view name);
+
+		template<typename T>
+		static std::string_view GetName(T* obj)
+		{
+			return ParseName(typeid(*obj).name());
+		}
+
+	private:
+		static std::string_view ParseName(std::string_view name);
 	};
 }

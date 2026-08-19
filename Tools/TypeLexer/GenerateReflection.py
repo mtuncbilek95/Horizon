@@ -217,6 +217,7 @@ def emit_manifestation(all_r) -> str:
     return (
         '#pragma once\n\n'
         f'{includes}\n\n'
+        '#include <Runtime/RTTR/Reflection.h>\n'
         '#include <Runtime/Definitions/Allocator.h>\n'
         '#include <Runtime/Containers/List.h>\n\n'
         'extern "C" H_EXPORT void InstallModule(void* allocatorCtx)\n'

@@ -5,10 +5,10 @@
 
 namespace Horizon::Engine
 {
-	struct AppReport
+	struct ModuleReport
 	{
-		AppReport() = default;
-		AppReport(std::string_view message) : m_message(message) {}
+		ModuleReport() = default;
+		ModuleReport(std::string_view message) : m_message(message) {}
 
 		explicit operator bool() const { return !m_message.empty(); }
 		std::string_view GetMessage() const { return m_message; }

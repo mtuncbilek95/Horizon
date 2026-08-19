@@ -4,7 +4,7 @@
 
 namespace Horizon::Engine
 {
-	class Application;
+	class Engine;
 }
 
 namespace Horizon::Editor
@@ -17,7 +17,9 @@ namespace Horizon::Editor
 
 		virtual void OnExecute() = 0;
 
-	protected:
-		Engine::Application* m_engine;
+		Engine::Engine* GetEngine() const noexcept { return m_engine; }
+
+	private:
+		Engine::Engine* m_engine;
 	};
 }

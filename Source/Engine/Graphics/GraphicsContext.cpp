@@ -1,8 +1,10 @@
 #include "GraphicsContext.h"
 
-#include <Engine/Core/Application.h>
-#include <Engine/Window/WindowSystem.h>
+#include <Engine/Core/Engine.h>
+#include <Engine/Core/ModuleGraph.h>
+#include <Engine/Window/WindowService.h>
 
+#include <Runtime/Containers/StringOps.h>
 #include <Runtime/PAL/Window/Window.h>
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Queue/GfxQueue.h>
@@ -13,35 +15,47 @@
 
 namespace Horizon::Engine
 {
-	AppReport GraphicsContext::OnAttach(Application* pEngine)
+	ModuleReport GraphicsContext::OnInitialize()
 	{
-		Context::OnAttach(pEngine);
-
-		auto* pWindowSub = m_engine->TryGetSystem<WindowSystem>();
-		if(!pWindowSub)
-			return AppReport("Failed to get WindowSystem. Nothing will work...");
+		auto* pWindowSub = GetEngine()->RequestService<WindowService>();
+		if (!pWindowSub)
+			return ModuleReport("Failed to get WindowService. Nothing will work...");
 
 		m_device = CreateGfxDevice(GfxDeviceDesc());
 		if (!m_device)
-			return AppReport("Failed to create GfxDevice");
+			return ModuleReport("Failed to create GfxDevice");
 
 		m_graphicsQueue = m_device->CreateQueue(GfxQueueType::Graphics);
 		if (!m_graphicsQueue)
-			return AppReport("Failed to create GfxQueue(Graphics)");
+			return ModuleReport("Failed to create GfxQueue(Graphics)");
 
 		m_computeQueue = m_device->CreateQueue(GfxQueueType::Compute);
 		if (!m_computeQueue)
-			return AppReport("Failed to create GfxQueue(Compute)");
+			return ModuleReport("Failed to create GfxQueue(Compute)");
 
 		m_transferQueue = m_device->CreateQueue(GfxQueueType::Transfer);
 		if (!m_transferQueue)
-			return AppReport("Failed to create GfxQueue(Transfer)");
+			return ModuleReport("Failed to create GfxQueue(Transfer)");
 
-		Terminal::Debug("GraphicsContext", "Device, Graphics Queue, Compute Queue and Transfer Queue has been initialized!");
-		return AppReport();
+		PAL::WindowRect windowRect = pWindowSub->GetWindow()->GetRect();
+
+		GfxSwapchainDesc swapDesc = {};
+		swapDesc.pWindowHandle = (void*)pWindowSub->GetWindow()->GetOSHandle();
+		swapDesc.imageCount = 3;
+		swapDesc.width = windowRect.width;
+		swapDesc.height = windowRect.height;
+		swapDesc.vSync = true;
+		swapDesc.bAllowTearing = false;
+		m_swapchain = m_device->CreateSwapchain(swapDesc, m_graphicsQueue);
+		if (!m_swapchain)
+			return ModuleReport("Failed to create GfxSwapchain");
+
+		Terminal::Debug(StringOps::GetName(this), "Device, Graphics Queue, Compute Queue and Transfer Queue has been initialized!");
+
+		return ModuleReport();
 	}
 
-	void GraphicsContext::OnDetach()
+	void GraphicsContext::OnFinalize()
 	{
 		Memory::Allocator::Delete(m_graphicsQueue);
 		Memory::Allocator::Delete(m_computeQueue);
@@ -50,8 +64,8 @@ namespace Horizon::Engine
 		Memory::Allocator::Delete(m_device);
 	}
 
-	void GraphicsContext::GetInitializeOrder(OrderRules& rules) const
+	void GraphicsContext::DeclareDependencies(ModuleGraph& graph)
 	{
-		Requires<WindowSystem>(rules.after);
+		graph.Requires<WindowService>();
 	}
 }

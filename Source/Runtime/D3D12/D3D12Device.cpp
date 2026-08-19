@@ -165,6 +165,11 @@ namespace Horizon
 		ImGui_ImplDX12_Init(&info);
 	}
 
+	void D3D12Device::NewFrameImGui()
+	{
+		ImGui_ImplDX12_NewFrame();
+	}
+
 	void D3D12Device::ShutdownImGui()
 	{
 		ImGui_ImplDX12_Shutdown();

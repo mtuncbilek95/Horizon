@@ -1,18 +1,10 @@
 #pragma once
 
-#include <Engine/Core/AppModule.h>
+#include <Engine/Core/Module.h>
 
 namespace Horizon::Engine
 {
-	class Application;
-
-	class H_EXPORT Context : public AppModule
+	class H_EXPORT Context : public Module
 	{
-	public:
-		Context() = default;
-		virtual ~Context() = default;
-
-		Context(const Context&) = delete;
-		Context& operator=(const Context&) = delete;
 	};
 }

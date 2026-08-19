@@ -1,30 +1,17 @@
 #include "CreateFolderItem.h"
 
+#include <Runtime/Containers/StringOps.h>
 #include <Runtime/PAL/File/Directory.h>
 
 namespace Horizon::Editor
 {
 	namespace
 	{
-		b8 EqualsNoCase(const std::string& lhs, const std::string& rhs)
-		{
-			if (lhs.size() != rhs.size())
-				return false;
-
-			for (usize i = 0; i < lhs.size(); i++)
-			{
-				if (std::tolower(static_cast<u8>(lhs[i])) != std::tolower(static_cast<u8>(rhs[i])))
-					return false;
-			}
-
-			return true;
-		}
-
 		b8 HasFolderNamed(const DomainFolder* pParent, const std::string& name)
 		{
 			for (const DomainFolder* pFolder : pParent->GetFolders())
 			{
-				if (EqualsNoCase(pFolder->GetName(), name))
+				if (StringOps::EqualsNoCase(pFolder->GetName(), name))
 					return true;
 			}
 

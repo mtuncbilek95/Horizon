@@ -1,5 +1,6 @@
 #include "Allocator.h"
 
+#include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <mutex>
@@ -50,13 +51,13 @@ namespace Horizon::Memory
 				std::lock_guard lock(m_mutex);
 				if (m_live.empty())
 				{
-					Terminal::Info("Allocator", "No leaks.");
+					Terminal::Info(StringOps::GetName(this), "No leaks.");
 					return;
 				}
 
-				Terminal::Error("Allocator", "{} leaks, {} bytes total:", m_live.size(), m_liveBytes);
+				Terminal::Error(StringOps::GetName(this), "{} leaks, {} bytes total:", m_live.size(), m_liveBytes);
 				for (const auto& [p, r] : m_live)
-					Terminal::Error("Allocator", "  {} bytes @ {}:{} ({})",
+					Terminal::Error(StringOps::GetName(this), "  {} bytes @ {}:{} ({})",
 						r.size, r.location.file_name(), r.location.line(), r.location.function_name());
 			}
 

@@ -10,7 +10,7 @@ namespace Horizon::Editor
 	class H_EXPORT ViewRegistry
 	{
 	public:
-		ViewRegistry(Engine::Application* pEngine);
+		ViewRegistry(Engine::Engine* pEngine);
 		~ViewRegistry();
 
 		void BootstrapViews();
@@ -20,7 +20,7 @@ namespace Horizon::Editor
 		void BuildDefaultLayout(u32 rootId);
 
 	private:
-		Engine::Application* m_engine = nullptr;
+		Engine::Engine* m_engine = nullptr;
 
 		List<ViewDescriptor> m_registeredViews;
 		List<ViewObject*> m_createdViews;

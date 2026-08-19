@@ -1,13 +1,12 @@
-#include "EditorSystem.h"
+#include "EditorService.h"
 
 #include <Editor/Renderer/EditorRenderer.h>
 #include <Editor/Views/ViewRegistry.h>
 #include <Editor/MainMenu/MenuRegistry.h>
 
-#include <Engine/Core/Application.h>
-#include <Engine/Window/WindowSystem.h>
+#include <Engine/Core/Engine.h>
+#include <Engine/Window/WindowService.h>
 #include <Engine/Graphics/GraphicsContext.h>
-#include <Engine/Presentation/PresentationSystem.h>
 
 #include <chrono>
 
@@ -15,43 +14,35 @@ using Clock = std::chrono::high_resolution_clock;
 
 namespace Horizon::Editor
 {
-	Engine::AppReport EditorSystem::OnAttach(Engine::Application* engine)
+	Engine::ModuleReport EditorService::OnInitialize()
 	{
-		System::OnAttach(engine);
-
-		auto* pWindowSub = m_engine->TryGetSystem<Engine::WindowSystem>();
+		auto* pWindowSub = GetEngine()->RequestService<Engine::WindowService>();
 		if (!pWindowSub)
-			return Engine::AppReport("Failed to get WindowSystem. Nothing will work...");
+			return Engine::ModuleReport("Failed to get WindowService. Nothing will work...");
 
 		m_engineWindow = pWindowSub->GetWindow();
 
-		auto* pGraphSub = m_engine->TryGetContext<Engine::GraphicsContext>();
+		auto* pGraphSub = GetEngine()->RequestContext<Engine::GraphicsContext>();
 		if (!pGraphSub)
-			return Engine::AppReport("Failed to get GraphicsContext. Nothing will work...");
-
-		auto* pOutputSub = m_engine->TryGetSystem<Engine::PresentationSystem>();
-		if (!pOutputSub)
-			return Engine::AppReport("Failed to get PresentationSystem. Nothing will work...");
-
-		m_presentationSub = pOutputSub;
+			return Engine::ModuleReport("Failed to get GraphicsContext. Nothing will work...");
 
 		EditorRendererDesc renderDesc = {};
 		renderDesc.pDevice = pGraphSub->GetDevice();
 		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
 
 		m_editorRenderer = Memory::Allocator::Create<EditorRenderer>(Memory::CurrLoc(), renderDesc);
-		Terminal::Debug("EditorSystem", "EditorRenderer has been initialized!");
+		Terminal::Debug("EditorService", "EditorRenderer has been initialized!");
 
-		m_viewRegistry = Memory::Allocator::Create<ViewRegistry>(Memory::CurrLoc(), m_engine);
+		m_viewRegistry = Memory::Allocator::Create<ViewRegistry>(Memory::CurrLoc(), GetEngine());
 		m_viewRegistry->BootstrapViews();
 
 		m_menuRegistry = Memory::Allocator::Create<MenuRegistry>(Memory::CurrLoc());
-		m_menuRegistry->BootstrapMenus(m_engine);
+		m_menuRegistry->BootstrapMenus(GetEngine());
 
-		return Engine::AppReport();
+		return Engine::ModuleReport();
 	}
 
-	void EditorSystem::OnSync()
+	void EditorService::OnExecute()
 	{
 		static auto lastTime = Clock::now();
 
@@ -109,45 +100,19 @@ namespace Horizon::Editor
 			}
 			}
 		}
-
-		// Apply resize window
-		// TODO: Later
-
-		i8 imageIndex = m_presentationSub->AcquireImageIndex();
-		if (imageIndex == -1)
-			return;
-
-		PAL::WindowRect rect = m_engineWindow->GetRect();
-		m_editorRenderer->OnResizeWindow(rect.width, rect.height);
-
-		// Render ui work
-		m_editorRenderer->BeginRender(deltaTime);
-
-		m_menuRegistry->RenderGUI();
-		m_viewRegistry->RenderGUI();
-
-		m_editorRenderer->EndRender(m_presentationSub->GetBackbuffer(imageIndex), imageIndex);
-		m_presentationSub->Present(imageIndex);
 	}
 
-	void EditorSystem::OnDetach()
+	void EditorService::OnFinalize()
 	{
 		Memory::Allocator::Delete(m_menuRegistry);
 		Memory::Allocator::Delete(m_viewRegistry);
-
-		if (m_presentationSub)
-			m_presentationSub->WaitIdle();
-
 		Memory::Allocator::Delete(m_editorRenderer);
 	}
 
-	void EditorSystem::GetInitializeOrder(Engine::OrderRules& rules) const
+	void EditorService::DeclareDependencies(Engine::ModuleGraph& graph)
 	{
-		Requires<Engine::PresentationSystem>(rules.after);
+		graph.Requires<Engine::WindowService>();
+		graph.Requires<Engine::GraphicsContext>();
 	}
 
-	void EditorSystem::GetExecutionOrder(Engine::OrderRules& rules) const
-	{
-		Requires<Engine::PresentationSystem>(rules.before);
-	}
 }

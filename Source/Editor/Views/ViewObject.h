@@ -6,7 +6,7 @@
 
 namespace Horizon::Engine
 {
-	class Application;
+	class Engine;
 }
 
 namespace Horizon::Editor
@@ -20,10 +20,10 @@ namespace Horizon::Editor
 		virtual void OnInvoke() = 0;
 		virtual void OnRender() = 0;
 
-		Engine::Application* GetEngine() const { return m_engine; }
+		Engine::Engine* GetEngine() const { return m_engine; }
 
 	protected:
-		Engine::Application* m_engine;
+		Engine::Engine* m_engine;
 		std::string m_displayName;
 	};
 }

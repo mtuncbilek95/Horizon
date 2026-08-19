@@ -4,8 +4,8 @@
 #include <Editor/Attributes/MenuItemAttribute.h>
 #include <Editor/MainMenu/MenuItem.h>
 
-#include <Engine/Core/Application.h>
-#include <Engine/Module/ModuleContext.h>
+#include <Engine/Core/Engine.h>
+#include <Engine/Reflection/ReflectionSystem.h>
 
 #include <imgui.h>
 
@@ -18,15 +18,15 @@ namespace Horizon::Editor
 		m_menus.Clear();
 	}
 
-	void MenuRegistry::BootstrapMenus(Engine::Application* pEngine)
+	void MenuRegistry::BootstrapMenus(Engine::Engine* pEngine)
 	{
 		for (auto& inst : m_menus)
 			ClearRecursive(inst);
 		m_menus.Clear();
 
-		auto* moduleCtx = pEngine->GetModuleContext();
+		auto* pReflect = pEngine->GetReflectionSystem();
 
-		List<Reflect::Type*> mainList = moduleCtx->GetTypeByAttribute(Reflect::TypeOf<MainMenuItemAttribute>());
+		List<Reflect::Type*> mainList = pReflect->GetTypeByAttribute(Reflect::TypeOf<MainMenuItemAttribute>());
 
 		for (auto* type : mainList)
 		{
@@ -41,7 +41,7 @@ namespace Horizon::Editor
 			m_menus.PushBack(std::move(inst));
 		}
 
-		List<Reflect::Type*> leafList = moduleCtx->GetTypeByAttribute(Reflect::TypeOf<MenuItemAttribute>());
+		List<Reflect::Type*> leafList = pReflect->GetTypeByAttribute(Reflect::TypeOf<MenuItemAttribute>());
 
 		for (auto* type : leafList)
 		{

@@ -2,8 +2,8 @@
 
 #include <Editor/Attributes/ContextMenuItemAttribute.h>
 #include <Editor/ContextMenu/ContextMenuItem.h>
-#include <Engine/Core/Application.h>
-#include <Engine/Module/ModuleContext.h>
+#include <Engine/Core/Engine.h>
+#include <Engine/Reflection/ReflectionSystem.h>
 
 #include <imgui.h>
 
@@ -26,11 +26,11 @@ namespace Horizon::Editor
 			Clear();
 		}
 
-		void BootstrapContext(Engine::Application* pEngine, const std::string& ownerId)
+		void BootstrapContext(Engine::Engine* pEngine, const std::string& ownerId)
 		{
 			Clear();
 
-			auto* pModule = pEngine->GetModuleContext();
+			auto* pModule = pEngine->GetReflectionSystem();
 
 			List<Reflect::Type*> types = pModule->GetTypeByAttribute(Reflect::TypeOf<ContextMenuItemAttribute>());
 

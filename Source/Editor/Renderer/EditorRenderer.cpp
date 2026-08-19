@@ -127,8 +127,7 @@ namespace Horizon::Editor
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = dt;
 
-		// No need to flex. Just call this shit. Its Windows only editor.
-		ImGui_ImplDX12_NewFrame();
+		m_device->NewFrameImGui();
 		ImGui::NewFrame();
 
 		return true;

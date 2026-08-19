@@ -1,6 +1,6 @@
 #include "SceneHierarchyView.h"
 
-#include <Engine/Core/Application.h>
+#include <Engine/Core/Engine.h>
 
 namespace Horizon::Editor
 {
