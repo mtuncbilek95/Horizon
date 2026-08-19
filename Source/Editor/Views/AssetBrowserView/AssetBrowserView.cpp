@@ -56,7 +56,7 @@ namespace Horizon::Editor
 	void AssetBrowserView::OnInvoke()
 	{
 		auto* pDomain = GetEngine()->RequestService<DomainService>();
-		m_currentFolder = nullptr;
+		m_currentFolder = pDomain->GetRoot();
 
 		m_contextMenu.BootstrapContext(m_engine, "AssetBrowserView");
 	}

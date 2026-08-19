@@ -8,6 +8,11 @@
 #include <Engine/Window/WindowService.h>
 #include <Engine/Graphics/GraphicsContext.h>
 
+#include <Runtime/RHI/Device/GfxDevice.h>
+#include <Runtime/RHI/Swapchain/GfxSwapchain.h>
+#include <Runtime/RHI/Fence/GfxFence.h>
+#include <Runtime/RHI/Queue/GfxQueue.h>
+
 #include <chrono>
 
 using Clock = std::chrono::high_resolution_clock;
@@ -29,6 +34,10 @@ namespace Horizon::Editor
 		EditorRendererDesc renderDesc = {};
 		renderDesc.pDevice = pGraphSub->GetDevice();
 		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
+
+		m_fence = pGraphSub->GetDevice()->CreateFence();
+		m_swapchain = pGraphSub->GetSwapchain();
+		m_queue = pGraphSub->GetGraphicsQueue();
 
 		m_editorRenderer = Memory::Allocator::Create<EditorRenderer>(Memory::CurrLoc(), renderDesc);
 		Terminal::Debug("EditorService", "EditorRenderer has been initialized!");
@@ -100,10 +109,33 @@ namespace Horizon::Editor
 			}
 			}
 		}
+
+		// Temporary render loop
+		i8 imageIndex = m_swapchain->GetCurrentIndex();
+		m_fence->WaitCPU(m_imageFenceValues[imageIndex]);
+
+		if (imageIndex == -1)
+			return;
+
+		PAL::WindowRect rect = m_engineWindow->GetRect();
+		m_editorRenderer->OnResizeWindow(rect.width, rect.height);
+
+		m_editorRenderer->BeginRender(deltaTime);
+
+		m_menuRegistry->RenderGUI();
+		m_viewRegistry->RenderGUI();
+
+		m_editorRenderer->EndRender(m_swapchain->GetBackbuffer(imageIndex), imageIndex);
+
+		m_swapchain->Present();
+		m_imageFenceValues[imageIndex] = m_queue->Signal(m_fence);
 	}
 
 	void EditorService::OnFinalize()
 	{
+		const u64 value = m_queue->Signal(m_fence);
+		m_fence->WaitCPU(value);
+
 		Memory::Allocator::Delete(m_menuRegistry);
 		Memory::Allocator::Delete(m_viewRegistry);
 		Memory::Allocator::Delete(m_editorRenderer);

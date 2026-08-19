@@ -1,8 +1,14 @@
 #pragma once
 
 #include <Engine/Core/Service.h>
-
 #include <Runtime/PAL/Window/Window.h>
+
+namespace Horizon
+{
+	class GfxFence;
+	class GfxQueue;
+	class GfxSwapchain;
+}
 
 namespace Horizon::Editor
 {
@@ -29,5 +35,12 @@ namespace Horizon::Editor
 
 		ViewRegistry* m_viewRegistry = nullptr;
 		MenuRegistry* m_menuRegistry = nullptr;
+
+		// The ones below are most probably temporary
+		GfxFence* m_fence;
+		GfxQueue* m_queue;
+		GfxSwapchain* m_swapchain;
+		u32 m_imageCount = 0;
+		u64 m_imageFenceValues[8] = {};
 	};
 }

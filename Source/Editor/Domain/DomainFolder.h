@@ -10,7 +10,7 @@ namespace Horizon::Editor
 {
 	class H_EXPORT DomainFolder
 	{
-		friend class DomainSystem;
+		friend class DomainService;
 	public:
 		DomainFolder(DomainFolder* pParent, const std::string& name, const std::string& absolutePath) : m_parent(pParent),
 			m_name(name), m_absolutePath(absolutePath)

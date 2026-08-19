@@ -3,8 +3,10 @@
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/PAL/Watcher/WatcherAction.h>
+#include <Runtime/PAL/Watcher/WatcherEntryKind.h>
 
 #include <string>
+#include <string_view>
 
 namespace Horizon::PAL
 {
@@ -15,12 +17,26 @@ namespace Horizon::PAL
 	public:
 		struct Event
 		{
+			static constexpr u32 NoExtension = 0xFFFFFF;
+
 			WatcherAction action;
-			std::string path;
+			WatcherEntryKind kind;
+
+			std::string absolutePath;
 			std::string relativePath;
-			std::string oldPath;
+			u32 nameOffset = 0;
+			u32 extensionOffset = NoExtension;
+
 			std::string oldRelativePath;
-			b8 isDirectory;
+			u32 oldNameOffset = 0;
+
+			std::string_view GetParent() const;
+			std::string_view GetName() const;
+			std::string_view GetExtension() const;
+			std::string_view GetOldParent() const;
+			std::string_view GetOldName() const;
+
+			b8 IsRootLevel() const { return nameOffset == 0; }
 		};
 
 		DirectoryWatcher() = default;

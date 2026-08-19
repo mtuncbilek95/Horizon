@@ -5,14 +5,13 @@
 #include <Runtime/Win32/Helpers/Win32ErrorHelpers.h>
 
 #include <Windows.h>
-
 #include <utility>
 
 namespace Horizon::PAL
 {
 	namespace
 	{
-		constexpr DWORD NotifyFilter = FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | 
+		constexpr DWORD NotifyFilter = FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME |
 			FILE_NOTIFY_CHANGE_LAST_WRITE;
 		constexpr DWORD NotifyBufferSize = 64 * 1024;
 
@@ -23,10 +22,11 @@ namespace Horizon::PAL
 			BOOL recursive = FALSE;
 			b8 armed = false;
 			b8 hasPendingRename = false;
-			std::string pendingRename;
+			std::string pendingRelative;
+			u32 pendingNameOffset = 0;
+			std::wstring rootWide;
 			alignas(sizeof(DWORD)) u8 notifyBuffer[NotifyBufferSize] = {};
 			alignas(sizeof(DWORD)) u8 parseBuffer[NotifyBufferSize] = {};
-
 		};
 
 		std::string ToUtf8(const WCHAR* pData, usize count)
@@ -51,14 +51,84 @@ namespace Horizon::PAL
 			return result;
 		}
 
-		b8 IsDirectoryPath(const std::string& path)
+		std::wstring ToWide(const std::string& value)
 		{
-			DWORD attributes = ::GetFileAttributesA(path.data());
+			if (value.empty())
+				return std::wstring();
+
+			i32 length = MultiByteToWideChar(CP_UTF8, 0, value.data(), (i32)value.size(), nullptr, 0);
+
+			if (length <= 0)
+				return std::wstring();
+
+			std::wstring result((usize)length, L'\0');
+			MultiByteToWideChar(CP_UTF8, 0, value.data(), (i32)value.size(), result.data(), length);
+
+			return result;
+		}
+
+		std::string NormalizeRoot(const std::string& path)
+		{
+			std::string result = path;
+
+			for (c8& character : result)
+			{
+				if (character == '\\')
+					character = '/';
+			}
+
+			while (result.size() > 1 && result.back() == '/')
+				result.pop_back();
+
+			return result;
+		}
+
+		WatcherEntryKind QueryEntryKind(const std::wstring& rootWide, const WCHAR* pName, usize count)
+		{
+			std::wstring absolute = rootWide;
+			absolute.push_back(L'\\');
+			absolute.append(pName, count);
+
+			DWORD attributes = GetFileAttributesW(absolute.data());
 
 			if (attributes == INVALID_FILE_ATTRIBUTES)
-				return false;
+				return WatcherEntryKind::Unknown;
 
-			return (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+			if ((attributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+				return WatcherEntryKind::Directory;
+
+			return WatcherEntryKind::File;
+		}
+
+		void ComputeOffsets(const std::string& relative, u32& outNameOffset, u32& outExtensionOffset)
+		{
+			outNameOffset = 0;
+			outExtensionOffset = DirectoryWatcher::Event::NoExtension;
+
+			usize separator = relative.find_last_of('/');
+
+			if (separator != std::string::npos)
+				outNameOffset = (u32)(separator + 1);
+
+			usize dot = relative.find_last_of('.');
+
+			if (dot == std::string::npos || dot <= (usize)outNameOffset)
+				return;
+
+			outExtensionOffset = (u32)(dot + 1);
+		}
+
+		void PushOverflow(WatcherContext* pContext, List<DirectoryWatcher::Event>& outEvents)
+		{
+			pContext->hasPendingRename = false;
+			pContext->pendingRelative.clear();
+			pContext->pendingNameOffset = 0;
+
+			DirectoryWatcher::Event overflow;
+			overflow.action = WatcherAction::Overflow;
+			overflow.kind = WatcherEntryKind::Unknown;
+
+			outEvents.PushBack(std::move(overflow));
 		}
 
 		void DestroyContext(WatcherContext* pContext)
@@ -100,7 +170,7 @@ namespace Horizon::PAL
 			if (!result)
 			{
 				Terminal::Error("DirectoryWatcher", "{} cannot be armed: {}", rootPath,
-					Win32ErrorHelpers::GetLastErrorString(::GetLastError()));
+					Win32ErrorHelpers::GetLastErrorString(GetLastError()));
 				return false;
 			}
 
@@ -108,63 +178,67 @@ namespace Horizon::PAL
 			return true;
 		}
 
-		void PushOverflow(List<DirectoryWatcher::Event>& outEvents)
-		{
-			DirectoryWatcher::Event overflow;
-			overflow.action = WatcherAction::Overflow;
-			overflow.isDirectory = true;
-
-			outEvents.PushBack(overflow);
-		}
-
 		void DecodeNotifications(WatcherContext* pContext, const std::string& rootPath, DWORD bytes, List<DirectoryWatcher::Event>& outEvents)
 		{
 			DWORD offset = 0;
 
-			while (offset + sizeof(FILE_NOTIFY_INFORMATION) <= bytes)
+			while (offset + offsetof(FILE_NOTIFY_INFORMATION, FileName) <= bytes)
 			{
 				const FILE_NOTIFY_INFORMATION* pInfo = (const FILE_NOTIFY_INFORMATION*)(pContext->parseBuffer + offset);
 
-				std::string relative = ToUtf8(pInfo->FileName, pInfo->FileNameLength / sizeof(WCHAR));
-				std::string absolute = rootPath + "\\" + relative;
+				if (offset + offsetof(FILE_NOTIFY_INFORMATION, FileName) + pInfo->FileNameLength > bytes)
+				{
+					Terminal::Warn("DirectoryWatcher", "{} produced a truncated notification record", rootPath);
+					break;
+				}
+
+				const usize nameCount = pInfo->FileNameLength / sizeof(WCHAR);
+				std::string relative = ToUtf8(pInfo->FileName, nameCount);
 
 				DirectoryWatcher::Event event;
-				event.path = absolute;
-				event.path = relative;
-				event.isDirectory = IsDirectoryPath(absolute);
+				event.kind = WatcherEntryKind::Unknown;
+				ComputeOffsets(relative, event.nameOffset, event.extensionOffset);
 
 				switch (pInfo->Action)
 				{
 				case FILE_ACTION_ADDED:
+				case FILE_ACTION_MODIFIED:
 				{
-					event.action = WatcherAction::Added;
+					event.action = pInfo->Action == FILE_ACTION_ADDED ? WatcherAction::Added : WatcherAction::Modified;
+					event.kind = QueryEntryKind(pContext->rootWide, pInfo->FileName, nameCount);
+					event.absolutePath = rootPath + "/" + relative;
+					event.relativePath = std::move(relative);
+
 					outEvents.PushBack(std::move(event));
 					break;
 				}
 				case FILE_ACTION_REMOVED:
 				{
 					event.action = WatcherAction::Removed;
-					outEvents.PushBack(std::move(event));
-					break;
-				}
-				case FILE_ACTION_MODIFIED:
-				{
-					event.action = WatcherAction::Modified;
+					event.absolutePath = rootPath + "/" + relative;
+					event.relativePath = std::move(relative);
+
 					outEvents.PushBack(std::move(event));
 					break;
 				}
 				case FILE_ACTION_RENAMED_OLD_NAME:
 				{
-					pContext->pendingRename = std::move(absolute);
+					pContext->pendingRelative = std::move(relative);
+					pContext->pendingNameOffset = event.nameOffset;
 					pContext->hasPendingRename = true;
 					break;
 				}
 				case FILE_ACTION_RENAMED_NEW_NAME:
 				{
+					event.kind = QueryEntryKind(pContext->rootWide, pInfo->FileName, nameCount);
+					event.absolutePath = rootPath + "/" + relative;
+					event.relativePath = std::move(relative);
+
 					if (pContext->hasPendingRename)
 					{
 						event.action = WatcherAction::Renamed;
-						event.oldPath = std::move(pContext->pendingRename);
+						event.oldRelativePath = std::move(pContext->pendingRelative);
+						event.oldNameOffset = pContext->pendingNameOffset;
 						pContext->hasPendingRename = false;
 					}
 					else
@@ -177,7 +251,7 @@ namespace Horizon::PAL
 				}
 				default:
 				{
-					Terminal::Debug("DirectoryWatcher", "{} reported an unhandled action {}", absolute, (u32)pInfo->Action);
+					Terminal::Debug("DirectoryWatcher", "{} reported an unhandled action {}", relative, (u32)pInfo->Action);
 					break;
 				}
 				}
@@ -190,9 +264,36 @@ namespace Horizon::PAL
 		}
 	}
 
-	DirectoryWatcher::DirectoryWatcher(const std::string& rootPath, b8 recursive) : m_rootPath(rootPath)
+	std::string_view DirectoryWatcher::Event::GetParent() const
 	{
-		HANDLE hDirectory = ::CreateFileA(m_rootPath.data(), FILE_LIST_DIRECTORY,
+		return nameOffset == 0 ? std::string_view() : std::string_view(relativePath.data(), nameOffset - 1);
+	}
+
+	std::string_view DirectoryWatcher::Event::GetName() const
+	{
+		return std::string_view(relativePath).substr(nameOffset);
+	}
+
+	std::string_view DirectoryWatcher::Event::GetExtension() const
+	{
+		return extensionOffset == NoExtension ? std::string_view() : std::string_view(relativePath).substr(extensionOffset);
+	}
+
+	std::string_view DirectoryWatcher::Event::GetOldParent() const
+	{
+		return oldNameOffset == 0 ? std::string_view() : std::string_view(oldRelativePath.data(), oldNameOffset - 1);
+	}
+
+	std::string_view DirectoryWatcher::Event::GetOldName() const
+	{
+		return std::string_view(oldRelativePath).substr(oldNameOffset);
+	}
+
+	DirectoryWatcher::DirectoryWatcher(const std::string& rootPath, b8 recursive) : m_rootPath(NormalizeRoot(rootPath))
+	{
+		std::wstring rootWide = ToWide(m_rootPath);
+
+		HANDLE hDirectory = CreateFileW(rootWide.data(), FILE_LIST_DIRECTORY,
 			FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING,
 			FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, nullptr);
 
@@ -206,11 +307,12 @@ namespace Horizon::PAL
 		WatcherContext* pContext = Memory::Allocator::Create<WatcherContext>(Memory::CurrLoc());
 		pContext->hDirectory = hDirectory;
 		pContext->recursive = recursive ? TRUE : FALSE;
-		pContext->overlapped.hEvent = CreateEventA(nullptr, TRUE, FALSE, nullptr);
+		pContext->rootWide = std::move(rootWide);
+		pContext->overlapped.hEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
 
 		if (pContext->overlapped.hEvent == nullptr)
 		{
-			Terminal::Error("DirectoryWatcher", "{} has no completion event: {}", 
+			Terminal::Error("DirectoryWatcher", "{} has no completion event: {}",
 				m_rootPath, Win32ErrorHelpers::GetLastErrorString(GetLastError()));
 
 			DestroyContext(pContext);
@@ -232,7 +334,7 @@ namespace Horizon::PAL
 		m_handle = nullptr;
 	}
 
-	DirectoryWatcher::DirectoryWatcher(DirectoryWatcher&& other) noexcept : m_handle(other.m_handle), 
+	DirectoryWatcher::DirectoryWatcher(DirectoryWatcher&& other) noexcept : m_handle(other.m_handle),
 		m_rootPath(std::move(other.m_rootPath))
 	{
 		other.m_handle = nullptr;
@@ -277,7 +379,7 @@ namespace Horizon::PAL
 			if (error == ERROR_NOTIFY_ENUM_DIR)
 			{
 				Terminal::Warn("DirectoryWatcher", "{} overflowed its notify buffer, a rescan is required", m_rootPath);
-				PushOverflow(outEvents);
+				PushOverflow(pContext, outEvents);
 				return ArmRead(pContext, m_rootPath);
 			}
 
@@ -291,7 +393,7 @@ namespace Horizon::PAL
 		if (bytes == 0 || bytes > NotifyBufferSize)
 		{
 			Terminal::Warn("DirectoryWatcher", "{} overflowed its notify buffer, a rescan is required", m_rootPath);
-			PushOverflow(outEvents);
+			PushOverflow(pContext, outEvents);
 			return ArmRead(pContext, m_rootPath);
 		}
 
