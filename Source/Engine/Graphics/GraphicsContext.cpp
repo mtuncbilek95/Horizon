@@ -57,6 +57,8 @@ namespace Horizon::Engine
 
 	void GraphicsContext::OnFinalize()
 	{
+		Memory::Allocator::Delete(m_swapchain);
+
 		Memory::Allocator::Delete(m_graphicsQueue);
 		Memory::Allocator::Delete(m_computeQueue);
 		Memory::Allocator::Delete(m_transferQueue);

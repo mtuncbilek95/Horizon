@@ -61,6 +61,7 @@ namespace Horizon::Editor
 
 		const auto& messages = m_engineWindow->GetMessages();
 
+		b8 onResizeDone = true;
 		i32 newWindowWidth = -1, newWindowHeight = -1;
 		for (const auto& message : messages)
 		{
@@ -105,36 +106,41 @@ namespace Horizon::Editor
 			{
 				newWindowWidth = message.width;
 				newWindowHeight = message.height;
+				onResizeDone = false;
 				break;
 			}
 			}
 		}
 
-		// Temporary render loop
-		i8 imageIndex = m_swapchain->GetCurrentIndex();
-		m_fence->WaitCPU(m_imageFenceValues[imageIndex]);
-
-		if (imageIndex == -1)
-			return;
+		if (!onResizeDone)
+		{
+			m_swapchain->Resize(newWindowWidth, newWindowHeight);
+			onResizeDone = true;
+		}
 
 		PAL::WindowRect rect = m_engineWindow->GetRect();
 		m_editorRenderer->OnResizeWindow(rect.width, rect.height);
+
+		// Temporary render loop
+		if (!m_swapchain->AcquireNextImage(m_fence))
+			return;
 
 		m_editorRenderer->BeginRender(deltaTime);
 
 		m_menuRegistry->RenderGUI();
 		m_viewRegistry->RenderGUI();
 
-		m_editorRenderer->EndRender(m_swapchain->GetBackbuffer(imageIndex), imageIndex);
+		m_editorRenderer->EndRender(m_swapchain->GetBackbuffer(m_swapchain->GetCurrentIndex()), m_swapchain->GetCurrentIndex());
 
-		m_swapchain->Present();
-		m_imageFenceValues[imageIndex] = m_queue->Signal(m_fence);
+		m_swapchain->Present(m_queue, m_fence);
 	}
 
 	void EditorService::OnFinalize()
 	{
 		const u64 value = m_queue->Signal(m_fence);
 		m_fence->WaitCPU(value);
+		
+		Memory::Allocator::Delete(m_fence);
 
 		Memory::Allocator::Delete(m_menuRegistry);
 		Memory::Allocator::Delete(m_viewRegistry);

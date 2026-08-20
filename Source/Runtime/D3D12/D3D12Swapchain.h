@@ -17,8 +17,8 @@ namespace Horizon
 		~D3D12Swapchain() final;
 
 		GfxTexture* GetBackbuffer(u32 index) final;
-		u32 GetCurrentIndex() final;
-		void Present() final;
+		b8 AcquireNextImage(GfxFence* pFence) final;
+		void Present(GfxQueue* pQueue, GfxFence* pFence) final;
 		void Resize(u32 width, u32 height) final;
 
 	private:

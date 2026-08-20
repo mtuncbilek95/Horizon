@@ -37,10 +37,8 @@ namespace Horizon::Editor
 		MenuRegistry* m_menuRegistry = nullptr;
 
 		// The ones below are most probably temporary
-		GfxFence* m_fence;
-		GfxQueue* m_queue;
-		GfxSwapchain* m_swapchain;
-		u32 m_imageCount = 0;
-		u64 m_imageFenceValues[8] = {};
+		GfxFence* m_fence = nullptr;
+		GfxQueue* m_queue = nullptr;
+		GfxSwapchain* m_swapchain = nullptr;
 	};
 }

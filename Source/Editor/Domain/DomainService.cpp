@@ -3,17 +3,13 @@
 #include <Editor/Domain/DomainFolder.h>
 #include <Editor/Domain/DomainFile.h>
 
-#include <Engine/Core/Engine.h>
 #include <Engine/Core/ModuleGraph.h>
-#include <Engine/Job/JobSystem.h>
 
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
 #include <Runtime/PAL/File/File.h>
-
-#include <utility>
 
 namespace Horizon::Editor
 {
@@ -89,11 +85,6 @@ namespace Horizon::Editor
 
 	void DomainService::OnFinalize()
 	{
-		Engine::JobSystem* pJobSystem = GetEngine()->GetJobSystem();
-
-		if (pJobSystem != nullptr)
-			pJobSystem->Wait(m_scanCounter);
-
 		m_watcher = PAL::DirectoryWatcher();
 		m_watcherHealthy = false;
 
@@ -131,19 +122,7 @@ namespace Horizon::Editor
 		if (m_scanBusy.CompareExchange(0, 1) != 0)
 			return;
 
-		Engine::JobSystem* pJobSystem = GetEngine()->GetJobSystem();
-
-		if (pJobSystem == nullptr)
-		{
-			Terminal::Error(StringOps::GetName(this), "Job system is unavailable, the domain cannot be scanned");
-			m_scanBusy.Store(0);
-			return;
-		}
-
-		pJobSystem->Dispatch(Engine::JobLane::Background, m_scanCounter, [this]()
-			{
-				RunScan();
-			});
+		RunScan();
 	}
 
 	void DomainService::DrainResults()

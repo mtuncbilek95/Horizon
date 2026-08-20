@@ -2,6 +2,8 @@
 
 #include <Runtime/D3D12/D3D12Device.h>
 #include <Runtime/D3D12/D3D12Texture.h>
+#include <Runtime/D3D12/D3D12Fence.h>
+#include <Runtime/D3D12/D3D12Queue.h>
 
 namespace Horizon
 {
@@ -18,18 +20,25 @@ namespace Horizon
 		return m_backbuffers[index];
 	}
 
-	u32 D3D12Swapchain::GetCurrentIndex()
+	b8 D3D12Swapchain::AcquireNextImage(GfxFence* pFence)
 	{
-		return m_swapchain->GetCurrentBackBufferIndex();
+		m_currentIndex = m_swapchain->GetCurrentBackBufferIndex();
+		if (m_currentIndex == -1)
+			return false;
+
+		pFence->WaitCPU(m_imageFences[m_currentIndex]);
+		return true;
 	}
 
-	void D3D12Swapchain::Present()
+	void D3D12Swapchain::Present(GfxQueue* pQueue, GfxFence* pFence)
 	{
 		const u32 syncInterval = m_desc.vSync ? 1 : 0;
 		const u32 presentFlags = (!m_desc.vSync && m_allowTearing) ? DXGI_PRESENT_ALLOW_TEARING : 0;
 
 		HRESULT hr = m_swapchain->Present(syncInterval, presentFlags);
 		CHECK_REASON(hr, "IDXGISwapChain4 - Present");
+
+		m_imageFences[m_currentIndex] = pQueue->Signal(pFence);
 	}
 
 	void D3D12Swapchain::Resize(u32 width, u32 height)

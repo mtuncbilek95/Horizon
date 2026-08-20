@@ -1,10 +1,7 @@
-// DomainService.h
-
 #pragma once
 
 #include <Editor/Domain/DomainScanResult.h>
 #include <Engine/Core/Service.h>
-#include <Engine/Job/Job.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/PAL/Sync/Atomic.h>
 #include <Runtime/PAL/Sync/Mutex.h>
@@ -95,7 +92,6 @@ namespace Horizon::Editor
 
 		PAL::Atomic<u32> m_scanBusy = 0;
 		PAL::Atomic<u32> m_rescanRequest = 0;
-		Engine::JobCounter m_scanCounter;
 		PAL::Mutex m_resultLock;
 		List<DomainScanResult> m_pendingResults;
 	};

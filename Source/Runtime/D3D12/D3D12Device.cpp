@@ -421,6 +421,7 @@ namespace Horizon
 		pSwapchain->m_ownerDevice = this;
 		pSwapchain->m_device = this;
 		pSwapchain->m_desc = desc;
+		pSwapchain->m_imageFences = List<u64>(desc.imageCount, 0);	
 
 		BOOL allowTearing = FALSE;
 
