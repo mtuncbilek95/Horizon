@@ -1,6 +1,11 @@
 #pragma once
 
 #include <Engine/Core/Service.h>
+#include <Engine/World/World.h>
+#include <Engine/World/WorldCommandBuffer.h>
+
+#include <Runtime/Containers/List.h>
+#include <Runtime/PAL/Sync/Mutex.h>
 
 namespace Horizon::Engine
 {
@@ -15,8 +20,15 @@ namespace Horizon::Engine
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
 
-	private:
+		World* GetActiveWorld() const { return m_activeWorld; }
+		WorldCommandBuffer& GetCommandBuffer();
 
 	private:
+		void FlushCommandBuffers();
+
+	private:
+		World* m_activeWorld = nullptr;
+		List<WorldCommandBuffer*> m_commandBuffers;
+		PAL::Mutex m_bufferGuard;
 	};
 }

@@ -16,6 +16,14 @@ namespace Horizon::Editor
 		void BootstrapViews();
 		void RenderGUI();
 
+		template<typename T>
+		T* GetViewObject()
+		{
+			return (T*)GetViewObject(Reflect::TypeOf<T>());
+		}
+
+		ViewObject* GetViewObject(Reflect::TypeHandle handl);
+
 	private:
 		void BuildDefaultLayout(u32 rootId);
 

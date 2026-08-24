@@ -40,7 +40,11 @@ namespace Horizon::Engine
 	}
 
 	void AssetService::OnFinalize()
-	{
+	{ 
+		for (auto* strategy : m_loaders)
+			Memory::Allocator::Delete(strategy);
+
+		m_loaders.Clear();
 	}
 
 	void AssetService::DeclareDependencies(ModuleGraph& graph)

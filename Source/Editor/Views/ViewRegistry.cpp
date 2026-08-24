@@ -68,6 +68,7 @@ namespace Horizon::Editor
 				auto* viewObj = (ViewObject*)view.pCoreType->CreateFromMemory();
 				viewObj->m_engine = m_engine;
 				viewObj->m_displayName = view.displayName;
+				viewObj->m_holder = this;
 
 				viewObj->OnInvoke();
 
@@ -134,5 +135,19 @@ namespace Horizon::Editor
 		}
 
 		ImGui::DockBuilderFinish(rootId);
+	}
+
+	ViewObject* ViewRegistry::GetViewObject(Reflect::TypeHandle handl)
+	{
+		for (auto* view : m_createdViews)
+		{
+			if (view->GetTypeId() == handl)
+				return view;
+		}
+
+		auto* pReflect = m_engine->GetReflectionSystem();
+		std::string_view handlName = pReflect->GetType(handl)->GetName();
+		Terminal::Error(StringOps::GetName(this), "Could not find {}", handlName);
+		return nullptr;
 	}
 }

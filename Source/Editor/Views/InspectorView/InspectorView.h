@@ -4,27 +4,23 @@
 #include <Editor/Views/ViewObject.h>
 #include <Editor/Font/IconsFontAwesome6.h>
 #include <Editor/ContextMenu/ContextMenuRegistry.h>
-#include <Editor/ContextMenu/SceneHierarchyMenu/SceneHierarchyContext.h>
-
 #include <Engine/World/World.h>
 
 namespace Horizon::Editor
 {
-	HCLASS(EditorView[ICON_FA_DIAGRAM_PROJECT, "Scene Hierarchy", false, true, DockZone::Left]);
-	class H_EXPORT SceneHierarchyView : public ViewObject
+	HCLASS(EditorView[ICON_FA_EYE, "Inspector", false, true, DockZone::Right]);
+	class H_EXPORT InspectorView : public ViewObject
 	{
-		HORIZON_TYPE_REFLECT(SceneHierarchyView);
+		HORIZON_TYPE_REFLECT(InspectorView);
 	public:
 		void OnInvoke() final;
 		void OnRender() final;
 
-		Engine::EntityHandle* GetSelected() { return &m_selectedEntity; }
+		void SetInspectingEntity(Engine::EntityHandle handl);
 
 	private:
-		ContextMenuRegistry<SceneHierarchyContext> m_contextMenu;
-
 		// TODO: This will eventually change, its only to test.
-		Engine::World* m_activeWorld;
+		Engine::World* m_activeWorld = nullptr;
 		Engine::EntityHandle m_selectedEntity;
 	};
 }

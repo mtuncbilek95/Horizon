@@ -12,17 +12,25 @@ namespace Horizon::Engine
 {
 	ModuleReport GraphicsContext::OnInitialize()
 	{
+		// TODO: After sometime, capacity that comes from 
+		// project settings would be awesome.
+
+		// Get window service to use on swapchain
 		auto* pWindowSub = GetEngine()->RequestService<WindowService>();
 		if (!pWindowSub)
 			return ModuleReport("Failed to get WindowService. Nothing will work...");
 
 		RHI::GfxDeviceDesc deviceDesc = {};
+#if defined(HORIZON_DEBUG)
 		deviceDesc.enableDebugLayer = true;
+#endif
 
+		// Create device
 		m_device = RHI::CreateDevice(deviceDesc);
 		if (!m_device)
 			return ModuleReport("Failed to create GfxDevice");
 
+		// Create resource heap
 		RHI::GfxDescriptorHeapDesc resourceHeapDesc = {};
 		resourceHeapDesc.capacity = 1 << 16;
 		resourceHeapDesc.shaderVisible = true;
@@ -31,6 +39,7 @@ namespace Horizon::Engine
 		if (!m_resourceHeap)
 			return ModuleReport("Failed to create GfxDescriptorHeap(Resource)");
 
+		// Create rtv heap
 		RHI::GfxDescriptorHeapDesc colorHeapDesc = {};
 		colorHeapDesc.capacity = 1 << 10;
 		colorHeapDesc.shaderVisible = false;
@@ -39,6 +48,7 @@ namespace Horizon::Engine
 		if (!m_colorHeap)
 			return ModuleReport("Failed to create GfxDescriptorHeap(Color)");
 
+		// Create queues
 		m_graphicsQueue = m_device->CreateQueue(RHI::GfxQueueType::Graphics);
 		if (!m_graphicsQueue)
 			return ModuleReport("Failed to create GfxQueue(Graphics)");
@@ -53,6 +63,7 @@ namespace Horizon::Engine
 
 		PAL::WindowRect windowRect = pWindowSub->GetWindow()->GetRect();
 
+		// Create swapchain
 		RHI::GfxSwapchainDesc swapDesc = {};
 		swapDesc.pWindowHandle = (void*)pWindowSub->GetWindow()->GetOSHandle();
 		swapDesc.imageCount = 3;

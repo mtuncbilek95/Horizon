@@ -29,6 +29,8 @@ namespace Horizon::Editor
 
 		void DeclareDependencies(Engine::ModuleGraph& graph) final;
 
+		ViewRegistry* GetViewRegistry() const { return m_viewRegistry; }
+
 	private:
 		PAL::Window* m_engineWindow = nullptr;
 		EditorRenderer* m_editorRenderer = nullptr;
