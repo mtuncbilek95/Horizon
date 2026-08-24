@@ -1,9 +1,9 @@
 #pragma once
 
 #include <Runtime/RHI/Command/GfxCommandList.h>
-#include <Runtime/D3D12/Utils/D3D12Helpers.h>
+#include <Runtime/D3D12/D3D12Helpers.h>
 
-namespace Horizon
+namespace Horizon::RHI
 {
 	class D3D12Device;
 
@@ -18,7 +18,7 @@ namespace Horizon
 
 		void* GetAPIHandle() const final { return m_list; }
 
-		void SetupBindless() final;
+		void BindDescriptorHeaps(GfxDescriptorHeap* pResourceHeap, GfxDescriptorHeap* pSamplerHeap) final;
 
 		void Barrier(const GfxTextureBarrier* pBarriers, u32 count) final;
 		void Barrier(const GfxBufferBarrier* pBarriers, u32 count) final;
@@ -56,5 +56,7 @@ namespace Horizon
 		ID3D12CommandAllocator* m_allocator = nullptr;
 		D3D12Device* m_device = nullptr;
 		D3D12_COMMAND_LIST_TYPE m_type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+		b8 m_rendering = false;
 	};
 }

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Runtime/RHI/GfxTypes.h>
+#include <Runtime/RHI/Queue/GfxQueueType.h>
 #include <Runtime/RHI/Object/GfxObject.h>
 
-namespace Horizon
+namespace Horizon::RHI
 {
 	class GfxCommandList;
 	class GfxFence;

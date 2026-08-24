@@ -1,6 +1,6 @@
 #include "D3D12Fence.h"
 
-namespace Horizon
+namespace Horizon::RHI
 {
 	D3D12Fence::~D3D12Fence()
 	{

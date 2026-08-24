@@ -1,46 +1,29 @@
 #pragma once
 
-#include <Runtime/Log/Terminal.h>
-#include <Runtime/RHI/GfxTypes.h>
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
+
+#include <Runtime/RHI/Buffer/GfxBufferDesc.h>
 #include <Runtime/RHI/Object/GfxObject.h>
 
-#include <cstring>
-
-namespace Horizon
+namespace Horizon::RHI
 {
-	struct GfxBufferDesc
-	{
-		usize size = 0;
-		u32 stride = 0;
-		GfxBufferUsage usage = GfxBufferUsage::None;
-		GfxMemoryType memory = GfxMemoryType::GpuOnly;
-	};
-
 	class GfxBuffer : public GfxObject
 	{
 	public:
+		virtual void* Map() = 0;
+		virtual void Unmap() = 0;
+
 		const GfxBufferDesc& GetDesc() const { return m_desc; }
+		u64 GetDeviceAddress() const { return m_deviceAddress; }
 
 		u32 GetShaderView() const { return m_shaderView; }
-		u32 GetAccessView() const { return m_accessView; }
-		u64 GetGpuAddress() const { return m_gpuAddress; }
-
-		void Write(const void* pData, usize size, usize offset = 0)
-		{
-			if (!m_mapped)
-			{
-				Terminal::Error("GfxBuffer", "Write called on a non-mapped buffer, memory type must be Upload");
-				return;
-			}
-
-			std::memcpy(static_cast<u8*>(m_mapped) + offset, pData, size);
-		}
+		u32 GetStorageView() const { return m_storageView; }
 
 	protected:
 		GfxBufferDesc m_desc{};
-		void* m_mapped = nullptr;
-		u64 m_gpuAddress = 0;
+		u64 m_deviceAddress = 0;
+
 		u32 m_shaderView = kInvalid32;
-		u32 m_accessView = kInvalid32;
+		u32 m_storageView = kInvalid32;
 	};
 }

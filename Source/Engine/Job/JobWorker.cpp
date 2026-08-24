@@ -1,31 +1,26 @@
 #include "JobWorker.h"
 
 #include <Engine/Job/JobSystem.h>
-
 #include <Runtime/Definitions/Allocator.h>
-#include <Runtime/PAL/Sync/Futex.h>
+#include <Runtime/Containers/ScopedLock.h>
 
-#include <format>
-#include <string>
 #include <utility>
 
 namespace Horizon::Engine
 {
 	void JobWorker::ThreadEntryPoint(void* userData)
 	{
-		((JobWorker*)(userData))->Run();
+		((JobWorker*)userData)->Run();
 	}
 
-	JobWorker::JobWorker(JobSystem* pSystem, u32 index, JobLane lane) : m_owner(pSystem), m_index(index),
-		m_lane(lane), m_affinity(0), m_priority(PAL::ThreadPriority::Normal), m_ecoQoS(false),
-		m_inbox(nullptr), m_working(true)
+	JobWorker::JobWorker(JobSystem* pContext, usize index) : m_owner(pContext), m_index(index), m_inbox(nullptr),
+		m_signal(0), m_working(true)
 	{
 	}
 
 	JobWorker::~JobWorker()
 	{
 		JobNode* node = nullptr;
-
 		while (m_deque.PopBottom(node))
 			Memory::Allocator::Delete(node);
 
@@ -37,53 +32,34 @@ namespace Horizon::Engine
 		}
 	}
 
-	void JobWorker::Configure(u64 affinity, PAL::ThreadPriority priority, b8 ecoQoS)
-	{
-		m_affinity = affinity;
-		m_priority = priority;
-		m_ecoQoS = ecoQoS;
-	}
-
 	void JobWorker::Start()
 	{
-		const std::string name = std::format("{}Worker{}", LaneName(m_lane), m_index);
-		m_worker = PAL::Thread(&JobWorker::ThreadEntryPoint, this, name);
+		m_worker = PAL::Thread(&JobWorker::ThreadEntryPoint, this, "Thread");
 	}
 
 	void JobWorker::Run()
 	{
-		PAL::Thread::SetCurrentAffinity(m_affinity);
-		PAL::Thread::SetCurrentPriority(m_priority);
-
-		if (m_ecoQoS)
-			PAL::Thread::SetCurrentEcoQoS(true);
-
-		JobSystem::BindCallingThread(m_owner, this, m_lane);
-
-		PAL::Atomic<i64>& signal = m_owner->GetLaneSignal(m_lane);
-
 		while (m_working.Load())
 		{
 			DrainInbox();
 
 			Job job;
-
 			if (TryPopJob(job))
 			{
 				job();
 				continue;
 			}
 
-			if (m_owner->TryStealForLane(m_lane, job))
+			if (auto* pVictim = m_owner->GetRandomVictim(this);
+				pVictim && pVictim->TryStealFromThis(job))
 			{
 				job();
 				continue;
 			}
 
-			const i64 seq = signal.Load();
+			i64 seq = m_signal.Load();
 
 			DrainInbox();
-
 			if (TryPopJob(job))
 			{
 				job();
@@ -93,19 +69,17 @@ namespace Horizon::Engine
 			if (!m_working.Load())
 				break;
 
-			PAL::Futex::Wait(signal.Address(), seq);
+			PAL::Futex::Wait(m_signal.Address(), seq);
 		}
-
-		JobSystem::UnbindCallingThread();
 	}
 
-	void JobWorker::RequestStop()
+	void JobWorker::Stop()
 	{
 		m_working.Store(false);
-	}
 
-	void JobWorker::Join()
-	{
+		m_signal.FetchAdd(1);
+		PAL::Futex::WakeAll(m_signal.Address());
+
 		if (m_worker.IsJoinable())
 			m_worker.Join();
 	}
@@ -113,6 +87,7 @@ namespace Horizon::Engine
 	void JobWorker::AddJob(Job&& job)
 	{
 		JobNode* node = Memory::Allocator::Create<JobNode>(Memory::CurrLoc(), std::move(job), nullptr);
+
 		JobNode* head = m_inbox.Load();
 
 		while (true)
@@ -125,12 +100,9 @@ namespace Horizon::Engine
 
 			head = prev;
 		}
-	}
 
-	void JobWorker::PushLocal(Job&& job)
-	{
-		JobNode* node = Memory::Allocator::Create<JobNode>(Memory::CurrLoc(), std::move(job), nullptr);
-		m_deque.PushBottom(node);
+		m_signal.FetchAdd(1);
+		PAL::Futex::WakeSingle(m_signal.Address());
 	}
 
 	b8 JobWorker::TryStealFromThis(Job& out)
@@ -145,15 +117,18 @@ namespace Horizon::Engine
 		return true;
 	}
 
+	void JobWorker::SetThreadAffinity(u64 mask)
+	{
+		m_worker.SetAffinity(mask);
+	}
+
 	void JobWorker::DrainInbox()
 	{
 		JobNode* head = m_inbox.Exchange(nullptr);
-
 		if (!head)
 			return;
 
 		JobNode* ordered = nullptr;
-
 		while (head)
 		{
 			JobNode* next = head->next;
@@ -162,12 +137,12 @@ namespace Horizon::Engine
 			head = next;
 		}
 
-		for (JobNode* node = ordered; node;)
+		for (JobNode* n = ordered; n; )
 		{
-			JobNode* next = node->next;
-			node->next = nullptr;
-			m_deque.PushBottom(node);
-			node = next;
+			JobNode* next = n->next;
+			n->next = nullptr;
+			m_deque.PushBottom(n);
+			n = next;
 		}
 	}
 

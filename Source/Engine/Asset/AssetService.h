@@ -1,9 +1,15 @@
 #pragma once
 
 #include <Engine/Core/Service.h>
+#include <Runtime/Containers/List.h>
+#include <Runtime/RTTR/Reflection.h>
+
+#include <unordered_map>
 
 namespace Horizon::Engine
 {
+	class AssetLoadStrategy;
+
 	class H_EXPORT AssetService : public Service
 	{
 	public:
@@ -18,5 +24,7 @@ namespace Horizon::Engine
 	private:
 
 	private:
+		List<AssetLoadStrategy*> m_loaders;
+		std::unordered_map<Reflect::TypeHandle, usize> m_assetLookup;
 	};
 }

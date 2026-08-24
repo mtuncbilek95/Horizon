@@ -1,72 +1,20 @@
 #pragma once
 
-#include <Runtime/RHI/GfxTypes.h>
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
+
+#include <Runtime/RHI/Buffer/GfxIndexType.h>
+#include <Runtime/RHI/Command/GfxBufferBarrier.h>
+#include <Runtime/RHI/Command/GfxRenderBeginDesc.h>
+#include <Runtime/RHI/Command/GfxTextureBarrier.h>
+#include <Runtime/RHI/Common/GfxScissor.h>
+#include <Runtime/RHI/Common/GfxViewport.h>
 #include <Runtime/RHI/Object/GfxObject.h>
+#include <Runtime/RHI/Queue/GfxQueueType.h>
 
-namespace Horizon
+namespace Horizon::RHI
 {
-	class GfxTexture;
-	class GfxBuffer;
+	class GfxDescriptorHeap;
 	class GfxPipeline;
-
-	struct GfxColorAttachment
-	{
-		GfxTexture* pTexture = nullptr;
-		GfxLoadOp loadOp = GfxLoadOp::Clear;
-		GfxStoreOp storeOp = GfxStoreOp::Store;
-		GfxColor clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-	};
-
-	struct GfxDepthAttachment
-	{
-		GfxTexture* pTexture = nullptr;
-		GfxLoadOp loadOp = GfxLoadOp::Clear;
-		GfxStoreOp storeOp = GfxStoreOp::Store;
-		f32 clearDepth = 1.0f;
-		u8 clearStencil = 0;
-	};
-
-	struct GfxRenderBeginDesc
-	{
-		GfxColorAttachment colorTargets[8];
-		u32 colorTargetCount = 0;
-		GfxDepthAttachment depth;
-		u32 width = 0, height = 0;
-
-		GfxRenderBeginDesc& AddColorTarget(GfxTexture* pTex, GfxLoadOp op = GfxLoadOp::Clear,
-			const GfxColor& clear = { 0.0f, 0.0f, 0.0f, 1.0f })
-		{
-			colorTargets[colorTargetCount++] = { pTex, op, GfxStoreOp::Store, clear };
-			return *this;
-		}
-
-		GfxRenderBeginDesc& SetDepth(GfxTexture* pTex, GfxLoadOp op = GfxLoadOp::Clear, f32 clear = 1.0f)
-		{
-			depth = { pTex, op, GfxStoreOp::Store, clear, 0 };
-			return *this;
-		}
-
-		GfxRenderBeginDesc& SetSize(u32 w, u32 h)
-		{
-			width = w;
-			height = h;
-			return *this;
-		}
-	};
-
-	struct GfxTextureBarrier
-	{
-		GfxTexture* pTexture = nullptr;
-		GfxResourceState before = GfxResourceState::Common;
-		GfxResourceState after = GfxResourceState::Common;
-	};
-
-	struct GfxBufferBarrier
-	{
-		GfxBuffer* pBuffer = nullptr;
-		GfxResourceState before = GfxResourceState::Common;
-		GfxResourceState after = GfxResourceState::Common;
-	};
 
 	class GfxCommandList : public GfxObject
 	{
@@ -76,7 +24,7 @@ namespace Horizon
 
 		virtual void* GetAPIHandle() const = 0;
 
-		virtual void SetupBindless() = 0;
+		virtual void BindDescriptorHeaps(GfxDescriptorHeap* pResourceHeap, GfxDescriptorHeap* pSamplerHeap) = 0;
 
 		virtual void Barrier(const GfxTextureBarrier* pBarriers, u32 count) = 0;
 		virtual void Barrier(const GfxBufferBarrier* pBarriers, u32 count) = 0;

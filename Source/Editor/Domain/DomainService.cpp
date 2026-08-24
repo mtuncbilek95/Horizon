@@ -4,6 +4,7 @@
 #include <Editor/Domain/DomainFile.h>
 
 #include <Engine/Core/ModuleGraph.h>
+#include <Engine/Asset/AssetService.h>
 
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
@@ -102,6 +103,7 @@ namespace Horizon::Editor
 
 	void DomainService::DeclareDependencies(Engine::ModuleGraph& graph)
 	{
+		graph.Precedes<Engine::AssetService>();
 	}
 
 	DomainFolder* DomainService::FindFolder(std::string_view relativePath) const

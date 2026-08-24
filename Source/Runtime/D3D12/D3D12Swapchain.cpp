@@ -1,86 +1,124 @@
 #include "D3D12Swapchain.h"
 
-#include <Runtime/D3D12/D3D12Device.h>
-#include <Runtime/D3D12/D3D12Texture.h>
-#include <Runtime/D3D12/D3D12Fence.h>
-#include <Runtime/D3D12/D3D12Queue.h>
+#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Log/Terminal.h>
 
-namespace Horizon
+#include <Runtime/D3D12/D3D12Device.h>
+#include <Runtime/D3D12/D3D12DescriptorHeap.h>
+#include <Runtime/D3D12/D3D12Texture.h>
+
+#include <Runtime/RHI/Fence/GfxFence.h>
+#include <Runtime/RHI/Queue/GfxQueue.h>
+
+namespace Horizon::RHI
 {
 	D3D12Swapchain::~D3D12Swapchain()
 	{
-		ReleaseBackbuffers();
+		ReleaseImages();
 
 		if (m_swapchain)
 			m_swapchain->Release();
 	}
 
-	GfxTexture* D3D12Swapchain::GetBackbuffer(u32 index)
+	void D3D12Swapchain::AcquireImages()
 	{
-		return m_backbuffers[index];
+		auto* pColorHeap = static_cast<D3D12DescriptorHeap*>(m_desc.pColorHeap);
+
+		m_images.Resize(m_desc.imageCount);
+
+		for (u32 i = 0; i < m_desc.imageCount; i++)
+		{
+			auto* pImage = Memory::Allocator::Create<D3D12Texture>(Memory::CurrLoc());
+
+			pImage->m_ownerDevice = m_device;
+			pImage->m_format = Helpers::ToFormat(m_desc.format);
+
+			pImage->m_desc.type = GfxTextureType::Tex2D;
+			pImage->m_desc.format = m_desc.format;
+			pImage->m_desc.usage = GfxTextureUsage::RenderTarget;
+			pImage->m_desc.width = m_desc.width;
+			pImage->m_desc.height = m_desc.height;
+
+			HRESULT hr = m_swapchain->GetBuffer(i, IID_PPV_ARGS(&pImage->m_resource));
+			CHECK_HR(hr, "IDXGISwapChain4 - GetBuffer");
+
+			m_images[i] = pImage;
+			pColorHeap->CreateRenderTargetView(pImage);
+		}
+	}
+
+	void D3D12Swapchain::ReleaseImages()
+	{
+		auto* pColorHeap = static_cast<D3D12DescriptorHeap*>(m_desc.pColorHeap);
+
+		for (D3D12Texture* pImage : m_images)
+		{
+			if (!pImage)
+				continue;
+
+			pColorHeap->Free(pImage->GetRenderTargetView());
+			Memory::Allocator::Delete(pImage);
+		}
+
+		m_images.Clear();
+	}
+
+	GfxTexture* D3D12Swapchain::GetImage(u32 index) const
+	{
+		if (index >= m_images.GetCount())
+		{
+			Terminal::Error(StringOps::GetName(this), "{} image index is out of range, count {}", index, m_images.GetCount());
+			return nullptr;
+		}
+
+		return m_images[index];
 	}
 
 	b8 D3D12Swapchain::AcquireNextImage(GfxFence* pFence)
 	{
-		m_currentIndex = m_swapchain->GetCurrentBackBufferIndex();
-		if (m_currentIndex == -1)
+		if (m_images.IsEmpty())
+		{
+			Terminal::Error(StringOps::GetName(this), "Swapchain has no images to acquire");
 			return false;
+		}
 
-		pFence->WaitCPU(m_imageFences[m_currentIndex]);
+		m_imageIndex = m_swapchain->GetCurrentBackBufferIndex();
+		pFence->WaitCPU(m_imageFenceValues[m_imageIndex]);
+
 		return true;
 	}
 
 	void D3D12Swapchain::Present(GfxQueue* pQueue, GfxFence* pFence)
 	{
-		const u32 syncInterval = m_desc.vSync ? 1 : 0;
-		const u32 presentFlags = (!m_desc.vSync && m_allowTearing) ? DXGI_PRESENT_ALLOW_TEARING : 0;
-
-		HRESULT hr = m_swapchain->Present(syncInterval, presentFlags);
+		HRESULT hr = m_swapchain->Present(m_syncInterval, m_presentFlags);
 		CHECK_REASON(hr, "IDXGISwapChain4 - Present");
 
-		m_imageFences[m_currentIndex] = pQueue->Signal(pFence);
+		m_imageFenceValues[m_imageIndex] = pQueue->Signal(pFence);
 	}
 
 	void D3D12Swapchain::Resize(u32 width, u32 height)
 	{
-		if (width == m_desc.width && height == m_desc.height)
+		if (width == 0 || height == 0)
 			return;
 
-		ReleaseBackbuffers();
+		m_device->WaitIdle();
+		ReleaseImages();
 
-		const u32 resizeFlags = m_allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
+		const DXGI_FORMAT format = Helpers::ToSwapchainFormat(Helpers::ToFormat(m_desc.format));
 
-		HRESULT hr = m_swapchain->ResizeBuffers(m_desc.imageCount, width, height,
-			Helpers::ToDXGIFormat(m_desc.format), resizeFlags);
+		HRESULT hr = m_swapchain->ResizeBuffers(m_desc.imageCount, width, height, format,
+			DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
 		CHECK_HR(hr, "IDXGISwapChain4 - ResizeBuffers");
 
 		m_desc.width = width;
 		m_desc.height = height;
 
-		AcquireBackbuffers();
-	}
+		for (u32 i = 0; i < kMaxSwapchainImages; i++)
+			m_imageFenceValues[i] = 0;
 
-	void D3D12Swapchain::AcquireBackbuffers()
-	{
-		m_backbuffers.Resize(m_desc.imageCount);
+		AcquireImages();
 
-		for (u32 index = 0; index < m_desc.imageCount; index++)
-		{
-			ID3D12Resource* resource = nullptr;
-
-			HRESULT hr = m_swapchain->GetBuffer(index, IID_PPV_ARGS(&resource));
-			CHECK_HR(hr, "IDXGISwapChain4 - GetBuffer");
-
-			m_backbuffers[index] = m_device->CreateBackbufferTexture(resource, m_desc.width, m_desc.height,
-				Helpers::ToDXGIFormat(m_desc.format));
-		}
-	}
-
-	void D3D12Swapchain::ReleaseBackbuffers()
-	{
-		for (D3D12Texture* pBackbuffer : m_backbuffers)
-			m_device->DestroyBackbufferTexture(pBackbuffer);
-
-		m_backbuffers.Clear();
+		m_imageIndex = m_swapchain->GetCurrentBackBufferIndex();
 	}
 }

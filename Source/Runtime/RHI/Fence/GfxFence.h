@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Runtime/RHI/GfxTypes.h>
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/RHI/Object/GfxObject.h>
 
-namespace Horizon
+namespace Horizon::RHI
 {
 	class GfxFence : public GfxObject
 	{

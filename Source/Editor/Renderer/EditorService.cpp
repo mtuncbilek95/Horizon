@@ -1,5 +1,6 @@
 #include "EditorService.h"
 
+#include <Editor/Domain/DomainService.h>
 #include <Editor/Renderer/EditorRenderer.h>
 #include <Editor/Views/ViewRegistry.h>
 #include <Editor/MainMenu/MenuRegistry.h>
@@ -7,6 +8,7 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowService.h>
 #include <Engine/Graphics/GraphicsContext.h>
+#include <Engine/World/WorldService.h>
 
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Swapchain/GfxSwapchain.h>
@@ -31,13 +33,16 @@ namespace Horizon::Editor
 		if (!pGraphSub)
 			return Engine::ModuleReport("Failed to get GraphicsContext. Nothing will work...");
 
-		EditorRendererDesc renderDesc = {};
-		renderDesc.pDevice = pGraphSub->GetDevice();
-		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
-
 		m_fence = pGraphSub->GetDevice()->CreateFence();
 		m_swapchain = pGraphSub->GetSwapchain();
 		m_queue = pGraphSub->GetGraphicsQueue();
+
+		EditorRendererDesc renderDesc = {};
+		renderDesc.pDevice = pGraphSub->GetDevice();
+		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
+		renderDesc.pResourceHeap = pGraphSub->GetResourceHeap();
+		renderDesc.colorFormat = m_swapchain->GetDesc().format;
+		renderDesc.frameCount = m_swapchain->GetImageCount();
 
 		m_editorRenderer = Memory::Allocator::Create<EditorRenderer>(Memory::CurrLoc(), renderDesc);
 		Terminal::Debug("EditorService", "EditorRenderer has been initialized!");
@@ -130,7 +135,7 @@ namespace Horizon::Editor
 		m_menuRegistry->RenderGUI();
 		m_viewRegistry->RenderGUI();
 
-		m_editorRenderer->EndRender(m_swapchain->GetBackbuffer(m_swapchain->GetCurrentIndex()), m_swapchain->GetCurrentIndex());
+		m_editorRenderer->EndRender(m_swapchain->GetImage(m_swapchain->GetCurrentImageIndex()), m_swapchain->GetCurrentImageIndex());
 
 		m_swapchain->Present(m_queue, m_fence);
 	}
@@ -151,5 +156,7 @@ namespace Horizon::Editor
 	{
 		graph.Requires<Engine::WindowService>();
 		graph.Requires<Engine::GraphicsContext>();
+		graph.Requires<DomainService>();
+		graph.Requires<Engine::WorldService>();
 	}
 }

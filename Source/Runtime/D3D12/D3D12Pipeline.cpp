@@ -1,9 +1,16 @@
 #include "D3D12Pipeline.h"
 
+#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
-#include <Runtime/D3D12/D3D12Device.h>
 
-namespace Horizon
+#include <Runtime/RHI/Pipeline/GfxComputePipelineDesc.h>
+#include <Runtime/RHI/Pipeline/GfxGraphicsPipelineDesc.h>
+
+#include <Runtime/D3D12/D3D12Device.h>
+#include <Runtime/D3D12/D3D12Shader.h>
+
+namespace Horizon::RHI
 {
 	namespace
 	{
@@ -29,6 +36,14 @@ namespace Horizon
 			StreamSubobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT, DXGI_FORMAT> dsFormat;
 			StreamSubobject<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC, DXGI_SAMPLE_DESC> sampleDesc;
 		};
+
+		D3D12_SHADER_BYTECODE ToBytecode(GfxShader* pShader)
+		{
+			if (!pShader)
+				return { nullptr, 0 };
+
+			return static_cast<D3D12Shader*>(pShader)->Bytecode();
+		}
 
 		D3D12_BLEND_DESC BuildBlendDesc(const GfxGraphicsPipelineDesc& desc)
 		{
@@ -76,7 +91,7 @@ namespace Horizon
 			faceDesc.StencilFailOp = Helpers::ToStencilOp(face.failOp);
 			faceDesc.StencilDepthFailOp = Helpers::ToStencilOp(face.depthFailOp);
 			faceDesc.StencilPassOp = Helpers::ToStencilOp(face.passOp);
-			faceDesc.StencilFunc = Helpers::ToCompare(face.compareOp);
+			faceDesc.StencilFunc = Helpers::ToCompareFunc(face.compareOp);
 			return faceDesc;
 		}
 
@@ -87,7 +102,7 @@ namespace Horizon
 			depthDesc.DepthEnable = desc.depthStencil.depthTest;
 			depthDesc.DepthWriteMask = desc.depthStencil.depthWrite
 				? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO;
-			depthDesc.DepthFunc = Helpers::ToCompare(desc.depthStencil.depthCompare);
+			depthDesc.DepthFunc = Helpers::ToCompareFunc(desc.depthStencil.depthCompare);
 			depthDesc.StencilEnable = desc.depthStencil.stencilTest;
 			depthDesc.StencilReadMask = desc.depthStencil.stencilReadMask;
 			depthDesc.StencilWriteMask = desc.depthStencil.stencilWriteMask;
@@ -105,7 +120,7 @@ namespace Horizon
 
 	GfxPipeline* D3D12Device::CreatePipeline(const GfxGraphicsPipelineDesc& desc)
 	{
-		const b8 bUsesMesh = desc.meshShader.IsValid();
+		const b8 bUsesMesh = desc.pMeshShader != nullptr;
 		const DXGI_SAMPLE_DESC sampleDesc = { Helpers::ToSampleCount(desc.sampleCount), 0 };
 
 		auto* pPipe = Memory::Allocator::Create<D3D12Pipeline>(Memory::CurrLoc());
@@ -119,9 +134,9 @@ namespace Horizon
 			MeshStateStream stream = {};
 
 			stream.rootSignature.value = m_rootSignature;
-			stream.taskShader.value = { desc.taskShader.pData, desc.taskShader.size };
-			stream.meshShader.value = { desc.meshShader.pData, desc.meshShader.size };
-			stream.pixelShader.value = { desc.pixelShader.pData, desc.pixelShader.size };
+			stream.taskShader.value = ToBytecode(desc.pTaskShader);
+			stream.meshShader.value = ToBytecode(desc.pMeshShader);
+			stream.pixelShader.value = ToBytecode(desc.pPixelShader);
 			stream.blend.value = BuildBlendDesc(desc);
 			stream.sampleMask.value = UINT_MAX;
 			stream.rasterizer.value = BuildRasterizerDesc(desc);
@@ -130,9 +145,9 @@ namespace Horizon
 			stream.rtFormats.value.NumRenderTargets = desc.colorTargetCount;
 
 			for (u32 i = 0; i < desc.colorTargetCount; i++)
-				stream.rtFormats.value.RTFormats[i] = Helpers::ToDXGIFormat(desc.colorFormats[i]);
+				stream.rtFormats.value.RTFormats[i] = Helpers::ToFormat(desc.colorFormats[i]);
 
-			stream.dsFormat.value = Helpers::ToDXGIFormat(desc.depthFormat);
+			stream.dsFormat.value = Helpers::ToFormat(desc.depthFormat);
 			stream.sampleDesc.value = sampleDesc;
 
 			D3D12_PIPELINE_STATE_STREAM_DESC streamDesc = {};
@@ -148,8 +163,8 @@ namespace Horizon
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
 
 			psoDesc.pRootSignature = m_rootSignature;
-			psoDesc.VS = { desc.vertexShader.pData, desc.vertexShader.size };
-			psoDesc.PS = { desc.pixelShader.pData, desc.pixelShader.size };
+			psoDesc.VS = ToBytecode(desc.pVertexShader);
+			psoDesc.PS = ToBytecode(desc.pPixelShader);
 			psoDesc.InputLayout = { nullptr, 0 };
 			psoDesc.BlendState = BuildBlendDesc(desc);
 			psoDesc.SampleMask = UINT_MAX;
@@ -159,9 +174,9 @@ namespace Horizon
 			psoDesc.NumRenderTargets = desc.colorTargetCount;
 
 			for (u32 i = 0; i < desc.colorTargetCount; i++)
-				psoDesc.RTVFormats[i] = Helpers::ToDXGIFormat(desc.colorFormats[i]);
+				psoDesc.RTVFormats[i] = Helpers::ToFormat(desc.colorFormats[i]);
 
-			psoDesc.DSVFormat = Helpers::ToDXGIFormat(desc.depthFormat);
+			psoDesc.DSVFormat = Helpers::ToFormat(desc.depthFormat);
 			psoDesc.SampleDesc = sampleDesc;
 
 			hr = m_device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pPipe->m_pipeline));
@@ -183,10 +198,16 @@ namespace Horizon
 
 	GfxPipeline* D3D12Device::CreatePipeline(const GfxComputePipelineDesc& desc)
 	{
+		if (!desc.pComputeShader)
+		{
+			Terminal::Error(StringOps::GetName(this), "Compute pipeline was given no compute shader");
+			return nullptr;
+		}
+
 		D3D12_COMPUTE_PIPELINE_STATE_DESC psoDesc = {};
 
 		psoDesc.pRootSignature = m_rootSignature;
-		psoDesc.CS = { desc.computeShader.pData, desc.computeShader.size };
+		psoDesc.CS = ToBytecode(desc.pComputeShader);
 
 		auto* pPipe = Memory::Allocator::Create<D3D12Pipeline>(Memory::CurrLoc());
 

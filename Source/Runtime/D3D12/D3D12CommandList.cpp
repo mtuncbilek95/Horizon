@@ -1,13 +1,21 @@
 #include "D3D12CommandList.h"
 
+#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Log/Terminal.h>
+
 #include <Runtime/D3D12/D3D12Buffer.h>
 #include <Runtime/D3D12/D3D12DescriptorHeap.h>
 #include <Runtime/D3D12/D3D12Device.h>
 #include <Runtime/D3D12/D3D12Pipeline.h>
 #include <Runtime/D3D12/D3D12Texture.h>
 
-namespace Horizon
+namespace Horizon::RHI
 {
+	namespace
+	{
+		constexpr u32 kMaxBarrierBatch = 32;
+	}
+
 	D3D12CommandList::~D3D12CommandList()
 	{
 		if (m_list)
@@ -21,52 +29,63 @@ namespace Horizon
 	{
 		m_allocator->Reset();
 		m_list->Reset(m_allocator, nullptr);
+
+		m_rendering = false;
 	}
 
 	void D3D12CommandList::End()
 	{
+		if (m_rendering)
+			EndRendering();
+
 		m_list->Close();
 	}
 
-	void D3D12CommandList::SetupBindless()
+	void D3D12CommandList::BindDescriptorHeaps(GfxDescriptorHeap* pResourceHeap, GfxDescriptorHeap* pSamplerHeap)
 	{
 		if (m_type == D3D12_COMMAND_LIST_TYPE_COPY)
+		{
+			Terminal::Error(StringOps::GetName(this), "Copy lists cannot bind descriptor heaps");
 			return;
+		}
 
-		auto* pResourceHeap = static_cast<D3D12DescriptorHeap*>(m_device->GetDescriptorHeap(GfxDescriptorHeapType::Resource));
-		auto* pSamplerHeap = static_cast<D3D12DescriptorHeap*>(m_device->GetDescriptorHeap(GfxDescriptorHeapType::Sampler));
+		ID3D12DescriptorHeap* heaps[2] = {};
+		u32 count = 0;
 
-		ID3D12DescriptorHeap* heaps[] = { pResourceHeap->Handle(), pSamplerHeap->Handle() };
+		if (pResourceHeap)
+			heaps[count++] = static_cast<D3D12DescriptorHeap*>(pResourceHeap)->Handle();
 
-		m_list->SetDescriptorHeaps(2, heaps);
+		if (pSamplerHeap)
+			heaps[count++] = static_cast<D3D12DescriptorHeap*>(pSamplerHeap)->Handle();
 
-		ID3D12RootSignature* pRootSig = m_device->GetRootSignature();
+		if (count > 0)
+			m_list->SetDescriptorHeaps(count, heaps);
+
+		ID3D12RootSignature* pRootSignature = m_device->RootSignature();
+
+		m_list->SetComputeRootSignature(pRootSignature);
 
 		if (m_type == D3D12_COMMAND_LIST_TYPE_DIRECT)
-		{
-			m_list->SetGraphicsRootSignature(pRootSig);
-			m_list->SetComputeRootSignature(pRootSig);
-		}
-		else
-		{
-			m_list->SetComputeRootSignature(pRootSig);
-		}
+			m_list->SetGraphicsRootSignature(pRootSignature);
 	}
 
 	void D3D12CommandList::Barrier(const GfxTextureBarrier* pBarriers, u32 count)
 	{
-		if (count > 16)
+		if (count > kMaxBarrierBatch)
 		{
-			Terminal::Error("D3D12CommandList", "Texture barrier batch limit exceeded, {} > 16", count);
+			Terminal::Error(StringOps::GetName(this), "Barrier batch limit exceeded, {} > {}", count, kMaxBarrierBatch);
 			return;
 		}
 
-		D3D12_RESOURCE_BARRIER native[16] = {};
+		D3D12_RESOURCE_BARRIER native[kMaxBarrierBatch] = {};
 
 		for (u32 i = 0; i < count; i++)
 		{
+			auto* pTexture = static_cast<D3D12Texture*>(pBarriers[i].pTexture);
+
 			native[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-			native[i].Transition.pResource = static_cast<D3D12Texture*>(pBarriers[i].pTexture)->GetResource();
+			native[i].Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+			native[i].Transition.pResource = pTexture->Handle();
 			native[i].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 			native[i].Transition.StateBefore = Helpers::ToResourceState(pBarriers[i].before);
 			native[i].Transition.StateAfter = Helpers::ToResourceState(pBarriers[i].after);
@@ -77,18 +96,21 @@ namespace Horizon
 
 	void D3D12CommandList::Barrier(const GfxBufferBarrier* pBarriers, u32 count)
 	{
-		if (count > 16)
+		if (count > kMaxBarrierBatch)
 		{
-			Terminal::Error("D3D12CommandList", "Buffer barrier batch limit exceeded, {} > 16", count);
+			Terminal::Error(StringOps::GetName(this), "Barrier batch limit exceeded, {} > {}", count, kMaxBarrierBatch);
 			return;
 		}
 
-		D3D12_RESOURCE_BARRIER native[16] = {};
+		D3D12_RESOURCE_BARRIER native[kMaxBarrierBatch] = {};
 
 		for (u32 i = 0; i < count; i++)
 		{
+			auto* pBuffer = static_cast<D3D12Buffer*>(pBarriers[i].pBuffer);
+
 			native[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-			native[i].Transition.pResource = static_cast<D3D12Buffer*>(pBarriers[i].pBuffer)->GetResource();
+			native[i].Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+			native[i].Transition.pResource = pBuffer->Handle();
 			native[i].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 			native[i].Transition.StateBefore = Helpers::ToResourceState(pBarriers[i].before);
 			native[i].Transition.StateAfter = Helpers::ToResourceState(pBarriers[i].after);
@@ -99,63 +121,69 @@ namespace Horizon
 
 	void D3D12CommandList::BarrierUav()
 	{
-		D3D12_RESOURCE_BARRIER native = {};
+		D3D12_RESOURCE_BARRIER barrier = {};
 
-		native.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-		native.UAV.pResource = nullptr;
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+		barrier.UAV.pResource = nullptr;
 
-		m_list->ResourceBarrier(1, &native);
+		m_list->ResourceBarrier(1, &barrier);
 	}
 
 	void D3D12CommandList::BeginRendering(const GfxRenderBeginDesc& desc)
 	{
-		D3D12_RENDER_PASS_RENDER_TARGET_DESC targets[8] = {};
+		D3D12_RENDER_PASS_RENDER_TARGET_DESC colorTargets[8] = {};
 
 		for (u32 i = 0; i < desc.colorTargetCount; i++)
 		{
 			const GfxColorAttachment& attachment = desc.colorTargets[i];
 			auto* pTexture = static_cast<D3D12Texture*>(attachment.pTexture);
 
-			targets[i].cpuDescriptor = pTexture->GetRenderTargetView();
-			targets[i].BeginningAccess.Type = Helpers::ToBeginAccess(attachment.loadOp);
-			targets[i].BeginningAccess.Clear.ClearValue.Format = pTexture->GetDXGIFormat();
-			targets[i].BeginningAccess.Clear.ClearValue.Color[0] = attachment.clearColor.r;
-			targets[i].BeginningAccess.Clear.ClearValue.Color[1] = attachment.clearColor.g;
-			targets[i].BeginningAccess.Clear.ClearValue.Color[2] = attachment.clearColor.b;
-			targets[i].BeginningAccess.Clear.ClearValue.Color[3] = attachment.clearColor.a;
-			targets[i].EndingAccess.Type = Helpers::ToEndAccess(attachment.storeOp);
+			colorTargets[i].cpuDescriptor = pTexture->RenderTargetHandle();
+			colorTargets[i].BeginningAccess.Type = Helpers::ToBeginAccess(attachment.loadOp);
+			colorTargets[i].BeginningAccess.Clear.ClearValue.Format = pTexture->Format();
+			colorTargets[i].BeginningAccess.Clear.ClearValue.Color[0] = attachment.clearColor.r;
+			colorTargets[i].BeginningAccess.Clear.ClearValue.Color[1] = attachment.clearColor.g;
+			colorTargets[i].BeginningAccess.Clear.ClearValue.Color[2] = attachment.clearColor.b;
+			colorTargets[i].BeginningAccess.Clear.ClearValue.Color[3] = attachment.clearColor.a;
+			colorTargets[i].EndingAccess.Type = Helpers::ToEndAccess(attachment.storeOp);
 		}
 
 		D3D12_RENDER_PASS_DEPTH_STENCIL_DESC depthTarget = {};
-		D3D12_RENDER_PASS_DEPTH_STENCIL_DESC* pDepthTarget = nullptr;
+		const b8 bHasDepth = desc.depth.pTexture != nullptr;
 
-		if (desc.depth.pTexture != nullptr)
+		if (bHasDepth)
 		{
 			auto* pTexture = static_cast<D3D12Texture*>(desc.depth.pTexture);
 
-			depthTarget.cpuDescriptor = pTexture->GetDepthStencilView();
+			depthTarget.cpuDescriptor = pTexture->DepthStencilHandle();
 			depthTarget.DepthBeginningAccess.Type = Helpers::ToBeginAccess(desc.depth.loadOp);
-			depthTarget.DepthBeginningAccess.Clear.ClearValue.Format = pTexture->GetDXGIFormat();
-			depthTarget.DepthBeginningAccess.Clear.ClearValue.DepthStencil = { desc.depth.clearDepth, desc.depth.clearStencil };
-			depthTarget.StencilBeginningAccess = depthTarget.DepthBeginningAccess;
+			depthTarget.DepthBeginningAccess.Clear.ClearValue.Format = pTexture->Format();
+			depthTarget.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = desc.depth.clearDepth;
+			depthTarget.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = desc.depth.clearStencil;
 			depthTarget.DepthEndingAccess.Type = Helpers::ToEndAccess(desc.depth.storeOp);
-			depthTarget.StencilEndingAccess.Type = depthTarget.DepthEndingAccess.Type;
-
-			pDepthTarget = &depthTarget;
+			depthTarget.StencilBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS;
+			depthTarget.StencilEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS;
 		}
 
-		m_list->BeginRenderPass(desc.colorTargetCount, targets, pDepthTarget, D3D12_RENDER_PASS_FLAG_NONE);
+		m_list->BeginRenderPass(desc.colorTargetCount, colorTargets,
+			bHasDepth ? &depthTarget : nullptr, D3D12_RENDER_PASS_FLAG_NONE);
 
-		D3D12_VIEWPORT viewport = { 0.0f, 0.0f, f32(desc.width), f32(desc.height), 0.0f, 1.0f };
-		D3D12_RECT scissor = { 0, 0, LONG(desc.width), LONG(desc.height) };
+		m_rendering = true;
 
-		m_list->RSSetViewports(1, &viewport);
-		m_list->RSSetScissorRects(1, &scissor);
+		const GfxViewport viewport = { 0.0f, 0.0f, f32(desc.width), f32(desc.height), 0.0f, 1.0f };
+		const GfxScissor scissor = { 0, 0, i32(desc.width), i32(desc.height) };
+
+		SetViewport(viewport);
+		SetScissor(scissor);
 	}
 
 	void D3D12CommandList::EndRendering()
 	{
+		if (!m_rendering)
+			return;
+
 		m_list->EndRenderPass();
+		m_rendering = false;
 	}
 
 	void D3D12CommandList::BindPipeline(GfxPipeline* pPipeline)
@@ -180,13 +208,14 @@ namespace Horizon
 
 	void D3D12CommandList::SetViewports(const GfxViewport* pViewports, u32 count)
 	{
-		if (count > 16)
+		D3D12_VIEWPORT native[D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE] = {};
+
+		if (count > D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
 		{
-			Terminal::Error("D3D12CommandList", "Viewport batch limit exceeded, {} > 16", count);
+			Terminal::Error(StringOps::GetName(this), "Viewport count exceeded, {} > {}", count,
+				u32(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE));
 			return;
 		}
-
-		D3D12_VIEWPORT native[16] = {};
 
 		for (u32 i = 0; i < count; i++)
 		{
@@ -203,20 +232,21 @@ namespace Horizon
 
 	void D3D12CommandList::SetScissors(const GfxScissor* pScissors, u32 count)
 	{
-		if (count > 16)
+		D3D12_RECT native[D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE] = {};
+
+		if (count > D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
 		{
-			Terminal::Error("D3D12CommandList", "Scissor batch limit exceeded, {} > 16", count);
+			Terminal::Error(StringOps::GetName(this), "Scissor count exceeded, {} > {}", count,
+				u32(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE));
 			return;
 		}
-
-		D3D12_RECT native[16] = {};
 
 		for (u32 i = 0; i < count; i++)
 		{
 			native[i].left = pScissors[i].x;
 			native[i].top = pScissors[i].y;
-			native[i].right = pScissors[i].x + LONG(pScissors[i].width);
-			native[i].bottom = pScissors[i].y + LONG(pScissors[i].height);
+			native[i].right = pScissors[i].x + pScissors[i].width;
+			native[i].bottom = pScissors[i].y + pScissors[i].height;
 		}
 
 		m_list->RSSetScissorRects(count, native);
@@ -224,13 +254,15 @@ namespace Horizon
 
 	void D3D12CommandList::BindIndexBuffer(GfxBuffer* pBuffer, GfxIndexType type)
 	{
-		D3D12_INDEX_BUFFER_VIEW indexBufferView = {};
+		auto* pD3DBuffer = static_cast<D3D12Buffer*>(pBuffer);
 
-		indexBufferView.BufferLocation = pBuffer->GetGpuAddress();
-		indexBufferView.SizeInBytes = u32(pBuffer->GetDesc().size);
-		indexBufferView.Format = Helpers::ToIndexFormat(type);
+		D3D12_INDEX_BUFFER_VIEW view = {};
 
-		m_list->IASetIndexBuffer(&indexBufferView);
+		view.BufferLocation = pD3DBuffer->Handle()->GetGPUVirtualAddress();
+		view.SizeInBytes = u32(pD3DBuffer->GetDesc().size);
+		view.Format = Helpers::ToIndexFormat(type);
+
+		m_list->IASetIndexBuffer(&view);
 	}
 
 	void D3D12CommandList::Draw(u32 vtxCount, u32 instCount, u32 firstVtx, u32 firstInst)
@@ -245,14 +277,16 @@ namespace Horizon
 
 	void D3D12CommandList::DrawIndirect(GfxBuffer* pArgs, usize offset, u32 drawCount)
 	{
-		m_list->ExecuteIndirect(m_device->GetDrawSignature(), drawCount,
-			static_cast<D3D12Buffer*>(pArgs)->GetResource(), offset, nullptr, 0);
+		auto* pD3DBuffer = static_cast<D3D12Buffer*>(pArgs);
+
+		m_list->ExecuteIndirect(m_device->DrawSignature(), drawCount, pD3DBuffer->Handle(), offset, nullptr, 0);
 	}
 
 	void D3D12CommandList::DrawIndexedIndirect(GfxBuffer* pArgs, usize offset, u32 drawCount)
 	{
-		m_list->ExecuteIndirect(m_device->GetDrawIndexedSignature(), drawCount,
-			static_cast<D3D12Buffer*>(pArgs)->GetResource(), offset, nullptr, 0);
+		auto* pD3DBuffer = static_cast<D3D12Buffer*>(pArgs);
+
+		m_list->ExecuteIndirect(m_device->DrawIndexedSignature(), drawCount, pD3DBuffer->Handle(), offset, nullptr, 0);
 	}
 
 	void D3D12CommandList::Dispatch(u32 groupX, u32 groupY, u32 groupZ)
@@ -267,67 +301,70 @@ namespace Horizon
 
 	void D3D12CommandList::DispatchIndirect(GfxBuffer* pArgs, usize offset)
 	{
-		m_list->ExecuteIndirect(m_device->GetDispatchSignature(), 1,
-			static_cast<D3D12Buffer*>(pArgs)->GetResource(), offset, nullptr, 0);
+		auto* pD3DBuffer = static_cast<D3D12Buffer*>(pArgs);
+
+		m_list->ExecuteIndirect(m_device->DispatchSignature(), 1, pD3DBuffer->Handle(), offset, nullptr, 0);
 	}
 
 	void D3D12CommandList::CopyBuffer(GfxBuffer* pSrc, usize srcOff, GfxBuffer* pDst, usize dstOff, usize size)
 	{
-		m_list->CopyBufferRegion(static_cast<D3D12Buffer*>(pDst)->GetResource(), dstOff,
-			static_cast<D3D12Buffer*>(pSrc)->GetResource(), srcOff, size);
+		auto* pD3DSrc = static_cast<D3D12Buffer*>(pSrc);
+		auto* pD3DDst = static_cast<D3D12Buffer*>(pDst);
+
+		m_list->CopyBufferRegion(pD3DDst->Handle(), dstOff, pD3DSrc->Handle(), srcOff, size);
 	}
 
 	void D3D12CommandList::CopyBufferToTexture(GfxBuffer* pSrc, usize srcOff, GfxTexture* pDst, u32 mipLevel, u32 arraySlice)
 	{
-		ID3D12Resource* pDstResource = static_cast<D3D12Texture*>(pDst)->GetResource();
+		auto* pD3DSrc = static_cast<D3D12Buffer*>(pSrc);
+		auto* pD3DDst = static_cast<D3D12Texture*>(pDst);
 
-		const D3D12_RESOURCE_DESC resourceDesc = pDstResource->GetDesc();
-		const u32 subresource = mipLevel + arraySlice * resourceDesc.MipLevels;
+		const D3D12_RESOURCE_DESC resourceDesc = pD3DDst->Handle()->GetDesc();
+		const u32 subresource = mipLevel + arraySlice * pD3DDst->GetDesc().mipLevels;
 
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
 
-		m_device->Handle()->GetCopyableFootprints(&resourceDesc, subresource, 1, srcOff,
-			&footprint, nullptr, nullptr, nullptr);
+		m_device->Handle()->GetCopyableFootprints(&resourceDesc, subresource, 1, srcOff, &footprint, nullptr, nullptr, nullptr);
 
-		D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+		D3D12_TEXTURE_COPY_LOCATION source = {};
 
-		srcLocation.pResource = static_cast<D3D12Buffer*>(pSrc)->GetResource();
-		srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-		srcLocation.PlacedFootprint = footprint;
+		source.pResource = pD3DSrc->Handle();
+		source.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+		source.PlacedFootprint = footprint;
 
-		D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+		D3D12_TEXTURE_COPY_LOCATION destination = {};
 
-		dstLocation.pResource = pDstResource;
-		dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-		dstLocation.SubresourceIndex = subresource;
+		destination.pResource = pD3DDst->Handle();
+		destination.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		destination.SubresourceIndex = subresource;
 
-		m_list->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+		m_list->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
 	}
 
 	void D3D12CommandList::CopyTextureToBuffer(GfxTexture* pSrc, u32 mipLevel, u32 arraySlice, GfxBuffer* pDst, usize dstOff)
 	{
-		ID3D12Resource* pSrcResource = static_cast<D3D12Texture*>(pSrc)->GetResource();
+		auto* pD3DSrc = static_cast<D3D12Texture*>(pSrc);
+		auto* pD3DDst = static_cast<D3D12Buffer*>(pDst);
 
-		const D3D12_RESOURCE_DESC resourceDesc = pSrcResource->GetDesc();
-		const u32 subresource = mipLevel + arraySlice * resourceDesc.MipLevels;
+		const D3D12_RESOURCE_DESC resourceDesc = pD3DSrc->Handle()->GetDesc();
+		const u32 subresource = mipLevel + arraySlice * pD3DSrc->GetDesc().mipLevels;
 
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
 
-		m_device->Handle()->GetCopyableFootprints(&resourceDesc, subresource, 1, dstOff,
-			&footprint, nullptr, nullptr, nullptr);
+		m_device->Handle()->GetCopyableFootprints(&resourceDesc, subresource, 1, dstOff, &footprint, nullptr, nullptr, nullptr);
 
-		D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
+		D3D12_TEXTURE_COPY_LOCATION source = {};
 
-		srcLocation.pResource = pSrcResource;
-		srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-		srcLocation.SubresourceIndex = subresource;
+		source.pResource = pD3DSrc->Handle();
+		source.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		source.SubresourceIndex = subresource;
 
-		D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
+		D3D12_TEXTURE_COPY_LOCATION destination = {};
 
-		dstLocation.pResource = static_cast<D3D12Buffer*>(pDst)->GetResource();
-		dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-		dstLocation.PlacedFootprint = footprint;
+		destination.pResource = pD3DDst->Handle();
+		destination.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+		destination.PlacedFootprint = footprint;
 
-		m_list->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+		m_list->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
 	}
 }

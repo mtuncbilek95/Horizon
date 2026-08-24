@@ -36,24 +36,24 @@ namespace Horizon
 	template<typename Tag>
 	struct HandleEx
 	{
-		HandleId id = InvalidHandleId;
+		HandleId index = InvalidHandleId;
 
-		b8 IsValid() const { return id != InvalidHandleId; }
+		b8 IsValid() const { return index != InvalidHandleId; }
 
 		explicit operator b8() const { return IsValid(); }
 
-		b8 operator==(const HandleEx& other) const { return id == other.id; }
-		b8 operator!=(const HandleEx& other) const { return id != other.id; }
+		b8 operator==(const HandleEx& other) const { return index == other.index; }
+		b8 operator!=(const HandleEx& other) const { return index != other.index; }
 
 		static HandleEx Generate(u32 index, u32 generation)
 		{
 			HandleEx hndl;
-			hndl.id = (HandleId(generation) << IndexBits) | HandleId(index);
+			hndl.index = (HandleId(generation) << IndexBits) | HandleId(index);
 			return hndl;
 		}
 
-		u32 Index() const { return u32(id & IndexMask); }
-		u32 Generation() const { return u32(id >> IndexBits); }
+		u32 Index() const { return u32(index & IndexMask); }
+		u32 Generation() const { return u32(index >> IndexBits); }
 	};
 }
 

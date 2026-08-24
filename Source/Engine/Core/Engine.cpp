@@ -10,7 +10,7 @@ namespace Horizon::Engine
 	Engine::Engine()
 	{
 		m_reflectionSystem = Memory::Allocator::Create<ReflectionSystem>(Memory::CurrLoc(), this);
-		m_jobSystem = Memory::Allocator::Create<JobSystem>(Memory::CurrLoc(), this);
+		m_jobSystem = Memory::Allocator::Create<JobSystem>(Memory::CurrLoc());
 	}
 
 	Engine::~Engine()

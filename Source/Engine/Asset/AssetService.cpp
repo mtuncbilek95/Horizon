@@ -1,9 +1,37 @@
 #include "AssetService.h"
 
+#include <Engine/Asset/AssetTypeAttribute.h>
+#include <Engine/Asset/AssetLoadStrategy.h>
+#include <Engine/Core/Engine.h>
+#include <Engine/Core/ModuleGraph.h>
+#include <Engine/Graphics/GraphicsContext.h>
+#include <Engine/Reflection/ReflectionSystem.h>
+
 namespace Horizon::Engine
 {
 	ModuleReport AssetService::OnInitialize()
 	{
+		auto* pReflect = GetEngine()->GetReflectionSystem();
+
+		List<Reflect::Type*> types = pReflect->GetTypeByAttribute(Reflect::TypeOf<AssetTypeAttribute>());
+
+		for (auto* type : types)
+		{
+			if (type->GetBaseId() != Reflect::TypeOf<AssetLoadStrategy>())
+			{
+				Terminal::Warn(StringOps::GetName(this), "{} has not inherited from AssetLoadStrategy! It may a different class " 
+					"or you're doing something wrong!", type->GetName());
+				continue;
+			}
+
+			AssetLoadStrategy* pStrategy = (AssetLoadStrategy*)type->CreateFromMemory();
+			m_assetLookup.emplace(pStrategy->GetWorkingAssetHandle(), m_loaders.GetCount());
+			m_loaders.PushBack(pStrategy);
+
+			std::string assetName = pReflect->GetType(pStrategy->GetWorkingAssetHandle())->GetName();
+			Terminal::Info(StringOps::GetName(this), "{} has been registered with type {}", type->GetName(), assetName);
+		}
+
 		return ModuleReport();
 	}
 
@@ -17,5 +45,6 @@ namespace Horizon::Engine
 
 	void AssetService::DeclareDependencies(ModuleGraph& graph)
 	{
+		graph.Requires<GraphicsContext>();
 	}
 }

@@ -1,5 +1,10 @@
 #include "WorldService.h"
 
+#include <Engine/Core/Engine.h>
+#include <Engine/Core/ModuleGraph.h>
+#include <Engine/Asset/AssetService.h>
+#include <Engine/Graphics/GraphicsContext.h>
+
 namespace Horizon::Engine
 {
 	ModuleReport WorldService::OnInitialize()
@@ -17,5 +22,7 @@ namespace Horizon::Engine
 
 	void WorldService::DeclareDependencies(ModuleGraph& graph)
 	{
+		graph.Requires<GraphicsContext>();
+		graph.Requires<AssetService>();
 	}
 }

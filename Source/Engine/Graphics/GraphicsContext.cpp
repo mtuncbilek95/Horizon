@@ -6,11 +6,6 @@
 
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/PAL/Window/Window.h>
-#include <Runtime/RHI/Device/GfxDevice.h>
-#include <Runtime/RHI/Queue/GfxQueue.h>
-#include <Runtime/RHI/Fence/GfxFence.h>
-#include <Runtime/RHI/Command/GfxCommandList.h>
-#include <Runtime/RHI/Swapchain/GfxSwapchain.h>
 #include <Runtime/Definitions/Allocator.h>
 
 namespace Horizon::Engine
@@ -21,31 +16,50 @@ namespace Horizon::Engine
 		if (!pWindowSub)
 			return ModuleReport("Failed to get WindowService. Nothing will work...");
 
-		m_device = CreateGfxDevice(GfxDeviceDesc());
+		RHI::GfxDeviceDesc deviceDesc = {};
+		deviceDesc.enableDebugLayer = true;
+
+		m_device = RHI::CreateDevice(deviceDesc);
 		if (!m_device)
 			return ModuleReport("Failed to create GfxDevice");
 
-		m_graphicsQueue = m_device->CreateQueue(GfxQueueType::Graphics);
+		RHI::GfxDescriptorHeapDesc resourceHeapDesc = {};
+		resourceHeapDesc.capacity = 1 << 16;
+		resourceHeapDesc.shaderVisible = true;
+		resourceHeapDesc.type = RHI::GfxDescriptorHeapType::Resource;
+		m_resourceHeap = m_device->CreateDescriptorHeap(resourceHeapDesc);
+		if (!m_resourceHeap)
+			return ModuleReport("Failed to create GfxDescriptorHeap(Resource)");
+
+		RHI::GfxDescriptorHeapDesc colorHeapDesc = {};
+		colorHeapDesc.capacity = 1 << 10;
+		colorHeapDesc.shaderVisible = false;
+		colorHeapDesc.type = RHI::GfxDescriptorHeapType::Color;
+		m_colorHeap = m_device->CreateDescriptorHeap(colorHeapDesc);
+		if (!m_colorHeap)
+			return ModuleReport("Failed to create GfxDescriptorHeap(Color)");
+
+		m_graphicsQueue = m_device->CreateQueue(RHI::GfxQueueType::Graphics);
 		if (!m_graphicsQueue)
 			return ModuleReport("Failed to create GfxQueue(Graphics)");
 
-		m_computeQueue = m_device->CreateQueue(GfxQueueType::Compute);
+		m_computeQueue = m_device->CreateQueue(RHI::GfxQueueType::Compute);
 		if (!m_computeQueue)
 			return ModuleReport("Failed to create GfxQueue(Compute)");
 
-		m_transferQueue = m_device->CreateQueue(GfxQueueType::Transfer);
+		m_transferQueue = m_device->CreateQueue(RHI::GfxQueueType::Transfer);
 		if (!m_transferQueue)
 			return ModuleReport("Failed to create GfxQueue(Transfer)");
 
 		PAL::WindowRect windowRect = pWindowSub->GetWindow()->GetRect();
 
-		GfxSwapchainDesc swapDesc = {};
+		RHI::GfxSwapchainDesc swapDesc = {};
 		swapDesc.pWindowHandle = (void*)pWindowSub->GetWindow()->GetOSHandle();
 		swapDesc.imageCount = 3;
 		swapDesc.width = windowRect.width;
 		swapDesc.height = windowRect.height;
-		swapDesc.vSync = true;
-		swapDesc.bAllowTearing = false;
+		swapDesc.presentMode = RHI::GfxPresentMode::Vsync;
+		swapDesc.pColorHeap = m_colorHeap;
 		m_swapchain = m_device->CreateSwapchain(swapDesc, m_graphicsQueue);
 		if (!m_swapchain)
 			return ModuleReport("Failed to create GfxSwapchain");
@@ -57,11 +71,16 @@ namespace Horizon::Engine
 
 	void GraphicsContext::OnFinalize()
 	{
+		m_device->WaitIdle();
+
 		Memory::Allocator::Delete(m_swapchain);
 
 		Memory::Allocator::Delete(m_graphicsQueue);
 		Memory::Allocator::Delete(m_computeQueue);
 		Memory::Allocator::Delete(m_transferQueue);
+
+		Memory::Allocator::Delete(m_colorHeap);
+		Memory::Allocator::Delete(m_resourceHeap);
 
 		Memory::Allocator::Delete(m_device);
 	}

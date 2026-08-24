@@ -5,6 +5,8 @@
 #include <Editor/Font/IconsKenney.h>
 #include <Editor/Renderer/Utils/ImGuiUtils.h>
 
+#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Log/Terminal.h>
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Queue/GfxQueue.h>
 #include <Runtime/RHI/Fence/GfxFence.h>
@@ -23,32 +25,31 @@
 namespace Horizon::Editor
 {
 	EditorRenderer::EditorRenderer(const EditorRendererDesc& desc) : m_device(desc.pDevice),
-		m_graphicsQueue(desc.pQueue)
+		m_graphicsQueue(desc.pQueue), m_resourceHeap(desc.pResourceHeap)
 	{
 		m_context = ImGui::CreateContext();
 		ImGui::SetCurrentContext((ImGuiContext*)m_context);
 
 		ImGuiIO& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		io.BackendFlags = ImGuiBackendFlags_None;
 		io.BackendFlags = ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasTextures;
 		io.DisplaySize = { 512.f, 512.f };
 		io.DisplayFramebufferScale = { 1.0f, 1.0f };
 
 		LoadFonts();
 
-		m_device->InitializeImGui(m_graphicsQueue);
+		m_device->InitializeImGui(desc.frameCount, m_graphicsQueue, m_resourceHeap, desc.colorFormat);
 
-		m_commandLists.Resize(3);
-		for (u32 i = 0; i < 3; i++)
-			m_commandLists[i] = m_device->CreateCommandList(GfxQueueType::Graphics);
+		m_commandLists.Resize(desc.frameCount);
+		for (u32 i = 0; i < desc.frameCount; i++)
+			m_commandLists[i] = m_device->CreateCommandList(RHI::GfxQueueType::Graphics);
 
 		DefaultStyle();
 	}
 
 	EditorRenderer::~EditorRenderer()
 	{
-		for (GfxCommandList* cmd : m_commandLists)
+		for (RHI::GfxCommandList* cmd : m_commandLists)
 			Memory::Allocator::Delete(cmd);
 
 		m_device->ShutdownImGui();
@@ -133,24 +134,24 @@ namespace Horizon::Editor
 		return true;
 	}
 
-	b8 EditorRenderer::EndRender(GfxTexture* backbuffer, u32 imgIndex)
+	b8 EditorRenderer::EndRender(RHI::GfxTexture* backbuffer, u32 imgIndex)
 	{
 		ImGui::Render();
 
-		GfxCommandList* cmd = m_commandLists[imgIndex];
+		RHI::GfxCommandList* cmd = m_commandLists[imgIndex];
 
 		cmd->Begin();
-		cmd->SetupBindless();
+		cmd->BindDescriptorHeaps(m_resourceHeap, nullptr);
 
-		GfxTextureBarrier toTarget = { backbuffer, GfxResourceState::Present, GfxResourceState::RenderTarget };
+		RHI::GfxTextureBarrier toTarget = { backbuffer, RHI::GfxResourceState::Present, RHI::GfxResourceState::RenderTarget };
 
 		cmd->Barrier(&toTarget, 1);
 
-		const GfxTextureDesc& bbDesc = backbuffer->GetDesc();
+		const RHI::GfxTextureDesc& bbDesc = backbuffer->GetDesc();
 
-		GfxRenderBeginDesc pass = {};
+		RHI::GfxRenderBeginDesc pass = {};
 
-		pass.AddColorTarget(backbuffer, GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
+		pass.AddColorTarget(backbuffer, RHI::GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
 			.SetSize(bbDesc.width, bbDesc.height);
 		cmd->BeginRendering(pass);
 
@@ -158,13 +159,13 @@ namespace Horizon::Editor
 
 		cmd->EndRendering();
 
-		GfxTextureBarrier toPresent = { backbuffer, GfxResourceState::RenderTarget, GfxResourceState::Present };
+		RHI::GfxTextureBarrier toPresent = { backbuffer, RHI::GfxResourceState::RenderTarget, RHI::GfxResourceState::Present };
 
 		cmd->Barrier(&toPresent, 1);
 
 		cmd->End();
 
-		GfxCommandList* submitList[] = { cmd };
+		RHI::GfxCommandList* submitList[] = { cmd };
 
 		m_graphicsQueue->Submit(submitList, 1);
 
@@ -181,7 +182,7 @@ namespace Horizon::Editor
 		const std::string bodyPath = fontDir + "SanFranciscoDisplay - Regular.OTF";
 		if (!io.Fonts->AddFontFromFileTTF(bodyPath.c_str(), fontSize))
 		{
-			Terminal::Error("EditorRenderer", "Failed to load UI Font: {}", bodyPath);
+			Terminal::Error(StringOps::GetName(this), "Failed to load UI Font: {}", bodyPath);
 			io.Fonts->AddFontDefault();
 		}
 
@@ -198,7 +199,7 @@ namespace Horizon::Editor
 				iconCfg.GlyphExcludeRanges = exclude;
 				const std::string path = fontDir + file;
 				if (!io.Fonts->AddFontFromFileTTF(path.c_str(), fontSize, &iconCfg, range))
-					Terminal::Error("EditorRenderer", "Failed to load icon font: {}", path);
+					Terminal::Error(StringOps::GetName(this), "Failed to load icon font: {}", path);
 			};
 
 		static const ImWchar faRange[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };

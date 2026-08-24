@@ -16,11 +16,30 @@ namespace Horizon::Engine
 			dependents.try_emplace(node);
 		}
 
+		std::unordered_map<std::type_index, List<std::type_index>> edges = m_edges;
+
+		for (const auto& edge : m_reverseEdges)
+		{
+			if (satisfied.contains(edge.after))
+			{
+				Terminal::Warn(StringOps::GetName(this), "{} precedes {} but {} is already active, dropping the constraint", StringOps::GetNameString(edge.before.name()), StringOps::GetNameString(edge.after.name()), StringOps::GetNameString(edge.after.name()));
+				continue;
+			}
+
+			if (!pending.contains(edge.after))
+			{
+				Terminal::Warn(StringOps::GetName(this), "{} precedes unregistered module {}, dropping the constraint", StringOps::GetNameString(edge.before.name()), StringOps::GetNameString(edge.after.name()));
+				continue;
+			}
+
+			edges[edge.after].PushBack(edge.before);
+		}
+
 		for (const auto& node : nodes)
 		{
-			auto it = m_edges.find(node);
+			auto it = edges.find(node);
 
-			if (it == m_edges.end())
+			if (it == edges.end())
 				continue;
 
 			for (const auto& dependency : it->second)
@@ -78,6 +97,7 @@ namespace Horizon::Engine
 	void ModuleGraph::Clear()
 	{
 		m_edges.clear();
+		m_reverseEdges.Clear();
 		m_current = typeid(void);
 	}
 }

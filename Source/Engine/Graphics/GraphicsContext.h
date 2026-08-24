@@ -1,16 +1,12 @@
 #pragma once
 
 #include <Engine/Core/Context.h>
-#include <Runtime/RHI/GfxTypes.h>
-
-namespace Horizon
-{
-	class GfxDevice;
-	class GfxQueue;
-	class GfxSwapchain;
-	class GfxFence;
-	class GfxCommandList;
-}
+#include <Runtime/RHI/Device/GfxDevice.h>
+#include <Runtime/RHI/Queue/GfxQueue.h>
+#include <Runtime/RHI/Fence/GfxFence.h>
+#include <Runtime/RHI/Descriptor/GfxDescriptorHeap.h>
+#include <Runtime/RHI/Command/GfxCommandList.h>
+#include <Runtime/RHI/Swapchain/GfxSwapchain.h>
 
 namespace Horizon::Engine
 {
@@ -20,21 +16,31 @@ namespace Horizon::Engine
 		GraphicsContext() = default;
 		~GraphicsContext() = default;
 
-		GfxDevice* GetDevice() const { return m_device; }
-		GfxQueue* GetGraphicsQueue() const { return m_graphicsQueue; }
-		GfxQueue* GetComputeQueue() const { return m_computeQueue; }
-		GfxQueue* GetTransferQueue() const { return m_transferQueue; }
-		GfxSwapchain* GetSwapchain() const { return m_swapchain; }
+		RHI::GfxDevice* GetDevice() const { return m_device; }
+
+		RHI::GfxDescriptorHeap* GetResourceHeap() const { return m_resourceHeap; }
+		RHI::GfxDescriptorHeap* GetColorHeap() const { return m_colorHeap; }
+		
+		RHI::GfxQueue* GetGraphicsQueue() const { return m_graphicsQueue; }
+		RHI::GfxQueue* GetComputeQueue() const { return m_computeQueue; }
+		RHI::GfxQueue* GetTransferQueue() const { return m_transferQueue; }
+		
+		RHI::GfxSwapchain* GetSwapchain() const { return m_swapchain; }
 
 		ModuleReport OnInitialize() final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
 
 	private:
-		GfxDevice* m_device = nullptr;
-		GfxQueue* m_graphicsQueue = nullptr;
-		GfxQueue* m_computeQueue = nullptr;
-		GfxQueue* m_transferQueue = nullptr;
-		GfxSwapchain* m_swapchain = nullptr;
+		RHI::GfxDevice* m_device = nullptr;
+
+		RHI::GfxDescriptorHeap* m_resourceHeap = nullptr;
+		RHI::GfxDescriptorHeap* m_colorHeap = nullptr;
+		
+		RHI::GfxQueue* m_graphicsQueue = nullptr;
+		RHI::GfxQueue* m_computeQueue = nullptr;
+		RHI::GfxQueue* m_transferQueue = nullptr;
+
+		RHI::GfxSwapchain* m_swapchain = nullptr;
 	};
 }

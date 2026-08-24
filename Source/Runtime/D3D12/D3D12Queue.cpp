@@ -2,12 +2,16 @@
 
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/D3D12/D3D12CommandList.h>
+#include <Runtime/D3D12/D3D12Device.h>
 #include <Runtime/D3D12/D3D12Fence.h>
 
-namespace Horizon
+namespace Horizon::RHI
 {
 	D3D12Queue::~D3D12Queue()
 	{
+		if (m_ownerDevice)
+			static_cast<D3D12Device*>(m_ownerDevice)->ForgetQueue(this);
+
 		if (m_queue)
 			m_queue->Release();
 	}

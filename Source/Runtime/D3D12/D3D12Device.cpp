@@ -1,61 +1,121 @@
 #include "D3D12Device.h"
 
+#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Log/Terminal.h>
+
+#include <Runtime/RHI/Buffer/GfxBufferArenaDesc.h>
+#include <Runtime/RHI/Sampler/GfxStaticSampler.h>
+#include <Runtime/RHI/Shader/GfxShaderDesc.h>
+#include <Runtime/RHI/Swapchain/GfxSwapchainDesc.h>
+#include <Runtime/RHI/Texture/GfxTextureDesc.h>
+#include <Runtime/RHI/Upload/GfxUploadRingDesc.h>
+
 #include <Runtime/D3D12/D3D12Buffer.h>
+#include <Runtime/D3D12/D3D12BufferArena.h>
 #include <Runtime/D3D12/D3D12CommandList.h>
 #include <Runtime/D3D12/D3D12DescriptorHeap.h>
 #include <Runtime/D3D12/D3D12Fence.h>
 #include <Runtime/D3D12/D3D12Queue.h>
-#include <Runtime/D3D12/D3D12Sampler.h>
+#include <Runtime/D3D12/D3D12Shader.h>
 #include <Runtime/D3D12/D3D12Swapchain.h>
 #include <Runtime/D3D12/D3D12Texture.h>
+#include <Runtime/D3D12/D3D12UploadRing.h>
 
 #include <imgui.h>
 #include <backends/imgui_impl_dx12.h>
 
-namespace Horizon
+namespace Horizon::RHI
 {
 	namespace
 	{
 		void ImGuiAlloc(ImGui_ImplDX12_InitInfo* pInfo, D3D12_CPU_DESCRIPTOR_HANDLE* pOutCpu, D3D12_GPU_DESCRIPTOR_HANDLE* pOutGpu)
 		{
-			auto* pDevice = static_cast<D3D12Device*>(pInfo->UserData);
-			auto* pHeap = static_cast<D3D12DescriptorHeap*>(pDevice->GetDescriptorHeap(GfxDescriptorHeapType::Resource));
-
+			auto* pHeap = static_cast<D3D12DescriptorHeap*>(pInfo->UserData);
 			const u32 index = pHeap->Allocate();
+
+			if (index == kInvalid32)
+			{
+				Terminal::Error("D3D12Device", "ImGui could not take a descriptor, resource heap is full");
+				*pOutCpu = {};
+				*pOutGpu = {};
+				return;
+			}
 
 			*pOutCpu = pHeap->CpuAt(index);
 			*pOutGpu = pHeap->GpuAt(index);
 		}
 
-		void ImGuiFree(ImGui_ImplDX12_InitInfo* pInfo, D3D12_CPU_DESCRIPTOR_HANDLE cpu, D3D12_GPU_DESCRIPTOR_HANDLE)
+		void ImGuiFree(ImGui_ImplDX12_InitInfo* pInfo, D3D12_CPU_DESCRIPTOR_HANDLE cpu, D3D12_GPU_DESCRIPTOR_HANDLE gpu)
 		{
-			auto* pDevice = static_cast<D3D12Device*>(pInfo->UserData);
-			auto* pHeap = static_cast<D3D12DescriptorHeap*>(pDevice->GetDescriptorHeap(GfxDescriptorHeapType::Resource));
-
+			auto* pHeap = static_cast<D3D12DescriptorHeap*>(pInfo->UserData);
 			pHeap->Free(pHeap->IndexOf(cpu));
 		}
 	}
 
-	GfxDevice* CreateGfxDevice(const GfxDeviceDesc& desc)
+	GfxDevice* CreateDevice(const GfxDeviceDesc& desc)
 	{
 		auto* pDevice = Memory::Allocator::Create<D3D12Device>(Memory::CurrLoc());
-
 		pDevice->Init(desc);
+
 		return pDevice;
+	}
+
+	D3D12Device::~D3D12Device()
+	{
+		WaitIdle();
+
+		if (m_idleFence)
+			m_idleFence->Release();
+
+		if (m_dispatchSignature)
+			m_dispatchSignature->Release();
+
+		if (m_drawIndexedSignature)
+			m_drawIndexedSignature->Release();
+
+		if (m_drawSignature)
+			m_drawSignature->Release();
+
+		if (m_rootSignature)
+			m_rootSignature->Release();
+
+		if (m_allocator)
+			m_allocator->Release();
+
+		if (m_infoQueue)
+		{
+			m_infoQueue->UnregisterMessageCallback(m_callbackCookie);
+			m_infoQueue->Release();
+		}
+
+		if (m_device)
+			m_device->Release();
+
+		if (m_adapter)
+			m_adapter->Release();
+
+		if (m_factory)
+			m_factory->Release();
+
+		if (m_debug)
+			m_debug->Release();
 	}
 
 	void D3D12Device::Init(const GfxDeviceDesc& desc)
 	{
-		m_desc = desc;
-
 		u32 factoryFlags = 0;
-#if defined(HORIZON_DEBUG)
-		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&m_debug))))
+		if (desc.enableDebugLayer && SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&m_debug))))
 		{
 			m_debug->EnableDebugLayer();
 			factoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+
+			if (desc.enableGpuValidation)
+				m_debug->SetEnableGPUBasedValidation(TRUE);
+
+			if (desc.synchronizedCommandValidation)
+				m_debug->SetEnableSynchronizedCommandQueueValidation(TRUE);
 		}
-#endif
 
 		HRESULT hr = CreateDXGIFactory2(factoryFlags, IID_PPV_ARGS(&m_factory));
 		CHECK_HR(hr, "IDXGIFactory7 - CreateDXGIFactory2");
@@ -79,88 +139,30 @@ namespace Horizon
 		allocDesc.pAdapter = m_adapter;
 		D3D12MA::CreateAllocator(&allocDesc, &m_allocator);
 
-#if defined(HORIZON_DEBUG)
+		hr = m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_idleFence));
+		CHECK_HR(hr, "ID3D12Fence - CreateFence (idle)");
+
 		CreateTerminalLog();
-#endif
-
-		const GfxDescriptorBudget& budget = m_desc.descriptorBudget;
-		u32 samplerCapacity = budget.samplerCount;
-
-		if (samplerCapacity > 2048)
-		{
-			Terminal::Warn("D3D12Device", "Sampler budget {} exceeds D3D12 limit, clamping to 2048", samplerCapacity);
-			samplerCapacity = 2048;
-		}
-
-		m_resourceHeap = CreateDescriptorHeap(GfxDescriptorHeapType::Resource, budget.resourceCount, true);
-		m_samplerHeap = CreateDescriptorHeap(GfxDescriptorHeapType::Sampler, samplerCapacity, true);
-		m_colorHeap = CreateDescriptorHeap(GfxDescriptorHeapType::Color, budget.colorCount, false);
-		m_depthHeap = CreateDescriptorHeap(GfxDescriptorHeapType::Depth, budget.depthCount, false);
-
 		CreateRootSignature();
 		CreateCommandSignatures();
 	}
 
-	D3D12Device::~D3D12Device()
-	{
-		FlushPendingDeletes(kInvalid64);
-
-		Memory::Allocator::Delete(m_resourceHeap);
-		Memory::Allocator::Delete(m_samplerHeap);
-		Memory::Allocator::Delete(m_colorHeap);
-		Memory::Allocator::Delete(m_depthHeap);
-
-		if (m_drawSignature)
-			m_drawSignature->Release();
-
-		if (m_drawIndexedSignature)
-			m_drawIndexedSignature->Release();
-
-		if (m_dispatchSignature)
-			m_dispatchSignature->Release();
-
-		if (m_rootSignature)
-			m_rootSignature->Release();
-
-		if (m_allocator)
-			m_allocator->Release();
-
-#if defined(HORIZON_DEBUG)
-		if (m_infoQueue)
-		{
-			m_infoQueue->UnregisterMessageCallback(m_callbackCookie);
-			m_infoQueue->Release();
-		}
-#endif
-
-		if (m_device)
-			m_device->Release();
-
-		if (m_debug)
-			m_debug->Release();
-
-		if (m_adapter)
-			m_adapter->Release();
-
-		if (m_factory)
-			m_factory->Release();
-	}
-
-	void D3D12Device::InitializeImGui(GfxQueue* pQueue, GfxTextureFormat fmt)
+	void D3D12Device::InitializeImGui(u32 maxFrames, GfxQueue* pQueue, GfxDescriptorHeap* pHeap, GfxTextureFormat colorFormat)
 	{
 		auto* pD3DQueue = static_cast<D3D12Queue*>(pQueue);
+		auto* pD3DHeap = static_cast<D3D12DescriptorHeap*>(pHeap);
 
 		ImGui_ImplDX12_InitInfo info = {};
 
 		info.Device = m_device;
 		info.CommandQueue = pD3DQueue->Handle();
-		info.NumFramesInFlight = i32(m_desc.framesInFlight);
-		info.RTVFormat = Helpers::ToDXGIFormat(fmt);
+		info.NumFramesInFlight = i32(maxFrames);
+		info.RTVFormat = Helpers::ToSwapchainFormat(Helpers::ToFormat(colorFormat));
 		info.DSVFormat = DXGI_FORMAT_UNKNOWN;
-		info.SrvDescriptorHeap = m_resourceHeap->Handle();
+		info.SrvDescriptorHeap = pD3DHeap->Handle();
 		info.SrvDescriptorAllocFn = &ImGuiAlloc;
 		info.SrvDescriptorFreeFn = &ImGuiFree;
-		info.UserData = this;
+		info.UserData = pHeap;
 
 		ImGui_ImplDX12_Init(&info);
 	}
@@ -175,91 +177,159 @@ namespace Horizon
 		ImGui_ImplDX12_Shutdown();
 	}
 
+	GfxDescriptorHeap* D3D12Device::CreateDescriptorHeap(const GfxDescriptorHeapDesc& desc)
+	{
+		auto* pHeap = Memory::Allocator::Create<D3D12DescriptorHeap>(Memory::CurrLoc());
+
+		pHeap->m_ownerDevice = this;
+		pHeap->m_desc = desc;
+
+		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+
+		heapDesc.Type = Helpers::ToDescriptorHeapType(desc.type);
+		heapDesc.NumDescriptors = desc.capacity;
+		heapDesc.Flags = desc.shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+			: D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+		HRESULT hr = m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&pHeap->m_heap));
+		CHECK_HR(hr, "ID3D12DescriptorHeap - CreateDescriptorHeap");
+
+		pHeap->m_descriptorSize = m_device->GetDescriptorHandleIncrementSize(heapDesc.Type);
+		pHeap->m_cpuStart = pHeap->m_heap->GetCPUDescriptorHandleForHeapStart();
+		pHeap->m_gpuStart = desc.shaderVisible ? pHeap->m_heap->GetGPUDescriptorHandleForHeapStart()
+			: D3D12_GPU_DESCRIPTOR_HANDLE{};
+
+		return pHeap;
+	}
+
+	GfxSwapchain* D3D12Device::CreateSwapchain(const GfxSwapchainDesc& desc, GfxQueue* pPresentQueue)
+	{
+		if (desc.imageCount > kMaxSwapchainImages)
+		{
+			Terminal::Error(StringOps::GetName(this), "Swapchain image count {} exceeds the {} limit",
+				desc.imageCount, kMaxSwapchainImages);
+			return nullptr;
+		}
+
+		if (!desc.pColorHeap)
+		{
+			Terminal::Error(StringOps::GetName(this), "Swapchain needs a color descriptor heap to build its render targets");
+			return nullptr;
+		}
+
+		auto* pQueue = static_cast<D3D12Queue*>(pPresentQueue);
+		auto* pSwapchain = Memory::Allocator::Create<D3D12Swapchain>(Memory::CurrLoc());
+
+		pSwapchain->m_ownerDevice = this;
+		pSwapchain->m_device = this;
+		pSwapchain->m_desc = desc;
+		pSwapchain->m_syncInterval = Helpers::ToSyncInterval(desc.presentMode);
+		pSwapchain->m_presentFlags = Helpers::ToPresentFlags(desc.presentMode);
+
+		DXGI_SWAP_CHAIN_DESC1 chainDesc = {};
+
+		chainDesc.Width = desc.width;
+		chainDesc.Height = desc.height;
+		chainDesc.Format = Helpers::ToSwapchainFormat(Helpers::ToFormat(desc.format));
+		chainDesc.SampleDesc = { 1, 0 };
+		chainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		chainDesc.BufferCount = desc.imageCount;
+		chainDesc.Scaling = DXGI_SCALING_NONE;
+		chainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+		chainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+		chainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+
+		const HWND window = HWND(desc.pWindowHandle);
+		IDXGISwapChain1* pBase = nullptr;
+
+		HRESULT hr = m_factory->CreateSwapChainForHwnd(pQueue->Handle(), window, &chainDesc, nullptr, nullptr, &pBase);
+		CHECK_HR(hr, "IDXGISwapChain1 - CreateSwapChainForHwnd");
+
+		hr = pBase->QueryInterface(IID_PPV_ARGS(&pSwapchain->m_swapchain));
+		CHECK_HR(hr, "IDXGISwapChain4 - QueryInterface");
+		pBase->Release();
+
+		m_factory->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER);
+
+		pSwapchain->AcquireImages();
+		pSwapchain->m_imageIndex = pSwapchain->m_swapchain->GetCurrentBackBufferIndex();
+
+		return pSwapchain;
+	}
+
 	GfxTexture* D3D12Device::CreateTexture(const GfxTextureDesc& desc)
 	{
-		const DXGI_FORMAT viewFormat = Helpers::ToDXGIFormat(desc.format);
-		const b8 isDepth = Helpers::IsDepthFormat(desc.format);
-		const b8 isSampled = HasFlag(desc.usage, GfxTextureUsage::Sampled);
+		auto* pTexture = Memory::Allocator::Create<D3D12Texture>(Memory::CurrLoc());
+
+		pTexture->m_ownerDevice = this;
+		pTexture->m_desc = desc;
+		pTexture->m_format = Helpers::ToFormat(desc.format);
+
+		const b8 bIsDepth = Helpers::IsDepthFormat(pTexture->m_format);
+		const b8 bSampled = HasFlag(desc.usage, GfxTextureUsage::Sampled);
 
 		D3D12_RESOURCE_DESC resourceDesc = {};
 
 		resourceDesc.Dimension = Helpers::ToResourceDimension(desc.type);
 		resourceDesc.Width = desc.width;
 		resourceDesc.Height = desc.height;
-		resourceDesc.DepthOrArraySize = desc.type == GfxTextureType::Tex3D ? u16(desc.depth) : u16(desc.arraySize);
 		resourceDesc.MipLevels = u16(desc.mipLevels);
-		resourceDesc.Format = (isDepth && isSampled) ? Helpers::ToTypelessFormat(viewFormat) : viewFormat;
 		resourceDesc.SampleDesc = { Helpers::ToSampleCount(desc.sampleCount), 0 };
 		resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 		resourceDesc.Flags = Helpers::ToResourceFlags(desc.usage);
 
-		D3D12_CLEAR_VALUE clear = {};
-
-		clear.Format = viewFormat;
-
-		if (isDepth)
-		{
-			clear.DepthStencil = { desc.clearDepth, desc.clearStencil };
-		}
+		if (desc.type == GfxTextureType::Tex3D)
+			resourceDesc.DepthOrArraySize = u16(desc.depth);
 		else
+			resourceDesc.DepthOrArraySize = u16(desc.isCube ? desc.arraySize * 6 : desc.arraySize);
+
+		resourceDesc.Format = bIsDepth && bSampled
+			? Helpers::ToTypelessFormat(pTexture->m_format) : pTexture->m_format;
+
+		D3D12_CLEAR_VALUE clearValue = {};
+
+		clearValue.Format = pTexture->m_format;
+
+		if (bIsDepth)
 		{
-			clear.Color[0] = desc.clearColor.r;
-			clear.Color[1] = desc.clearColor.g;
-			clear.Color[2] = desc.clearColor.b;
-			clear.Color[3] = desc.clearColor.a;
+			clearValue.DepthStencil.Depth = 1.0f;
+			clearValue.DepthStencil.Stencil = 0;
 		}
 
-		const b8 wantsClear = HasFlag(desc.usage, GfxTextureUsage::RenderTarget)
+		const b8 bHasClear = HasFlag(desc.usage, GfxTextureUsage::RenderTarget)
 			|| HasFlag(desc.usage, GfxTextureUsage::DepthStencil);
+
+		D3D12_RESOURCE_STATES initialState = bIsDepth
+			? D3D12_RESOURCE_STATE_DEPTH_WRITE : D3D12_RESOURCE_STATE_COMMON;
 
 		D3D12MA::ALLOCATION_DESC allocDesc = {};
 
 		allocDesc.HeapType = D3D12_HEAP_TYPE_DEFAULT;
 
-		auto* pTex = Memory::Allocator::Create<D3D12Texture>(Memory::CurrLoc());
-
-		pTex->m_ownerDevice = this;
-
-		HRESULT hr = m_allocator->CreateResource(&allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON,
-			wantsClear ? &clear : nullptr, &pTex->m_allocation, IID_PPV_ARGS(&pTex->m_resource));
+		HRESULT hr = m_allocator->CreateResource(&allocDesc, &resourceDesc, initialState,
+			bHasClear ? &clearValue : nullptr, &pTexture->m_allocation, IID_PPV_ARGS(&pTexture->m_resource));
 		CHECK_REASON(hr, "ID3D12Resource - CreateResource (Texture)");
 
 		if (FAILED(hr))
 		{
-			Memory::Allocator::Delete(pTex);
+			Memory::Allocator::Delete(pTexture);
 			return nullptr;
 		}
 
-		pTex->m_desc = desc;
-		pTex->m_state = GfxResourceState::Common;
-		pTex->m_dxgiFormat = viewFormat;
-
-		if (isSampled)
-			CreateTextureSRV(pTex);
-
-		if (HasFlag(desc.usage, GfxTextureUsage::Storage))
-			CreateTextureUAV(pTex);
-
-		if (HasFlag(desc.usage, GfxTextureUsage::RenderTarget))
-			CreateTextureRTV(pTex);
-
-		if (HasFlag(desc.usage, GfxTextureUsage::DepthStencil))
-			CreateTextureDSV(pTex);
-
-		return pTex;
+		return pTexture;
 	}
 
 	GfxBuffer* D3D12Device::CreateBuffer(const GfxBufferDesc& desc)
 	{
-		usize size = desc.size;
+		auto* pBuffer = Memory::Allocator::Create<D3D12Buffer>(Memory::CurrLoc());
 
-		if (HasFlag(desc.usage, GfxBufferUsage::Constant))
-			size = (size + 255) & ~usize(255);
+		pBuffer->m_ownerDevice = this;
+		pBuffer->m_desc = desc;
 
 		D3D12_RESOURCE_DESC resourceDesc = {};
 
 		resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		resourceDesc.Width = size;
+		resourceDesc.Width = desc.size;
 		resourceDesc.Height = 1;
 		resourceDesc.DepthOrArraySize = 1;
 		resourceDesc.MipLevels = 1;
@@ -268,106 +338,133 @@ namespace Horizon
 		resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		resourceDesc.Flags = Helpers::ToResourceFlags(desc.usage);
 
+		D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
+
+		if (desc.memory == GfxMemoryType::Upload)
+			initialState = D3D12_RESOURCE_STATE_GENERIC_READ;
+
+		if (desc.memory == GfxMemoryType::Readback)
+			initialState = D3D12_RESOURCE_STATE_COPY_DEST;
+
 		D3D12MA::ALLOCATION_DESC allocDesc = {};
 
 		allocDesc.HeapType = Helpers::ToHeapType(desc.memory);
 
-		const D3D12_RESOURCE_STATES initialState =
-			desc.memory == GfxMemoryType::Upload ? D3D12_RESOURCE_STATE_GENERIC_READ :
-			desc.memory == GfxMemoryType::Readback ? D3D12_RESOURCE_STATE_COPY_DEST :
-			D3D12_RESOURCE_STATE_COMMON;
-
-		auto* pBuf = Memory::Allocator::Create<D3D12Buffer>(Memory::CurrLoc());
-
-		pBuf->m_ownerDevice = this;
-
 		HRESULT hr = m_allocator->CreateResource(&allocDesc, &resourceDesc, initialState, nullptr,
-			&pBuf->m_allocation, IID_PPV_ARGS(&pBuf->m_resource));
+			&pBuffer->m_allocation, IID_PPV_ARGS(&pBuffer->m_resource));
 		CHECK_REASON(hr, "ID3D12Resource - CreateResource (Buffer)");
 
 		if (FAILED(hr))
 		{
-			Memory::Allocator::Delete(pBuf);
+			Memory::Allocator::Delete(pBuffer);
 			return nullptr;
 		}
 
-		pBuf->m_desc = desc;
-		pBuf->m_gpuAddress = pBuf->m_resource->GetGPUVirtualAddress();
+		pBuffer->m_deviceAddress = pBuffer->m_resource->GetGPUVirtualAddress();
 
-		if (desc.memory != GfxMemoryType::GpuOnly)
-		{
-			D3D12_RANGE noRead = { 0, 0 };
-
-			pBuf->m_resource->Map(0, &noRead, &pBuf->m_mapped);
-		}
-
-		const b8 shaderRead = HasFlag(desc.usage, GfxBufferUsage::Vertex)
-			|| HasFlag(desc.usage, GfxBufferUsage::Index)
-			|| HasFlag(desc.usage, GfxBufferUsage::Storage);
-
-		if (shaderRead && desc.memory == GfxMemoryType::GpuOnly)
-			CreateBufferSRV(pBuf);
-
-		if (HasFlag(desc.usage, GfxBufferUsage::Storage))
-			CreateBufferUAV(pBuf);
-
-		return pBuf;
+		return pBuffer;
 	}
 
-	GfxSampler* D3D12Device::CreateSampler(const GfxSamplerDesc& desc)
+	GfxBufferArena* D3D12Device::CreateBufferArena(const GfxBufferArenaDesc& desc)
 	{
-		const u32 index = m_samplerHeap->Allocate();
+		GfxBufferDesc bufferDesc = {};
 
-		if (index == kInvalid32)
+		bufferDesc.usage = desc.usage;
+		bufferDesc.memory = desc.memory;
+		bufferDesc.size = desc.capacity;
+
+		GfxBuffer* pBuffer = CreateBuffer(bufferDesc);
+
+		if (!pBuffer)
 		{
-			Terminal::Error("D3D12Device", "Sampler heap is exhausted");
+			Terminal::Error(StringOps::GetName(this), "Arena backing buffer of {} bytes could not be created", desc.capacity);
 			return nullptr;
 		}
 
-		D3D12_SAMPLER_DESC samplerDesc = {};
+		auto* pArena = Memory::Allocator::Create<D3D12BufferArena>(Memory::CurrLoc());
 
-		samplerDesc.Filter = Helpers::ToFilter(desc.minFilter, desc.magFilter, desc.mipFilter,
-			desc.anisotropyEnable, desc.compareEnable);
-		samplerDesc.AddressU = Helpers::ToAddressMode(desc.addressU);
-		samplerDesc.AddressV = Helpers::ToAddressMode(desc.addressV);
-		samplerDesc.AddressW = Helpers::ToAddressMode(desc.addressW);
-		samplerDesc.MipLODBias = desc.mipLodBias;
-		samplerDesc.MaxAnisotropy = desc.anisotropyEnable ? desc.maxAnisotropy : 1;
-		samplerDesc.ComparisonFunc = Helpers::ToCompare(desc.compareOp);
-		samplerDesc.MinLOD = desc.minLod;
-		samplerDesc.MaxLOD = desc.maxLod;
+		pArena->m_ownerDevice = this;
+		pArena->m_desc = desc;
+		pArena->m_buffer = pBuffer;
 
-		switch (desc.borderColor)
+		D3D12MA::VIRTUAL_BLOCK_DESC blockDesc = {};
+
+		blockDesc.Size = desc.capacity;
+
+		HRESULT hr = D3D12MA::CreateVirtualBlock(&blockDesc, &pArena->m_block);
+		CHECK_HR(hr, "D3D12MA::VirtualBlock - CreateVirtualBlock");
+
+		return pArena;
+	}
+
+	GfxUploadRing* D3D12Device::CreateUploadRing(const GfxUploadRingDesc& desc)
+	{
+		GfxBufferDesc bufferDesc = {};
+
+		bufferDesc.usage = GfxBufferUsage::TransferSrc;
+		bufferDesc.memory = GfxMemoryType::Upload;
+		bufferDesc.size = desc.capacity;
+
+		GfxBuffer* pBuffer = CreateBuffer(bufferDesc);
+
+		if (!pBuffer)
 		{
-		case GfxBorderColor::TransparentBlack:
-			samplerDesc.BorderColor[0] = 0.0f;
-			samplerDesc.BorderColor[1] = 0.0f;
-			samplerDesc.BorderColor[2] = 0.0f;
-			samplerDesc.BorderColor[3] = 0.0f;
-			break;
-		case GfxBorderColor::OpaqueBlack:
-			samplerDesc.BorderColor[0] = 0.0f;
-			samplerDesc.BorderColor[1] = 0.0f;
-			samplerDesc.BorderColor[2] = 0.0f;
-			samplerDesc.BorderColor[3] = 1.0f;
-			break;
-		case GfxBorderColor::OpaqueWhite:
-			samplerDesc.BorderColor[0] = 1.0f;
-			samplerDesc.BorderColor[1] = 1.0f;
-			samplerDesc.BorderColor[2] = 1.0f;
-			samplerDesc.BorderColor[3] = 1.0f;
-			break;
+			Terminal::Error(StringOps::GetName(this), "Upload ring buffer of {} bytes could not be created", desc.capacity);
+			return nullptr;
 		}
 
-		m_device->CreateSampler(&samplerDesc, m_samplerHeap->CpuAt(index));
+		auto* pRing = Memory::Allocator::Create<D3D12UploadRing>(Memory::CurrLoc());
 
-		auto* pSampler = Memory::Allocator::Create<D3D12Sampler>(Memory::CurrLoc());
+		pRing->m_ownerDevice = this;
+		pRing->m_desc = desc;
+		pRing->m_buffer = pBuffer;
+		pRing->m_mapped = static_cast<u8*>(pBuffer->Map());
 
-		pSampler->m_ownerDevice = this;
-		pSampler->m_desc = desc;
-		pSampler->m_heapIndex = index;
+		if (!pRing->m_mapped)
+		{
+			Memory::Allocator::Delete(pRing);
+			return nullptr;
+		}
 
-		return pSampler;
+		return pRing;
+	}
+
+	GfxShader* D3D12Device::CreateShader(const GfxShaderDesc& desc)
+	{
+		if (!desc.pByteCode || desc.byteCodeSize == 0)
+		{
+			Terminal::Error(StringOps::GetName(this), "Shader stage {} was given empty bytecode", u32(desc.stage));
+			return nullptr;
+		}
+
+		auto* pShader = Memory::Allocator::Create<D3D12Shader>(Memory::CurrLoc());
+
+		pShader->m_ownerDevice = this;
+		pShader->m_stage = desc.stage;
+		pShader->m_byteCodeSize = desc.byteCodeSize;
+
+		pShader->m_byteCode.Resize(desc.byteCodeSize);
+		memcpy(pShader->m_byteCode.GetData(), desc.pByteCode, desc.byteCodeSize);
+
+		return pShader;
+	}
+
+	GfxCommandList* D3D12Device::CreateCommandList(GfxQueueType type)
+	{
+		auto* pCmd = Memory::Allocator::Create<D3D12CommandList>(Memory::CurrLoc());
+
+		pCmd->m_ownerDevice = this;
+		pCmd->m_device = this;
+		pCmd->m_queueType = type;
+		pCmd->m_type = Helpers::ToCommandListType(type);
+
+		HRESULT hr = m_device->CreateCommandAllocator(pCmd->m_type, IID_PPV_ARGS(&pCmd->m_allocator));
+		CHECK_HR(hr, "ID3D12CommandAllocator - CreateCommandAllocator");
+
+		hr = m_device->CreateCommandList1(0, pCmd->m_type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&pCmd->m_list));
+		CHECK_HR(hr, "ID3D12GraphicsCommandList6 - CreateCommandList1");
+
+		return pCmd;
 	}
 
 	GfxQueue* D3D12Device::CreateQueue(GfxQueueType type)
@@ -379,10 +476,14 @@ namespace Horizon
 
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {};
 
-		queueDesc.Type = Helpers::ToListType(type);
+		queueDesc.Type = Helpers::ToCommandListType(type);
+		queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
 		HRESULT hr = m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&pQueue->m_queue));
-		CHECK_REASON(hr, "ID3D12CommandQueue - CreateCommandQueue");
+		CHECK_HR(hr, "ID3D12CommandQueue - CreateCommandQueue");
+
+		m_queues.PushBack(pQueue);
 
 		return pQueue;
 	}
@@ -394,351 +495,30 @@ namespace Horizon
 		pFence->m_ownerDevice = this;
 
 		HRESULT hr = m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence->m_fence));
-		CHECK_REASON(hr, "ID3D12Fence - CreateFence");
+		CHECK_HR(hr, "ID3D12Fence - CreateFence");
 
 		return pFence;
 	}
 
-	GfxCommandList* D3D12Device::CreateCommandList(GfxQueueType type)
+	void D3D12Device::ForgetQueue(D3D12Queue* pQueue)
 	{
-		auto* pCmd = Memory::Allocator::Create<D3D12CommandList>(Memory::CurrLoc());
-
-		pCmd->m_ownerDevice = this;
-		pCmd->m_device = this;
-		pCmd->m_queueType = type;
-		pCmd->m_type = Helpers::ToListType(type);
-
-		m_device->CreateCommandAllocator(pCmd->m_type, IID_PPV_ARGS(&pCmd->m_allocator));
-		m_device->CreateCommandList1(0, pCmd->m_type, D3D12_COMMAND_LIST_FLAG_NONE, IID_PPV_ARGS(&pCmd->m_list));
-
-		return pCmd;
+		m_queues.Remove(pQueue);
 	}
 
-	GfxSwapchain* D3D12Device::CreateSwapchain(const GfxSwapchainDesc& desc, GfxQueue* pPresentQueue)
+	void D3D12Device::WaitIdle()
 	{
-		auto* pSwapchain = Memory::Allocator::Create<D3D12Swapchain>(Memory::CurrLoc());
+		if (!m_idleFence)
+			return;
 
-		pSwapchain->m_ownerDevice = this;
-		pSwapchain->m_device = this;
-		pSwapchain->m_desc = desc;
-		pSwapchain->m_imageFences = List<u64>(desc.imageCount, 0);	
-
-		BOOL allowTearing = FALSE;
-
-		if (SUCCEEDED(m_factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING,
-			&allowTearing, sizeof(allowTearing))))
+		for (D3D12Queue* pQueue : m_queues)
 		{
-			pSwapchain->m_allowTearing = desc.bAllowTearing && allowTearing == TRUE;
+			const u64 value = ++m_idleValue;
+
+			pQueue->Handle()->Signal(m_idleFence, value);
+
+			if (m_idleFence->GetCompletedValue() < value)
+				m_idleFence->SetEventOnCompletion(value, nullptr);
 		}
-
-		DXGI_SWAP_CHAIN_DESC1 swapchainDesc = {};
-
-		swapchainDesc.Width = desc.width;
-		swapchainDesc.Height = desc.height;
-		swapchainDesc.Format = Helpers::ToDXGIFormat(desc.format);
-		swapchainDesc.SampleDesc = { 1, 0 };
-		swapchainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-		swapchainDesc.BufferCount = desc.imageCount;
-		swapchainDesc.Scaling = DXGI_SCALING_STRETCH;
-		swapchainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-		swapchainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-		swapchainDesc.Flags = pSwapchain->m_allowTearing ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-
-		ID3D12CommandQueue* pCommandQueue = static_cast<D3D12Queue*>(pPresentQueue)->Handle();
-
-		IDXGISwapChain1* pSwapchain1 = nullptr;
-
-		HRESULT hr = m_factory->CreateSwapChainForHwnd(pCommandQueue, (HWND)desc.pWindowHandle,
-			&swapchainDesc, nullptr, nullptr, &pSwapchain1);
-		CHECK_HR(hr, "IDXGISwapChain1 - CreateSwapChainForHwnd");
-
-		hr = pSwapchain1->QueryInterface(IID_PPV_ARGS(&pSwapchain->m_swapchain));
-		CHECK_HR(hr, "IDXGISwapChain4 - QueryInterface");
-		pSwapchain1->Release();
-
-		pSwapchain->AcquireBackbuffers();
-
-		return pSwapchain;
-	}
-
-	GfxDescriptorHeap* D3D12Device::GetDescriptorHeap(GfxDescriptorHeapType type)
-	{
-		switch (type)
-		{
-		case GfxDescriptorHeapType::Resource: return m_resourceHeap;
-		case GfxDescriptorHeapType::Sampler: return m_samplerHeap;
-		case GfxDescriptorHeapType::Color: return m_colorHeap;
-		case GfxDescriptorHeapType::Depth: return m_depthHeap;
-		}
-
-		Terminal::Error("D3D12Device", "Unknown descriptor heap type {}", u32(type));
-		return nullptr;
-	}
-
-	GfxAdapterInfo D3D12Device::GetAdapterInfo() const
-	{
-		DXGI_ADAPTER_DESC3 adapterDesc = {};
-
-		m_adapter->GetDesc3(&adapterDesc);
-
-		GfxAdapterInfo info = {};
-
-		info.dedicatedVideoMemory = adapterDesc.DedicatedVideoMemory;
-		info.sharedSystemMemory = adapterDesc.SharedSystemMemory;
-		info.vendorId = adapterDesc.VendorId;
-		info.deviceId = adapterDesc.DeviceId;
-
-		for (u32 i = 0; i < 127 && adapterDesc.Description[i] != 0; i++)
-			info.name[i] = char(adapterDesc.Description[i]);
-
-		return info;
-	}
-
-	GfxMemoryStats D3D12Device::QueryMemoryStats()
-	{
-		DXGI_QUERY_VIDEO_MEMORY_INFO memoryInfo = {};
-
-		m_adapter->QueryVideoMemoryInfo(0, DXGI_MEMORY_SEGMENT_GROUP_LOCAL, &memoryInfo);
-
-		GfxMemoryStats stats = {};
-
-		stats.budget = memoryInfo.Budget;
-		stats.usage = memoryInfo.CurrentUsage;
-		return stats;
-	}
-
-	D3D12Texture* D3D12Device::CreateBackbufferTexture(ID3D12Resource* pResource, u32 width, u32 height, DXGI_FORMAT format)
-	{
-		auto* pTexture = Memory::Allocator::Create<D3D12Texture>(Memory::CurrLoc());
-
-		pTexture->m_ownerDevice = this;
-		pTexture->m_resource = pResource;
-		pTexture->m_dxgiFormat = format;
-		pTexture->m_state = GfxResourceState::Present;
-		pTexture->m_isBackbuffer = true;
-		pTexture->m_desc.width = width;
-		pTexture->m_desc.height = height;
-		pTexture->m_desc.usage = GfxTextureUsage::RenderTarget;
-
-		CreateTextureRTV(pTexture);
-
-		return pTexture;
-	}
-
-	void D3D12Device::DestroyBackbufferTexture(D3D12Texture* pTexture)
-	{
-		Memory::Allocator::Delete(pTexture);
-	}
-
-	D3D12DescriptorHeap* D3D12Device::CreateDescriptorHeap(GfxDescriptorHeapType type, u32 capacity, b8 shaderVisible)
-	{
-		auto* pHeap = Memory::Allocator::Create<D3D12DescriptorHeap>(Memory::CurrLoc());
-
-		pHeap->m_ownerDevice = this;
-		pHeap->m_desc = { type, capacity, shaderVisible };
-
-		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-
-		heapDesc.Type = Helpers::ToDescriptorHeapType(type);
-		heapDesc.NumDescriptors = capacity;
-		heapDesc.Flags = shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
-			: D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-		HRESULT hr = m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&pHeap->m_heap));
-		CHECK_HR(hr, "ID3D12DescriptorHeap - CreateDescriptorHeap");
-
-		pHeap->m_descriptorSize = m_device->GetDescriptorHandleIncrementSize(heapDesc.Type);
-		pHeap->m_cpuStart = pHeap->m_heap->GetCPUDescriptorHandleForHeapStart();
-		pHeap->m_gpuStart = shaderVisible ? pHeap->m_heap->GetGPUDescriptorHandleForHeapStart()
-			: D3D12_GPU_DESCRIPTOR_HANDLE{};
-
-		return pHeap;
-	}
-
-	void D3D12Device::CreateTextureSRV(D3D12Texture* pTex)
-	{
-		const u32 index = m_resourceHeap->Allocate();
-		const b8 isArray = HasFlag(pTex->m_desc.typeFlags, GfxTextureTypeFlags::Array);
-		const b8 isCube = HasFlag(pTex->m_desc.typeFlags, GfxTextureTypeFlags::Cube);
-
-		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
-
-		viewDesc.Format = Helpers::ToDepthSRVFormat(pTex->m_dxgiFormat);
-		viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
-		switch (pTex->m_desc.type)
-		{
-		case GfxTextureType::Tex1D:
-			if (isArray)
-			{
-				viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
-				viewDesc.Texture1DArray.MipLevels = pTex->m_desc.mipLevels;
-				viewDesc.Texture1DArray.ArraySize = pTex->m_desc.arraySize;
-			}
-			else
-			{
-				viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
-				viewDesc.Texture1D.MipLevels = pTex->m_desc.mipLevels;
-			}
-			break;
-		case GfxTextureType::Tex2D:
-			if (isCube && pTex->m_desc.arraySize > 6)
-			{
-				viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
-				viewDesc.TextureCubeArray.MipLevels = pTex->m_desc.mipLevels;
-				viewDesc.TextureCubeArray.NumCubes = pTex->m_desc.arraySize / 6;
-			}
-			else if (isCube)
-			{
-				viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-				viewDesc.TextureCube.MipLevels = pTex->m_desc.mipLevels;
-			}
-			else if (isArray)
-			{
-				viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-				viewDesc.Texture2DArray.MipLevels = pTex->m_desc.mipLevels;
-				viewDesc.Texture2DArray.ArraySize = pTex->m_desc.arraySize;
-			}
-			else
-			{
-				viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-				viewDesc.Texture2D.MipLevels = pTex->m_desc.mipLevels;
-			}
-			break;
-		case GfxTextureType::Tex3D:
-			viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
-			viewDesc.Texture3D.MipLevels = pTex->m_desc.mipLevels;
-			break;
-		}
-
-		m_device->CreateShaderResourceView(pTex->m_resource, &viewDesc, m_resourceHeap->CpuAt(index));
-
-		pTex->m_shaderView = index;
-	}
-
-	void D3D12Device::CreateTextureUAV(D3D12Texture* pTex)
-	{
-		const u32 index = m_resourceHeap->Allocate();
-		const b8 isArray = HasFlag(pTex->m_desc.typeFlags, GfxTextureTypeFlags::Array)
-			|| HasFlag(pTex->m_desc.typeFlags, GfxTextureTypeFlags::Cube);
-
-		D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc = {};
-
-		viewDesc.Format = pTex->m_dxgiFormat;
-
-		switch (pTex->m_desc.type)
-		{
-		case GfxTextureType::Tex1D:
-			viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
-			break;
-		case GfxTextureType::Tex2D:
-			if (isArray)
-			{
-				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
-				viewDesc.Texture2DArray.ArraySize = pTex->m_desc.arraySize;
-			}
-			else
-			{
-				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-			}
-			break;
-		case GfxTextureType::Tex3D:
-			viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
-			viewDesc.Texture3D.WSize = pTex->m_desc.depth;
-			break;
-		}
-
-		m_device->CreateUnorderedAccessView(pTex->m_resource, nullptr, &viewDesc, m_resourceHeap->CpuAt(index));
-
-		pTex->m_accessView = index;
-	}
-
-	void D3D12Device::CreateTextureRTV(D3D12Texture* pTex)
-	{
-		const u32 index = m_colorHeap->Allocate();
-
-		m_device->CreateRenderTargetView(pTex->m_resource, nullptr, m_colorHeap->CpuAt(index));
-
-		pTex->m_targetViewIndex = index;
-		pTex->m_rtvHandle = m_colorHeap->CpuAt(index);
-	}
-
-	void D3D12Device::CreateTextureDSV(D3D12Texture* pTex)
-	{
-		const u32 index = m_depthHeap->Allocate();
-		const b8 isArray = HasFlag(pTex->m_desc.typeFlags, GfxTextureTypeFlags::Array);
-
-		D3D12_DEPTH_STENCIL_VIEW_DESC viewDesc = {};
-
-		viewDesc.Format = pTex->m_dxgiFormat;
-
-		if (isArray)
-		{
-			viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-			viewDesc.Texture2DArray.ArraySize = pTex->m_desc.arraySize;
-		}
-		else
-		{
-			viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-		}
-
-		m_device->CreateDepthStencilView(pTex->m_resource, &viewDesc, m_depthHeap->CpuAt(index));
-
-		pTex->m_depthViewIndex = index;
-		pTex->m_dsvHandle = m_depthHeap->CpuAt(index);
-	}
-
-	void D3D12Device::CreateBufferSRV(D3D12Buffer* pBuf)
-	{
-		const u32 index = m_resourceHeap->Allocate();
-
-		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc = {};
-
-		viewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-		viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
-		if (pBuf->m_desc.stride > 0)
-		{
-			viewDesc.Format = DXGI_FORMAT_UNKNOWN;
-			viewDesc.Buffer.NumElements = u32(pBuf->m_desc.size / pBuf->m_desc.stride);
-			viewDesc.Buffer.StructureByteStride = pBuf->m_desc.stride;
-		}
-		else
-		{
-			viewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-			viewDesc.Buffer.NumElements = u32(pBuf->m_desc.size / 4);
-			viewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
-		}
-
-		m_device->CreateShaderResourceView(pBuf->m_resource, &viewDesc, m_resourceHeap->CpuAt(index));
-
-		pBuf->m_shaderView = index;
-	}
-
-	void D3D12Device::CreateBufferUAV(D3D12Buffer* pBuf)
-	{
-		const u32 index = m_resourceHeap->Allocate();
-
-		D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc = {};
-
-		viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-
-		if (pBuf->m_desc.stride > 0)
-		{
-			viewDesc.Format = DXGI_FORMAT_UNKNOWN;
-			viewDesc.Buffer.NumElements = u32(pBuf->m_desc.size / pBuf->m_desc.stride);
-			viewDesc.Buffer.StructureByteStride = pBuf->m_desc.stride;
-		}
-		else
-		{
-			viewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-			viewDesc.Buffer.NumElements = u32(pBuf->m_desc.size / 4);
-			viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-		}
-
-		m_device->CreateUnorderedAccessView(pBuf->m_resource, nullptr, &viewDesc, m_resourceHeap->CpuAt(index));
-
-		pBuf->m_accessView = index;
 	}
 
 	void D3D12Device::CreateRootSignature()
@@ -800,8 +580,7 @@ namespace Horizon
 		vdesc.Desc_1_1.pParameters = params;
 		vdesc.Desc_1_1.NumStaticSamplers = _countof(samplers);
 		vdesc.Desc_1_1.pStaticSamplers = samplers;
-		vdesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED
-			| D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
+		vdesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED;
 
 		ID3DBlob* pBlob = nullptr;
 		ID3DBlob* pError = nullptr;
@@ -814,36 +593,38 @@ namespace Horizon
 		CHECK_HR(hr, "ID3D12RootSignature - CreateRootSignature");
 
 		pBlob->Release();
+
+		if (pError)
+			pError->Release();
 	}
 
 	void D3D12Device::CreateCommandSignatures()
 	{
-		D3D12_INDIRECT_ARGUMENT_DESC arg = {};
-		D3D12_COMMAND_SIGNATURE_DESC sigDesc = {};
+		D3D12_INDIRECT_ARGUMENT_DESC argument = {};
+		D3D12_COMMAND_SIGNATURE_DESC signatureDesc = {};
 
-		sigDesc.NumArgumentDescs = 1;
-		sigDesc.pArgumentDescs = &arg;
+		signatureDesc.NumArgumentDescs = 1;
+		signatureDesc.pArgumentDescs = &argument;
 
-		arg.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
-		sigDesc.ByteStride = sizeof(D3D12_DRAW_ARGUMENTS);
+		argument.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW;
+		signatureDesc.ByteStride = sizeof(D3D12_DRAW_ARGUMENTS);
 
-		HRESULT hr = m_device->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&m_drawSignature));
+		HRESULT hr = m_device->CreateCommandSignature(&signatureDesc, nullptr, IID_PPV_ARGS(&m_drawSignature));
 		CHECK_HR(hr, "ID3D12CommandSignature - CreateCommandSignature (Draw)");
 
-		arg.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
-		sigDesc.ByteStride = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
+		argument.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED;
+		signatureDesc.ByteStride = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
 
-		hr = m_device->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&m_drawIndexedSignature));
+		hr = m_device->CreateCommandSignature(&signatureDesc, nullptr, IID_PPV_ARGS(&m_drawIndexedSignature));
 		CHECK_HR(hr, "ID3D12CommandSignature - CreateCommandSignature (DrawIndexed)");
 
-		arg.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
-		sigDesc.ByteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
+		argument.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+		signatureDesc.ByteStride = sizeof(D3D12_DISPATCH_ARGUMENTS);
 
-		hr = m_device->CreateCommandSignature(&sigDesc, nullptr, IID_PPV_ARGS(&m_dispatchSignature));
+		hr = m_device->CreateCommandSignature(&signatureDesc, nullptr, IID_PPV_ARGS(&m_dispatchSignature));
 		CHECK_HR(hr, "ID3D12CommandSignature - CreateCommandSignature (Dispatch)");
 	}
 
-#if defined(HORIZON_DEBUG)
 	void D3D12Device::CreateTerminalLog()
 	{
 		if (FAILED(m_device->QueryInterface(IID_PPV_ARGS(&m_infoQueue))))
@@ -857,5 +638,4 @@ namespace Horizon
 
 		m_infoQueue->RegisterMessageCallback(cb, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &m_callbackCookie);
 	}
-#endif
 }

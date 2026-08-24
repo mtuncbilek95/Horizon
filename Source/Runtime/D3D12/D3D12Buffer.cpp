@@ -1,37 +1,52 @@
 #include "D3D12Buffer.h"
 
-#include <Runtime/RHI/Descriptor/GfxDescriptorHeap.h>
-#include <Runtime/RHI/Device/GfxDevice.h>
+#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Log/Terminal.h>
 
-namespace Horizon
+namespace Horizon::RHI
 {
 	D3D12Buffer::~D3D12Buffer()
 	{
-		GfxDescriptorHeap* pResourceHeap = m_ownerDevice->GetDescriptorHeap(GfxDescriptorHeapType::Resource);
-
-		pResourceHeap->Free(m_shaderView);
-		pResourceHeap->Free(m_accessView);
-
 		if (m_mapped)
-			m_resource->Unmap(0, nullptr);
-
-		if (m_allocation)
-			m_allocation->Release();
+			Unmap();
 
 		if (m_resource)
 			m_resource->Release();
+
+		if (m_allocation)
+			m_allocation->Release();
 	}
 
-	void D3D12Buffer::SetDebugName(const char* pName)
+	void* D3D12Buffer::Map()
 	{
-		if (!m_resource)
+		if (m_mapped)
+			return m_mapped;
+
+		if (m_desc.memory == GfxMemoryType::GpuOnly)
+		{
+			Terminal::Error(StringOps::GetName(this), "GpuOnly buffer cannot be mapped");
+			return nullptr;
+		}
+
+		const D3D12_RANGE readRange = { 0, m_desc.memory == GfxMemoryType::Readback ? m_desc.size : 0 };
+
+		HRESULT hr = m_resource->Map(0, &readRange, &m_mapped);
+		CHECK_REASON(hr, "ID3D12Resource - Map");
+
+		if (FAILED(hr))
+			return nullptr;
+
+		return m_mapped;
+	}
+
+	void D3D12Buffer::Unmap()
+	{
+		if (!m_mapped)
 			return;
 
-		wchar_t wide[128] = {};
+		const D3D12_RANGE writeRange = { 0, m_desc.memory == GfxMemoryType::Readback ? 0 : m_desc.size };
 
-		for (u32 i = 0; i < 127 && pName[i] != 0; i++)
-			wide[i] = wchar_t(pName[i]);
-
-		m_resource->SetName(wide);
+		m_resource->Unmap(0, &writeRange);
+		m_mapped = nullptr;
 	}
 }

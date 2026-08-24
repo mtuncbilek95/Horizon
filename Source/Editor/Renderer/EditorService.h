@@ -3,7 +3,7 @@
 #include <Engine/Core/Service.h>
 #include <Runtime/PAL/Window/Window.h>
 
-namespace Horizon
+namespace Horizon::RHI
 {
 	class GfxFence;
 	class GfxQueue;
@@ -37,8 +37,8 @@ namespace Horizon::Editor
 		MenuRegistry* m_menuRegistry = nullptr;
 
 		// The ones below are most probably temporary
-		GfxFence* m_fence = nullptr;
-		GfxQueue* m_queue = nullptr;
-		GfxSwapchain* m_swapchain = nullptr;
+		RHI::GfxFence* m_fence = nullptr;
+		RHI::GfxQueue* m_queue = nullptr;
+		RHI::GfxSwapchain* m_swapchain = nullptr;
 	};
 }

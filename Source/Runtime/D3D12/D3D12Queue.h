@@ -1,9 +1,9 @@
 #pragma once
 
 #include <Runtime/RHI/Queue/GfxQueue.h>
-#include <Runtime/D3D12/Utils/D3D12Helpers.h>
+#include <Runtime/D3D12/D3D12Helpers.h>
 
-namespace Horizon
+namespace Horizon::RHI
 {
 	class D3D12Queue final : public GfxQueue
 	{
