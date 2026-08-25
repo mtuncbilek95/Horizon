@@ -166,6 +166,7 @@ def parse_file(path: Path, source_root: Path):
 
             member = nm.group(1)
             display = member[2:] if member.startswith('m_') else member
+            display = display[:1].upper() + display[1:]
             fields.append((display, member, parse_attributes(f_content)))
 
         rel = path.relative_to(source_root).as_posix()

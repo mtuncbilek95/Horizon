@@ -18,13 +18,13 @@ namespace Horizon::Editor
 		m_menus.Clear();
 	}
 
-	void MenuRegistry::BootstrapMenus(Engine::Engine* pEngine)
+	void MenuRegistry::BootstrapMenus(const EditorContext& ctx)
 	{
 		for (auto& inst : m_menus)
 			ClearRecursive(inst);
 		m_menus.Clear();
 
-		auto* pReflect = pEngine->GetReflectionSystem();
+		auto* pReflect = ctx.pEngine->GetReflectionSystem();
 
 		List<Reflect::Type*> mainList = pReflect->GetTypeByAttribute(Reflect::TypeOf<MainMenuItemAttribute>());
 
@@ -62,7 +62,7 @@ namespace Horizon::Editor
 				if (isLeaf)
 				{
 					auto* menuObj = static_cast<MenuItem*>(type->CreateFromMemory());
-					menuObj->m_engine = pEngine;
+					menuObj->m_engine = ctx.pEngine;
 
 					MenuItemInstance leaf;
 					leaf.displayName = std::move(segment);

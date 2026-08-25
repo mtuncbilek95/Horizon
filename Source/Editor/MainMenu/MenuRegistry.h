@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Editor/MainMenu/MenuItemInstance.h>
+#include <Editor/Renderer/EditorContext.h>
 
 namespace Horizon::Engine
 {
@@ -15,7 +16,7 @@ namespace Horizon::Editor
 		MenuRegistry() = default;
 		~MenuRegistry();
 
-		void BootstrapMenus(Engine::Engine* pEngine);
+		void BootstrapMenus(const EditorContext& ctx);
 		void RenderGUI();
 
 	private:

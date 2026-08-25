@@ -7,7 +7,7 @@
 
 namespace Horizon::Engine
 {
-	HCLASS(ComponentType["Transform", true]);
+	HCLASS(ComponentType["Transform Component", "Location", true]);
 	class H_EXPORT TransformComponent : public ComponentObject 
 	{
 		HORIZON_TYPE_REFLECT(TransformComponent);

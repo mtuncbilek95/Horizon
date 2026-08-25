@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Editor/Renderer/EditorContext.h>
 #include <Editor/Views/ViewDescriptor.h>
 #include <Editor/Views/ViewObject.h>
 
@@ -10,10 +11,10 @@ namespace Horizon::Editor
 	class H_EXPORT ViewRegistry
 	{
 	public:
-		ViewRegistry(Engine::Engine* pEngine);
+		ViewRegistry();
 		~ViewRegistry();
 
-		void BootstrapViews();
+		void BootstrapViews(const EditorContext& ctx);
 		void RenderGUI();
 
 		template<typename T>
@@ -28,7 +29,7 @@ namespace Horizon::Editor
 		void BuildDefaultLayout(u32 rootId);
 
 	private:
-		Engine::Engine* m_engine = nullptr;
+		EditorContext m_context;
 
 		List<ViewDescriptor> m_registeredViews;
 		List<ViewObject*> m_createdViews;

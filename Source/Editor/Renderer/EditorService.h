@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Editor/Models/SelectionModel.h>
 #include <Engine/Core/Service.h>
 #include <Runtime/PAL/Window/Window.h>
 
@@ -42,5 +43,7 @@ namespace Horizon::Editor
 		RHI::GfxFence* m_fence = nullptr;
 		RHI::GfxQueue* m_queue = nullptr;
 		RHI::GfxSwapchain* m_swapchain = nullptr;
+
+		SelectionModel m_selection;
 	};
 }

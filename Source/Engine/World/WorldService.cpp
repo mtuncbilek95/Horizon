@@ -7,6 +7,7 @@
 
 // TODO: Remove this later
 #include <Engine/World/Components/TransformComponent.h>
+#include <Engine/World/Components/NameComponent.h>
 
 #include <Runtime/Containers/ScopedLock.h>
 
@@ -26,6 +27,7 @@ namespace Horizon::Engine
 		EntityHandle e6 = m_activeWorld->CreateEntity();
 
 		m_activeWorld->AddComponent(e1, TransformComponent());
+		m_activeWorld->AddComponent(e1, NameComponent());
 		m_activeWorld->AddComponent(e2, TransformComponent());
 		m_activeWorld->AddComponent(e3, TransformComponent());
 		m_activeWorld->AddComponent(e4, TransformComponent());

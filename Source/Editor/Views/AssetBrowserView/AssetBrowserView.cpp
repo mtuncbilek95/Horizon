@@ -1,5 +1,6 @@
 #include "AssetBrowserView.h"
 
+#include <Editor/Renderer/EditorContext.h>
 #include <Editor/Domain/DomainService.h>
 #include <Engine/Core/Engine.h>
 #include <Runtime/Log/Terminal.h>
@@ -55,10 +56,10 @@ namespace Horizon::Editor
 
 	void AssetBrowserView::OnInvoke()
 	{
-		auto* pDomain = GetEngine()->RequestService<DomainService>();
+		auto* pDomain = GetContext()->pEngine->RequestService<DomainService>();
 		m_currentFolder = pDomain->GetRoot();
 
-		m_contextMenu.BootstrapContext(m_engine, "AssetBrowserView");
+		m_contextMenu.BootstrapContext(GetContext()->pEngine, "AssetBrowserView");
 	}
 
 	void AssetBrowserView::OnRender()
@@ -78,7 +79,7 @@ namespace Horizon::Editor
 		RenderGrid();
 
 		AssetBrowserContext context = {};
-		context.pEngine = m_engine;
+		context.pEngine = GetContext()->pEngine;
 		context.currentFolder = pFolder;
 
 		CollectSelected(context);

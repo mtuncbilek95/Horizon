@@ -11,6 +11,7 @@ namespace Horizon::Engine
 namespace Horizon::Editor
 {
 	class ViewRegistry;
+	class EditorContext;
 
 	class H_EXPORT ViewObject : public Reflect::Base
 	{
@@ -22,14 +23,14 @@ namespace Horizon::Editor
 		virtual void OnRender() = 0;
 
 		ViewRegistry* GetRegistry() const { return m_holder; }
+		EditorContext* GetContext() const { return m_context; }
 
-		Engine::Engine* GetEngine() const { return m_engine; }
 		const std::string& GetDisplayName() const { return m_displayName; }
 
 	protected:
 		ViewRegistry* m_holder = nullptr;
+		EditorContext* m_context = nullptr;
 
-		Engine::Engine* m_engine = nullptr;
 		std::string m_displayName;
 	};
 }

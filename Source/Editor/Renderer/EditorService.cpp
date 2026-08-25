@@ -1,6 +1,7 @@
 #include "EditorService.h"
 
 #include <Editor/Domain/DomainService.h>
+#include <Editor/Renderer/EditorContext.h>
 #include <Editor/Renderer/EditorRenderer.h>
 #include <Editor/Views/ViewRegistry.h>
 #include <Editor/MainMenu/MenuRegistry.h>
@@ -47,11 +48,16 @@ namespace Horizon::Editor
 		m_editorRenderer = Memory::Allocator::Create<EditorRenderer>(Memory::CurrLoc(), renderDesc);
 		Terminal::Debug("EditorService", "EditorRenderer has been initialized!");
 
-		m_viewRegistry = Memory::Allocator::Create<ViewRegistry>(Memory::CurrLoc(), GetEngine());
-		m_viewRegistry->BootstrapViews();
+		// Gather all necessary element and send to views and other shit via EditorContext
+		EditorContext ctx = {};
+		ctx.pEngine = GetEngine();
+		ctx.pSelection = &m_selection;
+
+		m_viewRegistry = Memory::Allocator::Create<ViewRegistry>(Memory::CurrLoc());
+		m_viewRegistry->BootstrapViews(ctx);
 
 		m_menuRegistry = Memory::Allocator::Create<MenuRegistry>(Memory::CurrLoc());
-		m_menuRegistry->BootstrapMenus(GetEngine());
+		m_menuRegistry->BootstrapMenus(ctx);
 
 		return Engine::ModuleReport();
 	}

@@ -10,7 +10,7 @@
 
 namespace Horizon::Editor
 {
-	ViewRegistry::ViewRegistry(Engine::Engine* pEngine) : m_engine(pEngine)
+	ViewRegistry::ViewRegistry()
 	{
 	}
 
@@ -23,9 +23,11 @@ namespace Horizon::Editor
 		m_registeredViews.Clear();
 	}
 
-	void ViewRegistry::BootstrapViews()
+	void ViewRegistry::BootstrapViews(const EditorContext& ctx)
 	{
-		if (!m_engine)
+		m_context = ctx;
+
+		if (!ctx.pEngine)
 		{
 			Terminal::Fatal("ViewRegistry", "Somehow engine is not there!");
 			return;
@@ -37,7 +39,7 @@ namespace Horizon::Editor
 		m_createdViews.Clear();
 		m_registeredViews.Clear();
 
-		auto* pReflect = m_engine->GetReflectionSystem();
+		auto* pReflect = ctx.pEngine->GetReflectionSystem();
 
 		List<Reflect::Type*> types = pReflect->GetTypeByAttribute(Reflect::TypeOf<EditorViewAttribute>());
 
@@ -66,7 +68,7 @@ namespace Horizon::Editor
 			if (view.openOnStart)
 			{
 				auto* viewObj = (ViewObject*)view.pCoreType->CreateFromMemory();
-				viewObj->m_engine = m_engine;
+				viewObj->m_context = &m_context;
 				viewObj->m_displayName = view.displayName;
 				viewObj->m_holder = this;
 
@@ -145,7 +147,7 @@ namespace Horizon::Editor
 				return view;
 		}
 
-		auto* pReflect = m_engine->GetReflectionSystem();
+		auto* pReflect = m_context.pEngine->GetReflectionSystem();
 		std::string_view handlName = pReflect->GetType(handl)->GetName();
 		Terminal::Error(StringOps::GetName(this), "Could not find {}", handlName);
 		return nullptr;
