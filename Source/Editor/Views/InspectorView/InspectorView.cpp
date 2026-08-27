@@ -2,6 +2,10 @@
 
 #include <Editor/Renderer/EditorContext.h>
 #include <Editor/Models/SelectionModel.h>
+#include <Editor/Attributes/HideInInspectorAttribute.h>
+#include <Editor/Attributes/RangeAttribute.h>
+#include <Editor/Attributes/TooltipAttribute.h>
+#include <Editor/Views/InspectorView/InspectorWidgets.h>
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
@@ -9,22 +13,55 @@
 #include <Engine/World/ComponentObject.h>
 #include <Engine/World/WorldService.h>
 
-#include <Runtime/Containers/Guid.h>
-#include <Runtime/Math/Vec3f.h>
-#include <Runtime/Math/Quat.h>
-
 namespace Horizon::Editor
 {
 	namespace
 	{
-		constexpr u32 AxisColorX = IM_COL32(219, 62, 76, 255);
-		constexpr u32 AxisColorY = IM_COL32(112, 184, 38, 255);
-		constexpr u32 AxisColorZ = IM_COL32(41, 120, 219, 255);
+		b8 TryGetDataType(Reflect::TypeKind kind, ImGuiDataType& outType)
+		{
+			switch (kind)
+			{
+			case Reflect::TypeKind::Char:
+			case Reflect::TypeKind::Signed8:
+				outType = ImGuiDataType_S8;
+				return true;
+			case Reflect::TypeKind::Signed16:
+				outType = ImGuiDataType_S16;
+				return true;
+			case Reflect::TypeKind::Signed32:
+				outType = ImGuiDataType_S32;
+				return true;
+			case Reflect::TypeKind::Signed64:
+				outType = ImGuiDataType_S64;
+				return true;
+			case Reflect::TypeKind::Unsigned8:
+				outType = ImGuiDataType_U8;
+				return true;
+			case Reflect::TypeKind::Unsigned16:
+				outType = ImGuiDataType_U16;
+				return true;
+			case Reflect::TypeKind::Unsigned32:
+				outType = ImGuiDataType_U32;
+				return true;
+			case Reflect::TypeKind::Unsigned64:
+				outType = ImGuiDataType_U64;
+				return true;
+			case Reflect::TypeKind::Float32:
+				outType = ImGuiDataType_Float;
+				return true;
+			case Reflect::TypeKind::Float64:
+				outType = ImGuiDataType_Double;
+				return true;
+			default:
+				return false;
+			}
+		}
 	}
 
 	void InspectorView::OnInvoke()
 	{
 		m_currentWorld = GetContext()->pEngine->RequestService<Engine::WorldService>()->GetActiveWorld();
+		m_drawerRegistry.BootstrapDrawers(GetContext()->pEngine);
 	}
 
 	void InspectorView::OnRender()
@@ -34,96 +71,31 @@ namespace Horizon::Editor
 		if (!m_currentWorld || !m_selected.IsValid())
 			return;
 
-		const ImGuiStyle& style = ImGui::GetStyle();
-
 		const f32 kButtonHeight = 30.0f;
-		const f32 kBottomHeight = kButtonHeight + style.ItemSpacing.y * 2.0f + 1.0f;
 
-		// Components, full area of the rest. It will have its own scroller
 		ImGui::BeginGroup();
 		{
 			List<Engine::ComponentObject*> comps;
 			m_currentWorld->CollectComponents(m_selected, comps);
 
-			Engine::ReflectionSystem* pReflection = GetContext()->pEngine->GetReflectionSystem();
-
 			for (Engine::ComponentObject* pComponent : comps)
-			{
-				Reflect::Type* pType = pReflection->GetType(pComponent->GetTypeId());
-
-				if (!pType)
-					continue;
-
-				const c8* pHeader = pType->GetName().c_str();
-				auto* pAttribute = pType->GetCustomAttribute<Engine::ComponentTypeAttribute>();
-
-				if (pAttribute)
-					pHeader = pAttribute->GetComponentName().c_str();
-
-				ImGui::PushID((i32)pComponent->GetTypeId().Index());
-
-				if (ImGui::CollapsingHeader(pHeader, ImGuiTreeNodeFlags_DefaultOpen))
-				{
-					ImGui::Spacing();
-
-					if (ImGui::BeginTable("##fields", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_PadOuterX))
-					{
-						ImGui::TableSetupColumn("##label", ImGuiTableColumnFlags_WidthFixed, 90.0f);
-						ImGui::TableSetupColumn("##value", ImGuiTableColumnFlags_WidthStretch);
-
-						for (const Reflect::Field& field : pType->GetFields())
-						{
-							if (field.GetTypeId() == Reflect::TypeOf<Guid>())
-							{
-								Guid& guid = field.GetValueAs<Guid>(pComponent);
-								//DrawGuid(field.GetName().c_str(), guid);
-							}
-
-							if (field.GetTypeId() == Reflect::TypeOf<Math::Vec3f>())
-							{
-								Math::Vec3f& vector = field.GetValueAs<Math::Vec3f>(pComponent);
-								f32 values[3] = { vector.X(), vector.Y(), vector.Z() };
-
-								if (DrawVec3(field.GetName().c_str(), values))
-									vector = Math::Vec3f(values[0], values[1], values[2]);
-							}
-
-							if (field.GetTypeId() == Reflect::TypeOf<Math::Quat>())
-							{
-								Math::Quat& rotation = field.GetValueAs<Math::Quat>(pComponent);
-								Math::Vec3f euler = rotation.Euler();
-								f32 values[3] = { euler.X(), euler.Y(), euler.Z() };
-
-								if (DrawVec3(field.GetName().c_str(), values))
-									rotation = Math::Quat::MakeFromEuler(Math::Vec3f(values[0], values[1], values[2]));
-							}
-						}
-
-						ImGui::EndTable();
-					}
-
-					ImGui::Spacing();
-				}
-
-				ImGui::PopID();
-			}
-
+				DrawComponent(pComponent);
 		}
 		ImGui::EndGroup();
 
 		ImGui::Separator();
 
-		// AddComponent & behaviour
 		ImGui::BeginGroup();
 		{
 			f32 width = ImGui::GetContentRegionAvail().x;
 			f32 buttonWidth = width * 0.65f;
 
 			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (width - buttonWidth) * 0.5f);
+
 			if (ImGui::Button(ICON_FA_PLUS " Add Component", ImVec2(buttonWidth, kButtonHeight)))
 			{
-				m_PopupPosX = ImGui::GetItemRectMin().x;
-				m_PopupPosY = ImGui::GetItemRectMax().y + 4.0f;
+				m_popupPos.X() = ImGui::GetItemRectMin().x;
+				m_popupPos.Y() = ImGui::GetItemRectMax().y + 4.0f;
 				m_PopupWidth = buttonWidth;
 
 				m_FocusSearch = true;
@@ -136,12 +108,56 @@ namespace Horizon::Editor
 		ImGui::EndGroup();
 	}
 
+	void InspectorView::DrawComponent(Engine::ComponentObject* pComponent)
+	{
+		Reflect::Type* pType = GetContext()->pEngine->GetReflectionSystem()->GetType(pComponent->GetTypeId());
+
+		if (!pType)
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} component has no registered type", pComponent->GetTypeId().Index());
+			return;
+		}
+
+		const c8* pHeader = pType->GetName().c_str();
+		auto* pAttribute = pType->GetCustomAttribute<Engine::ComponentTypeAttribute>();
+
+		if (pAttribute)
+		{
+			pHeader = pAttribute->GetComponentName().c_str();
+
+			if (!pAttribute->GetVisibleOnSystem())
+				return;
+		}
+
+		ImGui::PushID((i32)pComponent->GetTypeId().Index());
+
+		if (ImGui::CollapsingHeader(pHeader, ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Spacing();
+
+			if (ImGui::BeginTable("##fields", 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_PadOuterX))
+			{
+				ImGui::TableSetupColumn("##label", ImGuiTableColumnFlags_WidthFixed, 90.0f);
+				ImGui::TableSetupColumn("##value", ImGuiTableColumnFlags_WidthStretch);
+
+				DrawObject(pComponent, pType, 0);
+
+				ImGui::EndTable();
+			}
+
+			ImGui::Spacing();
+		}
+
+		ImGui::PopID();
+	}
+
 	void InspectorView::DrawAddComponentPopup()
 	{
-		ImGui::SetNextWindowPos(ImVec2(m_PopupPosX, m_PopupPosY));
+		ImGui::SetNextWindowPos(ImVec2(m_popupPos.X(), m_popupPos.Y()));
 		ImGui::SetNextWindowSize(ImVec2(m_PopupWidth, 380.0f));
 
 		const b8 open = ImGui::BeginPopup("##AddComponentPopup");
+
 		if (!open)
 			return;
 
@@ -150,9 +166,17 @@ namespace Horizon::Editor
 			auto* pReflect = GetContext()->pEngine->GetReflectionSystem();
 
 			List<Reflect::Type*> types = pReflect->GetTypeByBase(Reflect::TypeOf<Engine::ComponentObject>());
+
 			for (auto* type : types)
 			{
 				auto* pAttr = type->GetCustomAttribute<Engine::ComponentTypeAttribute>();
+
+				if (pAttr == nullptr)
+				{
+					Terminal::Warn(StringOps::GetName(this), "{} type has no ComponentTypeAttribute", type->GetName());
+					continue;
+				}
+
 				if (!pAttr->GetVisibleOnSystem())
 					continue;
 
@@ -171,76 +195,146 @@ namespace Horizon::Editor
 		ImGui::EndPopup();
 	}
 
-	b8 InspectorView::DrawVec3(const std::string& label, f32* pValues)
+	b8 InspectorView::DrawObject(void* pInstance, Reflect::Type* pType, u32 depth)
 	{
-		ImGui::PushID(label.c_str());
-		ImGui::TableNextRow();
-
-		ImGui::TableSetColumnIndex(0);
-		ImGui::AlignTextToFramePadding();
-		ImGui::TextUnformatted(label.c_str());
-
-		ImGui::TableSetColumnIndex(1);
-
-		const f32 spacing = 6.0f;
-		f32 available = ImGui::GetContentRegionAvail().x;
-		f32 fieldWidth = (available - spacing * 2.0f) / 3.0f;
-
 		b8 changed = false;
 
-		changed |= DrawAxisField("X", &pValues[0], AxisColorX, fieldWidth);
-		ImGui::SameLine(0.0f, spacing);
-		changed |= DrawAxisField("Y", &pValues[1], AxisColorY, fieldWidth);
-		ImGui::SameLine(0.0f, spacing);
-		changed |= DrawAxisField("Z", &pValues[2], AxisColorZ, fieldWidth);
+		for (const Reflect::Field& field : pType->GetFields())
+		{
+			if (field.GetCustomAttribute<HideInInspectorAttribute>())
+				continue;
 
-		ImGui::PopID();
+			PropertyContext context;
+			context.pField = &field;
+			context.pInstance = pInstance;
+			context.pLabel = field.GetName().c_str();
+			context.pEditState = &m_editState;
+			context.depth = depth;
+
+			ImGui::PushID((i32)field.GetOffset());
+			changed |= DrawField(context);
+			ImGui::PopID();
+		}
 
 		return changed;
 	}
 
-	b8 InspectorView::DrawAxisField(const std::string& axis, f32* pValue, u32 accentColor, f32 width)
+	b8 InspectorView::DrawField(const PropertyContext& context)
 	{
-		ImGui::PushID(axis.c_str());
+		PropertyDrawer* pDrawer = m_drawerRegistry.Find(context.pField->GetTypeId());
 
-		ImDrawList* pDraw = ImGui::GetWindowDrawList();
-		ImVec2 origin = ImGui::GetCursorScreenPos();
+		if (pDrawer)
+			return pDrawer->OnDraw(context);
 
-		const f32 height = ImGui::GetFrameHeight();
-		const f32 rounding = ImGui::GetStyle().FrameRounding;
-		const f32 stripWidth = 3.0f;
-		const f32 inset = height * 0.85f;
+		if (context.pField->GetKind() != Reflect::TypeKind::Object)
+			return DrawPrimitive(context);
 
-		ImVec2 corner = ImVec2(origin.x + width, origin.y + height);
-		pDraw->AddRectFilled(origin, corner, ImGui::GetColorU32(ImGuiCol_FrameBg), rounding);
+		return DrawNested(context);
+	}
 
-		pDraw->PushClipRect(origin, ImVec2(origin.x + stripWidth, corner.y), true);
-		pDraw->AddRectFilled(origin, corner, accentColor, rounding);
-		pDraw->PopClipRect();
+	b8 InspectorView::DrawNested(const PropertyContext& context)
+	{
+		const Reflect::Field* pField = context.pField;
 
-		ImVec2 axisSize = ImGui::CalcTextSize(axis.c_str());
-		ImVec2 axisPos = ImVec2(origin.x + stripWidth + (inset - stripWidth - axisSize.x) * 0.5f,
-			origin.y + (height - axisSize.y) * 0.5f);
+		void* pChild = pField->GetValue(context.pInstance);
 
-		pDraw->AddText(axisPos, ImGui::GetColorU32(ImGuiCol_TextDisabled), axis.c_str());
+		if (pField->GetMode() == Reflect::TypeMode::Pointer)
+		{
+			pChild = *static_cast<void**>(pChild);
 
-		ImGui::SetCursorScreenPos(ImVec2(origin.x + inset, origin.y));
-		ImGui::SetNextItemWidth(width - inset);
+			if (!pChild)
+			{
+				InspectorWidgets::BeginRow(context.pLabel, pField);
+				ImGui::TextDisabled("None");
 
-		ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
-		ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, 0);
-		ImGui::PushStyleColor(ImGuiCol_FrameBgActive, 0);
+				return false;
+			}
+		}
 
-		b8 changed = ImGui::DragFloat("##value", pValue, 0.01f, 0.0f, 0.0f, "%.3f");
+		Reflect::Type* pType = GetContext()->pEngine->GetReflectionSystem()->GetType(pField->GetTypeId());
 
-		ImGui::PopStyleColor(3);
+		if (!pType)
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} field type is not registered", context.pLabel);
+			return false;
+		}
 
-		if (ImGui::IsItemActive() || ImGui::IsItemHovered())
-			pDraw->AddRect(origin, corner, accentColor, rounding, 0, 1.0f);
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
 
-		ImGui::PopID();
+		const b8 open = ImGui::TreeNodeEx(context.pLabel, ImGuiTreeNodeFlags_SpanAllColumns | ImGuiTreeNodeFlags_DefaultOpen);
+
+		if (!open)
+			return false;
+
+		b8 changed = DrawObject(pChild, pType, context.depth + 1);
+		ImGui::TreePop();
 
 		return changed;
 	}
 
+	b8 InspectorView::DrawPrimitive(const PropertyContext& context)
+	{
+		const Reflect::Field* pField = context.pField;
+
+		void* pValue = pField->GetValue(context.pInstance);
+		Reflect::TypeKind kind = pField->GetKind();
+
+		if (kind == Reflect::TypeKind::Enum)
+			kind = pField->GetUnderlyingKind();
+
+		InspectorWidgets::BeginRow(context.pLabel, pField);
+
+		if (kind == Reflect::TypeKind::Boolean)
+			return ImGui::Checkbox("##value", static_cast<b8*>(pValue));
+
+		if (kind == Reflect::TypeKind::String)
+		{
+			std::string& text = pField->GetValueAs<std::string>(context.pInstance);
+
+			c8 buffer[256];
+			usize length = text.copy(buffer, sizeof(buffer) - 1);
+			buffer[length] = '\0';
+
+			if (!ImGui::InputText("##value", buffer, sizeof(buffer)))
+				return false;
+
+			text = buffer;
+
+			return true;
+		}
+
+		ImGuiDataType dataType = ImGuiDataType_S32;
+
+		if (!TryGetDataType(kind, dataType))
+		{
+			ImGui::TextDisabled("Unsupported");
+			return false;
+		}
+
+		auto* pRange = pField->GetCustomAttribute<RangeAttribute>();
+
+		if (pRange && dataType == ImGuiDataType_Float)
+		{
+			f32 minimum = pRange->GetMin();
+			f32 maximum = pRange->GetMax();
+
+			return ImGui::SliderScalar("##value", dataType, pValue, &minimum, &maximum);
+		}
+
+		if (pRange && dataType == ImGuiDataType_S32)
+		{
+			i32 minimum = (i32)pRange->GetMin();
+			i32 maximum = (i32)pRange->GetMax();
+
+			return ImGui::SliderScalar("##value", dataType, pValue, &minimum, &maximum);
+		}
+
+		f32 speed = 1.0f;
+
+		if (dataType == ImGuiDataType_Float || dataType == ImGuiDataType_Double)
+			speed = 0.01f;
+
+		return ImGui::DragScalar("##value", dataType, pValue, speed);
+	}
 }
