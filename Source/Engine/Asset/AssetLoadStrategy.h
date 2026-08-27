@@ -26,7 +26,7 @@ namespace Horizon::Engine
 			OnUnregister(pEngine);
 		}
 
-		virtual Asset* Create(const List<u8>& payload) = 0;
+		virtual Asset* Create(List<u8>&& payload) = 0;
 		virtual void Destroy(Asset* pAsset) = 0;
 
 		virtual b8 Activate(Asset* pAsset) = 0;

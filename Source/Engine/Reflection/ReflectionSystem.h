@@ -17,6 +17,7 @@ namespace Horizon::Engine
 		~ReflectionSystem();
 
 		Reflect::Type* GetType(Reflect::TypeHandle handl);
+		Reflect::Type* GetTypeByName(const std::string& name);
 		List<Reflect::Type*> GetTypeByBase(Reflect::TypeHandle handl);
 		List<Reflect::Type*> GetTypeByAttribute(Reflect::TypeHandle attrHandle);
 

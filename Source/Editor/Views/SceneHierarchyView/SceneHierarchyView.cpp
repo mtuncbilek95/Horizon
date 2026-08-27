@@ -109,20 +109,16 @@ namespace Horizon::Editor
 
 			auto* pName = m_currentWorld->FindComponent<Engine::NameComponent>(row.entity);
 
-			c8 fallback[32] = {};
-			const c8* pLabel = nullptr;
+			std::string pLabel;
 
 			if (pName != nullptr && !pName->m_name.empty())
-				pLabel = pName->m_name.c_str();
+				pLabel = ICON_FA_CUBE " " + pName->m_name;
 			else
-			{
-				std::snprintf(fallback, sizeof(fallback), ICON_FA_CUBE " Entity %u", row.entity.Index());
-				pLabel = fallback;
-			}
+				pLabel = ICON_FA_CUBE + std::format(" Entity {}", row.entity.Index());
 
 			ImGui::SetNextItemSelectionUserData(static_cast<ImGuiSelectionUserData>(i));
 			ImGui::PushID(static_cast<i32>(row.id));
-			ImGui::Selectable(pLabel, m_multiSelect.Contains(row.id));
+			ImGui::Selectable(pLabel.c_str(), m_multiSelect.Contains(row.id));
 			ImGui::PopID();
 		}
 

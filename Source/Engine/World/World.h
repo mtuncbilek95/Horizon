@@ -5,14 +5,21 @@
 #include <Engine/World/EntityStorage.h>
 
 #include <Runtime/Containers/List.h>
+#include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
+
+#include <type_traits>
 
 namespace Horizon::Engine
 {
+	class ReflectionSystem;
+
 	class H_EXPORT World final
 	{
 	public:
-		World() = default;
+		World(ReflectionSystem* pReflection) : m_components(pReflection)
+		{
+		}
 		~World() = default;
 
 		World(const World&) = delete;
@@ -32,24 +39,27 @@ namespace Horizon::Engine
 		{
 			if (!m_entities.IsAlive(entity))
 			{
-				Terminal::Warn("World", "AddComponent on a dead or stale entity");
+				Terminal::Warn(StringOps::GetName(this), "AddComponent on a dead or stale entity");
 				return nullptr;
 			}
 
-			ComponentStorage<T>* pStorage = m_components.GetOrCreateStorage<T>();
+			ComponentStorage* pStorage = m_components.GetOrCreateStorage(Reflect::TypeOf<T>());
 			if (!pStorage)
 				return nullptr;
 
-			T& stored = pStorage->Insert(entity, std::move(component));
+			void* pSlot = pStorage->InsertMoved(entity, &component);
+			if (!pSlot)
+				return nullptr;
+
 			m_signatures[(u32)entity.Index()].set(pStorage->GetSlot());
 
-			return &stored;
+			return static_cast<T*>(pSlot);
 		}
 
 		template<typename T>
 		void RemoveComponent(EntityHandle entity)
 		{
-			ComponentStorage<T>* pStorage = m_components.FindStorage<T>();
+			ComponentStorage* pStorage = m_components.FindStorage(Reflect::TypeOf<T>());
 			if (!pStorage)
 				return;
 
@@ -63,11 +73,11 @@ namespace Horizon::Engine
 			if (!m_entities.IsAlive(entity))
 				return nullptr;
 
-			ComponentStorage<T>* pStorage = m_components.FindStorage<T>();
+			ComponentStorage* pStorage = m_components.FindStorage(Reflect::TypeOf<T>());
 			if (!pStorage)
 				return nullptr;
 
-			return pStorage->Find(entity);
+			return static_cast<T*>(pStorage->Find(entity));
 		}
 
 		template<typename T>
@@ -86,18 +96,18 @@ namespace Horizon::Engine
 		template<typename T, typename Fn>
 		void ForEach(Fn&& callback)
 		{
-			ComponentStorage<T>* pStorage = m_components.FindStorage<T>();
+			ComponentStorage* pStorage = m_components.FindStorage(Reflect::TypeOf<T>());
 			if (!pStorage)
 				return;
 
 			for (usize i = 0; i < pStorage->GetCount(); i++)
-				callback(pStorage->GetEntityAt(i), pStorage->GetAt(i));
+				callback(pStorage->GetEntityAt(i), *static_cast<T*>(pStorage->GetAt(i)));
 		}
 
 		template<typename TPivot, typename... TOthers, typename Fn>
 		void ForView(Fn&& callback)
 		{
-			ComponentStorage<TPivot>* pPivot = m_components.FindStorage<TPivot>();
+			ComponentStorage* pPivot = m_components.FindStorage(Reflect::TypeOf<TPivot>());
 			if (!pPivot)
 				return;
 
@@ -106,13 +116,15 @@ namespace Horizon::Engine
 				EntityHandle entity = pPivot->GetEntityAt(i);
 
 				if ((HasComponent<TOthers>(entity) && ...))
-					callback(entity, pPivot->GetAt(i), *FindComponent<TOthers>(entity)...);
+					callback(entity, *static_cast<TPivot*>(pPivot->GetAt(i)), *FindComponent<TOthers>(entity)...);
 			}
 		}
 
 		EntityStorage& GetEntities() { return m_entities; }
 		ComponentRegistry& GetComponents() { return m_components; }
 		const Signature& GetSignature(EntityHandle entity) const { return m_signatures[(u32)entity.Index()]; }
+
+		void MarkComponent(EntityHandle entity, u32 slot) { m_signatures[(u32)entity.Index()].set(slot); }
 
 	private:
 		b8 EnsureStructural(std::string_view callName) const;

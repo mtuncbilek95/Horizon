@@ -3,6 +3,7 @@
 #include <Runtime/Containers/List.h>
 #include <Runtime/Serialization/Archive.h>
 
+#include <bit>
 #include <string>
 #include <string_view>
 
@@ -12,6 +13,8 @@ namespace Horizon
 	inline constexpr u32 BinaryArchiveVersion = 1u;
 	inline constexpr usize BinaryArchiveBlobAlignment = 16;
 	inline constexpr usize BinaryArchiveInvalidOffset = usize(kInvalid64);
+	inline constexpr usize BinaryArchiveMaxField = 0xFFFFFFFFull;
+
 	constexpr u32 HashArchiveName(std::string_view name);
 
 	class H_EXPORT BinaryArchiveWriter final : public IArchiveWriter
@@ -41,7 +44,10 @@ namespace Horizon
 		void WriteBytes(const void* pData, usize size) final;
 
 		const List<u8>& GetBytes() const { return m_buffer; }
+
 		b8 IsBalanced() const { return m_frames.IsEmpty(); }
+		b8 HasError() const { return m_hasError; }
+		b8 IsComplete() const { return IsBalanced() && !m_hasError; }
 
 	private:
 		usize BeginEntry();
@@ -50,14 +56,16 @@ namespace Horizon
 		usize Grow(usize size);
 		void Append(const void* pData, usize size);
 		void AppendU32(u32 value);
+		void AppendSize(usize value);
 		void AlignPayload(usize alignment);
-		void Patch(usize offset, u32 value);
+		b8 PatchSize(usize offset, usize value);
 
 	private:
 		List<u8> m_buffer;
 		List<Frame> m_frames;
 		u32 m_pendingKeyHash = 0;
 		b8 m_hasPendingKey = false;
+		b8 m_hasError = false;
 	};
 
 	class H_EXPORT BinaryArchiveReader final : public IArchiveReader
@@ -78,6 +86,9 @@ namespace Horizon
 		usize BeginArray() final;
 		void EndArray() final;
 
+		usize GetCursor() const { return m_cursor; }
+		b8 Seek(usize offset);
+
 		b8 ReadBool() final;
 		i64 ReadI64() final;
 		u64 ReadU64() final;
@@ -85,6 +96,10 @@ namespace Horizon
 		std::string ReadString() final;
 		usize ReadBytes(void* pData, usize size) final;
 
+		usize ViewBytes(usize& outSize);
+
+		u32 GetVersion() const { return m_version; }
+		b8 IsBalanced() const { return m_frames.IsEmpty(); }
 		b8 HasError() const final { return m_hasError; }
 
 	private:
@@ -92,12 +107,13 @@ namespace Horizon
 		b8 Take(void* pOut, usize size);
 		u32 TakeU32();
 		u32 PeekU32(usize offset) const;
+		usize SeekBlob(usize& outSize);
 
 	private:
 		const u8* m_data = nullptr;
 		usize m_size = 0;
 		usize m_cursor = 0;
-		usize m_valueEnd = 0;
+		u32 m_version = 0;
 		List<Frame> m_frames;
 		b8 m_hasError = false;
 	};

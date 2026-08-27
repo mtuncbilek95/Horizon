@@ -21,10 +21,10 @@ namespace Horizon::Engine
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
 
-	private:
+		AssetLoadStrategy* FindStrategy(Reflect::TypeHandle assetType);
 
 	private:
 		List<AssetLoadStrategy*> m_loaders;
-		std::unordered_map<Reflect::TypeHandle, usize> m_assetLookup;
+		std::unordered_map<Reflect::TypeHandle, usize> m_loaderLookup;
 	};
 }

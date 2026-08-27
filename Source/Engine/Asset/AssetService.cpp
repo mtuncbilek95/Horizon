@@ -25,7 +25,7 @@ namespace Horizon::Engine
 			}
 
 			AssetLoadStrategy* pStrategy = (AssetLoadStrategy*)type->Create();
-			m_assetLookup.emplace(pStrategy->GetWorkingAssetHandle(), m_loaders.GetCount());
+			m_loaderLookup.emplace(pStrategy->GetWorkingAssetHandle(), m_loaders.GetCount());
 			m_loaders.PushBack(pStrategy);
 
 			std::string assetName = pReflect->GetType(pStrategy->GetWorkingAssetHandle())->GetName();
@@ -50,5 +50,18 @@ namespace Horizon::Engine
 	void AssetService::DeclareDependencies(ModuleGraph& graph)
 	{
 		graph.Requires<GraphicsContext>();
+	}
+
+	AssetLoadStrategy* AssetService::FindStrategy(Reflect::TypeHandle assetType)
+	{
+		auto it = m_loaderLookup.find(assetType);
+
+		if (it == m_loaderLookup.end())
+		{
+			Terminal::Error(StringOps::GetName(this), "No load strategy is registered for this asset type");
+			return nullptr;
+		}
+
+		return m_loaders[it->second];
 	}
 }

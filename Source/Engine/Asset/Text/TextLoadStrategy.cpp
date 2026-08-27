@@ -2,7 +2,7 @@
 
 namespace Horizon::Engine
 {
-	Asset* TextLoadStrategy::Create(const List<u8>& payload)
+	Asset* TextLoadStrategy::Create(List<u8>&& payload)
 	{
 		return nullptr;
 	}

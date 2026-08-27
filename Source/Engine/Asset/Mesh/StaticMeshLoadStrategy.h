@@ -11,7 +11,7 @@ namespace Horizon::Engine
 	{
 		HORIZON_TYPE_REFLECT(StaticMeshLoadStrategy);
 	public:
-		Asset* Create(const List<u8>& payload) final;
+		Asset* Create(List<u8>&& payload) final;
 		void Destroy(Asset* pAsset) final;
 
 		b8 Activate(Asset* pAsset) final;

@@ -45,6 +45,32 @@ namespace Horizon::Engine
 		return EntityHandle::Generate(index, m_generations[index]);
 	}
 
+	b8 EntityStorage::ReserveRange(u32 count, List<EntityHandle>& outHandles)
+	{
+		if (count == 0)
+			return true;
+
+		u32 first = m_nextIndex.FetchAdd(count);
+
+		if ((u64)first + count > MaxEntities)
+		{
+			m_nextIndex.Store(first);
+			Terminal::Error(StringOps::GetName(this), "Entity budget of {} is exhausted, {} requested", MaxEntities, count);
+			return false;
+		}
+
+		outHandles.Resize(count);
+
+		for (u32 i = 0; i < count; i++)
+		{
+			u32 index = first + i;
+			m_alive[index] = true;
+			outHandles[i] = EntityHandle::Generate(index, m_generations[index]);
+		}
+
+		return true;
+	}
+
 	void EntityStorage::Commit(EntityHandle entity)
 	{
 		if (!entity.IsValid())
@@ -88,5 +114,4 @@ namespace Horizon::Engine
 
 		return EntityHandle::Generate(index, m_generations[index]);
 	}
-
 }

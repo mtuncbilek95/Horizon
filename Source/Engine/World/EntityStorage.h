@@ -17,6 +17,7 @@ namespace Horizon::Engine
 
 		EntityHandle Create();
 		EntityHandle Reserve();
+		b8 ReserveRange(u32 count, List<EntityHandle>& outHandles);
 
 		void Commit(EntityHandle entity);
 		b8 Destroy(EntityHandle entity);

@@ -60,6 +60,17 @@ namespace Horizon::Engine
 		return &m_registeredTypes.At(it->second);
 	}
 
+	Reflect::Type* ReflectionSystem::GetTypeByName(const std::string& name)
+	{
+		for (auto& type : m_registeredTypes)
+		{
+			if (type.GetName() == name)
+				return &type;
+		}
+
+		return nullptr;
+	}
+
 	List<Reflect::Type*> ReflectionSystem::GetTypeByBase(Reflect::TypeHandle handl)
 	{
 		List<Reflect::Type*> result;
@@ -92,5 +103,3 @@ namespace Horizon::Engine
 		return result;
 	}
 }
-
-

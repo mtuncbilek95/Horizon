@@ -4,36 +4,59 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Graphics/GraphicsContext.h>
+#include <Runtime/Containers/ScopedLock.h>
 
 // TODO: Remove this later
 #include <Engine/World/Components/TransformComponent.h>
 #include <Engine/World/Components/NameComponent.h>
+#include <Engine/Asset/Asset.h>
+#include <Engine/Asset/AssetLoadStrategy.h>
+#include <Engine/Asset/Scene/SceneInstantiator.h>
+#include <Runtime/PAL/File/File.h>
 
-#include <Runtime/Containers/ScopedLock.h>
 
 namespace Horizon::Engine
 {
 	ModuleReport WorldService::OnInitialize()
 	{
-		// TODO: This is not correct tho. I will change it to asset + default scene/world.
-		m_activeWorld = Memory::Allocator::Create<World>(Memory::CurrLoc());
+		// TODO: THIS WHOLE THING IS TEMPORARY
+		ReflectionSystem* pReflection = GetEngine()->GetReflectionSystem();
 
-		// TODO: Remove this later to test properly.
-		EntityHandle e1 = m_activeWorld->CreateEntity();
-		EntityHandle e2 = m_activeWorld->CreateEntity();
-		EntityHandle e3 = m_activeWorld->CreateEntity();
-		EntityHandle e4 = m_activeWorld->CreateEntity();
-		EntityHandle e5 = m_activeWorld->CreateEntity();
-		EntityHandle e6 = m_activeWorld->CreateEntity();
-
-		m_activeWorld->AddComponent(e1, TransformComponent());
-		m_activeWorld->AddComponent(e1, NameComponent());
-		m_activeWorld->AddComponent(e2, TransformComponent());
-		m_activeWorld->AddComponent(e3, TransformComponent());
-		m_activeWorld->AddComponent(e4, TransformComponent());
+		m_activeWorld = Memory::Allocator::Create<World>(Memory::CurrLoc(), pReflection);
 
 		if (!m_activeWorld)
 			return ModuleReport();
+
+		const std::string scenePath = "D:/Projects/Horizon/ExampleProject/Cooked/TestWorld.hfile";
+
+		PAL::FileAccessRequest request = PAL::File::RequestAccess(scenePath,
+			PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
+
+		List<u8> payload;
+		const b8 wasRead = PAL::File::ReadMemory(request, payload);
+
+		PAL::File::ReleaseAccess(request);
+
+		if (!wasRead)
+		{
+			Terminal::Error(StringOps::GetName(this), "'{}' could not be read", scenePath);
+			return ModuleReport();
+		}
+
+		AssetLoadStrategy* pStrategy = GetEngine()->RequestService<AssetService>()->FindStrategy(Reflect::TypeOf<SceneAsset>());
+
+		if (!pStrategy)
+			return ModuleReport();
+
+		Asset* pAsset = pStrategy->Create(std::move(payload));
+
+		if (!pAsset)
+			return ModuleReport();
+
+		if (!SceneInstantiator::Apply(*static_cast<SceneAsset*>(pAsset), *m_activeWorld, pReflection))
+			Terminal::Error(StringOps::GetName(this), "'{}' could not be applied to the world", scenePath);
+
+		pStrategy->Destroy(pAsset);
 
 		return ModuleReport();
 	}

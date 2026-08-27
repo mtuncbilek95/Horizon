@@ -19,7 +19,7 @@ namespace Horizon::Engine
 
 		const Signature& signature = m_signatures[(u32)entity.Index()];
 
-		for (IComponentStorage* pStorage : m_components.GetStorages())
+		for (ComponentStorage* pStorage : m_components.GetStorages())
 		{
 			if (signature.test(pStorage->GetSlot()))
 				pStorage->Remove(entity);
@@ -51,15 +51,15 @@ namespace Horizon::Engine
 
 		const Signature& signature = m_signatures[(u32)entity.Index()];
 
-		for (IComponentStorage* pStorage : m_components.GetStorages())
+		for (ComponentStorage* pStorage : m_components.GetStorages())
 		{
 			if (!signature.test(pStorage->GetSlot()))
 				continue;
 
-			ComponentObject* pComponent = pStorage->FindErased(entity);
+			void* pComponent = pStorage->Find(entity);
 
 			if (pComponent)
-				outComponents.PushBack(pComponent);
+				outComponents.PushBack(static_cast<ComponentObject*>(pComponent));
 		}
 	}
 }

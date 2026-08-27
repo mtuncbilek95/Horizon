@@ -2,7 +2,7 @@
 
 namespace Horizon::Engine
 {
-	Asset* StaticMeshLoadStrategy::Create(const List<u8>& payload)
+	Asset* StaticMeshLoadStrategy::Create(List<u8>&& payload)
 	{
 		return nullptr;
 	}
