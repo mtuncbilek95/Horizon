@@ -97,7 +97,17 @@ namespace Horizon::Editor
 
 		for (auto* view : m_createdViews)
 		{
+			if (view->IsFullBleed())
+			{
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+			}
+
 			ImGui::Begin(view->m_displayName.c_str());
+
+			if (view->IsFullBleed())
+				ImGui::PopStyleVar(2);
+
 			view->OnRender();
 			ImGui::End();
 		}

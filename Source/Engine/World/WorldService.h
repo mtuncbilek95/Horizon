@@ -2,7 +2,8 @@
 
 #include <Engine/Core/Service.h>
 #include <Engine/World/World.h>
-#include <Engine/World/WorldCommandBuffer.h>
+#include <Engine/World/WorldCommandBuffer.h> 
+#include <Engine/World/System.h>
 
 #include <Runtime/Containers/List.h>
 #include <Runtime/PAL/Sync/Mutex.h>
@@ -23,6 +24,20 @@ namespace Horizon::Engine
 		World* GetActiveWorld() const { return m_activeWorld; }
 		WorldCommandBuffer& GetCommandBuffer();
 
+		template<typename T>
+			requires std::is_base_of_v<System, T>
+		T* FindSystem()
+		{
+			for (System* pSystem : m_systems)
+			{
+				if (pSystem->GetTypeId() == Reflect::TypeOf<T>())
+					return static_cast<T*>(pSystem);
+			}
+
+			Terminal::Error(StringOps::GetName(this), "{} is not an active system", typeid(T).name());
+			return nullptr;
+		}
+
 	private:
 		void FlushCommandBuffers();
 
@@ -30,5 +45,8 @@ namespace Horizon::Engine
 		World* m_activeWorld = nullptr;
 		List<WorldCommandBuffer*> m_commandBuffers;
 		PAL::Mutex m_bufferGuard;
+
+		// TODO: Just to test things!
+		List<System*> m_systems;
 	};
 }

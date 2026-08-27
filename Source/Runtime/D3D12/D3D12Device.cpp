@@ -295,6 +295,13 @@ namespace Horizon::RHI
 			clearValue.DepthStencil.Depth = 1.0f;
 			clearValue.DepthStencil.Stencil = 0;
 		}
+		else
+		{
+			clearValue.Color[0] = desc.clearColor.r;
+			clearValue.Color[1] = desc.clearColor.g;
+			clearValue.Color[2] = desc.clearColor.b;
+			clearValue.Color[3] = desc.clearColor.a;
+		}
 
 		const b8 bHasClear = HasFlag(desc.usage, GfxTextureUsage::RenderTarget)
 			|| HasFlag(desc.usage, GfxTextureUsage::DepthStencil);

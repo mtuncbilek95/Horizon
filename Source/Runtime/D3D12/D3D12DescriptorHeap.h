@@ -26,6 +26,8 @@ namespace Horizon::RHI
 		u32 CreateShaderView(GfxBuffer* pBuffer) final;
 		u32 CreateStorageView(GfxBuffer* pBuffer) final;
 
+		u64 GetGpuHandle(u32 index) const final { return GpuAt(index).ptr; }
+
 		ID3D12DescriptorHeap* Handle() const { return m_heap; }
 
 		D3D12_CPU_DESCRIPTOR_HANDLE CpuAt(u32 index) const { return { m_cpuStart.ptr + usize(index) * m_descriptorSize }; }

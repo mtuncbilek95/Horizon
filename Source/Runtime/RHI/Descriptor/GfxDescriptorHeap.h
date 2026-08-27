@@ -8,16 +8,6 @@ namespace Horizon::RHI
 	class GfxTexture;
 	class GfxBuffer;
 
-	/*
-	* GfxDescriptorHeap owns a contiguous block of descriptors and hands out
-	* indices into it. Descriptor heaps are not owned by the device; the
-	* GraphicsContext creates them and everything that needs a descriptor
-	* requests it from there.
-	*
-	* Allocate and Free deal in bare slots, while the CreateXView calls both
-	* reserve a slot and write the view into it, stamping the resulting index
-	* onto the resource so shaders can reach it through the bindless heap.
-	*/
 	class GfxDescriptorHeap : public GfxObject
 	{
 	public:
@@ -31,6 +21,8 @@ namespace Horizon::RHI
 
 		virtual u32 CreateShaderView(GfxBuffer* pBuffer) = 0;
 		virtual u32 CreateStorageView(GfxBuffer* pBuffer) = 0;
+
+		virtual u64 GetGpuHandle(u32 index) const = 0;
 
 		const GfxDescriptorHeapDesc& GetDesc() const { return m_desc; }
 		GfxDescriptorHeapType GetType() const { return m_desc.type; }

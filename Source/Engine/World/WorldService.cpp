@@ -4,6 +4,9 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Graphics/GraphicsContext.h>
+#include <Engine/Reflection/ReflectionSystem.h>
+#include <Engine/World/System.h>
+
 #include <Runtime/Containers/ScopedLock.h>
 
 // TODO: Remove this later
@@ -19,8 +22,24 @@ namespace Horizon::Engine
 {
 	ModuleReport WorldService::OnInitialize()
 	{
-		// TODO: THIS WHOLE THING IS TEMPORARY
+		// Try to catch all the systems first.
 		ReflectionSystem* pReflection = GetEngine()->GetReflectionSystem();
+
+		List<Reflect::Type*> systemTypes = pReflection->GetTypeByBase(Reflect::TypeOf<System>());
+		for (auto* pType : systemTypes)
+		{
+			auto* pSystem = (System*)pType->Create(Memory::CurrLoc());
+			pSystem->m_engine = GetEngine();
+			if (pSystem->OnInitialize())
+			{
+				Terminal::Info(StringOps::GetName(this), "{} has been initialized properly.", pType->GetName());
+				m_systems.PushBack(pSystem);
+			}
+			else
+				Terminal::Error(StringOps::GetName(this), "{} has failed initializing.", pType->GetName());
+		}
+
+		// TODO: THIS WHOLE THING IS TEMPORARY
 
 		m_activeWorld = Memory::Allocator::Create<World>(Memory::CurrLoc(), pReflection);
 
@@ -65,6 +84,9 @@ namespace Horizon::Engine
 	{
 		m_activeWorld->EndStructuralPhase();
 
+		for (auto* pSys : m_systems)
+			pSys->OnExecute(*m_activeWorld);
+
 		// TODO: Systems run here, on the job system, against a frozen layout
 
 		m_activeWorld->BeginStructuralPhase();
@@ -73,6 +95,12 @@ namespace Horizon::Engine
 
 	void WorldService::OnFinalize()
 	{
+		for (auto* pSys : m_systems)
+		{
+			pSys->OnFinalize();
+			Memory::Allocator::Delete(pSys);
+		}
+
 		for (WorldCommandBuffer* pBuffer : m_commandBuffers)
 			Memory::Allocator::Delete(pBuffer);
 

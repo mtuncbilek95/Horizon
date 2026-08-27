@@ -22,6 +22,8 @@ namespace Horizon::Editor
 		virtual void OnInvoke() = 0;
 		virtual void OnRender() = 0;
 
+		virtual b8 IsFullBleed() const { return false; }
+
 		ViewRegistry* GetRegistry() const { return m_holder; }
 		EditorContext* GetContext() const { return m_context; }
 
