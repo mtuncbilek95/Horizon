@@ -26,6 +26,8 @@ namespace Horizon
 		void ReadValue(void* valuePtr, const Reflect::Field& field, IArchiveReader& reader);
 		void ReadPointer(void* pointerSlot, const Reflect::Field& field, IArchiveReader& reader);
 
+		b8 SeekField(const Reflect::Field& field, IArchiveReader& reader);
+
 		const Reflect::Type* Resolve(Reflect::TypeHandle handle) { return m_resolve(m_userData, handle); }
 
 	private:

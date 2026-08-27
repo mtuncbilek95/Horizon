@@ -4,6 +4,8 @@
 #include <Runtime/Containers/ListBase.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/Timer/DateTime.h>
+#include <Runtime/RTTR/Attributes/TransientAttribute.h>
+#include <Runtime/RTTR/Attributes/AliasAttribute.h>
 
 #include <string>
 
@@ -69,6 +71,9 @@ namespace Horizon
 
 		for (const Reflect::Field& field : type.GetFields())
 		{
+			if (field.GetCustomAttribute<Reflect::TransientAttribute>())
+				continue;
+
 			writer.Key(field.GetName());
 			WriteField(field.GetValue(obj), field, writer);
 		}
@@ -178,7 +183,10 @@ namespace Horizon
 
 		for (const Reflect::Field& field : type.GetFields())
 		{
-			if (reader.Key(field.GetName()))
+			if (field.GetCustomAttribute<Reflect::TransientAttribute>())
+				continue;
+
+			if (SeekField(field, reader))
 				ReadField(field.GetValue(obj), field, reader);
 		}
 
@@ -232,6 +240,20 @@ namespace Horizon
 		}
 
 		reader.EndObject();
+	}
+
+	b8 Serializer::SeekField(const Reflect::Field& field, IArchiveReader& reader)
+	{
+		if (reader.Key(field.GetName()))
+			return true;
+
+		for (const Reflect::AliasAttribute* pAlias : field.GetCustomAttributes<Reflect::AliasAttribute>())
+		{
+			if (reader.Key(pAlias->GetFormerName()))
+				return true;
+		}
+
+		return false;
 	}
 
 	void Serializer::ReadValue(void* valuePtr, const Reflect::Field& field, IArchiveReader& reader)
