@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/Log/Terminal.h>
 
 #include <string>
 #include <string_view>
@@ -24,6 +25,12 @@ namespace Horizon
 		virtual void WriteU64(u64) = 0;
 		virtual void WriteF64(f64) = 0;
 		virtual void WriteString(std::string_view) = 0;
+
+		virtual void WriteBytes(const void* pData, usize size)
+		{
+			(void)pData;
+			Terminal::Error("IArchiveWriter", "Raw byte payloads are unsupported by this archive, {} bytes dropped", size);
+		}
 	};
 
 	class H_EXPORT IArchiveReader
@@ -42,6 +49,13 @@ namespace Horizon
 		virtual u64 ReadU64() = 0;
 		virtual f64 ReadF64() = 0;
 		virtual std::string ReadString() = 0;
+		
+		virtual usize ReadBytes(void* pData, usize size)
+		{
+			(void)pData;
+			Terminal::Error("IArchiveReader", "Raw byte payloads are unsupported by this archive, {} bytes requested", size);
+			return 0;
+		}
 
 		virtual b8 HasError() const = 0;
 	};

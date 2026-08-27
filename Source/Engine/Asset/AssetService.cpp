@@ -24,7 +24,7 @@ namespace Horizon::Engine
 				continue;
 			}
 
-			AssetLoadStrategy* pStrategy = (AssetLoadStrategy*)type->CreateFromMemory();
+			AssetLoadStrategy* pStrategy = (AssetLoadStrategy*)type->Create();
 			m_assetLookup.emplace(pStrategy->GetWorkingAssetHandle(), m_loaders.GetCount());
 			m_loaders.PushBack(pStrategy);
 

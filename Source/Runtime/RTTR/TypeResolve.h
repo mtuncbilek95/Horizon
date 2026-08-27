@@ -73,4 +73,13 @@ namespace Horizon::Reflect
 		static constexpr TypeMode Mode = TypeMode::Pointer;
 		static constexpr TypeKind Kind = KindOf<E>();
 	};
+
+	template<typename T>
+	constexpr TypeKind UnderlyingKindOf()
+	{
+		if constexpr (std::is_enum_v<T>)
+			return KindOf<std::underlying_type_t<T>>();
+		else
+			return KindOf<T>();
+	}
 }

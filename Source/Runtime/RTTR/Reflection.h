@@ -29,3 +29,4 @@ namespace Horizon::Reflect
 #define HATTRIBUTE(...)
 #define HFIELD(...)
 #define HENUM(...)
+#define HMETA(...)

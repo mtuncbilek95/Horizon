@@ -92,7 +92,7 @@ namespace Horizon::Editor
 					ContextMenuNode& leaf = pLevel->EmplaceBack();
 					leaf.displayName = std::move(segment);
 					leaf.order = order;
-					leaf.item = static_cast<ContextMenuItem<TContext>*>(pType->CreateFromMemory());
+					leaf.item = static_cast<ContextMenuItem<TContext>*>(pType->Create());
 					break;
 				}
 

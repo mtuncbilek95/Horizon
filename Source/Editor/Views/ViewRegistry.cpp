@@ -67,7 +67,7 @@ namespace Horizon::Editor
 		{
 			if (view.openOnStart)
 			{
-				auto* viewObj = (ViewObject*)view.pCoreType->CreateFromMemory();
+				auto* viewObj = (ViewObject*)view.pCoreType->Create();
 				viewObj->m_context = &m_context;
 				viewObj->m_displayName = view.displayName;
 				viewObj->m_holder = this;

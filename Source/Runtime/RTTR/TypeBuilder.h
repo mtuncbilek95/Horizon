@@ -25,22 +25,39 @@ namespace Horizon::Reflect
 			builder.m_type.m_size = sizeof(TType);
 			builder.m_type.m_align = alignof(TType);
 			builder.m_type.m_kind = KindOf<TType>();
+			builder.m_type.m_abstractClass = std::is_abstract_v<TType>;
+			builder.m_type.m_triviallyCopyable = std::is_trivially_copyable_v<TType>;
 
-			if constexpr (std::is_class_v<TType> && std::is_default_constructible_v<TType> &&
-				!std::is_abstract_v<TType>)
+			if constexpr (!std::is_abstract_v<TType>)
 			{
-				builder.m_type.CreateMemoryFunc = []() -> VoidObject
+				builder.m_type.DestructFunc = [](void* pMemory)
 					{
-						return Memory::Allocator::Create<TType>(Memory::CurrLoc());
+						static_cast<TType*>(pMemory)->~TType();
 					};
-				builder.m_type.DestroyMemoryFunc = [](VoidObject instance)
-					{
-						Memory::Allocator::Delete(static_cast<TType*>(instance));
-					};
-			}
-			else if constexpr (std::is_abstract_v<TType>)
-			{
-				builder.m_type.m_abstractClass = true;
+
+				if constexpr (std::is_default_constructible_v<TType>)
+				{
+					builder.m_type.ConstructFunc = [](void* pMemory)
+						{
+							::new (pMemory) TType();
+						};
+				}
+
+				if constexpr (std::is_move_constructible_v<TType>)
+				{
+					builder.m_type.MoveFunc = [](void* pDestination, void* pSource)
+						{
+							::new (pDestination) TType(std::move(*static_cast<TType*>(pSource)));
+						};
+				}
+
+				if constexpr (std::is_copy_constructible_v<TType>)
+				{
+					builder.m_type.CopyFunc = [](void* pDestination, const void* pSource)
+						{
+							::new (pDestination) TType(*static_cast<const TType*>(pSource));
+						};
+				}
 			}
 
 			return builder;
@@ -75,18 +92,9 @@ namespace Horizon::Reflect
 			field.m_name = std::move(name);
 			field.m_offset = OffsetOf(member);
 			field.m_kind = R::Kind;
+			field.m_underlyingKind = UnderlyingKindOf<typename R::Element>();
 			field.m_mode = R::Mode;
 			field.m_typeId = TypeOf<typename R::Element>();
-
-			if constexpr (R::Mode == TypeMode::Array)
-			{
-				using E = typename R::Element;
-
-				field.m_elementSize = sizeof(E);
-
-				if constexpr (!std::is_trivially_copyable_v<E> || !std::is_trivially_default_constructible_v<E>)
-					field.m_elementOps = ElementOpsFor<E>();
-			}
 
 			m_type.m_fields.PushBack(std::move(field));
 			return *this;

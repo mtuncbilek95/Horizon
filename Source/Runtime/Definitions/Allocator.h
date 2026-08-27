@@ -23,20 +23,19 @@ namespace Horizon::Memory
 		template<typename T>
 		static void Delete(T* pAddress)
 		{
-			if (!pAddress) 
+			if (!pAddress)
 				return;
 
 			pAddress->~T();
 			FreeRaw(pAddress);
 		}
 
+		static void* AllocateRaw(usize size, usize align, SourceLocation loc);
+		static void FreeRaw(void* p);
+
 		static void ReportLeaks();
 
 		static void SetContext(void* tracker);
 		static void* GetContext();
-
-	private:
-		static void* AllocateRaw(usize size, usize align, SourceLocation loc);
-		static void FreeRaw(void* p);
 	};
 }

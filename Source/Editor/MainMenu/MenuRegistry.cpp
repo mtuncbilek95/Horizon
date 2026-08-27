@@ -61,7 +61,7 @@ namespace Horizon::Editor
 
 				if (isLeaf)
 				{
-					auto* menuObj = static_cast<MenuItem*>(type->CreateFromMemory());
+					auto* menuObj = static_cast<MenuItem*>(type->Create());
 					menuObj->m_engine = ctx.pEngine;
 
 					MenuItemInstance leaf;

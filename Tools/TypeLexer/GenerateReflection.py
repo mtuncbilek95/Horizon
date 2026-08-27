@@ -1,220 +1,460 @@
 import re
 import argparse
+from dataclasses import dataclass
 from pathlib import Path
 
-def strip_comments(text: str) -> str:
-    text = re.sub(r'/\*.*?\*/', '', text, flags=re.S)
-    text = re.sub(r'//[^\n]*', '', text)
-    return text
+blockCommentRe = re.compile(r'/\*.*?\*/', flags=re.S)
+lineCommentRe = re.compile(r'//[^\n]*')
 
-def parse_attribute(content: str):
-    m = re.match(r'\s*([A-Za-z_]\w*)\s*(?:\[(.*)\])?\s*$', content.strip(), flags=re.S)
-    if not m:
-        return None
-    return m.group(1), (m.group(2) or '').strip()
+namespaceTailRe = re.compile(r'namespace\s+([A-Za-z_][\w:]*)\s*$')
+attributeRe = re.compile(r'\s*([A-Za-z_]\w*)\s*(?:\[(.*)\])?\s*$', flags=re.S)
 
-def split_top_level(s: str):
-    parts = []
-    cur = []
-    depth = 0
-    in_str = None
-    i = 0
-    while i < len(s):
-        ch = s[i]
-        if in_str:
-            cur.append(ch)
-            if ch == '\\' and i + 1 < len(s):
-                cur.append(s[i + 1])
-                i += 1
-            elif ch == in_str:
-                in_str = None
-        elif ch in '"\'':
-            in_str = ch
-            cur.append(ch)
-        elif ch in '[({':
-            depth += 1
-            cur.append(ch)
-        elif ch in '])}':
-            depth -= 1
-            cur.append(ch)
-        elif ch == ',' and depth == 0:
-            parts.append(''.join(cur).strip())
-            cur = []
-        else:
-            cur.append(ch)
-        i += 1
-    tail = ''.join(cur).strip()
-    if tail:
-        parts.append(tail)
-    return parts
+classDeclRe = re.compile(r'\b(enum\s+)?(?:class|struct)\s+(?:[A-Z_][A-Z0-9_]*\s+)?([A-Za-z_]\w*)\b([^{;]*)\{')
+enumDeclRe = re.compile(r'\benum\s+(?:class\s+|struct\s+)?(?:[A-Z_][A-Z0-9_]*\s+)?([A-Za-z_]\w*)\b[^{;]*\{')
 
-def parse_attributes(content: str):
-    attrs = []
-    if not content.strip():
-        return attrs
-    for part in split_top_level(content):
-        pa = parse_attribute(part)
-        if pa:
-            attrs.append(pa)
-    return attrs
+hclassRe = re.compile(r'\bHCLASS\s*\(')
+hattributeRe = re.compile(r'\bHATTRIBUTE\s*\(')
+hfieldRe = re.compile(r'\bHFIELD\s*\(')
+henumRe = re.compile(r'\bHENUM\s*\(')
+hmetaRe = re.compile(r'\bHMETA\s*\(')
 
-def attribute_class(name: str) -> str:
-    return name if name.endswith('Attribute') else name + 'Attribute'
+baseRe = re.compile(r':\s*(?:public\s+|protected\s+|private\s+)?([A-Za-z_][\w:]*)')
+fieldDeclRe = re.compile(r'\s*;?\s*([^;{}]+);')
+fieldNameRe = re.compile(r'([A-Za-z_]\w*)\s*$')
+enumeratorRe = re.compile(r'([A-Za-z_]\w*)\s*(?:=(.*))?$', flags=re.S)
+metaStringRe = re.compile(r'\s*"((?:[^"\\]|\\.)*)"')
+shiftRe = re.compile(r'<<|>>')
 
-NS_TAIL_RE = re.compile(r'namespace\s+([A-Za-z_][\w:]*)\s*$')
 
-def namespace_at(clean: str, pos: int) -> str:
-    stack = []
-    i = 0
-    n = min(pos, len(clean))
-    while i < n:
-        ch = clean[i]
-        if ch in '"\'':
-            quote = ch
-            i += 1
-            while i < n:
-                if clean[i] == '\\':
-                    i += 2
-                    continue
-                if clean[i] == quote:
-                    break
-                i += 1
-        elif ch == '{':
-            m = NS_TAIL_RE.search(clean, 0, i)
-            stack.append(m.group(1) if m else None)
-        elif ch == '}':
-            if stack:
-                stack.pop()
-        i += 1
-    return '::'.join(name for name in stack if name)
+@dataclass
+class ReflectedAttribute:
+    name: str
+    arguments: str
 
-def brace_body(s: str, open_idx: int) -> str:
-    depth = 0
-    for i in range(open_idx, len(s)):
-        if s[i] == '{':
-            depth += 1
-        elif s[i] == '}':
-            depth -= 1
-            if depth == 0:
-                return s[open_idx + 1:i]
-    return s[open_idx + 1:]
+    # Renders this attribute as the C++ constructor expression the builder expects.
+    def ToExpression(self):
+        className = self.name if self.name.endswith('Attribute') else self.name + 'Attribute'
+        return f'{className}({self.arguments})'
 
-def extract_parens(s: str, open_idx: int):
-    depth = 0
-    for i in range(open_idx, len(s)):
-        if s[i] == '(':
-            depth += 1
-        elif s[i] == ')':
-            depth -= 1
-            if depth == 0:
-                return s[open_idx + 1:i], i
-    return s[open_idx + 1:], len(s) - 1
 
-class Reflected:
-    def __init__(self, ns, name, base, attrs, fields, include, layer):
-        self.ns = ns
-        self.name = name
-        self.base = base
-        self.attrs = attrs
-        self.fields = fields
-        self.include = include
-        self.layer = layer
+@dataclass
+class ReflectedField:
+    displayName: str
+    memberName: str
+    attributes: list
 
-def parse_file(path: Path, source_root: Path):
-    raw = path.read_text(encoding='utf-8', errors='ignore')
-    clean = strip_comments(raw)
 
-    results = []
-    for hclass in re.finditer(r'\bHCLASS\s*\(', clean):
-        paren_open = hclass.end() - 1
-        hclass_content, paren_close = extract_parens(clean, paren_open)
+@dataclass
+class ReflectedEnumValue:
+    displayName: str
+    memberName: str
 
-        m = re.search(r'\b(?:class|struct)\s+(?:[A-Z_][A-Z0-9_]*\s+)?([A-Za-z_]\w*)\b([^{;]*)\{', clean[paren_close:])
-        if not m:
+
+@dataclass
+class ReflectedType:
+    namespaceName: str
+    typeName: str
+    includePath: str
+    layerName: str
+
+    # Returns the fully qualified C++ name of this type.
+    def QualifiedName(self):
+        if self.namespaceName:
+            return f'{self.namespaceName}::{self.typeName}'
+        return self.typeName
+
+
+@dataclass
+class ReflectedClass(ReflectedType):
+    baseName: str
+    attributes: list
+    fields: list
+
+    # Builds the TypeBuilder call chain that describes this class.
+    def BuildChain(self):
+        chain = []
+
+        if self.baseName:
+            chain.append(f'.WithBase<{self.baseName}>()')
+
+        for attribute in self.attributes:
+            chain.append(f'.WithAttribute({attribute.ToExpression()})')
+
+        for reflectedField in self.fields:
+            chain.append(f'.WithField("{reflectedField.displayName}", &{self.typeName}::{reflectedField.memberName})')
+
+            for attribute in reflectedField.attributes:
+                chain.append(f'.WithFieldAttribute({attribute.ToExpression()})')
+
+        return chain
+
+
+@dataclass
+class ReflectedEnum(ReflectedType):
+    values: list
+
+    # Builds the TypeBuilder call chain that describes this enum.
+    def BuildChain(self):
+        return [f'.WithEnum("{value.displayName}", static_cast<i64>({self.typeName}::{value.memberName}))'
+                for value in self.values]
+
+
+# Removes block and line comments so commented out markup is never parsed.
+def StripComments(text):
+    text = blockCommentRe.sub('', text)
+    return lineCommentRe.sub('', text)
+
+
+# Advances past a string or character literal and returns the index right after it.
+def SkipLiteral(text, index, limit):
+    quote = text[index]
+    index += 1
+
+    while index < limit:
+        if text[index] == '\\':
+            index += 2
             continue
 
-        name = m.group(1)
-        inherit = m.group(2)
+        if text[index] == quote:
+            return index + 1
 
-        base = None
-        bm = re.search(r':\s*(?:public\s+|protected\s+|private\s+)?([A-Za-z_][\w:]*)', inherit)
-        if bm:
-            base = bm.group(1)
+        index += 1
 
-        ns = namespace_at(clean, hclass.start())
+    return index
 
-        body_open = paren_close + m.end() - 1
-        body = brace_body(clean, body_open)
 
-        attrs = parse_attributes(hclass_content)
-        for a in re.finditer(r'\bHATTRIBUTE\s*\(', body):
-            a_content, _ = extract_parens(body, a.end() - 1)
-            attrs.extend(parse_attributes(a_content))
+# Returns the index of the delimiter closing the one at openIndex, or the end of the text.
+def MatchingIndex(text, openIndex, opener, closer):
+    depth = 0
 
-        fields = []
-        for f in re.finditer(r'\bHFIELD\s*\(', body):
-            f_content, f_close = extract_parens(body, f.end() - 1)
+    for index in range(openIndex, len(text)):
+        if text[index] == opener:
+            depth += 1
+        elif text[index] == closer:
+            depth -= 1
 
-            decl_m = re.match(r'\s*;?\s*([^;{}]+);', body[f_close + 1:])
-            if not decl_m:
-                continue
+            if depth == 0:
+                return index
 
-            decl = decl_m.group(1).split('=')[0].strip()
-            nm = re.search(r'([A-Za-z_]\w*)\s*$', decl)
-            if not nm:
-                continue
+    return len(text)
 
-            member = nm.group(1)
-            display = member[2:] if member.startswith('m_') else member
-            display = display[:1].upper() + display[1:]
-            fields.append((display, member, parse_attributes(f_content)))
 
-        rel = path.relative_to(source_root).as_posix()
-        layer = rel.split('/', 1)[0]
-        results.append(Reflected(ns, name, base, attrs, fields, rel, layer))
+# Returns the text between the brace at openIndex and its matching close brace.
+def BraceBody(text, openIndex):
+    return text[openIndex + 1:MatchingIndex(text, openIndex, '{', '}')]
+
+
+# Returns the text inside the paren at openIndex plus the index of its matching close paren.
+def ExtractParens(text, openIndex):
+    closeIndex = MatchingIndex(text, openIndex, '(', ')')
+    return text[openIndex + 1:closeIndex], closeIndex
+
+
+# Splits a comma separated list, ignoring commas nested in brackets or literals.
+def SplitTopLevel(text):
+    parts = []
+    current = []
+    depth = 0
+    quote = None
+    index = 0
+
+    while index < len(text):
+        char = text[index]
+
+        if quote:
+            current.append(char)
+
+            if char == '\\' and index + 1 < len(text):
+                current.append(text[index + 1])
+                index += 1
+            elif char == quote:
+                quote = None
+        elif char in '"\'':
+            quote = char
+            current.append(char)
+        elif char in '[({':
+            depth += 1
+            current.append(char)
+        elif char in '])}':
+            depth -= 1
+            current.append(char)
+        elif char == ',' and depth == 0:
+            parts.append(''.join(current).strip())
+            current = []
+        else:
+            current.append(char)
+
+        index += 1
+
+    parts.append(''.join(current).strip())
+
+    return [part for part in parts if part]
+
+
+# Parses one "Name[args]" usage into a reflected attribute.
+def ParseAttribute(part):
+    match = attributeRe.match(part.strip())
+
+    if not match:
+        return None
+
+    return ReflectedAttribute(match.group(1), (match.group(2) or '').strip())
+
+
+# Parses a whole macro payload into the list of attributes it declares.
+def ParseAttributes(payload):
+    if not payload.strip():
+        return []
+
+    parsed = [ParseAttribute(part) for part in SplitTopLevel(payload)]
+
+    return [attribute for attribute in parsed if attribute]
+
+
+# Rebuilds the enclosing namespace path for a position in the file.
+def NamespaceAt(text, position):
+    stack = []
+    index = 0
+    limit = min(position, len(text))
+
+    while index < limit:
+        char = text[index]
+
+        if char in '"\'':
+            index = SkipLiteral(text, index, limit)
+            continue
+
+        if char == '{':
+            match = namespaceTailRe.search(text, 0, index)
+            stack.append(match.group(1) if match else None)
+        elif char == '}' and stack:
+            stack.pop()
+
+        index += 1
+
+    return '::'.join(name for name in stack if name)
+
+
+# Joins a namespace and a type name into a fully qualified name.
+def QualifiedName(namespaceName, typeName):
+    if namespaceName:
+        return f'{namespaceName}::{typeName}'
+
+    return typeName
+
+
+# Turns a member name into the display name the editor shows.
+def DisplayNameOf(memberName):
+    displayName = memberName[2:] if memberName.startswith('m_') else memberName
+
+    return displayName[:1].upper() + displayName[1:]
+
+
+# Finds the first real class or struct declaration after a marker, skipping enum declarations.
+def FindClassDeclaration(text, startIndex):
+    for candidate in classDeclRe.finditer(text, startIndex):
+        if candidate.group(1):
+            continue
+
+        return candidate
+
+    return None
+
+
+# Collects the attributes contributed by HATTRIBUTE macros anywhere in a class body.
+def ParseBodyAttributes(body):
+    attributes = []
+
+    for marker in hattributeRe.finditer(body):
+        payload, _ = ExtractParens(body, marker.end() - 1)
+        attributes.extend(ParseAttributes(payload))
+
+    return attributes
+
+
+# Collects every HFIELD marked member of a class body.
+def ParseFields(body, ownerName):
+    fields = []
+
+    for marker in hfieldRe.finditer(body):
+        payload, payloadEnd = ExtractParens(body, marker.end() - 1)
+        declaration = fieldDeclRe.match(body[payloadEnd + 1:])
+
+        if not declaration:
+            print(f'[warn] {ownerName} has an HFIELD with an unparsable declaration, skipped')
+            continue
+
+        nameMatch = fieldNameRe.search(declaration.group(1).split('=')[0].strip())
+
+        if not nameMatch:
+            print(f'[warn] {ownerName} has an HFIELD with no member name, skipped')
+            continue
+
+        memberName = nameMatch.group(1)
+        fields.append(ReflectedField(DisplayNameOf(memberName), memberName, ParseAttributes(payload)))
+
+    return fields
+
+
+# Splits one enumerator into its member name, display name and initializer text.
+def ParseEnumerator(entry):
+    displayName = None
+    marker = hmetaRe.search(entry)
+
+    if marker:
+        payload, payloadEnd = ExtractParens(entry, marker.end() - 1)
+        stringMatch = metaStringRe.match(payload)
+
+        if stringMatch:
+            displayName = stringMatch.group(1)
+
+        entry = entry[:marker.start()] + entry[payloadEnd + 1:]
+
+    entry = entry.strip()
+
+    if not entry:
+        return None
+
+    match = enumeratorRe.match(entry)
+
+    if not match:
+        return None
+
+    memberName = match.group(1)
+    initializer = (match.group(2) or '').strip()
+
+    return memberName, displayName or memberName, initializer
+
+
+# Collects an enum body's values, or None when it is a bit shifted flag enum.
+def ParseEnumValues(body):
+    values = []
+
+    for entry in SplitTopLevel(body):
+        parsed = ParseEnumerator(entry)
+
+        if not parsed:
+            continue
+
+        memberName, displayName, initializer = parsed
+
+        if shiftRe.search(initializer):
+            return None
+
+        values.append(ReflectedEnumValue(displayName, memberName))
+
+    return values
+
+
+# Collects every HCLASS marked type in a cleaned file.
+def ParseClasses(text, includePath, layerName):
+    results = []
+
+    for marker in hclassRe.finditer(text):
+        payload, payloadEnd = ExtractParens(text, marker.end() - 1)
+        declaration = FindClassDeclaration(text, payloadEnd)
+
+        if not declaration:
+            continue
+
+        typeName = declaration.group(2)
+        namespaceName = NamespaceAt(text, marker.start())
+        body = BraceBody(text, declaration.end() - 1)
+
+        baseMatch = baseRe.search(declaration.group(3))
+
+        results.append(ReflectedClass(
+            namespaceName=namespaceName,
+            typeName=typeName,
+            includePath=includePath,
+            layerName=layerName,
+            baseName=baseMatch.group(1) if baseMatch else None,
+            attributes=ParseAttributes(payload) + ParseBodyAttributes(body),
+            fields=ParseFields(body, QualifiedName(namespaceName, typeName))))
 
     return results
 
-def emit_reflected(r: Reflected) -> str:
-    q = f'{r.ns}::{r.name}' if r.ns else r.name
+
+# Collects every HENUM marked enum in a cleaned file, skipping bit shifted flag enums.
+def ParseEnums(text, includePath, layerName):
+    results = []
+
+    for marker in henumRe.finditer(text):
+        _, payloadEnd = ExtractParens(text, marker.end() - 1)
+        declaration = enumDeclRe.search(text, payloadEnd)
+
+        if not declaration:
+            continue
+
+        typeName = declaration.group(1)
+        namespaceName = NamespaceAt(text, marker.start())
+        qualified = QualifiedName(namespaceName, typeName)
+
+        values = ParseEnumValues(BraceBody(text, declaration.end() - 1))
+
+        if values is None:
+            print(f'[skip] {qualified} is a bit shifted flag enum, HENUM ignored')
+            continue
+
+        if not values:
+            print(f'[skip] {qualified} has no enumerators, HENUM ignored')
+            continue
+
+        results.append(ReflectedEnum(
+            namespaceName=namespaceName,
+            typeName=typeName,
+            includePath=includePath,
+            layerName=layerName,
+            values=values))
+
+    return results
+
+
+# Parses one header into every reflected class and enum it declares.
+def ParseFile(path, sourceRoot, raw):
+    text = StripComments(raw)
+    includePath = path.relative_to(sourceRoot).as_posix()
+    layerName = includePath.split('/', 1)[0]
+
+    return ParseClasses(text, includePath, layerName) + ParseEnums(text, includePath, layerName)
+
+
+# Renders the TypeAccessor specialisation wrapping a type's TypeBuilder chain.
+def EmitAccessor(reflected):
     lines = []
-    if r.ns:
-        lines.append(f'\t\t\t\tusing namespace {r.ns};\n')
-    lines.append(f'\t\t\t\treturn TypeBuilder<{r.name}>::ForType("{r.name}")')
-    if r.base:
-        lines.append(f'\t\t\t\t\t.WithBase<{r.base}>()')
-    for attr_name, args in r.attrs:
-        cls = attribute_class(attr_name)
-        lines.append(f'\t\t\t\t\t.WithAttribute({cls}({args}))')
-    for display, member, f_attrs in r.fields:
-        lines.append(f'\t\t\t\t\t.WithField("{display}", &{r.name}::{member})')
-        for attr_name, args in f_attrs:
-            cls = attribute_class(attr_name)
-            lines.append(f'\t\t\t\t\t.WithFieldAttribute({cls}({args}))')
+
+    if reflected.namespaceName:
+        lines.append(f'\t\t\t\tusing namespace {reflected.namespaceName};\n')
+
+    lines.append(f'\t\t\t\treturn TypeBuilder<{reflected.typeName}>::ForType("{reflected.typeName}")')
+    lines.extend(f'\t\t\t\t\t{step}' for step in reflected.BuildChain())
     lines.append('\t\t\t\t\t.Build();')
-    chain = '\n'.join(lines)
+
+    body = '\n'.join(lines)
 
     return (
         '#pragma once\n\n'
-        f'#include <{r.include}>\n\n'
+        f'#include <{reflected.includePath}>\n\n'
         'namespace Horizon::Reflect\n{\n'
         '\ttemplate<>\n'
-        f'\tstruct TypeAccessor<{q}>\n'
+        f'\tstruct TypeAccessor<{reflected.QualifiedName()}>\n'
         '\t{\n'
         '\t\tstatic Type Build()\n'
         '\t\t{\n'
-        f'{chain}\n'
+        f'{body}\n'
         '\t\t}\n'
         '\t};\n'
         '}\n'
     )
 
-def emit_manifestation(all_r) -> str:
-    includes = '\n'.join(f'#include <{r.layer}/{r.name}.reflected.h>' for r in all_r)
+
+# Renders the module wide header that registers every generated type.
+def EmitManifestation(reflected):
+    includes = '\n'.join(
+        f'#include <{entry.layerName}/{entry.typeName}.reflected.h>' for entry in reflected)
     pushes = '\n'.join(
-        f'\toutTypes->PushBack(TypeAccessor<{(r.ns + "::" + r.name) if r.ns else r.name}>::Build());'
-        for r in all_r
-    )
+        f'\toutTypes->PushBack(TypeAccessor<{entry.QualifiedName()}>::Build());' for entry in reflected)
+
     return (
         '#pragma once\n\n'
         f'{includes}\n\n'
@@ -234,28 +474,56 @@ def emit_manifestation(all_r) -> str:
         '}\n'
     )
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument('--source', default='Source')
-    ap.add_argument('--out', default='Intermediate')
-    args = ap.parse_args()
-
-    source_root = Path(args.source).resolve()
-    out_root = Path(args.out).resolve()
-
-    all_r = []
-    for path in source_root.rglob('*.h'):
-        if 'HCLASS' not in path.read_text(encoding='utf-8', errors='ignore'):
+# Deletes generated headers left over from types that no longer exist in the source tree.
+def PruneStale(outRoot, claimed):
+    for path in outRoot.rglob('*.reflected.h'):
+        if path in claimed:
             continue
-        for r in parse_file(path, source_root):
-            all_r.append(r)
-            out_path = out_root / r.layer / f'{r.name}.reflected.h'
-            out_path.parent.mkdir(parents=True, exist_ok=True)
-            out_path.write_text(emit_reflected(r), encoding='utf-8', newline='\n')
-            print(f'[gen] {r.ns}::{r.name} -> {out_path.relative_to(out_root)}')
 
-    (out_root / 'TypeManifestation.h').write_text(emit_manifestation(all_r), encoding='utf-8', newline='\n')
-    print(f'[gen] TypeManifestation.h ({len(all_r)} types)')
+        path.unlink()
+        print(f'[del] {path.relative_to(outRoot)}')
+
+# Generates one .reflected.h per marked type plus the module manifestation header.
+def Main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--source', default='Source')
+    parser.add_argument('--out', default='Intermediate')
+    arguments = parser.parse_args()
+
+    sourceRoot = Path(arguments.source).resolve()
+    outRoot = Path(arguments.out).resolve()
+    outRoot.mkdir(parents=True, exist_ok=True)
+
+    generated = []
+    claimed = {}
+
+    for path in sourceRoot.rglob('*.h'):
+        raw = path.read_text(encoding='utf-8', errors='ignore')
+
+        if 'HCLASS' not in raw and 'HENUM' not in raw:
+            continue
+
+        for reflected in ParseFile(path, sourceRoot, raw):
+            outPath = outRoot / reflected.layerName / f'{reflected.typeName}.reflected.h'
+            qualified = reflected.QualifiedName()
+            owner = claimed.get(outPath)
+
+            if owner:
+                print(f'[err] {qualified} collides with {owner}, skipped')
+                continue
+
+            claimed[outPath] = qualified
+            generated.append(reflected)
+
+            outPath.parent.mkdir(parents=True, exist_ok=True)
+            outPath.write_text(EmitAccessor(reflected), encoding='utf-8', newline='\n')
+            print(f'[gen] {qualified} -> {outPath.relative_to(outRoot)}')
+
+    PruneStale(outRoot, claimed)
+
+    (outRoot / 'TypeManifestation.h').write_text(
+        EmitManifestation(generated), encoding='utf-8', newline='\n')
+    print(f'[gen] TypeManifestation.h ({len(generated)} types)')
 
 if __name__ == '__main__':
-    main()
+    Main()

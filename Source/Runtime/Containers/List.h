@@ -1,12 +1,12 @@
 #pragma once
 
 #include <Runtime/Containers/ListBase.h>
+#include <Runtime/Log/Terminal.h>
 
 #include <initializer_list>
 #include <iterator>
 #include <concepts>
 #include <utility>
-#include <new>
 
 namespace Horizon
 {
@@ -29,7 +29,7 @@ namespace Horizon
 			m_capacity = count;
 
 			for (usize i = 0; i < count; i++)
-				::new (GetData() + i) T();
+				::new (m_data + i) T();
 		}
 
 		List(usize count, const T& value)
@@ -39,7 +39,7 @@ namespace Horizon
 			m_capacity = count;
 
 			for (usize i = 0; i < count; i++)
-				::new (GetData() + i) T(value);
+				::new (m_data + i) T(value);
 		}
 
 		List(std::initializer_list<T> initList)
@@ -55,7 +55,7 @@ namespace Horizon
 			m_data = AllocateBuffer(other.m_count);
 			m_capacity = other.m_count;
 
-			CopyFrom(other.GetData(), other.m_count);
+			CopyFrom(other.m_data, other.m_count);
 		}
 
 		List(List&& other) noexcept
@@ -83,7 +83,7 @@ namespace Horizon
 			return *this;
 		}
 
-		~List()
+		~List() override
 		{
 			DestroyElements();
 
@@ -91,20 +91,28 @@ namespace Horizon
 				::operator delete(m_data);
 		}
 
-		T* GetData() { return static_cast<T*>(m_data); }
-		const T* GetData() const { return static_cast<const T*>(m_data); }
+		usize GetElementSize() const override { return sizeof(T); }
+		usize GetCount() const override { return m_count; }
 
-		T& At(usize index) { return GetData()[index]; }
-		const T& At(usize index) const { return GetData()[index]; }
+		void* GetElementAt(usize index) override { return m_data + index; }
+		const void* GetElementAt(usize index) const override { return m_data + index; }
 
-		T& operator[](usize index) { return GetData()[index]; }
-		const T& operator[](usize index) const { return GetData()[index]; }
+		usize GetCapacity() const { return m_capacity; }
 
-		T& Front() { return GetData()[0]; }
-		const T& Front() const { return GetData()[0]; }
+		T* GetData() { return m_data; }
+		const T* GetData() const { return m_data; }
 
-		T& Back() { return GetData()[m_count - 1]; }
-		const T& Back() const { return GetData()[m_count - 1]; }
+		T& At(usize index) { return m_data[index]; }
+		const T& At(usize index) const { return m_data[index]; }
+
+		T& operator[](usize index) { return m_data[index]; }
+		const T& operator[](usize index) const { return m_data[index]; }
+
+		T& Front() { return m_data[0]; }
+		const T& Front() const { return m_data[0]; }
+
+		T& Back() { return m_data[m_count - 1]; }
+		const T& Back() const { return m_data[m_count - 1]; }
 
 		b8 IsEmpty() const { return m_count == 0; }
 		b8 IsValid() const { return m_data != nullptr; }
@@ -124,7 +132,7 @@ namespace Horizon
 		{
 			GrowIfRequired();
 
-			::new (GetData() + m_count) T(std::forward<Args>(args)...);
+			::new (m_data + m_count) T(std::forward<Args>(args)...);
 			m_count++;
 
 			return Back();
@@ -148,15 +156,15 @@ namespace Horizon
 
 			GrowIfRequired();
 
-			::new (GetData() + m_count) T(std::move(GetData()[m_count - 1]));
+			::new (m_data + m_count) T(std::move(m_data[m_count - 1]));
 
 			for (usize i = m_count - 1; i > index; --i)
-				GetData()[i] = std::move(GetData()[i - 1]);
+				m_data[i] = std::move(m_data[i - 1]);
 
-			GetData()[index] = T(std::forward<Args>(args)...);
+			m_data[index] = T(std::forward<Args>(args)...);
 			m_count++;
 
-			return GetData()[index];
+			return m_data[index];
 		}
 
 		b8 Contains(const T& element) const
@@ -168,7 +176,7 @@ namespace Horizon
 		{
 			for (usize i = 0; i < m_count; i++)
 			{
-				if (GetData()[i] == element)
+				if (m_data[i] == element)
 					return static_cast<i64>(i);
 			}
 
@@ -181,7 +189,7 @@ namespace Horizon
 		{
 			for (usize i = 0; i < m_count; i++)
 			{
-				if (GetData()[i] == element)
+				if (m_data[i] == element)
 					return static_cast<i64>(i);
 			}
 
@@ -212,16 +220,24 @@ namespace Horizon
 			return true;
 		}
 
-		void RemoveAt(usize index)
+		void RemoveAt(usize index) override
 		{
 			if (index >= m_count)
 				return;
 
-			for (usize i = index; i < m_count - 1; ++i)
-				GetData()[i] = std::move(GetData()[i + 1]);
+			if constexpr (!std::is_move_assignable_v<T>)
+			{
+				Terminal::Error("List", "Element type is not move assignable, RemoveAt({}) ignored", index);
+				return;
+			}
+			else
+			{
+				for (usize i = index; i < m_count - 1; ++i)
+					m_data[i] = std::move(m_data[i + 1]);
 
-			GetData()[m_count - 1].~T();
-			m_count--;
+				m_data[m_count - 1].~T();
+				m_count--;
+			}
 		}
 
 		void PopBack()
@@ -230,7 +246,7 @@ namespace Horizon
 				return;
 
 			m_count--;
-			GetData()[m_count].~T();
+			m_data[m_count].~T();
 		}
 
 		void PopFront()
@@ -251,8 +267,17 @@ namespace Horizon
 				Reallocate(capacity);
 		}
 
-		void Resize(usize count)
+		void Resize(usize count) override
 		{
+			if constexpr (!std::is_default_constructible_v<T>)
+			{
+				if (count > m_count)
+				{
+					Terminal::Error("List", "Element type is not default constructible, resize to {} ignored", count);
+					return;
+				}
+			}
+
 			if (count > m_capacity)
 				Reallocate(count);
 
@@ -280,10 +305,8 @@ namespace Horizon
 			if (m_count < 2)
 				return;
 
-			T* pData = GetData();
-
 			for (usize i = 0, j = m_count - 1; i < j; ++i, --j)
-				std::swap(pData[i], pData[j]);
+				std::swap(m_data[i], m_data[j]);
 		}
 
 		b8 operator==(const List& other) const
@@ -293,20 +316,20 @@ namespace Horizon
 
 			for (usize i = 0; i < m_count; i++)
 			{
-				if (GetData()[i] != other.GetData()[i])
+				if (m_data[i] != other.m_data[i])
 					return false;
 			}
 
 			return true;
 		}
 
-		Iterator begin() { return GetData(); }
-		Iterator end() { return GetData() + m_count; }
+		Iterator begin() { return m_data; }
+		Iterator end() { return m_data + m_count; }
 
-		ConstIterator begin() const { return GetData(); }
-		ConstIterator end() const { return GetData() + m_count; }
-		ConstIterator cbegin() const { return GetData(); }
-		ConstIterator cend() const { return GetData() + m_count; }
+		ConstIterator begin() const { return m_data; }
+		ConstIterator end() const { return m_data + m_count; }
+		ConstIterator cbegin() const { return m_data; }
+		ConstIterator cend() const { return m_data + m_count; }
 
 		ReverseIterator rbegin() { return ReverseIterator(end()); }
 		ReverseIterator rend() { return ReverseIterator(begin()); }
@@ -328,7 +351,7 @@ namespace Horizon
 		void CopyFrom(const T* pSource, usize count)
 		{
 			for (usize i = 0; i < count; ++i)
-				::new (GetData() + i) T(pSource[i]);
+				::new (m_data + i) T(pSource[i]);
 
 			m_count = count;
 		}
@@ -336,7 +359,7 @@ namespace Horizon
 		void DestroyElements()
 		{
 			for (usize i = 0; i < m_count; ++i)
-				GetData()[i].~T();
+				m_data[i].~T();
 		}
 
 		void GrowIfRequired()
@@ -349,13 +372,16 @@ namespace Horizon
 		{
 			if (newCount > m_count)
 			{
-				for (usize i = m_count; i < newCount; ++i)
-					::new (GetData() + i) T();
+				if constexpr (std::is_default_constructible_v<T>)
+				{
+					for (usize i = m_count; i < newCount; ++i)
+						::new (m_data + i) T();
+				}
 			}
 			else if (newCount < m_count)
 			{
 				for (usize i = newCount; i < m_count; ++i)
-					GetData()[i].~T();
+					m_data[i].~T();
 			}
 
 			m_count = newCount;
@@ -367,8 +393,8 @@ namespace Horizon
 
 			for (usize i = 0; i < m_count; ++i)
 			{
-				::new (pNewBuffer + i) T(std::move(GetData()[i]));
-				GetData()[i].~T();
+				::new (pNewBuffer + i) T(std::move(m_data[i]));
+				m_data[i].~T();
 			}
 
 			if (m_data)
@@ -383,19 +409,19 @@ namespace Horizon
 		{
 			i64 i = left;
 			i64 j = right;
-			T pivot = GetData()[(left + right) / 2];
+			T pivot = m_data[(left + right) / 2];
 
 			while (i <= j)
 			{
-				while (comp(GetData()[i], pivot))
+				while (comp(m_data[i], pivot))
 					i++;
 
-				while (comp(pivot, GetData()[j]))
+				while (comp(pivot, m_data[j]))
 					j--;
 
 				if (i <= j)
 				{
-					std::swap(GetData()[i], GetData()[j]);
+					std::swap(m_data[i], m_data[j]);
 					i++;
 					j--;
 				}
@@ -407,5 +433,10 @@ namespace Horizon
 			if (i < right)
 				QuickSortInternal(i, right, comp);
 		}
+
+	private:
+		T* m_data = nullptr;
+		usize m_count = 0;
+		usize m_capacity = 0;
 	};
 }

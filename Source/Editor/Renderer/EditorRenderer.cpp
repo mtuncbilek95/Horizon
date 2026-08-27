@@ -6,6 +6,7 @@
 #include <Editor/Renderer/Utils/ImGuiUtils.h>
 
 #include <Runtime/Containers/StringOps.h>
+#include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Queue/GfxQueue.h>

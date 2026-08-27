@@ -6,6 +6,7 @@
 
 #include <Runtime/Containers/List.h>
 #include <Runtime/Containers/StringOps.h>
+#include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <typeindex>

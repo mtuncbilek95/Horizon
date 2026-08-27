@@ -1,11 +1,9 @@
 #pragma once
 
 #include <Runtime/Serialization/Archive.h>
-
-#include <nlohmann/json.hpp>
-
 #include <Runtime/Containers/List.h>
 
+#include <nlohmann/json.hpp>
 #include <string>
 
 namespace Horizon

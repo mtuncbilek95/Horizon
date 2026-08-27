@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Runtime/Containers/ListBase.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
@@ -35,17 +34,15 @@ namespace Horizon::Reflect
 		Field& operator=(const Field&) = delete;
 
 		Field(Field&&) noexcept = default;
+		Field& operator=(Field&&) noexcept = default;
 
 		const std::string& GetName() const { return m_name; }
 		usize GetOffset() const { return m_offset; }
 
 		TypeKind GetKind() const { return m_kind; }
 		TypeMode GetMode() const { return m_mode; }
-
 		TypeHandle GetTypeId() const { return m_typeId; }
-
-		usize GetElementSize() const { return m_elementSize; }
-		const ListBase::ElementOps* GetElementOps() const { return m_elementOps; }
+		TypeKind GetUnderlyingKind() const { return m_underlyingKind; }
 
 		std::span<Attribute* const> GetAttributes() const { return { m_attributes.GetData(), m_attributes.GetCount() }; }
 
@@ -106,12 +103,10 @@ namespace Horizon::Reflect
 		std::string m_name;
 		usize m_offset = 0;
 		TypeKind m_kind = TypeKind::Object;
+		TypeKind m_underlyingKind = TypeKind::Object;
 		TypeMode m_mode = TypeMode::Invalid;
 
 		TypeHandle m_typeId;
-
-		usize m_elementSize = 0;
-		const ListBase::ElementOps* m_elementOps = nullptr;
 
 		List<Attribute*> m_attributes;
 	};
