@@ -11,6 +11,17 @@ namespace Horizon::RHI
 	class GfxQueue;
 	class GfxFence;
 
+	/**
+	 * @brief Chain of backbuffers owned by the window.
+	 * A frame starts by acquiring an image and ends by
+	 * presenting it on the queue given at creation.
+	 *
+	 * @code
+	 *   myChain->AcquireNextImage(myFence);
+	 *   RHI::GfxTexture* image = myChain->GetImage(myChain->GetCurrentImageIndex());
+	 *   myChain->Present(myQueue, myFence);
+	 * @endcode
+	 */
 	class GfxSwapchain : public GfxObject
 	{
 	public:

@@ -8,6 +8,17 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Rasterizer setup of a graphics pipeline,
+	 * covering fill mode, culling and the depth bias used
+	 * mostly by shadow passes.
+	 *
+	 * @code
+	 *   RHI::GfxRasterizerState raster = {};
+	 *   raster.cullMode = RHI::GfxCullMode::None;
+	 *   raster.depthBias = 100;
+	 * @endcode
+	 */
 	struct GfxRasterizerState
 	{
 		GfxFillMode fillMode = GfxFillMode::Solid;

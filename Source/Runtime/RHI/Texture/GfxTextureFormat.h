@@ -4,6 +4,16 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Pixel layout of a texture, grouped by channel
+	 * width, then by the packed and the depth formats, and
+	 * finally by the block compressed ones.
+	 *
+	 * @code
+	 *   RHI::GfxTextureDesc texDesc = {};
+	 *   texDesc.format = RHI::GfxTextureFormat::D32_FLOAT;
+	 * @endcode
+	 */
 	enum class GfxTextureFormat : u8
 	{
 		Undefined = 0,

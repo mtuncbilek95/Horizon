@@ -10,6 +10,18 @@ namespace Horizon::RHI
 {
 	class GfxFence;
 
+	/**
+	 * @brief Per frame ring of mapped staging memory.
+	 * Allocations are only ever bumped forward, and
+	 * MarkFrame ties a fence value to them so the space is
+	 * reclaimed once the GPU is past it.
+	 *
+	 * @code
+	 *   RHI::GfxUploadRange range = myUploadRing->Allocate(size);
+	 *   memcpy(range.pMapped, pSource, size);
+	 *   myUploadRing->MarkFrame(myFence, frameValue);
+	 * @endcode
+	 */
 	class GfxUploadRing : public GfxObject
 	{
 	public:

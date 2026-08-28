@@ -13,6 +13,21 @@ namespace Horizon::RHI
 {
 	class GfxShader;
 
+	/**
+	 * @brief Creation descriptor of a graphics pipeline.
+	 * Either the vertex and pixel pair or the task and
+	 * mesh pair is filled, and the attachment formats have
+	 * to match the render pass it will be used in.
+	 *
+	 * @code
+	 *   RHI::GfxGraphicsPipelineDesc pipeDesc = {};
+	 *   pipeDesc.pVertexShader = myVertexShader;
+	 *   pipeDesc.pPixelShader = myPixelShader;
+	 *   pipeDesc.colorFormats[0] = RHI::GfxTextureFormat::RGBA8_UNORM;
+	 *   pipeDesc.colorTargetCount = 1;
+	 *   RHI::GfxPipeline* pipeline = myRhiDevice->CreatePipeline(pipeDesc);
+	 * @endcode
+	 */
 	struct GfxGraphicsPipelineDesc
 	{
 		GfxShader* pTaskShader = nullptr;

@@ -5,6 +5,17 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Bitwise usage flags that declare how a
+	 * GfxBuffer will be bound by the pipeline. Multiple
+	 * flags can be combined for a single buffer.
+	 *
+	 * @code
+	 *   RHI::GfxBufferDesc bufDesc = {};
+	 *   bufDesc.usage = RHI::GfxBufferUsage::Storage |
+	 *                   RHI::GfxBufferUsage::TransferDst;
+	 * @endcode
+	 */
 	enum class GfxBufferUsage : u32
 	{
 		None = 0,

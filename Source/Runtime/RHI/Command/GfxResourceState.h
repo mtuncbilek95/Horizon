@@ -5,6 +5,17 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Bitwise states a resource can sit in while the
+	 * GPU consumes it. Barriers move a texture or a buffer
+	 * from one state to another before its next use.
+	 *
+	 * @code
+	 *   RHI::GfxTextureBarrier barrier = {};
+	 *   barrier.before = RHI::GfxResourceState::RenderTarget;
+	 *   barrier.after = RHI::GfxResourceState::Present;
+	 * @endcode
+	 */
 	enum class GfxResourceState : u32
 	{
 		Common = 0,

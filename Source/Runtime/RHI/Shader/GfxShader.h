@@ -7,6 +7,17 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief A single compiled shader stage. The byte code
+	 * is consumed at creation time, so the module only
+	 * keeps what the pipelines need afterwards.
+	 *
+	 * @code
+	 *   RHI::GfxShaderDesc shaderDesc = {};
+	 *   RHI::GfxShader* shader = nullptr;
+	 *   shader = myRhiDevice->CreateShader(shaderDesc);
+	 * @endcode
+	 */
 	class GfxShader : public GfxObject
 	{
 	public:

@@ -8,6 +8,19 @@ namespace Horizon::RHI
 	class GfxTexture;
 	class GfxBuffer;
 
+	/**
+	 * @brief Bindless descriptor table. Every view it
+	 * creates comes back as a plain slot index, which is
+	 * pushed to the shaders as a root constant instead of
+	 * being bound to a fixed register.
+	 *
+	 * @code
+	 *   RHI::GfxDescriptorHeapDesc heapDesc = {};
+	 *   RHI::GfxDescriptorHeap* heap = nullptr;
+	 *   heap = myRhiDevice->CreateDescriptorHeap(heapDesc);
+	 *   u32 srvIndex = heap->CreateShaderView(myTexture);
+	 * @endcode
+	 */
 	class GfxDescriptorHeap : public GfxObject
 	{
 	public:

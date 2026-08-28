@@ -4,6 +4,18 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Region of the render target that clip space
+	 * is mapped onto, together with the depth range
+	 * written into the depth buffer.
+	 *
+	 * @code
+	 *   RHI::GfxViewport viewport = {};
+	 *   viewport.width = 1920.0f;
+	 *   viewport.height = 1080.0f;
+	 *   myCmdList->SetViewport(viewport);
+	 * @endcode
+	 */
 	struct GfxViewport
 	{
 		f32 x = 0.0f;

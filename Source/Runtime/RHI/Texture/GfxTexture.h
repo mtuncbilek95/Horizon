@@ -7,6 +7,18 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Image resource covering every texture kind,
+	 * from sampled material maps to render targets and
+	 * depth buffers. Each usage owns its own view index.
+	 *
+	 * @code
+	 *   RHI::GfxTextureDesc texDesc = {};
+	 *   RHI::GfxTexture* tex = nullptr;
+	 *   tex = myRhiDevice->CreateTexture(texDesc);
+	 *   u32 srvIndex = tex->GetShaderView();
+	 * @endcode
+	 */
 	class GfxTexture : public GfxObject
 	{
 	public:

@@ -35,6 +35,17 @@ namespace Horizon::RHI
 	class GfxQueue;
 	class GfxFence;
 
+	/**
+	 * @brief Logical graphics device and the factory of
+	 * every other RHI object. Owns the backend and stays
+	 * alive as long as any resource it created.
+	 *
+	 * @code
+	 *   RHI::GfxDeviceDesc devDesc = {};
+	 *   RHI::GfxDevice* device = RHI::CreateDevice(devDesc);
+	 *   RHI::GfxQueue* queue = device->CreateQueue(RHI::GfxQueueType::Graphics);
+	 * @endcode
+	 */
 	class H_EXPORT GfxDevice
 	{
 	public:
@@ -62,5 +73,13 @@ namespace Horizon::RHI
 		virtual void WaitIdle() = 0;
 	};
 
+	/**
+	 * @brief Instantiates the graphics device of the
+	 * backend this build was compiled against.
+	 *
+	 * @param desc Debug and validation flags of the device.
+	 * @return The new device, or nullptr when no supported
+	 *         adapter was found.
+	 */
 	GfxDevice* CreateDevice(const GfxDeviceDesc& desc);
 }

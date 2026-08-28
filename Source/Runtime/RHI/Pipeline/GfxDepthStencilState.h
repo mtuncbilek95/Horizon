@@ -7,6 +7,18 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Depth and stencil setup of a graphics
+	 * pipeline. Depth testing and depth writing are
+	 * separate, so a read only depth pass is possible.
+	 *
+	 * @code
+	 *   RHI::GfxDepthStencilState depthStencil = {};
+	 *   depthStencil.depthTest = true;
+	 *   depthStencil.depthWrite = true;
+	 *   depthStencil.depthCompare = RHI::GfxCompareOp::Less;
+	 * @endcode
+	 */
 	struct GfxDepthStencilState
 	{
 		b8 depthTest = false;

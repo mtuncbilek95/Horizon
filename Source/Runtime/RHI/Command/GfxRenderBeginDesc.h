@@ -7,6 +7,20 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Full description of a dynamic render pass,
+	 * holding up to eight color targets, one depth target
+	 * and the render area. The setters chain so a pass can
+	 * be declared in a single expression.
+	 *
+	 * @code
+	 *   RHI::GfxRenderBeginDesc beginDesc = {};
+	 *   beginDesc.AddColorTarget(myColorTexture)
+	 *            .SetDepth(myDepthTexture)
+	 *            .SetSize(1920, 1080);
+	 *   myCmdList->BeginRendering(beginDesc);
+	 * @endcode
+	 */
 	struct GfxRenderBeginDesc
 	{
 		GfxColorAttachment colorTargets[8];

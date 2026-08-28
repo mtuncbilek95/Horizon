@@ -4,6 +4,15 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Straight RGBA color in linear floating
+	 * point, used for attachment clear values and for
+	 * blend constants.
+	 *
+	 * @code
+	 *   RHI::GfxColor clear = { 0.1f, 0.1f, 0.1f, 1.0f };
+	 * @endcode
+	 */
 	struct GfxColor
 	{
 		f32 r = 0.0f;

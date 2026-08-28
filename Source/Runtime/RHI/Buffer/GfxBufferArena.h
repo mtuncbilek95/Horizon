@@ -8,6 +8,18 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Sub allocator over a single large GfxBuffer.
+	 * Hands out GfxBufferRange windows so that many small
+	 * uploads can share one device allocation.
+	 *
+	 * @code
+	 *   RHI::GfxBufferArenaDesc arenaDesc = {};
+	 *   RHI::GfxBufferArena* arena = nullptr;
+	 *   arena = myRhiDevice->CreateBufferArena(arenaDesc);
+	 *   RHI::GfxBufferRange range = arena->Allocate(1024);
+	 * @endcode
+	 */
 	class GfxBufferArena : public GfxObject
 	{
 	public:

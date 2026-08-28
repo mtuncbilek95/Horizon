@@ -7,6 +7,17 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Creation descriptor of a GfxBufferArena. The
+	 * usage and the memory type are inherited by the backing
+	 * buffer, while the capacity fixes its total byte size.
+	 *
+	 * @code
+	 *   RHI::GfxBufferArenaDesc arenaDesc = {};
+	 *   arenaDesc.usage = RHI::GfxBufferUsage::Storage;
+	 *   arenaDesc.capacity = 64 * 1024 * 1024;
+	 * @endcode
+	 */
 	struct GfxBufferArenaDesc
 	{
 		GfxBufferUsage usage = GfxBufferUsage::Storage;

@@ -5,6 +5,15 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Compiled pipeline state object. Graphics and
+	 * compute pipelines share this type and are told apart
+	 * by GetType.
+	 *
+	 * @code
+	 *   myCmdList->BindPipeline(myPipeline);
+	 * @endcode
+	 */
 	class GfxPipeline : public GfxObject
 	{
 	public:

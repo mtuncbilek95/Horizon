@@ -7,6 +7,17 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Graphics buffer to represent all types
+	 * of data such as Vertex, Index, Constant/Uniform,
+	 * Storage etc.
+	 * 
+	 * @code
+	 *   RHI::GfxBufferDesc bufDesc = {};
+	 *   RHI::GfxBuffer* buf = nullptr;
+	 *   buf = myRhiDevice->CreateBuffer(bufDesc);
+	 * @endcode
+	 */
 	class GfxBuffer : public GfxObject
 	{
 	public:

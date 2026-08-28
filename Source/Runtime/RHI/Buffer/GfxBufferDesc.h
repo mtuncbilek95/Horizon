@@ -7,6 +7,19 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Creation descriptor of a GfxBuffer. Declares
+	 * the usage flags, the memory heap it lives on, the
+	 * total byte size and the per element stride.
+	 *
+	 * @code
+	 *   RHI::GfxBufferDesc bufDesc = {};
+	 *   bufDesc.usage = RHI::GfxBufferUsage::Storage;
+	 *   bufDesc.memory = RHI::GfxMemoryType::GpuOnly;
+	 *   bufDesc.size = sizeof(Vertex) * vertexCount;
+	 *   bufDesc.stride = sizeof(Vertex);
+	 * @endcode
+	 */
 	struct GfxBufferDesc
 	{
 		GfxBufferUsage usage = GfxBufferUsage::None;

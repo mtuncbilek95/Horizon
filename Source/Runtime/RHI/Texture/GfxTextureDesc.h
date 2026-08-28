@@ -10,6 +10,19 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Creation descriptor of a GfxTexture. The
+	 * usage flags decide which views are created, and the
+	 * clear color is the one the render pass may load.
+	 *
+	 * @code
+	 *   RHI::GfxTextureDesc texDesc = {};
+	 *   texDesc.format = RHI::GfxTextureFormat::RGBA8_UNORM;
+	 *   texDesc.usage = RHI::GfxTextureUsage::Sampled | RHI::GfxTextureUsage::TransferDst;
+	 *   texDesc.width = 1024;
+	 *   texDesc.height = 1024;
+	 * @endcode
+	 */
 	struct GfxTextureDesc
 	{
 		GfxTextureType type = GfxTextureType::Tex2D;

@@ -16,6 +16,22 @@ namespace Horizon::RHI
 	class GfxDescriptorHeap;
 	class GfxPipeline;
 
+	/**
+	 * @brief Recorder of every GPU operation: barriers,
+	 * render passes, draws, dispatches and copies. All
+	 * recording happens between Begin and End, after which
+	 * the list is submitted through a queue.
+	 *
+	 * @code
+	 *   RHI::GfxCommandList* cmdList = nullptr;
+	 *   cmdList = myRhiDevice->CreateCommandList(RHI::GfxQueueType::Graphics);
+	 *   cmdList->Begin();
+	 *   cmdList->BeginRendering(beginDesc);
+	 *   cmdList->Draw(3, 1);
+	 *   cmdList->EndRendering();
+	 *   cmdList->End();
+	 * @endcode
+	 */
 	class GfxCommandList : public GfxObject
 	{
 	public:

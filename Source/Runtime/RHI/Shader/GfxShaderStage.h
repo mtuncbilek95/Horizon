@@ -4,6 +4,16 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Bitwise pipeline stage flags. A single shader
+	 * carries exactly one of them, while the masks are used
+	 * where a whole set of stages is addressed.
+	 *
+	 * @code
+	 *   RHI::GfxShaderDesc shaderDesc = {};
+	 *   shaderDesc.stage = RHI::GfxShaderStage::Mesh;
+	 * @endcode
+	 */
 	enum class GfxShaderStage : u32
 	{
 		None = 0,

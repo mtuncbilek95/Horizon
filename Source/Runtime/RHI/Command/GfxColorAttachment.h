@@ -8,6 +8,18 @@ namespace Horizon::RHI
 {
 	class GfxTexture;
 
+	/**
+	 * @brief One color target of a render pass, together
+	 * with its load/store behaviour and the value used
+	 * when the load operation is Clear.
+	 *
+	 * @code
+	 *   RHI::GfxColorAttachment color = {};
+	 *   color.pTexture = mySwapchainImage;
+	 *   color.loadOp = RHI::GfxLoadOp::Clear;
+	 *   color.clearColor = { 0.f, 0.f, 0.f, 1.f };
+	 * @endcode
+	 */
 	struct GfxColorAttachment
 	{
 		GfxTexture* pTexture = nullptr;

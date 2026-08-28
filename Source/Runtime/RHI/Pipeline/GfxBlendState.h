@@ -8,6 +8,18 @@
 
 namespace Horizon::RHI
 {
+	/**
+	 * @brief Blending setup of a single render target,
+	 * with independent factors for the color and the alpha
+	 * channels plus the write mask.
+	 *
+	 * @code
+	 *   RHI::GfxBlendState blend = {};
+	 *   blend.enable = true;
+	 *   blend.srcColor = RHI::GfxBlendFactor::SrcAlpha;
+	 *   blend.dstColor = RHI::GfxBlendFactor::InvSrcAlpha;
+	 * @endcode
+	 */
 	struct GfxBlendState
 	{
 		b8 enable = false;
