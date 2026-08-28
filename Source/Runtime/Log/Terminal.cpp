@@ -8,6 +8,9 @@ namespace Horizon
 {
 	void Terminal::Print(Level logLevel, std::string_view titleName, std::string_view message)
 	{
+		constexpr const char* kOrange = "\033[38;5;208m";
+		constexpr const char* kReset = "\033[0m";
+
 		const char* color = "\033[90m";
 		const char* name = "Log";
 
@@ -42,7 +45,8 @@ namespace Horizon
 		const auto now = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
 		const auto time = std::chrono::floor<std::chrono::seconds>(now);
 
-		std::println("[{:%H:%M:%S}][{}][{}{}\x1b[0m]:{}", time, titleName, color, name, message);
+		std::println("[{:%H:%M:%S}][{}{}{}][{}{}{}]: {}", time, kOrange, titleName, kReset, 
+			color, name, kReset, message);
 	}
 
 	void Terminal::IntendedAssert(b8 result, std::string_view titleName, std::string_view message)

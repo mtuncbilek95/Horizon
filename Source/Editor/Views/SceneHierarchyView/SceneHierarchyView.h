@@ -25,7 +25,7 @@ namespace Horizon::Editor
 		struct HierarchyRow
 		{
 			Engine::EntityHandle entity;
-			ImGuiID id = 0;
+			u32 id = 0;
 		};
 
 	public:
@@ -39,6 +39,8 @@ namespace Horizon::Editor
 		void RenderRows();
 		void SyncSelectionModel();
 		void CollectSelected(SceneHierarchyContext& context);
+		void BeginRename(const Engine::EntityHandle& handl);
+		void RenderRenameModal();
 
 	private:
 		ContextMenuRegistry<SceneHierarchyContext> m_contextMenu;
@@ -47,5 +49,8 @@ namespace Horizon::Editor
 
 		List<HierarchyRow> m_rows;
 		ImGuiSelectionBasicStorage m_multiSelect;
+
+		Engine::EntityHandle m_renameHandl;
+		c8 m_renameBuffer[256] = {};
 	};
 }

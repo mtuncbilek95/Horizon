@@ -10,6 +10,7 @@ namespace Horizon::Engine
 		std::unordered_map<std::type_index, usize> pending;
 		std::unordered_map<std::type_index, List<std::type_index>> dependents;
 
+		// 
 		for (const auto& node : nodes)
 		{
 			pending.try_emplace(node, 0);

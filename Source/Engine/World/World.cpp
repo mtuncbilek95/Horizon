@@ -6,6 +6,7 @@ namespace Horizon::Engine
 	{
 		EntityHandle entity = m_entities.Create();
 
+		// Just make sure if we cant create a proper one.
 		if (entity.IsValid())
 			m_signatures[(u32)entity.Index()].reset();
 
@@ -19,6 +20,7 @@ namespace Horizon::Engine
 
 		const Signature& signature = m_signatures[(u32)entity.Index()];
 
+		// After removing entity, erase the components of the related entity
 		for (ComponentStorage* pStorage : m_components.GetStorages())
 		{
 			if (signature.test(pStorage->GetSlot()))
@@ -26,17 +28,6 @@ namespace Horizon::Engine
 		}
 
 		m_signatures[(u32)entity.Index()].reset();
-	}
-
-	b8 World::EnsureStructural(std::string_view callName) const
-	{
-		if (!m_structural)
-		{
-			Terminal::Error(StringOps::GetName(this), "{} was called outside the structural phase", callName);
-			return false;
-		}
-
-		return true;
 	}
 
 	void World::CollectComponents(EntityHandle entity, List<ComponentObject*>& outComponents)

@@ -2,7 +2,6 @@
 
 #include <Engine/Core/Service.h>
 #include <Engine/World/World.h>
-#include <Engine/World/WorldCommandBuffer.h> 
 #include <Engine/World/System.h>
 
 #include <Runtime/Containers/List.h>
@@ -22,7 +21,6 @@ namespace Horizon::Engine
 		void DeclareDependencies(ModuleGraph& graph) final;
 
 		World* GetActiveWorld() const { return m_activeWorld; }
-		WorldCommandBuffer& GetCommandBuffer();
 
 		template<typename T>
 			requires std::is_base_of_v<System, T>
@@ -43,8 +41,6 @@ namespace Horizon::Engine
 
 	private:
 		World* m_activeWorld = nullptr;
-		List<WorldCommandBuffer*> m_commandBuffers;
-		PAL::Mutex m_bufferGuard;
 
 		// TODO: Just to test things!
 		List<System*> m_systems;

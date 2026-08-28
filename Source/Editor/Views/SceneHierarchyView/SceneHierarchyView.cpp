@@ -50,9 +50,20 @@ namespace Horizon::Editor
 
 		SceneHierarchyContext context = {};
 		context.pEngine = GetContext()->pEngine;
+		context.pCurrWorld = m_currentWorld;
 
 		CollectSelected(context);
 		m_contextMenu.RenderGUI("SceneHierarchyContextMenu", context);
+
+		if (context.renameHandl.IsValid())
+			BeginRename(context.renameHandl);
+
+		RenderRenameModal();
+
+		if (ImGui::IsWindowFocused() && ImGui::IsKeyChordPressed(ImGuiMod_Ctrl || ImGuiKey_S))
+		{
+			// TODO: Save hscene + hmeta (if needed) + hfile.
+		}
 	}
 
 	void SceneHierarchyView::SetCurrentWorld(Engine::World* pCurrentWorld)
@@ -166,9 +177,54 @@ namespace Horizon::Editor
 	{
 		for (const HierarchyRow& row : m_rows)
 		{
-			if (!m_multiSelect.Contains(row.id))
-				continue;
-
+			if (m_multiSelect.Contains(row.id))
+				context.selectedEntities.PushBack(row.entity);
 		}
 	}
+
+	void SceneHierarchyView::BeginRename(const Engine::EntityHandle& handl)
+	{
+		if (m_renameHandl.IsValid())
+			return;
+
+		auto* pComp = m_currentWorld->FindComponent<Engine::NameComponent>(handl);
+
+		if (pComp == nullptr)
+		{
+			Terminal::Error(StringOps::GetName(this), "Selected entity has no NameComponent");
+			return;
+		}
+
+		m_renameHandl = handl;
+
+		std::snprintf(m_renameBuffer, sizeof(m_renameBuffer), "%s", pComp->m_name.c_str());
+		ImGui::OpenPopup("Rename - Scene Hierarchy");
+	}
+
+	void SceneHierarchyView::RenderRenameModal()
+	{
+		if (!ImGui::BeginPopupModal("Rename - Scene Hierarchy", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			return;
+
+		b8 accepted = ImGui::InputText("##name", m_renameBuffer, sizeof(m_renameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
+
+		if (ImGui::Button("OK") || accepted)
+		{
+			auto* pComp = m_currentWorld->FindComponent<Engine::NameComponent>(m_renameHandl);
+			pComp->m_name = m_renameBuffer;
+			m_renameHandl = Engine::EntityHandle();
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape))
+		{
+			m_renameHandl = Engine::EntityHandle();
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
+	}
+
 }

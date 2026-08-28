@@ -17,7 +17,6 @@
 #include <Engine/Asset/Scene/SceneInstantiator.h>
 #include <Runtime/PAL/File/File.h>
 
-
 namespace Horizon::Engine
 {
 	ModuleReport WorldService::OnInitialize()
@@ -40,7 +39,6 @@ namespace Horizon::Engine
 		}
 
 		// TODO: THIS WHOLE THING IS TEMPORARY
-
 		m_activeWorld = Memory::Allocator::Create<World>(Memory::CurrLoc(), pReflection);
 
 		if (!m_activeWorld)
@@ -82,15 +80,9 @@ namespace Horizon::Engine
 
 	void WorldService::OnExecute()
 	{
-		m_activeWorld->EndStructuralPhase();
-
+		// TODO: Is this okay?
 		for (auto* pSys : m_systems)
 			pSys->OnExecute(*m_activeWorld);
-
-		// TODO: Systems run here, on the job system, against a frozen layout
-
-		m_activeWorld->BeginStructuralPhase();
-		FlushCommandBuffers();
 	}
 
 	void WorldService::OnFinalize()
@@ -101,9 +93,6 @@ namespace Horizon::Engine
 			Memory::Allocator::Delete(pSys);
 		}
 
-		for (WorldCommandBuffer* pBuffer : m_commandBuffers)
-			Memory::Allocator::Delete(pBuffer);
-
 		Memory::Allocator::Delete(m_activeWorld);
 	}
 
@@ -111,41 +100,5 @@ namespace Horizon::Engine
 	{
 		graph.Requires<GraphicsContext>();
 		graph.Requires<AssetService>();
-	}
-
-	WorldCommandBuffer& WorldService::GetCommandBuffer()
-	{
-		thread_local WorldCommandBuffer* pLocal = nullptr;
-
-		if (pLocal)
-			return *pLocal;
-
-		ScopedLock lock(m_bufferGuard);
-		pLocal = Memory::Allocator::Create<WorldCommandBuffer>(Memory::CurrLoc());
-		m_commandBuffers.PushBack(pLocal);
-
-		return *pLocal;
-	}
-
-	void WorldService::FlushCommandBuffers()
-	{
-		List<WorldCommandBuffer::Command*> merged;
-
-		for (WorldCommandBuffer* pBuffer : m_commandBuffers)
-		{
-			for (WorldCommandBuffer::Command& command : pBuffer->m_commands)
-				merged.PushBack(&command);
-		}
-
-		merged.Sort([](WorldCommandBuffer::Command* pLeft, WorldCommandBuffer::Command* pRight)
-			{
-				return pLeft->sequence < pRight->sequence;
-			});
-
-		for (WorldCommandBuffer::Command* pCommand : merged)
-			pCommand->action(*m_activeWorld);
-
-		for (WorldCommandBuffer* pBuffer : m_commandBuffers)
-			pBuffer->Clear();
 	}
 }

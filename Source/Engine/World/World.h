@@ -25,10 +25,6 @@ namespace Horizon::Engine
 		World(const World&) = delete;
 		World& operator=(const World&) = delete;
 
-		void BeginStructuralPhase() { m_structural = true; }
-		void EndStructuralPhase() { m_structural = false; }
-		b8 IsStructuralPhase() const { return m_structural; }
-
 		EntityHandle CreateEntity();
 		void DestroyEntity(EntityHandle entity);
 
@@ -127,12 +123,8 @@ namespace Horizon::Engine
 		void MarkComponent(EntityHandle entity, u32 slot) { m_signatures[(u32)entity.Index()].set(slot); }
 
 	private:
-		b8 EnsureStructural(std::string_view callName) const;
-
-	private:
 		EntityStorage m_entities;
 		ComponentRegistry m_components;
 		Signature m_signatures[MaxEntities];
-		b8 m_structural = false;
 	};
 }

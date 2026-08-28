@@ -11,6 +11,7 @@ namespace Horizon::Engine
 {
 	ReflectionSystem::ReflectionSystem(Engine* pEngine)
 	{
+		// Create exec's library to call manifestation.
 		m_hostLibrary = Memory::Allocator::Create<PAL::SymbolLibrary>(Memory::CurrLoc(), PAL::SymbolLibraryDesc());
 		if (!m_hostLibrary)
 		{
@@ -18,18 +19,22 @@ namespace Horizon::Engine
 			return;
 		}
 
+		// Functionary
 		using GenerateFn = void(*)(List<Reflect::Type>*);
 		auto* GenerateManifests = reinterpret_cast<GenerateFn>(m_hostLibrary->GetSymbol("GenerateModuleManifestation"));
 
+		// Check if we have it
 		if (!GenerateManifests)
 		{
 			pEngine->RequestExit("GenerateModuleManifestation symbol not found");
 			return;
 		}
 
+		// Fill the fuckout
 		List<Reflect::Type> registery;
 		GenerateManifests(&registery);
 
+		// Registry handl for faster iterations
 		usize index = 0;
 		for (auto& manifest : registery)
 		{

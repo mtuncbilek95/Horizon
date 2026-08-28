@@ -13,7 +13,8 @@ namespace Horizon::Engine
 	ModuleReport GraphicsContext::OnInitialize()
 	{
 		// TODO: After sometime, capacity that comes from 
-		// project settings would be awesome.
+		// project settings would be awesome. Even deviceDesc
+		// can be imported from some shit.
 
 		// Get window service to use on swapchain
 		auto* pWindowSub = GetEngine()->RequestService<WindowService>();
