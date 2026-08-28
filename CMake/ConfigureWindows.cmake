@@ -1,7 +1,6 @@
 function(ConfigureWindowsDefinitions)
 	add_compile_definitions(HORIZON_WINDOWS)
 
-	# Its just a placeholder
 	add_compile_definitions(H_EXPORT=__declspec\(dllexport\))
 
 	add_compile_definitions(FORCEINLINE=__forceinline)

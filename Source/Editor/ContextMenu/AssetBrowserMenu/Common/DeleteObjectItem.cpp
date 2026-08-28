@@ -9,7 +9,7 @@ namespace Horizon::Editor
 	{
 		for (auto* file : context.selectedFiles)
 		{
-			// This can work for now
+			// TODO: This can work for now
 			PAL::File::Delete(file->GetSourcePath());
 			PAL::File::Delete(file->GetMetaPath());
 		}

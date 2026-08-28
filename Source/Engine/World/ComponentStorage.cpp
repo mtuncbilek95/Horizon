@@ -9,6 +9,8 @@ namespace Horizon::Engine
 	ComponentStorage::ComponentStorage(const Reflect::Type& type) : m_type(&type),
 		m_stride(type.GetSizeInBytes())
 	{
+		// TODO: This value may change into something we can 
+		// Resize the sparseSet for max entities.
 		m_sparse.Resize(MaxEntities);
 
 		for (usize i = 0; i < m_sparse.GetCount(); i++)
@@ -54,18 +56,21 @@ namespace Horizon::Engine
 	{
 		u32 index = (u32)entity.Index();
 
+		// check if its a proper index
 		if (index >= MaxEntities)
 		{
 			Terminal::Error(StringOps::GetName(this), "Entity index {} is outside the budget of {}", index, MaxEntities);
 			return nullptr;
 		}
 
+		// Check if the emplacement location is not being used by another entity
 		if (m_sparse[index] != InvalidDenseIndex)
 		{
 			Terminal::Warn(StringOps::GetName(this), "Entity {} already owns a '{}'", index, m_type->GetName());
 			return nullptr;
 		}
 
+		// Check if we're forcing the limits
 		if (m_count == m_capacity)
 			Reserve(m_capacity == 0 ? 2 : m_capacity * 2);
 

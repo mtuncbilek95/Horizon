@@ -4,25 +4,13 @@
 
 namespace Horizon::RHI
 {
-	/**
-	 * @brief Pixel layout of a texture, grouped by channel
-	 * width, then by the packed and the depth formats, and
-	 * finally by the block compressed ones.
-	 *
-	 * @code
-	 *   RHI::GfxTextureDesc texDesc = {};
-	 *   texDesc.format = RHI::GfxTextureFormat::D32_FLOAT;
-	 * @endcode
-	 */
 	enum class GfxTextureFormat : u8
 	{
 		Undefined = 0,
-
 		R8_UNORM, R8_SNORM, R8_UINT, R8_SINT,
 		RG8_UNORM, RG8_SNORM, RG8_UINT, RG8_SINT,
 		RGBA8_UNORM, RGBA8_SRGB, RGBA8_SNORM, RGBA8_UINT, RGBA8_SINT,
 		BGRA8_UNORM, BGRA8_SRGB,
-
 		R16_UNORM, R16_SNORM, R16_UINT, R16_SINT, R16_FLOAT,
 		RG16_UNORM, RG16_SNORM, RG16_UINT, RG16_SINT, RG16_FLOAT,
 		RGBA16_UNORM, RGBA16_SNORM, RGBA16_UINT, RGBA16_SINT, RGBA16_FLOAT,
@@ -33,7 +21,6 @@ namespace Horizon::RHI
 		RGBA32_UINT, RGBA32_SINT, RGBA32_FLOAT,
 
 		RGB10A2_UNORM, RGB10A2_UINT, R11G11B10_FLOAT, RGB9E5_FLOAT,
-
 		D16_UNORM, D32_FLOAT, D24_UNORM_S8_UINT, D32_FLOAT_S8_UINT,
 
 		BC1_UNORM, BC1_SRGB,

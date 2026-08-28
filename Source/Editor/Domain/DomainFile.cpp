@@ -9,6 +9,6 @@ namespace Horizon::Editor
 	{
 		std::string newPath = m_parent->GetAbsolutePath() + "/" + newName;
 		PAL::File::Rename(m_sourcePath, newPath);
-		// After this, everything should work fine?
+		// TODO: After this, everything should work fine?
 	}
 }

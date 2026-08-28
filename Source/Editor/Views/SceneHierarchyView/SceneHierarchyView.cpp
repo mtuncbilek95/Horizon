@@ -57,7 +57,6 @@ namespace Horizon::Editor
 
 	void SceneHierarchyView::SetCurrentWorld(Engine::World* pCurrentWorld)
 	{
-		// TODO: This function may need Load/Unload. Idk I'm just guessing. Didn't decide yet.
 		m_currentWorld = pCurrentWorld;
 		m_multiSelect.Clear();
 		m_rows.Clear();
@@ -170,7 +169,6 @@ namespace Horizon::Editor
 			if (!m_multiSelect.Contains(row.id))
 				continue;
 
-			// context.selectedEntities.PushBack(row.entity);
 		}
 	}
 }

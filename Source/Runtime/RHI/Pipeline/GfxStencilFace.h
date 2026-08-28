@@ -5,17 +5,6 @@
 
 namespace Horizon::RHI
 {
-	/**
-	 * @brief Stencil behaviour of one triangle facing.
-	 * Each of the three outcomes of the test gets its own
-	 * operation.
-	 *
-	 * @code
-	 *   RHI::GfxStencilFace face = {};
-	 *   face.compareOp = RHI::GfxCompareOp::Equal;
-	 *   face.passOp = RHI::GfxStencilOp::Replace;
-	 * @endcode
-	 */
 	struct GfxStencilFace
 	{
 		GfxStencilOp failOp = GfxStencilOp::Keep;

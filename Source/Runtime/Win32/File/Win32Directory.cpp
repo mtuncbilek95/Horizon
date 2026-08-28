@@ -13,7 +13,6 @@ namespace Horizon::PAL
 		if (path.empty() || Exists(path))
 			return true;
 
-		// CreateDirectoryA only creates the leaf, so walk the missing parents first.
 		const std::string parent = StringOps::ParentPathOf(path);
 		if (!parent.empty() && !Create(parent))
 			return false;

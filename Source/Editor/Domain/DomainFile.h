@@ -11,7 +11,7 @@ namespace Horizon::Editor
 	{
 		friend class DomainService;
 	public:
-		DomainFile(const Guid& guid, DomainFolder* pParent, const std::string& name, const std::string& metaPath, const std::string& sourcePath /* Maybe later: cookPath*/) :
+		DomainFile(const Guid& guid, DomainFolder* pParent, const std::string& name, const std::string& metaPath, const std::string& sourcePath) :
 			m_guid(guid), m_parent(pParent), m_name(name), m_metaPath(metaPath), m_sourcePath(sourcePath)
 		{
 		}

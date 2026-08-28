@@ -86,7 +86,7 @@ namespace Horizon::PAL
 	}
 
 
-	b8 File::WriteMemory(FileAccessRequest fileAccess, const List<u8>& memory, usize offset /*= 0*/)
+	b8 File::WriteMemory(FileAccessRequest fileAccess, const List<u8>& memory, usize offset)
 	{
 		if (!fileAccess.m_handle.IsValid())
 		{

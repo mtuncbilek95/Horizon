@@ -48,7 +48,6 @@ namespace Horizon::Editor
 		m_editorRenderer = Memory::Allocator::Create<EditorRenderer>(Memory::CurrLoc(), renderDesc);
 		Terminal::Debug("EditorService", "EditorRenderer has been initialized!");
 
-		// Gather all necessary element and send to views and other shit via EditorContext
 		EditorContext ctx = {};
 		ctx.pEngine = GetEngine();
 		ctx.pSelection = &m_selection;
@@ -132,7 +131,6 @@ namespace Horizon::Editor
 		PAL::WindowRect rect = m_engineWindow->GetRect();
 		m_editorRenderer->OnResizeWindow(rect.width, rect.height);
 
-		// Temporary render loop
 		if (!m_swapchain->AcquireNextImage(m_fence))
 			return;
 

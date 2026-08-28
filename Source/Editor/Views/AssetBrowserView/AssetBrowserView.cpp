@@ -182,7 +182,6 @@ namespace Horizon::Editor
 			if (entry.IsFolder() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				pEnterFolder = entry.pFolder;
 
-			// TODO: Fine, I'm gonna do this myself.
 			if (!entry.IsFolder() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				Terminal::Info("AssetBrowserView", "Clicking an asset called {}", entry.GetName());
 

@@ -39,7 +39,6 @@ namespace Horizon::Editor
 		ViewRegistry* m_viewRegistry = nullptr;
 		MenuRegistry* m_menuRegistry = nullptr;
 
-		// The ones below are most probably temporary
 		RHI::GfxFence* m_fence = nullptr;
 		RHI::GfxQueue* m_queue = nullptr;
 		RHI::GfxSwapchain* m_swapchain = nullptr;

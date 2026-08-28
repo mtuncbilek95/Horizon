@@ -57,7 +57,6 @@ namespace Horizon::Editor
 
 	Engine::ModuleReport DomainService::OnInitialize()
 	{
-		// TODO(Project): this must come from the project context / argv once it exists.
 		m_projectPath = "D:/Projects/Horizon/ExampleProject";
 		m_assetPath = m_projectPath + "/Assets";
 
@@ -277,8 +276,6 @@ namespace Horizon::Editor
 
 			if (event.action == PAL::WatcherAction::Modified)
 			{
-				// TODO(Cook): a modified source file has to be queued for re import here.
-				// Its folder listing did not change, so no snapshot is needed for it.
 				continue;
 			}
 
@@ -331,21 +328,10 @@ namespace Horizon::Editor
 				entry.metaPath = diskEntry.fullPath + std::string(MetaSuffix);
 				entry.assetTypeName = "Unknown";
 
-				// TODO(Meta): generate meta here. Read <source>.hmeta when it exists,
-				// create it with a fresh Guid when it does not, then fill entry.id and
-				// entry.assetTypeName from the DomainMetaDescriptor.
-				// TODO(File): PAL::File::RequestAccess / ReadString / WriteString /
-				// ReleaseAccess round trip for that meta file.
-				// TODO(Serialization): JsonArchive + Serializer over DomainMetaDescriptor,
-				// resolved through Engine's ReflectionSystem.
-				// TODO(Cook): produce or refresh the cooked payload for this source and
-				// record its path on the snapshot.
 			}
 
 			snapshot.entries.PushBack(std::move(entry));
 		}
-
-		// TODO(File): delete orphan .hmeta files whose source is gone from this folder.
 
 		snapshot.entries.Sort([](const DomainEntrySnapshot& left, const DomainEntrySnapshot& right)
 			{
