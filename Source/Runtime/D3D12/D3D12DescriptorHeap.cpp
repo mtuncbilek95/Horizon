@@ -163,7 +163,7 @@ namespace Horizon::RHI
 		return index;
 	}
 
-	u32 D3D12DescriptorHeap::CreateStorageView(GfxTexture* pTexture)
+	u32 D3D12DescriptorHeap::CreateStorageView(GfxTexture* pTexture, u32 mipLevel)
 	{
 		if (!ExpectType(GfxDescriptorHeapType::Resource, "CreateStorageView"))
 			return kInvalid32;
@@ -196,10 +196,45 @@ namespace Horizon::RHI
 			break;
 		}
 
+		const u32 mipLevels = texDesc.mipLevels == 0 ? 1 : texDesc.mipLevels;
+
+		if (mipLevel >= mipLevels)
+		{
+			Terminal::Error(StringOps::GetName(this), "Storage view mip {} is out of range, texture has {}", mipLevel, mipLevels);
+			Free(index);
+			return kInvalid32;
+		}
+
+		switch (viewDesc.ViewDimension)
+		{
+		case D3D12_UAV_DIMENSION_TEXTURE1D:
+			viewDesc.Texture1D.MipSlice = mipLevel;
+			break;
+		case D3D12_UAV_DIMENSION_TEXTURE1DARRAY:
+			viewDesc.Texture1DArray.MipSlice = mipLevel;
+			viewDesc.Texture1DArray.ArraySize = texDesc.arraySize;
+			break;
+		case D3D12_UAV_DIMENSION_TEXTURE2D:
+			viewDesc.Texture2D.MipSlice = mipLevel;
+			break;
+		case D3D12_UAV_DIMENSION_TEXTURE2DARRAY:
+			viewDesc.Texture2DArray.MipSlice = mipLevel;
+			viewDesc.Texture2DArray.ArraySize = texDesc.isCube ? texDesc.arraySize * 6 : texDesc.arraySize;
+			break;
+		case D3D12_UAV_DIMENSION_TEXTURE3D:
+			viewDesc.Texture3D.MipSlice = mipLevel;
+			viewDesc.Texture3D.WSize = texDesc.depth >> mipLevel;
+			break;
+		default:
+			break;
+		}
+
 		auto* pDevice = static_cast<D3D12Device*>(m_ownerDevice);
 
 		pDevice->Handle()->CreateUnorderedAccessView(pD3DTexture->m_resource, nullptr, &viewDesc, CpuAt(index));
-		pD3DTexture->m_storageView = index;
+
+		if (mipLevel == 0)
+			pD3DTexture->m_storageView = index;
 
 		return index;
 	}

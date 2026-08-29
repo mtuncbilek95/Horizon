@@ -436,4 +436,26 @@ namespace Horizon::RHI
 		default:										return false;
 		}
 	}
+
+	void Helpers::SetObjectName(ID3D12Object* pObject, const c8* pName)
+	{
+		if (!pObject || !pName)
+			return;
+
+		const i32 length = MultiByteToWideChar(CP_UTF8, 0, pName, -1, nullptr, 0);
+
+		if (length <= 0)
+			return;
+
+		wchar_t buffer[128];
+
+		if (length > i32(sizeof(buffer) / sizeof(buffer[0])))
+		{
+			pObject->SetName(L"<name too long>");
+			return;
+		}
+
+		MultiByteToWideChar(CP_UTF8, 0, pName, -1, buffer, length);
+		pObject->SetName(buffer);
+	}
 }

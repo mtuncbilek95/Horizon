@@ -78,5 +78,7 @@ namespace Horizon::RHI
 		static DXGI_FORMAT ToDepthSRVFormat(DXGI_FORMAT format);
 		static DXGI_FORMAT ToSwapchainFormat(DXGI_FORMAT format);
 		static b8 IsDepthFormat(DXGI_FORMAT format);
+
+		static void SetObjectName(ID3D12Object* pObject, const c8* pName);
 	};
 }

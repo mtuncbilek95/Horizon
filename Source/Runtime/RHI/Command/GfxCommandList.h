@@ -19,9 +19,12 @@ namespace Horizon::RHI
 	class GfxCommandList : public GfxObject
 	{
 	public:
+		virtual void BeginEvent(const c8* pName) = 0;
+		virtual void EndEvent() = 0;
+		virtual void SetMarker(const c8* pName) = 0;
+
 		virtual void Begin() = 0;
 		virtual void End() = 0;
-		virtual void* GetAPIHandle() const = 0;
 		virtual void BindDescriptorHeaps(GfxDescriptorHeap* pResourceHeap, GfxDescriptorHeap* pSamplerHeap) = 0;
 		virtual void Barrier(const GfxTextureBarrier* pBarriers, u32 count) = 0;
 		virtual void Barrier(const GfxBufferBarrier* pBarriers, u32 count) = 0;
@@ -49,6 +52,9 @@ namespace Horizon::RHI
 		void SetViewport(const GfxViewport& viewport) { SetViewports(&viewport, 1); }
 		void SetScissor(const GfxScissor& scissor) { SetScissors(&scissor, 1); }
 		GfxQueueType GetQueueType() const { return m_queueType; }
+
+		virtual void* GetAPIHandle() const = 0;
+
 	protected:
 		GfxQueueType m_queueType = GfxQueueType::Graphics;
 	};

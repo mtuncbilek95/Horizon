@@ -19,7 +19,7 @@ namespace Horizon::RHI
 		void Free(u32 index) final;
 
 		u32 CreateShaderView(GfxTexture* pTexture) final;
-		u32 CreateStorageView(GfxTexture* pTexture) final;
+		u32 CreateStorageView(GfxTexture* pTexture, u32 mipLevel = 0) final;
 		u32 CreateRenderTargetView(GfxTexture* pTexture) final;
 		u32 CreateDepthStencilView(GfxTexture* pTexture) final;
 

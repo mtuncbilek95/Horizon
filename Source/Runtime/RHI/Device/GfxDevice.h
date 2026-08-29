@@ -35,6 +35,8 @@ namespace Horizon::RHI
 	class GfxQueue;
 	class GfxFence;
 
+	struct GfxTextureFootprint;
+
 	class H_EXPORT GfxDevice
 	{
 	public:
@@ -42,6 +44,7 @@ namespace Horizon::RHI
 		virtual void InitializeImGui(u32 maxFrames, GfxQueue* pQueue, GfxDescriptorHeap* pHeap, GfxTextureFormat colorFormat) = 0;
 		virtual void NewFrameImGui() = 0;
 		virtual void ShutdownImGui() = 0;
+
 		virtual GfxDescriptorHeap* CreateDescriptorHeap(const GfxDescriptorHeapDesc& desc) = 0;
 		virtual GfxSwapchain* CreateSwapchain(const GfxSwapchainDesc& desc, GfxQueue* pPresentQueue) = 0;
 		virtual GfxTexture* CreateTexture(const GfxTextureDesc& desc) = 0;
@@ -54,6 +57,9 @@ namespace Horizon::RHI
 		virtual GfxCommandList* CreateCommandList(GfxQueueType type) = 0;
 		virtual GfxQueue* CreateQueue(GfxQueueType type) = 0;
 		virtual GfxFence* CreateFence() = 0;
+
+		virtual GfxTextureFootprint GetTextureFootprint(const GfxTextureDesc& desc, u32 mipLevel = 0, u32 arraySlice = 0) const = 0;
+
 		virtual void WaitIdle() = 0;
 	};
 	GfxDevice* CreateDevice(const GfxDeviceDesc& desc);

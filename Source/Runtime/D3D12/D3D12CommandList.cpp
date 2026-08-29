@@ -1,6 +1,7 @@
 #include "D3D12CommandList.h"
 
 #include <Runtime/Containers/StringOps.h>
+#include <Runtime/Math/Scalar.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <Runtime/D3D12/D3D12Buffer.h>
@@ -23,6 +24,18 @@ namespace Horizon::RHI
 
 		if (m_allocator)
 			m_allocator->Release();
+	}
+
+	void D3D12CommandList::BeginEvent(const c8* pName)
+	{
+	}
+
+	void D3D12CommandList::EndEvent()
+	{
+	}
+
+	void D3D12CommandList::SetMarker(const c8* pName)
+	{
 	}
 
 	void D3D12CommandList::Begin()
@@ -71,27 +84,82 @@ namespace Horizon::RHI
 
 	void D3D12CommandList::Barrier(const GfxTextureBarrier* pBarriers, u32 count)
 	{
-		if (count > kMaxBarrierBatch)
-		{
-			Terminal::Error(StringOps::GetName(this), "Barrier batch limit exceeded, {} > {}", count, kMaxBarrierBatch);
-			return;
-		}
-
 		D3D12_RESOURCE_BARRIER native[kMaxBarrierBatch] = {};
+		u32 pending = 0;
+
+		auto push = [&](ID3D12Resource* pResource, u32 subresource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
+			{
+				if (pending == kMaxBarrierBatch)
+				{
+					m_list->ResourceBarrier(pending, native);
+					pending = 0;
+				}
+
+				native[pending].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+				native[pending].Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+				native[pending].Transition.pResource = pResource;
+				native[pending].Transition.Subresource = subresource;
+				native[pending].Transition.StateBefore = before;
+				native[pending].Transition.StateAfter = after;
+
+				pending++;
+			};
 
 		for (u32 i = 0; i < count; i++)
 		{
 			auto* pTexture = static_cast<D3D12Texture*>(pBarriers[i].pTexture);
 
-			native[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-			native[i].Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-			native[i].Transition.pResource = pTexture->Handle();
-			native[i].Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-			native[i].Transition.StateBefore = Helpers::ToResourceState(pBarriers[i].before);
-			native[i].Transition.StateAfter = Helpers::ToResourceState(pBarriers[i].after);
+			if (!pTexture)
+			{
+				Terminal::Error(StringOps::GetName(this), "Texture barrier {} has no texture", i);
+				continue;
+			}
+
+			const GfxTextureDesc& desc = pTexture->GetDesc();
+
+			const u32 mipLevels = desc.mipLevels == 0 ? 1 : desc.mipLevels;
+			const u32 arrayCount = desc.type == GfxTextureType::Tex3D
+				? 1
+				: (desc.isCube ? desc.arraySize * 6 : (desc.arraySize == 0 ? 1 : desc.arraySize));
+
+			const u32 firstMip = pBarriers[i].firstMip;
+			const u32 firstSlice = pBarriers[i].firstSlice;
+
+			if (firstMip >= mipLevels || firstSlice >= arrayCount)
+			{
+				Terminal::Error(StringOps::GetName(this), "Barrier subresource range starts out of bounds");
+				continue;
+			}
+
+			const u32 mipRange = pBarriers[i].mipCount == GfxAllMips
+				? mipLevels - firstMip
+				: Math::Min(pBarriers[i].mipCount, mipLevels - firstMip);
+
+			const u32 sliceRange = pBarriers[i].sliceCount == GfxAllSlices
+				? arrayCount - firstSlice
+				: Math::Min(pBarriers[i].sliceCount, arrayCount - firstSlice);
+
+			const D3D12_RESOURCE_STATES before = Helpers::ToResourceState(pBarriers[i].before);
+			const D3D12_RESOURCE_STATES after = Helpers::ToResourceState(pBarriers[i].after);
+
+			const b8 bWholeResource = firstMip == 0 && mipRange == mipLevels
+				&& firstSlice == 0 && sliceRange == arrayCount;
+
+			if (bWholeResource)
+			{
+				push(pTexture->Handle(), D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, before, after);
+				continue;
+			}
+
+			for (u32 slice = 0; slice < sliceRange; slice++)
+			{
+				for (u32 mip = 0; mip < mipRange; mip++)
+					push(pTexture->Handle(), (firstMip + mip) + (firstSlice + slice) * mipLevels, before, after);
+			}
 		}
 
-		m_list->ResourceBarrier(count, native);
+		if (pending > 0)
+			m_list->ResourceBarrier(pending, native);
 	}
 
 	void D3D12CommandList::Barrier(const GfxBufferBarrier* pBarriers, u32 count)
@@ -319,12 +387,21 @@ namespace Horizon::RHI
 		auto* pD3DSrc = static_cast<D3D12Buffer*>(pSrc);
 		auto* pD3DDst = static_cast<D3D12Texture*>(pDst);
 
+		if (srcOff % D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT != 0)
+		{
+			Terminal::Error(StringOps::GetName(this), "Texture copy offset {} is not {}-byte aligned",
+				srcOff, u32(D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT));
+			return;
+		}
+
 		const D3D12_RESOURCE_DESC resourceDesc = pD3DDst->Handle()->GetDesc();
 		const u32 subresource = mipLevel + arraySlice * pD3DDst->GetDesc().mipLevels;
 
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint = {};
 
-		m_device->Handle()->GetCopyableFootprints(&resourceDesc, subresource, 1, srcOff, &footprint, nullptr, nullptr, nullptr);
+		m_device->Handle()->GetCopyableFootprints(&resourceDesc, subresource, 1, 0, &footprint, nullptr, nullptr, nullptr);
+
+		footprint.Offset = srcOff;
 
 		D3D12_TEXTURE_COPY_LOCATION source = {};
 

@@ -9,6 +9,7 @@
 #include <Runtime/RHI/Shader/GfxShaderDesc.h>
 #include <Runtime/RHI/Swapchain/GfxSwapchainDesc.h>
 #include <Runtime/RHI/Texture/GfxTextureDesc.h>
+#include <Runtime/RHI/Texture/GfxTextureFootprint.h>
 #include <Runtime/RHI/Upload/GfxUploadRingDesc.h>
 
 #include <Runtime/D3D12/D3D12Buffer.h>
@@ -265,7 +266,8 @@ namespace Horizon::RHI
 		pTexture->m_desc = desc;
 		pTexture->m_format = Helpers::ToFormat(desc.format);
 
-		const b8 bIsDepth = Helpers::IsDepthFormat(pTexture->m_format);
+		const DXGI_FORMAT format = Helpers::ToFormat(desc.format);
+		const b8 bIsDepth = Helpers::IsDepthFormat(format);
 		const b8 bSampled = HasFlag(desc.usage, GfxTextureUsage::Sampled);
 
 		D3D12_RESOURCE_DESC resourceDesc = {};
@@ -283,8 +285,7 @@ namespace Horizon::RHI
 		else
 			resourceDesc.DepthOrArraySize = u16(desc.isCube ? desc.arraySize * 6 : desc.arraySize);
 
-		resourceDesc.Format = bIsDepth && bSampled
-			? Helpers::ToTypelessFormat(pTexture->m_format) : pTexture->m_format;
+		resourceDesc.Format = bIsDepth && bSampled ? Helpers::ToTypelessFormat(format) : format;
 
 		D3D12_CLEAR_VALUE clearValue = {};
 
@@ -505,6 +506,56 @@ namespace Horizon::RHI
 		CHECK_HR(hr, "ID3D12Fence - CreateFence");
 
 		return pFence;
+	}
+
+	GfxTextureFootprint D3D12Device::GetTextureFootprint(const GfxTextureDesc& desc, u32 mipLevel, u32 arraySlice) const
+	{
+		GfxTextureFootprint result = {};
+
+		const DXGI_FORMAT format = Helpers::ToFormat(desc.format);
+		const b8 bIsDepth = Helpers::IsDepthFormat(format);
+		const b8 bSampled = HasFlag(desc.usage, GfxTextureUsage::Sampled);
+
+		D3D12_RESOURCE_DESC resourceDesc = {};
+
+		resourceDesc.Dimension = Helpers::ToResourceDimension(desc.type);
+		resourceDesc.Width = desc.width;
+		resourceDesc.Height = desc.height;
+		resourceDesc.MipLevels = u16(desc.mipLevels);
+		resourceDesc.SampleDesc = { Helpers::ToSampleCount(desc.sampleCount), 0 };
+		resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+		resourceDesc.Flags = Helpers::ToResourceFlags(desc.usage);
+
+		if (desc.type == GfxTextureType::Tex3D)
+			resourceDesc.DepthOrArraySize = u16(desc.depth);
+		else
+			resourceDesc.DepthOrArraySize = u16(desc.isCube ? desc.arraySize * 6 : desc.arraySize);
+
+		resourceDesc.Format = bIsDepth && bSampled ? Helpers::ToTypelessFormat(format) : format;
+
+		const u32 mipLevels = desc.mipLevels == 0 ? 1 : desc.mipLevels;
+
+		if (mipLevel >= mipLevels)
+		{
+			Terminal::Error(StringOps::GetName(this), "Mip {} is out of range, texture has {}", mipLevel, mipLevels);
+			return result;
+		}
+
+		const u32 subresource = mipLevel + arraySlice * mipLevels;
+
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT placed = {};
+		UINT rowCount = 0;
+		UINT64 rowSizeInBytes = 0;
+		UINT64 totalBytes = 0;
+
+		m_device->GetCopyableFootprints(&resourceDesc, subresource, 1, 0, &placed, &rowCount, &rowSizeInBytes, &totalBytes);
+
+		result.rowPitch = placed.Footprint.RowPitch;
+		result.totalBytes = totalBytes;
+		result.rowCount = rowCount;
+		result.depth = placed.Footprint.Depth;
+
+		return result;
 	}
 
 	void D3D12Device::ForgetQueue(D3D12Queue* pQueue)

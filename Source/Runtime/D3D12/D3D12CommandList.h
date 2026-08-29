@@ -13,6 +13,10 @@ namespace Horizon::RHI
 	public:
 		~D3D12CommandList() final;
 
+		void BeginEvent(const c8* pName) final;
+		void EndEvent() final;
+		void SetMarker(const c8* pName) final;
+
 		void Begin() final;
 		void End() final;
 

@@ -35,6 +35,8 @@ namespace Horizon::RHI
 		GfxQueue* CreateQueue(GfxQueueType type) final;
 		GfxFence* CreateFence() final;
 
+		GfxTextureFootprint GetTextureFootprint(const GfxTextureDesc& desc, u32 mipLevel, u32 arraySlice) const final;
+
 		void WaitIdle() final;
 
 		ID3D12Device10* Handle() const { return m_device; }
