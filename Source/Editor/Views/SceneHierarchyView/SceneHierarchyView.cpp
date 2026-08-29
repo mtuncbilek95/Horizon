@@ -60,7 +60,7 @@ namespace Horizon::Editor
 
 		RenderRenameModal();
 
-		if (ImGui::IsWindowFocused() && ImGui::IsKeyChordPressed(ImGuiMod_Ctrl || ImGuiKey_S))
+		if (ImGui::IsWindowFocused())
 		{
 			// TODO: Save hscene + hmeta (if needed) + hfile.
 		}
@@ -98,9 +98,7 @@ namespace Horizon::Editor
 		ImGuiMultiSelectFlags msFlags = ImGuiMultiSelectFlags_ClearOnEscape;
 
 		if (!ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
-		{
 			msFlags |= ImGuiMultiSelectFlags_BoxSelect1d | ImGuiMultiSelectFlags_ClearOnClickVoid;
-		}
 
 		ImGuiMultiSelectIO* pMultiIO = ImGui::BeginMultiSelect(msFlags, m_multiSelect.Size, static_cast<i32>(m_rows.GetCount()));
 

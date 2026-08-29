@@ -2,17 +2,17 @@
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/Math/Scalar.h>
+#include <Runtime/Math/Vec2f.h>
 #include <Runtime/Math/Vec3f.h>
-#include <Runtime/Math/Vec4f.h>
-#include <Runtime/Math/Quat.h>
 
 namespace Horizon::Math
 {
-	class H_EXPORT Mat4f
+	class Random final
 	{
 	public:
-		
+
 	private:
-		f32 m[16];
+		u64 m_state;
+		u64 m_increment;
 	};
 }

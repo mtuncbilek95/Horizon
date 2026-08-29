@@ -4,15 +4,23 @@
 #include <Runtime/Math/Scalar.h>
 #include <Runtime/Math/Vec3f.h>
 #include <Runtime/Math/Vec4f.h>
-#include <Runtime/Math/Quat.h>
+#include <Runtime/Math/Mat4f.h>
 
 namespace Horizon::Math
 {
-	class H_EXPORT Mat4f
+	struct Ray
 	{
-	public:
-		
-	private:
-		f32 m[16];
+	};
+
+	struct Plane
+	{
+	};
+
+	struct AABB
+	{
+	};
+
+	struct Frustum
+	{
 	};
 }

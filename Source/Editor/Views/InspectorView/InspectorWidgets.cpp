@@ -9,6 +9,7 @@ namespace Horizon::Editor
 		constexpr u32 AxisColorX = IM_COL32(219, 62, 76, 255);
 		constexpr u32 AxisColorY = IM_COL32(112, 184, 38, 255);
 		constexpr u32 AxisColorZ = IM_COL32(41, 120, 219, 255);
+		constexpr u32 AxisColorW = IM_COL32(150, 150, 160, 255);
 	}
 
 	void InspectorWidgets::BeginRow(const c8* pLabel, const Reflect::Field* pField)
@@ -49,6 +50,43 @@ namespace Horizon::Editor
 		ImGui::SameLine(0.0f, spacing);
 
 		changed |= DrawAxisField("Z", &pValues[2], AxisColorZ, fieldWidth);
+		active |= ImGui::IsItemActive();
+
+		ImGui::PopID();
+
+		if (pActive)
+			*pActive = active;
+
+		return changed;
+	}
+
+	b8 InspectorWidgets::DrawVec4(const c8* pLabel, f32* pValues, b8* pActive)
+	{
+		ImGui::PushID(pLabel);
+
+		const f32 spacing = 6.0f;
+		f32 available = ImGui::GetContentRegionAvail().x;
+		f32 fieldWidth = (available - spacing * 3.0f) / 4.0f;
+
+		b8 changed = false;
+		b8 active = false;
+
+		changed |= DrawAxisField("X", &pValues[0], AxisColorX, fieldWidth);
+		active |= ImGui::IsItemActive();
+
+		ImGui::SameLine(0.0f, spacing);
+
+		changed |= DrawAxisField("Y", &pValues[1], AxisColorY, fieldWidth);
+		active |= ImGui::IsItemActive();
+
+		ImGui::SameLine(0.0f, spacing);
+
+		changed |= DrawAxisField("Z", &pValues[2], AxisColorZ, fieldWidth);
+		active |= ImGui::IsItemActive();
+
+		ImGui::SameLine(0.0f, spacing);
+
+		changed |= DrawAxisField("W", &pValues[3], AxisColorW, fieldWidth);
 		active |= ImGui::IsItemActive();
 
 		ImGui::PopID();

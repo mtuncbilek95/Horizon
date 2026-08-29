@@ -3,6 +3,7 @@
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 
 #include <source_location>
+#include <type_traits>
 #include <utility>
 #include <new>
 
@@ -17,6 +18,10 @@ namespace Horizon::Memory
 		static T* Create(SourceLocation loc, Args&&... args)
 		{
 			void* mem = AllocateRaw(sizeof(T), alignof(T), loc);
+
+			if (!mem)
+				return nullptr;
+
 			return ::new (mem) T(std::forward<Args>(args)...);
 		}
 
@@ -26,16 +31,20 @@ namespace Horizon::Memory
 			if (!pAddress)
 				return;
 
+			void* pBase = pAddress;
+
+			if constexpr (std::is_polymorphic_v<T>)
+				pBase = dynamic_cast<void*>(pAddress);
+
 			pAddress->~T();
-			FreeRaw(pAddress);
+			FreeRaw(pBase);
 		}
 
 		static void* AllocateRaw(usize size, usize align, SourceLocation loc);
-		static void FreeRaw(void* p);
+		static void* ReallocateRaw(void* pAddress, usize newSize, usize align, SourceLocation loc);
+		static void FreeRaw(void* pAddress);
 
 		static void ReportLeaks();
-
-		static void SetContext(void* tracker);
-		static void* GetContext();
+		static b8 IsTrackingEnabled();
 	};
 }

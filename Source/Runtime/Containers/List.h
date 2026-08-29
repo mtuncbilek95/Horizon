@@ -88,7 +88,7 @@ namespace Horizon
 			DestroyElements();
 
 			if (m_data)
-				::operator delete(m_data);
+				FreeBuffer(m_data);
 		}
 
 		usize GetElementSize() const override { return sizeof(T); }
@@ -130,7 +130,24 @@ namespace Horizon
 		template<typename... Args>
 		T& EmplaceBack(Args&&... args)
 		{
-			GrowIfRequired();
+			if (m_count == m_capacity)
+			{
+				const usize newCapacity = m_capacity == 0 ? 2 : m_capacity * 2;
+				T* pNewBuffer = AllocateBuffer(newCapacity);
+
+				::new (pNewBuffer + m_count) T(std::forward<Args>(args)...);
+
+				RelocateInto(pNewBuffer);
+
+				if (m_data)
+					FreeBuffer(m_data);
+
+				m_data = pNewBuffer;
+				m_capacity = newCapacity;
+				m_count++;
+
+				return Back();
+			}
 
 			::new (m_data + m_count) T(std::forward<Args>(args)...);
 			m_count++;
@@ -297,7 +314,11 @@ namespace Horizon
 			if (m_count < 2)
 				return;
 
-			QuickSortInternal(0, static_cast<i64>(m_count - 1), comp);
+			u32 depth = 0;
+			for (usize n = m_count; n > 1; n >>= 1)
+				depth++;
+
+			QuickSortInternal(0, static_cast<i64>(m_count - 1), comp, depth * 2);
 		}
 
 		void ReverseOrder()
@@ -345,7 +366,12 @@ namespace Horizon
 			if (capacity == 0)
 				return nullptr;
 
-			return static_cast<T*>(::operator new(sizeof(T) * capacity));
+			return static_cast<T*>(::operator new(sizeof(T) * capacity, std::align_val_t{ alignof(T) }));
+		}
+
+		void FreeBuffer(T* pBuffer)
+		{
+			::operator delete(pBuffer, std::align_val_t{ alignof(T) });
 		}
 
 		void CopyFrom(const T* pSource, usize count)
@@ -387,51 +413,141 @@ namespace Horizon
 			m_count = newCount;
 		}
 
+		void RelocateInto(T* pDestination)
+		{
+			if constexpr (std::is_trivially_copyable_v<T>)
+			{
+				if (m_count > 0)
+					std::memcpy(pDestination, m_data, sizeof(T) * m_count);
+
+				return;
+			}
+			else
+			{
+				for (usize i = 0; i < m_count; ++i)
+				{
+					::new (pDestination + i) T(std::move(m_data[i]));
+					m_data[i].~T();
+				}
+			}
+		}
+
 		void Reallocate(usize newCapacity)
 		{
 			T* pNewBuffer = AllocateBuffer(newCapacity);
 
-			for (usize i = 0; i < m_count; ++i)
-			{
-				::new (pNewBuffer + i) T(std::move(m_data[i]));
-				m_data[i].~T();
-			}
+			RelocateInto(pNewBuffer);
 
 			if (m_data)
-				::operator delete(m_data);
+				FreeBuffer(m_data);
 
 			m_data = pNewBuffer;
 			m_capacity = newCapacity;
 		}
 
 		template<typename Compare>
-		void QuickSortInternal(i64 left, i64 right, Compare comp)
+		void QuickSortInternal(i64 left, i64 right, Compare comp, u32 depth)
 		{
-			i64 i = left;
-			i64 j = right;
-			T pivot = m_data[(left + right) / 2];
-
-			while (i <= j)
+			while (left < right)
 			{
-				while (comp(m_data[i], pivot))
-					i++;
-
-				while (comp(pivot, m_data[j]))
-					j--;
-
-				if (i <= j)
+				if (right - left < 16)
 				{
-					std::swap(m_data[i], m_data[j]);
-					i++;
-					j--;
+					InsertionSortInternal(left, right, comp);
+					return;
+				}
+
+				if (depth == 0)
+				{
+					HeapSortInternal(left, right, comp);
+					return;
+				}
+
+				const i64 mid = left + (right - left) / 2;
+				std::swap(m_data[mid], m_data[right]);
+
+				i64 store = left;
+
+				for (i64 i = left; i < right; ++i)
+				{
+					if (comp(m_data[i], m_data[right]))
+					{
+						std::swap(m_data[i], m_data[store]);
+						store++;
+					}
+				}
+
+				std::swap(m_data[store], m_data[right]);
+
+				depth--;
+
+				if (store - left < right - store)
+				{
+					QuickSortInternal(left, store - 1, comp, depth);
+					left = store + 1;
+				}
+				else
+				{
+					QuickSortInternal(store + 1, right, comp, depth);
+					right = store - 1;
 				}
 			}
+		}
 
-			if (left < j)
-				QuickSortInternal(left, j, comp);
+		template<typename Compare>
+		void InsertionSortInternal(i64 left, i64 right, Compare comp)
+		{
+			for (i64 i = left + 1; i <= right; ++i)
+			{
+				T value = std::move(m_data[i]);
+				i64 j = i - 1;
 
-			if (i < right)
-				QuickSortInternal(i, right, comp);
+				while (j >= left && comp(value, m_data[j]))
+				{
+					m_data[j + 1] = std::move(m_data[j]);
+					j--;
+				}
+
+				m_data[j + 1] = std::move(value);
+			}
+		}
+
+		template<typename Compare>
+		void SiftDownInternal(i64 left, i64 root, i64 end, Compare comp)
+		{
+			while (true)
+			{
+				i64 child = 2 * (root - left) + 1 + left;
+
+				if (child > end)
+					return;
+
+				if (child + 1 <= end && comp(m_data[child], m_data[child + 1]))
+					child++;
+
+				if (!comp(m_data[root], m_data[child]))
+					return;
+
+				std::swap(m_data[root], m_data[child]);
+				root = child;
+			}
+		}
+
+		template<typename Compare>
+		void HeapSortInternal(i64 left, i64 right, Compare comp)
+		{
+			const i64 count = right - left + 1;
+
+			if (count < 2)
+				return;
+
+			for (i64 root = left + count / 2 - 1; root >= left; --root)
+				SiftDownInternal(left, root, right, comp);
+
+			for (i64 end = right; end > left; --end)
+			{
+				std::swap(m_data[left], m_data[end]);
+				SiftDownInternal(left, left, end - 1, comp);
+			}
 		}
 
 	private:

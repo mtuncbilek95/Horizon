@@ -8,59 +8,83 @@
 
 namespace Horizon
 {
-	class Terminal
+	enum class LogLevel : u8
 	{
-		enum class Level
-		{
-			Log,
-			Info,
-			Debug,
-			Warning,
-			Error,
-			Fatal
-		};
+		Debug,
+		Log,
+		Info,
+		Warning,
+		Error,
+		Fatal,
+		Off
+	};
 
+#if defined(HORIZON_SHIPPING)
+	inline constexpr LogLevel CompiledMinLevel = LogLevel::Warning;
+#else
+	inline constexpr LogLevel CompiledMinLevel = LogLevel::Debug;
+#endif
+
+	class H_EXPORT ILogSink
+	{
 	public:
-		template<typename... Args>
-		static void Log(std::string_view titleName, std::format_string<Args...> formatString, Args&&... args)
-		{
-			std::string message = std::format(formatString, std::forward<Args>(args)...);
-			Print(Level::Log, titleName, message);
-		}
+		virtual ~ILogSink() = default;
+		virtual void OnMessage(LogLevel level, std::string_view titleName, std::string_view message) = 0;
+	};
 
-		template<typename... Args>
-		static void Info(std::string_view titleName, std::format_string<Args...> formatString, Args&&... args)
+	class H_EXPORT Terminal
+	{
+	public:
+		static void SetMinLevel(LogLevel level);
+		static LogLevel GetMinLevel();
+
+		static void AddSink(ILogSink* pSink);
+		static void RemoveSink(ILogSink* pSink);
+
+		static b8 IsEnabled(LogLevel level)
 		{
-			std::string message = std::format(formatString, std::forward<Args>(args)...);
-			Print(Level::Info, titleName, message);
+			if constexpr (CompiledMinLevel == LogLevel::Off)
+				return false;
+
+			return level >= CompiledMinLevel && level >= GetMinLevel();
 		}
 
 		template<typename... Args>
 		static void Debug(std::string_view titleName, std::format_string<Args...> formatString, Args&&... args)
 		{
-			std::string message = std::format(formatString, std::forward<Args>(args)...);
-			Print(Level::Debug, titleName, message);
+			Emit(LogLevel::Debug, titleName, formatString, std::forward<Args>(args)...);
+		}
+
+		template<typename... Args>
+		static void Log(std::string_view titleName, std::format_string<Args...> formatString, Args&&... args)
+		{
+			Emit(LogLevel::Log, titleName, formatString, std::forward<Args>(args)...);
+		}
+
+		template<typename... Args>
+		static void Info(std::string_view titleName, std::format_string<Args...> formatString, Args&&... args)
+		{
+			Emit(LogLevel::Info, titleName, formatString, std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		static void Warn(std::string_view titleName, std::format_string<Args...> formatString, Args&&... args)
 		{
-			std::string message = std::format(formatString, std::forward<Args>(args)...);
-			Print(Level::Warning, titleName, message);
+			Emit(LogLevel::Warning, titleName, formatString, std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		static void Error(std::string_view titleName, std::format_string<Args...> formatString, Args&&... args)
 		{
-			std::string message = std::format(formatString, std::forward<Args>(args)...);
-			Print(Level::Error, titleName, message);
+			Emit(LogLevel::Error, titleName, formatString, std::forward<Args>(args)...);
 		}
 
 		template<typename... Args>
 		static void Fatal(std::string_view titleName, std::format_string<Args...> formatString, Args&&... args)
 		{
 			std::string message = std::format(formatString, std::forward<Args>(args)...);
-			Print(Level::Fatal, titleName, message);
+			Print(LogLevel::Fatal, titleName, message);
+			Abort(titleName, message);
 		}
 
 		template<typename... Args>
@@ -70,11 +94,22 @@ namespace Horizon
 				return;
 
 			std::string message = std::format(formatString, std::forward<Args>(args)...);
-			IntendedAssert(result, titleName, message);
+			Print(LogLevel::Fatal, titleName, message);
+			Abort(titleName, message);
 		}
 
 	private:
-		static void Print(Level logLevel, std::string_view titleName, std::string_view message);
-		static void IntendedAssert(b8 result, std::string_view titleName, std::string_view message);
+		template<typename... Args>
+		static void Emit(LogLevel level, std::string_view titleName, std::format_string<Args...> formatString, Args&&... args)
+		{
+			if (!IsEnabled(level))
+				return;
+
+			std::string message = std::format(formatString, std::forward<Args>(args)...);
+			Print(level, titleName, message);
+		}
+
+		static void Print(LogLevel level, std::string_view titleName, std::string_view message);
+		[[noreturn]] static void Abort(std::string_view titleName, std::string_view message);
 	};
 }
