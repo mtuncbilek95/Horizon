@@ -17,6 +17,7 @@ namespace Horizon::RHI
 
 		u32 Allocate() final;
 		void Free(u32 index) final;
+		void Recycle() final;
 
 		u32 CreateShaderView(GfxTexture* pTexture) final;
 		u32 CreateStorageView(GfxTexture* pTexture, u32 mipLevel = 0) final;
@@ -35,6 +36,8 @@ namespace Horizon::RHI
 		u32 IndexOf(D3D12_CPU_DESCRIPTOR_HANDLE handle) const { return u32((handle.ptr - m_cpuStart.ptr) / m_descriptorSize); }
 
 	private:
+		static constexpr u32 kMaxPendingFrames = 8;
+
 		b8 ExpectType(GfxDescriptorHeapType type, const char* pWhat) const;
 
 		ID3D12DescriptorHeap* m_heap = nullptr;
@@ -46,5 +49,7 @@ namespace Horizon::RHI
 		u32 m_top = 0;
 
 		List<u32> m_freeList;
+		List<u32> m_pending[kMaxPendingFrames];
+		u32 m_pendingSlot = 0;
 	};
 }

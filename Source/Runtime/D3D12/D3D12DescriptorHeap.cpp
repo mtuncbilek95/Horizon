@@ -2,6 +2,7 @@
 
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
+#include <Runtime/Math/Scalar.h>
 
 #include <Runtime/D3D12/D3D12Buffer.h>
 #include <Runtime/D3D12/D3D12Device.h>
@@ -93,8 +94,37 @@ namespace Horizon::RHI
 		if (index == kInvalid32)
 			return;
 
-		m_freeList.PushBack(index);
-		m_allocatedCount--;
+		if (index >= m_top)
+		{
+			Terminal::Error(StringOps::GetName(this), "Free called with index {} beyond the high water mark {}", index, m_top);
+			return;
+		}
+
+		m_pending[m_pendingSlot].PushBack(index);
+	}
+
+	void D3D12DescriptorHeap::Recycle()
+	{
+		const u32 frames = m_desc.framesInFlight == 0
+			? 1 : Math::Min(m_desc.framesInFlight, kMaxPendingFrames);
+
+		m_pendingSlot = (m_pendingSlot + 1) % frames;
+
+		List<u32>& bucket = m_pending[m_pendingSlot];
+
+		for (u32 index : bucket)
+		{
+			if (m_allocatedCount == 0)
+			{
+				Terminal::Error(StringOps::GetName(this), "Descriptor {} freed more times than allocated", index);
+				continue;
+			}
+
+			m_freeList.PushBack(index);
+			m_allocatedCount--;
+		}
+
+		bucket.Clear();
 	}
 
 	b8 D3D12DescriptorHeap::ExpectType(GfxDescriptorHeapType type, const char* pWhat) const
@@ -158,7 +188,7 @@ namespace Horizon::RHI
 		auto* pDevice = static_cast<D3D12Device*>(m_ownerDevice);
 
 		pDevice->Handle()->CreateShaderResourceView(pD3DTexture->m_resource, &viewDesc, CpuAt(index));
-		pD3DTexture->m_shaderView = index;
+		pD3DTexture->m_shaderView = { this, index };
 
 		return index;
 	}
@@ -170,6 +200,14 @@ namespace Horizon::RHI
 
 		auto* pD3DTexture = static_cast<D3D12Texture*>(pTexture);
 		const GfxTextureDesc& texDesc = pD3DTexture->GetDesc();
+
+		const u32 mipLevels = texDesc.mipLevels == 0 ? 1 : texDesc.mipLevels;
+
+		if (mipLevel >= mipLevels)
+		{
+			Terminal::Error(StringOps::GetName(this), "Storage view mip {} is out of range, texture has {}", mipLevel, mipLevels);
+			return kInvalid32;
+		}
 
 		const u32 index = Allocate();
 
@@ -194,15 +232,6 @@ namespace Horizon::RHI
 			break;
 		default:
 			break;
-		}
-
-		const u32 mipLevels = texDesc.mipLevels == 0 ? 1 : texDesc.mipLevels;
-
-		if (mipLevel >= mipLevels)
-		{
-			Terminal::Error(StringOps::GetName(this), "Storage view mip {} is out of range, texture has {}", mipLevel, mipLevels);
-			Free(index);
-			return kInvalid32;
 		}
 
 		switch (viewDesc.ViewDimension)
@@ -234,7 +263,7 @@ namespace Horizon::RHI
 		pDevice->Handle()->CreateUnorderedAccessView(pD3DTexture->m_resource, nullptr, &viewDesc, CpuAt(index));
 
 		if (mipLevel == 0)
-			pD3DTexture->m_storageView = index;
+			pD3DTexture->m_storageView = { this, index };
 
 		return index;
 	}
@@ -254,7 +283,7 @@ namespace Horizon::RHI
 
 		pDevice->Handle()->CreateRenderTargetView(pD3DTexture->m_resource, nullptr, CpuAt(index));
 
-		pD3DTexture->m_renderTargetView = index;
+		pD3DTexture->m_renderTargetView = { this, index };
 		pD3DTexture->m_renderTargetHandle = CpuAt(index);
 
 		return index;
@@ -286,7 +315,7 @@ namespace Horizon::RHI
 
 		pDevice->Handle()->CreateDepthStencilView(pD3DTexture->m_resource, &viewDesc, CpuAt(index));
 
-		pD3DTexture->m_depthStencilView = index;
+		pD3DTexture->m_depthStencilView = { this, index };
 		pD3DTexture->m_depthStencilHandle = CpuAt(index);
 
 		return index;
@@ -326,7 +355,7 @@ namespace Horizon::RHI
 		auto* pDevice = static_cast<D3D12Device*>(m_ownerDevice);
 
 		pDevice->Handle()->CreateShaderResourceView(pD3DBuffer->m_resource, &viewDesc, CpuAt(index));
-		pD3DBuffer->m_shaderView = index;
+		pD3DBuffer->m_shaderView = { this, index };
 
 		return index;
 	}
@@ -364,7 +393,7 @@ namespace Horizon::RHI
 		auto* pDevice = static_cast<D3D12Device*>(m_ownerDevice);
 
 		pDevice->Handle()->CreateUnorderedAccessView(pD3DBuffer->m_resource, nullptr, &viewDesc, CpuAt(index));
-		pD3DBuffer->m_storageView = index;
+		pD3DBuffer->m_storageView = { this, index };
 
 		return index;
 	}

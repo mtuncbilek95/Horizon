@@ -13,7 +13,8 @@ namespace Horizon::RHI
 	public:
 		virtual u32 Allocate() = 0;
 		virtual void Free(u32 index) = 0;
-		
+		virtual void Recycle() = 0;
+
 		virtual u32 CreateShaderView(GfxTexture* pTexture) = 0;
 		virtual u32 CreateStorageView(GfxTexture* pTexture, u32 mipLevel = 0) = 0;
 

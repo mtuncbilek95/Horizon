@@ -50,14 +50,11 @@ namespace Horizon::RHI
 
 	void D3D12Swapchain::ReleaseImages()
 	{
-		auto* pColorHeap = static_cast<D3D12DescriptorHeap*>(m_desc.pColorHeap);
-
 		for (D3D12Texture* pImage : m_images)
 		{
 			if (!pImage)
 				continue;
 
-			pColorHeap->Free(pImage->GetRenderTargetView());
 			Memory::Allocator::Delete(pImage);
 		}
 

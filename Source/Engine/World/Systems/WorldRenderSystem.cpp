@@ -62,6 +62,9 @@ namespace Horizon::Engine
 
 		m_fence->WaitCPU(m_frameValues[m_frameIndex]);
 
+		m_resourceHeap->Recycle();
+		m_colorHeap->Recycle();
+
 		pCommandList->Begin();
 		pCommandList->BindDescriptorHeaps(m_resourceHeap, nullptr);
 
@@ -161,9 +164,6 @@ namespace Horizon::Engine
 	{
 		if (!m_colorTarget)
 			return;
-
-		m_resourceHeap->Free(m_colorTarget->GetShaderView());
-		m_colorHeap->Free(m_colorTarget->GetRenderTargetView());
 
 		Memory::Allocator::Delete(m_colorTarget);
 

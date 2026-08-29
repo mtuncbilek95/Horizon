@@ -3,6 +3,7 @@
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 
 #include <Runtime/RHI/Buffer/GfxBufferDesc.h>
+#include <Runtime/RHI/Descriptor/GfxDescriptorSlot.h>
 #include <Runtime/RHI/Object/GfxObject.h>
 
 namespace Horizon::RHI
@@ -12,15 +13,20 @@ namespace Horizon::RHI
 	public:
 		virtual void* Map() = 0;
 		virtual void Unmap() = 0;
+
 		const GfxBufferDesc& GetDesc() const { return m_desc; }
 		u64 GetDeviceAddress() const { return m_deviceAddress; }
-		u32 GetShaderView() const { return m_shaderView; }
-		u32 GetStorageView() const { return m_storageView; }
+
+		u32 GetShaderView() const { return m_shaderView.index; }
+		u32 GetStorageView() const { return m_storageView.index; }
+
 	protected:
+		void ReleaseViews();
+
 		GfxBufferDesc m_desc{};
 		u64 m_deviceAddress = 0;
 
-		u32 m_shaderView = kInvalid32;
-		u32 m_storageView = kInvalid32;
+		GfxDescriptorSlot m_shaderView;
+		GfxDescriptorSlot m_storageView;
 	};
 }
