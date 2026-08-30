@@ -264,31 +264,6 @@ namespace Horizon::PAL
 		}
 	}
 
-	std::string_view DirectoryWatcher::Event::GetParent() const
-	{
-		return nameOffset == 0 ? std::string_view() : std::string_view(relativePath.data(), nameOffset - 1);
-	}
-
-	std::string_view DirectoryWatcher::Event::GetName() const
-	{
-		return std::string_view(relativePath).substr(nameOffset);
-	}
-
-	std::string_view DirectoryWatcher::Event::GetExtension() const
-	{
-		return extensionOffset == NoExtension ? std::string_view() : std::string_view(relativePath).substr(extensionOffset);
-	}
-
-	std::string_view DirectoryWatcher::Event::GetOldParent() const
-	{
-		return oldNameOffset == 0 ? std::string_view() : std::string_view(oldRelativePath.data(), oldNameOffset - 1);
-	}
-
-	std::string_view DirectoryWatcher::Event::GetOldName() const
-	{
-		return std::string_view(oldRelativePath).substr(oldNameOffset);
-	}
-
 	DirectoryWatcher::DirectoryWatcher(const std::string& rootPath, b8 recursive) : m_rootPath(NormalizeRoot(rootPath))
 	{
 		std::wstring rootWide = ToWide(m_rootPath);
@@ -334,8 +309,8 @@ namespace Horizon::PAL
 		m_handle = nullptr;
 	}
 
-	DirectoryWatcher::DirectoryWatcher(DirectoryWatcher&& other) noexcept : m_handle(other.m_handle),
-		m_rootPath(std::move(other.m_rootPath))
+	DirectoryWatcher::DirectoryWatcher(DirectoryWatcher&& other) noexcept : m_handle(other.m_handle), m_rootPath(std::move(other.m_rootPath)), 
+		m_subscriptions(std::move(other.m_subscriptions)), m_nextSubscription(other.m_nextSubscription), m_events(std::move(other.m_events))
 	{
 		other.m_handle = nullptr;
 	}
@@ -348,6 +323,9 @@ namespace Horizon::PAL
 
 			m_handle = other.m_handle;
 			m_rootPath = std::move(other.m_rootPath);
+			m_subscriptions = std::move(other.m_subscriptions);
+			m_nextSubscription = other.m_nextSubscription;
+			m_events = std::move(other.m_events);
 
 			other.m_handle = nullptr;
 		}

@@ -5,8 +5,10 @@
 #include <Runtime/PAL/Watcher/WatcherAction.h>
 #include <Runtime/PAL/Watcher/WatcherEntryKind.h>
 
+#include <functional>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace Horizon::PAL
 {
@@ -39,6 +41,11 @@ namespace Horizon::PAL
 			b8 IsRootLevel() const { return nameOffset == 0; }
 		};
 
+		using EventHandler = std::function<void(const Event&)>;
+		using SubscriptionId = u32;
+
+		static constexpr SubscriptionId InvalidSubscription = 0;
+
 		DirectoryWatcher() = default;
 		DirectoryWatcher(const std::string& rootPath, b8 recursive = true);
 		~DirectoryWatcher();
@@ -49,13 +56,35 @@ namespace Horizon::PAL
 		DirectoryWatcher(DirectoryWatcher&& other) noexcept;
 		DirectoryWatcher& operator=(DirectoryWatcher&& other) noexcept;
 
-		b8 Poll(List<Event>& outEvents);
-		b8 IsValid() const { return m_handle != nullptr; }
+		SubscriptionId Subscribe(WatcherAction action, EventHandler handler);
+		void Unsubscribe(SubscriptionId id);
+		void ClearSubscriptions();
 
+		SubscriptionId OnAdded(EventHandler handler) { return Subscribe(WatcherAction::Added, std::move(handler)); }
+		SubscriptionId OnRemoved(EventHandler handler) { return Subscribe(WatcherAction::Removed, std::move(handler)); }
+		SubscriptionId OnModified(EventHandler handler) { return Subscribe(WatcherAction::Modified, std::move(handler)); }
+		SubscriptionId OnRenamed(EventHandler handler) { return Subscribe(WatcherAction::Renamed, std::move(handler)); }
+		SubscriptionId OnOverflow(EventHandler handler) { return Subscribe(WatcherAction::Overflow, std::move(handler)); }
+
+		b8 Dispatch();
+		b8 Poll(List<Event>& outEvents);
+
+		b8 IsValid() const { return m_handle != nullptr; }
 		const std::string& GetRootPath() const { return m_rootPath; }
 
 	private:
+		struct Subscription
+		{
+			SubscriptionId id = InvalidSubscription;
+			WatcherAction action = WatcherAction::Added;
+			EventHandler handler;
+		};
+
 		WatcherHandle m_handle = nullptr;
 		std::string m_rootPath;
+
+		List<Subscription> m_subscriptions;
+		SubscriptionId m_nextSubscription = 1;
+		List<Event> m_events;
 	};
 }

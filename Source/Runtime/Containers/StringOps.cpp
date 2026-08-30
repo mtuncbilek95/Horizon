@@ -35,7 +35,7 @@ namespace Horizon
 		return true;
 	}
 
-	b8 StringOps::EqualsNoCase(const std::string& left, const std::string& right)
+	b8 StringOps::EqualsNoCase(std::string_view left, std::string_view right)
 	{
 		if (left.size() != right.size())
 			return false;
