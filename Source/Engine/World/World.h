@@ -30,6 +30,15 @@ namespace Horizon::Engine
 
 		void CollectComponents(EntityHandle entity, List<ComponentObject*>& outComponents);
 
+		void Clear()
+		{
+			m_entities.Clear();
+			m_components.Clear();
+
+			for (Signature& signature : m_signatures)
+				signature.reset();
+		}
+
 		template<typename T>
 		T* AddComponent(EntityHandle entity, T&& component)
 		{

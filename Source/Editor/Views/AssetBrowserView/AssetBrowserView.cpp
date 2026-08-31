@@ -12,8 +12,6 @@ namespace Horizon::Editor
 {
 	namespace
 	{
-		constexpr std::string_view MetaFileExt = ".hmeta";
-
 		ImGuiID HashPath(const std::string& path)
 		{
 			return static_cast<ImGuiID>(std::hash<std::string>{}(path));
@@ -60,6 +58,7 @@ namespace Horizon::Editor
 		m_currentFolder = pDomain->GetRoot();
 
 		m_contextMenu.BootstrapContext(GetContext()->pEngine, "AssetBrowserView");
+		m_openers.Bootstrap(GetContext()->pEngine);
 	}
 
 	void AssetBrowserView::OnRender()
@@ -166,6 +165,7 @@ namespace Horizon::Editor
 		m_selection.ApplyRequests(pMultiIO);
 
 		DomainFolder* pEnterFolder = nullptr;
+		DomainFile* pOpenFile = nullptr;
 		ImDrawList* pDrawList = ImGui::GetWindowDrawList();
 
 		for (usize i = 0; i < m_entries.GetCount(); i++)
@@ -183,7 +183,7 @@ namespace Horizon::Editor
 				pEnterFolder = entry.pFolder;
 
 			if (!entry.IsFolder() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-				Terminal::Info("AssetBrowserView", "Clicking an asset called {}", entry.GetName());
+				pOpenFile = entry.pFile;
 
 			DrawCell(pDrawList, entry, cellMin, cell);
 
@@ -199,6 +199,9 @@ namespace Horizon::Editor
 
 		if (pEnterFolder != nullptr)
 			Navigate(pEnterFolder);
+
+		if (pOpenFile != nullptr)
+			m_openers.Open(GetContext()->pEngine, pOpenFile);
 	}
 
 	void AssetBrowserView::DrawCell(ImDrawList* pDrawList, const BrowserEntry& entry, const ImVec2& cellMin, f32 cell)

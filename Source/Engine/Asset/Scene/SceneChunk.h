@@ -5,6 +5,7 @@
 namespace Horizon::Engine
 {
 	static constexpr u32 SceneFormatVersion = 1;
+	static constexpr u32 SceneChunkSectionId = 0;
 	static constexpr u32 SceneChunkFlagBlittable = 1u << 0;
 	static constexpr u32 SceneChunkFlagNeedsFixup = 1u << 1;
 

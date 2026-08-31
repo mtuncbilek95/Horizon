@@ -27,6 +27,8 @@ namespace Horizon::Engine
 		ComponentStorage* FindStorage(ComponentTypeId typeId) const;
 		u32 FindSlot(ComponentTypeId typeId) const;
 
+		void Clear();
+
 		const List<ComponentStorage*>& GetStorages() const { return m_storages; }
 
 	private:

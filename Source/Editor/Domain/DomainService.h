@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Core/Service.h>
+#include <Runtime/Containers/Guid.h>
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
 
 #include <string>
@@ -9,6 +10,7 @@
 namespace Horizon::Editor
 {
 	class DomainFolder;
+	class DomainFile;
 
 	class H_EXPORT DomainService : public Engine::Service
 	{
@@ -24,6 +26,7 @@ namespace Horizon::Editor
 
 		DomainFolder* GetRoot() const { return m_root; }
 		DomainFolder* FindFolder(std::string_view relativePath) const;
+		DomainFile* FindFileByGuid(const Guid& guid) const;
 
 		PAL::DirectoryWatcher& GetWatcher() { return m_watcher; }
 
@@ -39,6 +42,8 @@ namespace Horizon::Editor
 		void OnEntryRemoved(const PAL::DirectoryWatcher::Event& event);
 		void OnEntryRenamed(const PAL::DirectoryWatcher::Event& event);
 		void OnWatcherOverflow();
+
+		DomainFile* FindFileByGuid(DomainFolder* pFolder, const Guid& guid) const;
 
 		std::string m_projectPath;
 		std::string m_assetPath;

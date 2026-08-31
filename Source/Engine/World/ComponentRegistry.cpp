@@ -11,8 +11,7 @@ namespace Horizon::Engine
 {
 	ComponentRegistry::~ComponentRegistry()
 	{
-		for (ComponentStorage* pStorage : m_storages)
-			Memory::Allocator::Delete(pStorage);
+		Clear();
 	}
 
 	ComponentStorage* ComponentRegistry::GetOrCreateStorage(ComponentTypeId typeId)
@@ -93,5 +92,14 @@ namespace Horizon::Engine
 			return InvalidSlot;
 
 		return it->second;
+	}
+
+	void ComponentRegistry::Clear()
+	{
+		for (ComponentStorage* pStorage : m_storages)
+			Memory::Allocator::Delete(pStorage);
+
+		m_storages.Clear();
+		m_slots.clear();
 	}
 }

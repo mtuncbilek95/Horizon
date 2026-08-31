@@ -110,6 +110,41 @@ namespace Horizon::Editor
 		return m_root->ResolveFolder(relativePath);
 	}
 
+	DomainFile* DomainService::FindFileByGuid(const Guid& guid) const
+	{
+		if (m_root == nullptr)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has no domain root", m_assetPath);
+			return nullptr;
+		}
+
+		DomainFile* pFile = FindFileByGuid(m_root, guid);
+
+		if (pFile == nullptr)
+			Terminal::Error(StringOps::GetName(this), "{} is not tracked by any domain file", guid.ToString());
+
+		return pFile;
+	}
+
+	DomainFile* DomainService::FindFileByGuid(DomainFolder* pFolder, const Guid& guid) const
+	{
+		for (DomainFile* pFile : pFolder->GetFiles())
+		{
+			if (pFile->GetID() == guid)
+				return pFile;
+		}
+
+		for (DomainFolder* pChild : pFolder->GetFolders())
+		{
+			DomainFile* pFile = FindFileByGuid(pChild, guid);
+
+			if (pFile != nullptr)
+				return pFile;
+		}
+
+		return nullptr;
+	}
+
 	void DomainService::OnEntryAdded(const PAL::DirectoryWatcher::Event& event)
 	{
 		if (event.GetExtension() == DomainFile::MetaExtension)
@@ -124,9 +159,17 @@ namespace Horizon::Editor
 		}
 
 		if (event.kind == PAL::WatcherEntryKind::Directory)
+		{
 			pParent->AddFolder(std::string(event.GetName()))->Refresh();
-		else
-			pParent->AddFile(std::string(event.GetName()));
+			++m_revision;
+			return;
+		}
+
+		if (pParent->AddFile(std::string(event.GetName())) == nullptr)
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} could not be tracked", event.relativePath);
+			return;
+		}
 
 		++m_revision;
 	}

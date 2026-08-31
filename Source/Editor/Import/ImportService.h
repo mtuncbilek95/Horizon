@@ -4,6 +4,7 @@
 #include <Engine/Core/Service.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/RTTR/Reflection.h>
+#include <Runtime/PAL/Timer/Timer.h>
 
 #include <string>
 #include <string_view>
@@ -23,6 +24,7 @@ namespace Horizon::Editor
 	class H_EXPORT ImportService : public Engine::Service
 	{
 		static constexpr usize MaxImportsPerFrame = 4;
+		static constexpr f64 DebounceSeconds = 0.25;
 
 		struct ImporterEntry
 		{
@@ -30,6 +32,12 @@ namespace Horizon::Editor
 			Reflect::TypeHandle assetHandle;
 			std::string assetTypeName;
 			List<std::string> extensions;
+		};
+
+		struct PendingImport
+		{
+			std::string relativePath;
+			f64 timestamp = 0.0;
 		};
 
 	public:
@@ -58,11 +66,14 @@ namespace Horizon::Editor
 		void Enqueue(std::string_view relativePath);
 		DomainFile* ResolveFile(const std::string& relativePath) const;
 
+	private:
 		DomainService* m_domain = nullptr;
 		Engine::ContentContext* m_content = nullptr;
 		Engine::ContentMount* m_output = nullptr;
 
 		List<ImporterEntry> m_importers;
-		List<std::string> m_pending;
+
+		PAL::Timer m_clock;
+		List<PendingImport> m_pending;
 	};
 }

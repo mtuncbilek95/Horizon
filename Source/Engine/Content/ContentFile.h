@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Runtime/Containers/Guid.h>
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 
 namespace Horizon::Engine
@@ -27,6 +28,7 @@ namespace Horizon::Engine
 		u32 containerVersion = ContentFileVersion;
 		u32 payloadVersion = 0;
 		u32 sectionCount = 0;
+		Guid id;
 		u64 typeNameOffset = 0;
 		u64 dependencyOffset = 0;
 		u32 dependencyCount = 0;

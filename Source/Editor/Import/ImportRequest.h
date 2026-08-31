@@ -3,6 +3,11 @@
 #include <Runtime/Containers/Guid.h>
 #include <string>
 
+namespace Horizon::Engine
+{
+	class ReflectionSystem;
+}
+
 namespace Horizon::Editor
 {
 	struct ImportRequest
@@ -10,5 +15,7 @@ namespace Horizon::Editor
 		Guid guid;
 		std::string sourcePath;
 		std::string extension;
+		std::string assetTypeName;
+		Engine::ReflectionSystem* pReflection = nullptr;
 	};
 }

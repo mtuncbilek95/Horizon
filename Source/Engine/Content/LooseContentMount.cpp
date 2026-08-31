@@ -73,6 +73,32 @@ namespace Horizon::Engine
 		return true;
 	}
 
+	b8 LooseContentMount::Write(const Guid& guid, const List<u8>& payload)
+	{
+		const std::string path = ToPath(guid);
+
+		if (!PAL::File::Create(path))
+		{
+			Terminal::Error(StringOps::GetName(this), "{} cannot be created", path);
+			return false;
+		}
+
+		PAL::FileAccessRequest request = PAL::File::RequestAccess(path, PAL::FileOperationAccessPolicy::Write,
+			PAL::FileOperationSharePolicy::Exclusive);
+
+		const b8 wasWritten = PAL::File::WriteMemory(request, payload);
+
+		PAL::File::ReleaseAccess(request);
+
+		if (!wasWritten)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} cannot be written", path);
+			return false;
+		}
+
+		return true;
+	}
+
 	void LooseContentMount::Enumerate(List<Guid>& outGuids) const
 	{
 		const List<PAL::Directory::Entry> entries = PAL::Directory::Iterate(m_rootPath);

@@ -4,6 +4,7 @@
 #include <Engine/World/World.h>
 #include <Engine/World/System.h>
 
+#include <Runtime/Containers/Guid.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/PAL/Sync/Mutex.h>
 
@@ -21,6 +22,9 @@ namespace Horizon::Engine
 		void DeclareDependencies(ModuleGraph& graph) final;
 
 		World* GetActiveWorld() const { return m_activeWorld; }
+		const Guid& GetActiveSceneId() const { return m_activeSceneId; }
+
+		b8 LoadScene(const Guid& sceneId);
 
 		template<typename T>
 			requires std::is_base_of_v<System, T>
@@ -41,6 +45,7 @@ namespace Horizon::Engine
 
 	private:
 		World* m_activeWorld = nullptr;
+		Guid m_activeSceneId;
 
 		// TODO: Just to test things!
 		List<System*> m_systems;

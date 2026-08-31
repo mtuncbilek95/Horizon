@@ -1,6 +1,6 @@
 #include "CreateSceneItem.h"
 
-#include <Engine/Asset/Scene/SceneChunk.h>
+#include <Engine/Asset/Scene/SceneInstantiator.h>
 
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
@@ -27,24 +27,14 @@ namespace Horizon::Editor
 			do
 			{
 				sceneName = std::format("EmptyScene({}){}", index, SceneSuffix);
-				++index;
+				index++;
 			} while (context.currentFolder->FindFile(sceneName) != nullptr);
 		}
 
 		const std::string scenePath = context.currentFolder->GetAbsolutePath() + "/" + sceneName;
 
 		JsonArchiveWriter writer;
-
-		writer.BeginObject();
-
-		writer.Key("version");
-		writer.WriteU64(Engine::SceneFormatVersion);
-
-		writer.Key("entities");
-		writer.BeginArray(0);
-		writer.EndArray();
-
-		writer.EndObject();
+		Engine::SceneInstantiator::CaptureEmpty(writer);
 
 		if (!PAL::File::Create(scenePath))
 		{

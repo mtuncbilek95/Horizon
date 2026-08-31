@@ -80,12 +80,6 @@ namespace Horizon::Engine
 		return pMount->ReadRange(guid, offset, size, outPayload);
 	}
 
-	void ContentContext::Enumerate(List<Guid>& outGuids) const
-	{
-		for (ContentMount* pMount : m_mounts)
-			pMount->Enumerate(outGuids);
-	}
-
 	ContentMount* ContentContext::FindMutableMount() const
 	{
 		for (ContentMount* pMount : m_mounts)

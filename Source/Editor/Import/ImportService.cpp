@@ -7,6 +7,7 @@
 
 #include <Engine/Content/ContentContext.h>
 #include <Engine/Content/ContentMount.h>
+#include <Engine/Content/ContentFileWriter.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Reflection/ReflectionSystem.h>
@@ -19,21 +20,85 @@
 
 namespace Horizon::Editor
 {
+	namespace
+	{
+		class MountImportSink final : public ImportSink
+		{
+		public:
+			MountImportSink(DomainFile* pFile, Engine::ContentMount* pOutput) : m_file(pFile), m_output(pOutput)
+			{
+			}
+
+			Guid ResolveSubAsset(std::string_view name, std::string_view assetTypeName) final
+			{
+				for (const DomainSubAsset& subAsset : m_file->GetMeta().subAssets)
+				{
+					if (subAsset.name != name)
+						continue;
+
+					return subAsset.id;
+				}
+
+				DomainSubAsset subAsset;
+				subAsset.name = std::string(name);
+				subAsset.assetTypeName = std::string(assetTypeName);
+				subAsset.id = Guid::Generate();
+
+				DomainMeta meta = m_file->GetMeta();
+				meta.subAssets.PushBack(subAsset);
+
+				m_file->WriteMeta(meta);
+
+				return subAsset.id;
+			}
+
+			Engine::ContentFileWriter* Open(const Guid& guid, std::string_view assetTypeName) final
+			{
+				return Memory::Allocator::Create<Engine::ContentFileWriter>(Memory::CurrLoc(), guid, assetTypeName);
+			}
+
+			void Close(Engine::ContentFileWriter* pWriter) final
+			{
+				List<u8> bytes;
+
+				if (pWriter->Build(bytes))
+					m_output->Write(pWriter->GetID(), bytes);
+
+				Memory::Allocator::Delete(pWriter);
+			}
+
+		private:
+			DomainFile* m_file = nullptr;
+			Engine::ContentMount* m_output = nullptr;
+		};
+	}
+
 	Engine::ModuleReport ImportService::OnInitialize()
 	{
+		m_clock.Start();
+
+		// Get domain service
 		m_domain = GetEngine()->RequestService<DomainService>();
+		if (!m_domain)
+			return Engine::ModuleReport("Domain service is not accessible. Either a creation problem or dependency problem.");
+
+		// Get content context
 		m_content = GetEngine()->RequestContext<Engine::ContentContext>();
+		if (!m_content)
+			return Engine::ModuleReport("Content context is not accessible. Either a creation problem or dependency problem.");
 
-		if (m_domain == nullptr || m_content == nullptr)
-			return Engine::ModuleReport("Import service has no domain or content layer");
-
+		// Since this service is for editor, get Cooked folder that runs on the project.
 		m_output = m_content->FindMutableMount();
-
 		if (m_output == nullptr)
 			return Engine::ModuleReport("Import service has no writable mount");
 
+		// Register importers via runtime reflection
 		RegisterImporters();
+
+		// Handle onAdded + onModified events for watcher's reaction
 		BindWatcher();
+
+		// First check
 		SweepFolder(m_domain->GetRoot());
 
 		return Engine::ModuleReport();
@@ -41,13 +106,21 @@ namespace Horizon::Editor
 
 	void ImportService::OnExecute()
 	{
+		// Get time to not create a shit show
+		const f64 now = m_clock.GetElapsedTimeInSec();
 		usize budget = MaxImportsPerFrame;
 
-		while (!m_pending.IsEmpty() && budget > 0)
+		for (usize i = 0; i < m_pending.GetCount() && budget > 0;)
 		{
-			const std::string relativePath = m_pending.Front();
+			if (now - m_pending[i].timestamp < DebounceSeconds)
+			{
+				++i;
+				continue;
+			}
 
-			m_pending.PopFront();
+			const std::string relativePath = m_pending[i].relativePath;
+
+			m_pending.RemoveAt(i);
 			--budget;
 
 			DomainFile* pFile = ResolveFile(relativePath);
@@ -164,9 +237,11 @@ namespace Horizon::Editor
 
 	void ImportService::SweepFolder(DomainFolder* pFolder)
 	{
+		// Resolve files
 		for (DomainFile* pFile : pFolder->GetFiles())
 			Evaluate(pFile);
 
+		// check the sub folders
 		for (DomainFolder* pChild : pFolder->GetFolders())
 			SweepFolder(pChild);
 	}
@@ -179,13 +254,57 @@ namespace Horizon::Editor
 		if (candidates.IsEmpty())
 			return false;
 
-		if (!pFile->EnsureMeta())
+		if (!pFile->LoadMeta())
+		{
+			DomainMeta meta;
+			meta.id = Guid::Generate();
+			meta.assetTypeName = candidates.Front()->assetTypeName;
+
+			return pFile->WriteMeta(meta);
+		}
+
+		if (!pFile->GetID().IsValid())
+		{
+			Terminal::Error(StringOps::GetName(this), "{} carries a broken meta", pFile->GetRelativePath());
 			return false;
+		}
 
 		if (!pFile->GetMeta().assetTypeName.empty())
 			return true;
 
-		return pFile->SetAssetType(candidates.Front()->assetTypeName);
+		DomainMeta meta = pFile->GetMeta();
+		meta.assetTypeName = candidates.Front()->assetTypeName;
+
+		return pFile->WriteMeta(meta);
+	}
+
+	void ImportService::Process(DomainFile* pFile)
+	{
+		if (!PrepareMeta(pFile))
+			return;
+
+		AssetImporter* pImporter = FindImporter(pFile->GetMeta().assetTypeName);
+
+		if (pImporter == nullptr)
+			return;
+
+		ImportRequest request;
+		request.guid = pFile->GetID();
+		request.sourcePath = pFile->GetSourcePath();
+		request.extension = StringOps::OnlyExtension(pFile->GetName());
+		request.assetTypeName = pFile->GetMeta().assetTypeName;
+		request.pReflection = GetEngine()->GetReflectionSystem();
+
+		MountImportSink sink(pFile, m_output);
+
+		if (!pImporter->Import(request, sink))
+		{
+			Terminal::Error(StringOps::GetName(this), "{} could not be imported", pFile->GetRelativePath());
+			return;
+		}
+
+		Terminal::Info(StringOps::GetName(this), "{} has been imported as {}", pFile->GetRelativePath(),
+			request.assetTypeName);
 	}
 
 	void ImportService::Evaluate(DomainFile* pFile)
@@ -199,31 +318,27 @@ namespace Horizon::Editor
 		Enqueue(pFile->GetRelativePath());
 	}
 
-	void ImportService::Process(DomainFile* pFile)
-	{
-		if (!pFile->ReloadMeta() || !PrepareMeta(pFile))
-			return;
-
-		AssetImporter* pImporter = FindImporter(pFile->GetMeta().assetTypeName);
-
-		if (pImporter == nullptr)
-			return;
-
-		Terminal::Info(StringOps::GetName(this), "{} is ready to be imported as {}", pFile->GetRelativePath(),
-			pFile->GetMeta().assetTypeName);
-	}
-
 	void ImportService::Enqueue(std::string_view relativePath)
 	{
-		std::string source(relativePath);
-
-		if (source.ends_with(DomainFile::MetaSuffix))
-			source.resize(source.size() - DomainFile::MetaSuffix.size());
-
-		if (m_pending.Contains(source))
+		if (relativePath.ends_with(DomainFile::MetaSuffix))
 			return;
 
-		m_pending.PushBack(std::move(source));
+		const f64 now = m_clock.GetElapsedTimeInSec();
+
+		for (PendingImport& pending : m_pending)
+		{
+			if (pending.relativePath != relativePath)
+				continue;
+
+			pending.timestamp = now;
+			return;
+		}
+
+		PendingImport pending;
+		pending.relativePath = std::string(relativePath);
+		pending.timestamp = now;
+
+		m_pending.PushBack(std::move(pending));
 	}
 
 	DomainFile* ImportService::ResolveFile(const std::string& relativePath) const

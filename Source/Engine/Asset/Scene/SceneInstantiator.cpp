@@ -113,4 +113,128 @@ namespace Horizon::Engine
 
 		return !reader.HasError();
 	}
+
+	b8 SceneInstantiator::Capture(World& world, ReflectionSystem* pReflection, IArchiveWriter& writer)
+	{
+		if (!pReflection)
+		{
+			Terminal::Error("SceneInstantiator", "No reflection system was supplied");
+			return false;
+		}
+
+		EntityStorage& entities = world.GetEntities();
+		const u32 highWater = entities.GetHighWaterMark();
+
+		List<u32> diskIndices(highWater, InvalidDenseIndex);
+		u32 entityCount = 0;
+
+		for (u32 i = 0; i < highWater; i++)
+		{
+			if (!entities.IsAlive(entities.GetHandleAt(i)))
+				continue;
+
+			diskIndices[i] = entityCount;
+			entityCount++;
+		}
+
+		List<ComponentStorage*> chunks;
+
+		for (ComponentStorage* pStorage : world.GetComponents().GetStorages())
+		{
+			if (pStorage->GetCount() == 0)
+				continue;
+
+			chunks.PushBack(pStorage);
+		}
+
+		Serializer serializer(pReflection, ResolveSceneType);
+
+		writer.BeginObject();
+
+		writer.Key("version");
+		writer.WriteU64(SceneFormatVersion);
+
+		writer.Key("entityCount");
+		writer.WriteU64(entityCount);
+
+		writer.Key("typeNames");
+		writer.BeginArray(chunks.GetCount());
+
+		for (ComponentStorage* pStorage : chunks)
+			writer.WriteString(pStorage->GetType().GetName());
+
+		writer.EndArray();
+
+		writer.Key("chunks");
+		writer.BeginArray(chunks.GetCount());
+
+		for (usize typeIndex = 0; typeIndex < chunks.GetCount(); typeIndex++)
+		{
+			ComponentStorage* pStorage = chunks[typeIndex];
+
+			List<usize> denseIndices;
+
+			for (usize i = 0; i < pStorage->GetCount(); i++)
+			{
+				const u32 entityIndex = (u32)pStorage->GetEntityAt(i).Index();
+
+				if (entityIndex >= diskIndices.GetCount() || diskIndices[entityIndex] == InvalidDenseIndex)
+				{
+					Terminal::Warn("SceneInstantiator", "'{}' holds a component for a dead entity, it is dropped",
+						pStorage->GetType().GetName());
+					continue;
+				}
+
+				denseIndices.PushBack(i);
+			}
+
+			writer.BeginObject();
+
+			writer.Key("typeIndex");
+			writer.WriteU64(typeIndex);
+
+			writer.Key("entities");
+			writer.BeginArray(denseIndices.GetCount());
+
+			for (usize denseIndex : denseIndices)
+				writer.WriteU64(diskIndices[(u32)pStorage->GetEntityAt(denseIndex).Index()]);
+
+			writer.EndArray();
+
+			writer.Key("objects");
+			writer.BeginArray(denseIndices.GetCount());
+
+			for (usize denseIndex : denseIndices)
+				serializer.Serialize(pStorage->GetAt(denseIndex), pStorage->GetType(), writer);
+
+			writer.EndArray();
+			writer.EndObject();
+		}
+
+		writer.EndArray();
+		writer.EndObject();
+
+		return true;
+	}
+
+	void SceneInstantiator::CaptureEmpty(IArchiveWriter& writer)
+	{
+		writer.BeginObject();
+
+		writer.Key("version");
+		writer.WriteU64(SceneFormatVersion);
+
+		writer.Key("entityCount");
+		writer.WriteU64(0);
+
+		writer.Key("typeNames");
+		writer.BeginArray(0);
+		writer.EndArray();
+
+		writer.Key("chunks");
+		writer.BeginArray(0);
+		writer.EndArray();
+
+		writer.EndObject();
+	}
 }

@@ -114,4 +114,20 @@ namespace Horizon::Engine
 
 		return EntityHandle::Generate(index, m_generations[index]);
 	}
+
+	void EntityStorage::Clear()
+	{
+		const u32 highWaterMark = m_nextIndex.Load();
+
+		for (u32 i = 0; i < highWaterMark && i < MaxEntities; i++)
+		{
+			if (m_alive[i])
+				m_generations[i]++;
+
+			m_alive[i] = false;
+		}
+
+		m_freeList.Clear();
+		m_nextIndex.Store(0);
+	}
 }

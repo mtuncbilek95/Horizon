@@ -19,7 +19,6 @@ namespace Horizon::Engine
 		b8 Contains(const Guid& guid) const;
 		b8 Read(const Guid& guid, List<u8>& outPayload) const;
 		b8 ReadRange(const Guid& guid, u64 offset, u64 size, List<u8>& outPayload) const;
-		void Enumerate(List<Guid>& outGuids) const;
 
 		ContentMount* FindMutableMount() const;
 

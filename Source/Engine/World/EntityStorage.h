@@ -24,6 +24,8 @@ namespace Horizon::Engine
 		b8 IsAlive(EntityHandle entity) const;
 		EntityHandle GetHandleAt(u32 index) const;
 
+		void Clear();
+
 		u32 GetAliveCount() const { return m_nextIndex.Load() - (u32)m_freeList.GetCount(); }
 		u32 GetHighWaterMark() const { return m_nextIndex.Load(); }
 
