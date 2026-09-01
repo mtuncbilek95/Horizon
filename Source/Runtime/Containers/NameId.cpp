@@ -1,5 +1,6 @@
 #include "NameId.h"
 
+#include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/Sync/Mutex.h>
 #include <Runtime/Containers/ScopedLock.h>
@@ -55,7 +56,7 @@ namespace Horizon
 		}
 
 		if (it->second != text)
-			Terminal::Error("NameId", "Hash collision between '{}' and '{}'", it->second, text);
+			Terminal::Error(StringOps::GetName(this), "Hash collision between '{}' and '{}'", it->second, text);
 	}
 
 	std::string_view NameId::ToString() const
@@ -70,7 +71,7 @@ namespace Horizon
 
 		if (it == table.entries.end())
 		{
-			Terminal::Error("NameId", "Hash {} has no interned string", m_hash);
+			Terminal::Error(StringOps::GetName(this), "Hash {} has no interned string", m_hash);
 			return {};
 		}
 

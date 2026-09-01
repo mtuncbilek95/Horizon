@@ -5,7 +5,6 @@
 #include <Editor/Font/IconsFontAwesome6.h>
 #include <Editor/ContextMenu/ContextMenuRegistry.h>
 #include <Editor/ContextMenu/SceneHierarchyMenu/SceneHierarchyContext.h>
-#include <Engine/World/Definitions.h>
 #include <Runtime/Containers/List.h>
 
 #include <imgui.h>
@@ -21,36 +20,8 @@ namespace Horizon::Editor
 	class H_EXPORT SceneHierarchyView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(SceneHierarchyView);
-
-		struct HierarchyRow
-		{
-			Engine::EntityHandle entity;
-			u32 id = 0;
-		};
-
 	public:
 		void OnInvoke() final;
 		void OnRender() final;
-
-		void SetCurrentWorld(Engine::World* pCurrentWorld);
-
-	private:
-		void RebuildRows();
-		void RenderRows();
-		void SyncSelectionModel();
-		void CollectSelected(SceneHierarchyContext& context);
-		void BeginRename(const Engine::EntityHandle& handl);
-		void RenderRenameModal();
-
-	private:
-		ContextMenuRegistry<SceneHierarchyContext> m_contextMenu;
-
-		Engine::World* m_currentWorld = nullptr;
-
-		List<HierarchyRow> m_rows;
-		ImGuiSelectionBasicStorage m_multiSelect;
-
-		Engine::EntityHandle m_renameHandl;
-		c8 m_renameBuffer[256] = {};
 	};
 }

@@ -7,7 +7,6 @@
 #include <Editor/Domain/DomainFile.h>
 #include <Editor/ContextMenu/ContextMenuRegistry.h>
 #include <Editor/ContextMenu/AssetBrowserMenu/AssetBrowserContext.h>
-#include <Editor/Views/AssetBrowserView/AssetOpenerRegistry.h>
 #include <Runtime/Containers/List.h>
 
 #include <imgui.h>
@@ -49,7 +48,6 @@ namespace Horizon::Editor
 
 	private:
 		ContextMenuRegistry<AssetBrowserContext> m_contextMenu;
-		AssetOpenerRegistry m_openers;
 
 		DomainFolder* m_currentFolder = nullptr;
 

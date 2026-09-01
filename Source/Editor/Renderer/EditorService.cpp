@@ -9,7 +9,6 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowService.h>
 #include <Engine/Graphics/GraphicsContext.h>
-#include <Engine/World/WorldService.h>
 
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Swapchain/GfxSwapchain.h>
@@ -46,7 +45,7 @@ namespace Horizon::Editor
 		renderDesc.frameCount = m_swapchain->GetImageCount();
 
 		m_editorRenderer = Memory::Allocator::Create<EditorRenderer>(Memory::CurrLoc(), renderDesc);
-		Terminal::Debug("EditorService", "EditorRenderer has been initialized!");
+		Terminal::Debug(StringOps::GetName(this), "EditorRenderer has been initialized!");
 
 		EditorContext ctx = {};
 		ctx.pEngine = GetEngine();
@@ -161,6 +160,5 @@ namespace Horizon::Editor
 		graph.Requires<Engine::WindowService>();
 		graph.Requires<Engine::GraphicsContext>();
 		graph.Requires<DomainService>();
-		graph.Requires<Engine::WorldService>();
 	}
 }

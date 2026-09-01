@@ -2,7 +2,6 @@
 
 #include <Engine/Asset/AssetTypeAttribute.h>
 #include <Engine/Asset/AssetLoadStrategy.h>
-#include <Engine/Content/ContentContext.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Graphics/GraphicsContext.h>
@@ -51,7 +50,6 @@ namespace Horizon::Engine
 	void AssetService::DeclareDependencies(ModuleGraph& graph)
 	{
 		graph.Requires<GraphicsContext>();
-		graph.Requires<ContentContext>();
 	}
 
 	AssetLoadStrategy* AssetService::FindStrategy(Reflect::TypeHandle assetType)

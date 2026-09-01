@@ -23,7 +23,7 @@ namespace Horizon::Engine
 			return ModuleReport("Window has not been initialize.");
 
 		m_window->Show();
-		Terminal::Info("WindowSystem", "Window has been initialized!");
+		Terminal::Info(StringOps::GetName(this), "Window has been initialized!");
 
 		return ModuleReport();
 	}

@@ -1,5 +1,6 @@
 #include "Guid.h"
 
+#include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <charconv>
@@ -50,7 +51,7 @@ namespace Horizon
 	{
 		if (str.size() != 36 || str[8] != '-' || str[13] != '-' || str[18] != '-' || str[23] != '-')
 		{
-			Terminal::Warn("Guid", "Malformed guid string '{}'", str);
+			Terminal::Warn(StringOps::GetName(this), "Malformed guid string '{}'", str);
 			return;
 		}
 
@@ -86,7 +87,7 @@ namespace Horizon
 
 		if (!ok)
 		{
-			Terminal::Warn("Guid", "Malformed guid string '{}'", str);
+			Terminal::Warn(StringOps::GetName(this), "Malformed guid string '{}'", str);
 			return;
 		}
 

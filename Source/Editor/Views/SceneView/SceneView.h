@@ -21,18 +21,6 @@ namespace Horizon::Editor
 		void OnInvoke() final;
 		void OnRender() final;
 
-		b8 IsFullBleed() const final { return true; }
-
 	private:
-		void RenderToolbar(const ImVec2& imageMin, const ImVec2& region);
-		void RenderDebugPopup();
-
-	private:
-		Engine::WorldRenderSystem* m_renderSystem = nullptr;
-
-		b8 m_wireframe = false;
-		b8 m_bounds = false;
-		b8 m_grid = false;
-		b8 m_colliders = false;
 	};
 }

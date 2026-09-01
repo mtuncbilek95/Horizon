@@ -40,7 +40,7 @@ namespace Horizon::Editor
 
 				if (pAttr == nullptr)
 				{
-					Terminal::Error("ContextMenuRegistry", "{} type has no ContextMenuItemAttribute", pType->GetName());
+					Terminal::Error(StringOps::GetName(this), "{} type has no ContextMenuItemAttribute", pType->GetName());
 					continue;
 				}
 

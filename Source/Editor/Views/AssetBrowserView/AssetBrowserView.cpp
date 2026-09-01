@@ -58,7 +58,6 @@ namespace Horizon::Editor
 		m_currentFolder = pDomain->GetRoot();
 
 		m_contextMenu.BootstrapContext(GetContext()->pEngine, "AssetBrowserView");
-		m_openers.Bootstrap(GetContext()->pEngine);
 	}
 
 	void AssetBrowserView::OnRender()
@@ -200,8 +199,9 @@ namespace Horizon::Editor
 		if (pEnterFolder != nullptr)
 			Navigate(pEnterFolder);
 
-		if (pOpenFile != nullptr)
-			m_openers.Open(GetContext()->pEngine, pOpenFile);
+		// TODO: Open file
+		//if (pOpenFile != nullptr)
+			
 	}
 
 	void AssetBrowserView::DrawCell(ImDrawList* pDrawList, const BrowserEntry& entry, const ImVec2& cellMin, f32 cell)
@@ -259,7 +259,7 @@ namespace Horizon::Editor
 
 		if (pEntry == nullptr)
 		{
-			Terminal::Error("AssetBrowserView", "{} is not a tracked browser entry", sourcePath);
+			Terminal::Error(StringOps::GetName(this), "{} is not a tracked browser entry", sourcePath);
 			return;
 		}
 

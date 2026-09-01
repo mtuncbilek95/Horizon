@@ -20,7 +20,7 @@ namespace Horizon::RHI
 	{
 		if (count > 64)
 		{
-			Terminal::Error("D3D12Queue", "Submit batch limit exceeded, {} > 64", count);
+			Terminal::Error(StringOps::GetName(this), "Submit batch limit exceeded, {} > 64", count);
 			return;
 		}
 

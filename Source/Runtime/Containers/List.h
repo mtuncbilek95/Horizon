@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Runtime/Containers/ListBase.h>
+#include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <initializer_list>
@@ -244,7 +245,7 @@ namespace Horizon
 
 			if constexpr (!std::is_move_assignable_v<T>)
 			{
-				Terminal::Error("List", "Element type is not move assignable, RemoveAt({}) ignored", index);
+				Terminal::Error(StringOps::GetName(this), "Element type is not move assignable, RemoveAt({}) ignored", index);
 				return;
 			}
 			else
@@ -290,7 +291,7 @@ namespace Horizon
 			{
 				if (count > m_count)
 				{
-					Terminal::Error("List", "Element type is not default constructible, resize to {} ignored", count);
+					Terminal::Error(StringOps::GetName(this), "Element type is not default constructible, resize to {} ignored", count);
 					return;
 				}
 			}

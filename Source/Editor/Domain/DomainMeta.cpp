@@ -1,5 +1,6 @@
 #include "DomainMeta.h"
 
+#include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/File.h>
 #include <Runtime/Serialization/JsonArchive.h>
@@ -20,7 +21,7 @@ namespace Horizon::Editor
 
 		if (!wasRead)
 		{
-			Terminal::Error("DomainMeta", "{} cannot be read", metaPath);
+			Terminal::Error(StringOps::GetName(this), "{} cannot be read", metaPath);
 			return false;
 		}
 
@@ -28,7 +29,7 @@ namespace Horizon::Editor
 
 		if (reader.HasError())
 		{
-			Terminal::Error("DomainMeta", "{} is malformed", metaPath);
+			Terminal::Error(StringOps::GetName(this), "{} is malformed", metaPath);
 			return false;
 		}
 
@@ -36,7 +37,7 @@ namespace Horizon::Editor
 
 		if (reader.Key("version") && reader.ReadU64() > Version)
 		{
-			Terminal::Error("DomainMeta", "{} is newer than the supported version {}", metaPath, Version);
+			Terminal::Error(StringOps::GetName(this), "{} is newer than the supported version {}", metaPath, Version);
 			return false;
 		}
 
@@ -79,7 +80,7 @@ namespace Horizon::Editor
 
 		if (!id.IsValid())
 		{
-			Terminal::Error("DomainMeta", "{} carries no valid id", metaPath);
+			Terminal::Error(StringOps::GetName(this), "{} carries no valid id", metaPath);
 			return false;
 		}
 
@@ -125,7 +126,7 @@ namespace Horizon::Editor
 
 		if (!PAL::File::Create(metaPath))
 		{
-			Terminal::Error("DomainMeta", "{} cannot be created", metaPath);
+			Terminal::Error(StringOps::GetName(this), "{} cannot be created", metaPath);
 			return false;
 		}
 
@@ -138,7 +139,7 @@ namespace Horizon::Editor
 
 		if (!wasWritten)
 		{
-			Terminal::Error("DomainMeta", "{} cannot be written", metaPath);
+			Terminal::Error(StringOps::GetName(this), "{} cannot be written", metaPath);
 			return false;
 		}
 

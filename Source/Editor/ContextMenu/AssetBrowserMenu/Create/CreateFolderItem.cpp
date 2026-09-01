@@ -40,7 +40,7 @@ namespace Horizon::Editor
 		const std::string newFolderPath = context.currentFolder->GetAbsolutePath() + "/" + newFolderName;
 
 		if (!PAL::Directory::Create(newFolderPath))
-			Terminal::Error("NewFolderMenuItem", "Cannot create folder: {}", newFolderPath);
+			Terminal::Error(StringOps::GetName(this), "Cannot create folder: {}", newFolderPath);
 	}
 
 	b8 CreateFolderItem::IsEnabled(const AssetBrowserContext& context)

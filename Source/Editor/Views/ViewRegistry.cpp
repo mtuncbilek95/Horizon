@@ -29,7 +29,7 @@ namespace Horizon::Editor
 
 		if (!ctx.pEngine)
 		{
-			Terminal::Fatal("ViewRegistry", "Somehow engine is not there!");
+			Terminal::Fatal(StringOps::GetName(this), "Somehow engine is not there!");
 			return;
 		}
 
@@ -47,7 +47,7 @@ namespace Horizon::Editor
 		{
 			if (type->GetBaseId() != Reflect::TypeOf<ViewObject>())
 			{
-				Terminal::Error("ViewRegistry", "{} has not inherited from ViewObject. Please inherit then restart engine!", type->GetName());
+				Terminal::Error(StringOps::GetName(this), "{} has not inherited from ViewObject. Please inherit then restart engine!", type->GetName());
 				continue;
 			}
 
