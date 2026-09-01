@@ -46,7 +46,7 @@ namespace Horizon::Editor
 		return Engine::ModuleReport();
 	}
 
-	void DomainService::OnExecute()
+	void DomainService::OnExecute(const Engine::EngineFrame& ctx)
 	{
 		if (!m_watcherHealthy)
 			return;

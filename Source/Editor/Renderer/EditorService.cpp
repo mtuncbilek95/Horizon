@@ -9,15 +9,12 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowService.h>
 #include <Engine/Graphics/GraphicsContext.h>
+#include <Engine/World/WorldService.h>
 
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Swapchain/GfxSwapchain.h>
 #include <Runtime/RHI/Fence/GfxFence.h>
 #include <Runtime/RHI/Queue/GfxQueue.h>
-
-#include <chrono>
-
-using Clock = std::chrono::high_resolution_clock;
 
 namespace Horizon::Editor
 {
@@ -60,14 +57,8 @@ namespace Horizon::Editor
 		return Engine::ModuleReport();
 	}
 
-	void EditorService::OnExecute()
+	void EditorService::OnExecute(const Engine::EngineFrame& ctx)
 	{
-		static auto lastTime = Clock::now();
-
-		auto currentTime = Clock::now();
-		f32 deltaTime = std::chrono::duration<f32>(currentTime - lastTime).count();
-		lastTime = currentTime;
-
 		const auto& messages = m_engineWindow->GetMessages();
 
 		b8 onResizeDone = true;
@@ -133,7 +124,7 @@ namespace Horizon::Editor
 		if (!m_swapchain->AcquireNextImage(m_fence))
 			return;
 
-		m_editorRenderer->BeginRender(deltaTime);
+		m_editorRenderer->BeginRender(ctx.DeltaTime());
 
 		m_menuRegistry->RenderGUI();
 		m_viewRegistry->RenderGUI();
@@ -160,5 +151,6 @@ namespace Horizon::Editor
 		graph.Requires<Engine::WindowService>();
 		graph.Requires<Engine::GraphicsContext>();
 		graph.Requires<DomainService>();
+		graph.Requires<Engine::WorldService>();
 	}
 }

@@ -51,6 +51,24 @@ namespace Horizon
 			CopyFrom(initList.begin(), initList.size());
 		}
 
+		template<std::forward_iterator TIterator>
+			requires std::constructible_from<T, std::iter_reference_t<TIterator>>
+		List(TIterator first, TIterator last)
+		{
+			const usize count = static_cast<usize>(std::distance(first, last));
+
+			m_data = AllocateBuffer(count);
+			m_capacity = count;
+
+			for (usize i = 0; i < count; ++i)
+			{
+				::new (m_data + i) T(*first);
+				++first;
+			}
+
+			m_count = count;
+		}
+
 		List(const List& other)
 		{
 			m_data = AllocateBuffer(other.m_count);

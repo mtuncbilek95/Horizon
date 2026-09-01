@@ -35,7 +35,7 @@ namespace Horizon::Engine
 		return ModuleReport();
 	}
 
-	void AssetService::OnExecute()
+	void AssetService::OnExecute(const EngineFrame& ctx)
 	{
 	}
 

@@ -28,7 +28,7 @@ namespace Horizon::Engine
 		return ModuleReport();
 	}
 
-	void WindowService::OnExecute()
+	void WindowService::OnExecute(const EngineFrame& ctx)
 	{
 		if (!m_window)
 			return;

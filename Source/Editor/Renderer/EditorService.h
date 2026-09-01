@@ -25,7 +25,7 @@ namespace Horizon::Editor
 		~EditorService() = default;
 
 		Engine::ModuleReport OnInitialize() final;
-		void OnExecute() final;
+		void OnExecute(const Engine::EngineFrame& ctx) final;
 		void OnFinalize() final;
 
 		void DeclareDependencies(Engine::ModuleGraph& graph) final;

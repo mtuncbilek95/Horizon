@@ -14,7 +14,7 @@ namespace Horizon::Engine
 		PAL::Window* GetWindow() const noexcept { return m_window; }
 
 		ModuleReport OnInitialize() final;
-		void OnExecute() final;
+		void OnExecute(const EngineFrame& ctx) final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
 

@@ -11,7 +11,7 @@ namespace Horizon::Engine
 		friend class WorldService;
 	public:
 		virtual b8 OnInitialize() = 0;
-		virtual void OnExecute() = 0;
+		virtual void OnExecute(const EngineFrame& ctx) = 0;
 		virtual void OnFinalize() = 0;
 
 		Engine* GetEngine() const { return m_engine; }

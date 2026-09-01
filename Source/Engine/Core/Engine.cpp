@@ -22,12 +22,19 @@ namespace Horizon::Engine
 
 	void Engine::Run()
 	{
+		m_timer.Start();
+
 		while (m_running)
 		{
 			FlushPending();
 
+			f64 deltaTime = m_timer.GetElapsedTimeInSec();
+			m_timer.Reset();
+
+			m_frameContext.Advance(deltaTime);
+
 			for (Service* pService : m_activeServices)
-				pService->OnExecute();
+				pService->OnExecute(m_frameContext);
 		}
 
 		Shutdown();

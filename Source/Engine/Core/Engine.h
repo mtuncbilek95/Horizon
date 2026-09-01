@@ -3,11 +3,13 @@
 #include <Engine/Core/Context.h>
 #include <Engine/Core/Service.h>
 #include <Engine/Core/ModuleGraph.h>
+#include <Engine/Core/EngineFrame.h>
 
 #include <Runtime/Containers/List.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
+#include <Runtime/PAL/Timer/Timer.h>
 
 #include <typeindex>
 #include <unordered_map>
@@ -75,15 +77,22 @@ namespace Horizon::Engine
 		void Activate(Module* pModule);
 		void Shutdown();
 	private:
+		PAL::Timer m_timer;
+		EngineFrame m_frameContext;
+
 		ModuleGraph m_dependencyGraph;
 		List<Module*> m_registerPending;
 		List<Module*> m_shutdownOrder;
+
 		List<Service*> m_activeServices;
 		std::unordered_map<std::type_index, usize> m_lookupServices;
+
 		List<Context*> m_activeContexts;
 		std::unordered_map<std::type_index, usize> m_lookupContexts;
+
 		ReflectionSystem* m_reflectionSystem = nullptr;
 		JobSystem* m_jobSystem = nullptr;
+
 		b8 m_running = true;
 	};
 }

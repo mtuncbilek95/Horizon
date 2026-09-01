@@ -12,6 +12,11 @@ target_link_libraries(Runtime
 		nlohmann_json::nlohmann_json Imgui
 )
 
+target_link_libraries(Runtime 
+	PUBLIC 
+		DirectXShaderCompiler
+)
+
 if(WIN32)
     ConfigureWindowsLibrary(Runtime)
 	ConfigureD3D12Library(Runtime)

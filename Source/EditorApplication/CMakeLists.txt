@@ -30,3 +30,16 @@ target_link_libraries(EditorApplication
     PUBLIC
         Runtime Engine Editor
 )
+
+add_custom_command(TARGET EditorApplication POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:EditorApplication>
+            $<TARGET_FILE_DIR:EditorApplication>
+    COMMAND_EXPAND_LISTS
+)
+
+add_custom_command(TARGET EditorApplication POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${DXC_SIGNER_DLL}"
+            $<TARGET_FILE_DIR:EditorApplication>
+)

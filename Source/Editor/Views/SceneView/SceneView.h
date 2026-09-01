@@ -8,7 +8,7 @@
 
 namespace Horizon::Engine
 {
-	class WorldRenderSystem;
+	class RenderSystem;
 }
 
 namespace Horizon::Editor
@@ -21,6 +21,9 @@ namespace Horizon::Editor
 		void OnInvoke() final;
 		void OnRender() final;
 
+		b8 IsFullBleed() const { return true; }
+
 	private:
+		Engine::RenderSystem* m_renderer;
 	};
 }

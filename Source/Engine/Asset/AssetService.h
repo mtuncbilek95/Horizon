@@ -17,7 +17,7 @@ namespace Horizon::Engine
 		~AssetService() = default;
 
 		ModuleReport OnInitialize() final;
-		void OnExecute() final;
+		void OnExecute(const EngineFrame& ctx) final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
 
