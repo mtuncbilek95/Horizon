@@ -5,14 +5,22 @@
 #include <Runtime/RTTR/Reflection.h>
 
 #include <unordered_map>
+#include <string>
 
 namespace Horizon::Engine
 {
 	class ReflectionSystem;
 	class System;
+	class Scene;
 
 	class H_EXPORT WorldService : public Service
 	{
+		struct SystemEntry
+		{
+			System* pSystem = nullptr;
+			std::string name;
+			u32 order = 0;
+		};
 	public:
 		ModuleReport OnInitialize() final;
 		void OnExecute(const EngineFrame& ctx) final;
@@ -30,5 +38,7 @@ namespace Horizon::Engine
 		ReflectionSystem* m_reflection;
 		List<System*> m_systems;
 		std::unordered_map<Reflect::TypeHandle, usize> m_systemLookup;
+
+		Scene* m_activeWorld = nullptr;
 	};
 }

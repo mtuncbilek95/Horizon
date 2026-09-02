@@ -1,5 +1,9 @@
 #include "RenderSystem.h"
 
+#include <Engine/World/Components/TransformComponent.h>
+#include <Engine/World/Components/CameraComponent.h>
+#include <Engine/World/Components/CameraMatrixComponent.h>
+
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/RHI/Buffer/GfxBuffer.h>
 
@@ -9,13 +13,15 @@
 #include <Runtime/RHI/Pipeline/GfxGraphicsPipelineDesc.h>
 #include <Runtime/RHI/Pipeline/GfxPipeline.h>
 
+#include <Runtime/Math/Mat4f.h>
+
 namespace Horizon::Engine
 {
 	RHI::GfxShader* pVertexShader = nullptr;
 	RHI::GfxShader* pPixelShader = nullptr;
 	RHI::GfxPipeline* pTrianglePipeline = nullptr;
 	RHI::GfxBuffer* pStorageBuf = nullptr;
-	u32 storageView = kInvalid32;
+	RHI::GfxBuffer* pCameraBuf = nullptr;
 
 	struct Vertex
 	{
@@ -39,9 +45,19 @@ namespace Horizon::Engine
 	struct PushConstants
 	{
 		u32 bufferIndex;
-		u32 indexByteOffset;
+		u32 cameraIndex;
+		u32 cameraOffset;
+		u32 indexOffset;
+		f32 deltaTime;
 	};
 	PushConstants constants = {};
+
+	struct ViewObject
+	{
+		Math::Mat4f mvp = Math::Mat4f::Identity();
+	};
+	ViewObject pView;
+	u8* pCamMapped = nullptr;
 
 	b8 RenderSystem::OnInitialize()
 	{
@@ -58,7 +74,8 @@ namespace Horizon::Engine
 		m_colorHeap = m_context->GetColorHeap();
 		m_queue = m_context->GetGraphicsQueue();
 
-		if (!CreateTexture({ 1280, 720 }))
+		m_workableArea = { 1280, 720 };
+		if (!CreateTexture(m_workableArea))
 			return false;
 
 		for (usize i = 0; i < m_context->GetSwapchain()->GetImageCount(); i++)
@@ -103,19 +120,30 @@ namespace Horizon::Engine
 		u8* mapped = (u8*)pStorageBuf->Map();
 		std::memcpy(mapped, vertices.GetData(), vertices.GetCount() * sizeof(Vertex));
 		std::memcpy(mapped + (vertices.GetCount() * sizeof(Vertex)), indices.GetData(), indices.GetCount() * sizeof(u32));
+		m_resourceHeap->CreateShaderView(pStorageBuf);
 
-		storageView = m_resourceHeap->CreateShaderView(pStorageBuf);
+		RHI::GfxBufferDesc cambufDesc = {};
+		cambufDesc.memory = RHI::GfxMemoryType::GpuUpload;
+		cambufDesc.size = sizeof(ViewObject) * u32(m_commandLists.GetCount());
+		cambufDesc.stride = 0;
+		cambufDesc.usage = RHI::GfxBufferUsage::Storage;
+		pCameraBuf = m_device->CreateBuffer(cambufDesc);
+
+		pCamMapped = (u8*)pCameraBuf->Map();
+		std::memcpy(pCamMapped, &pView, sizeof(ViewObject));
+		m_resourceHeap->CreateShaderView(pCameraBuf);
+
 		return true;
 	}
 
-	void RenderSystem::OnExecute(const EngineFrame& ctx)
+	void RenderSystem::OnExecute(const EngineFrame& ctx, Scene& currentScene)
 	{
 		if (!EnsureTargets())
 			return;
 
 		RHI::GfxCommandList* pCommand = BeginFrame();
 
-		BuildFrameData(ctx);
+		BuildFrameData(ctx, currentScene);
 		RenderScene(pCommand, m_lastImage);
 		EndFrame(pCommand);
 	}
@@ -129,13 +157,14 @@ namespace Horizon::Engine
 
 		Memory::Allocator::Delete(m_fence);
 
-		for(auto* pCmd : m_commandLists)
+		for (auto* pCmd : m_commandLists)
 			Memory::Allocator::Delete(pCmd);
 
 		Memory::Allocator::Delete(pVertexShader);
 		Memory::Allocator::Delete(pPixelShader);
 		Memory::Allocator::Delete(pTrianglePipeline);
 		Memory::Allocator::Delete(pStorageBuf);
+		Memory::Allocator::Delete(pCameraBuf);
 
 		Memory::Allocator::Delete(m_lastImage);
 	}
@@ -150,7 +179,7 @@ namespace Horizon::Engine
 
 	void RenderSystem::ResizeImage(const Math::Vec2u& imgSize)
 	{
-		if (imgSize.X() < 1 || imgSize.Y() < 1)
+		if (imgSize.X() <= 1 || imgSize.Y() <= 1)
 			return;
 
 		m_workableArea = imgSize;
@@ -194,7 +223,6 @@ namespace Horizon::Engine
 		Memory::Allocator::Delete(m_lastImage);
 
 		m_lastImage = nullptr;
-		m_workableArea = Math::Vec2u::Zero();
 	}
 
 	b8 RenderSystem::EnsureTargets()
@@ -228,10 +256,19 @@ namespace Horizon::Engine
 		return pCommand;
 	}
 
-	void RenderSystem::BuildFrameData(const EngineFrame& ctx)
+	void RenderSystem::BuildFrameData(const EngineFrame& ctx, Scene& currentScene)
 	{
+		const u32 cameraOffset = m_frameIndex * u32(sizeof(ViewObject));
+
 		constants.bufferIndex = pStorageBuf->GetShaderView();
-		constants.indexByteOffset = u32(sizeof(Vertex) * vertices.GetCount());
+		constants.cameraIndex = pCameraBuf->GetShaderView();
+		constants.cameraOffset = cameraOffset;
+		constants.indexOffset = u32(sizeof(Vertex) * vertices.GetCount());
+
+		currentScene.ForEach<CameraMatrixComponent>([&](EntityHandle handl, CameraMatrixComponent& camMatrix)
+			{
+				std::memcpy(pCamMapped + cameraOffset, &camMatrix.m_viewProjection, sizeof(ViewObject));
+			});
 	}
 
 	void RenderSystem::RenderScene(RHI::GfxCommandList* pCommand, RHI::GfxTexture* pTarget)
@@ -252,7 +289,7 @@ namespace Horizon::Engine
 			.SetSize(pTarget->GetDesc().width, pTarget->GetDesc().height);
 
 		pCommand->BeginRendering(renderDesc);
-		pCommand->SetGraphicsConstants(&constants, 2);
+		pCommand->SetGraphicsConstants(&constants, sizeof(PushConstants) / sizeof(u32));
 
 		pCommand->BindPipeline(pTrianglePipeline);
 		pCommand->SetScissor({ 0, 0, (i32)pTarget->GetDesc().width, (i32)pTarget->GetDesc().height });

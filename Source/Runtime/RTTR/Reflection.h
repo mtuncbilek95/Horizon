@@ -17,6 +17,10 @@ namespace Horizon::Reflect
 	struct TypeAccessor;
 }
 
+#define HORIZON_PRIMITIVE_REFLECT(XClass)																\
+	template<typename>																					\
+	friend struct Horizon::Reflect::TypeAccessor;
+
 #define HORIZON_TYPE_REFLECT(XClass)																	\
 	template<typename>																					\
 	friend struct Horizon::Reflect::TypeAccessor;														\

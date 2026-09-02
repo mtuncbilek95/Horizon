@@ -9,6 +9,7 @@
 namespace Horizon::Engine
 {
 	class RenderSystem;
+	class CameraSystem;
 }
 
 namespace Horizon::Editor
@@ -25,5 +26,6 @@ namespace Horizon::Editor
 
 	private:
 		Engine::RenderSystem* m_renderer;
+		Engine::CameraSystem* m_camera;
 	};
 }

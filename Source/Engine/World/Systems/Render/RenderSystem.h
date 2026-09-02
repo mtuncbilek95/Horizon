@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Graphics/GraphicsContext.h>
+#include <Engine/World/SystemOrderAttribute.h>
 #include <Engine/World/System.h>
 
 #include <Runtime/RHI/Texture/GfxTexture.h>
@@ -9,13 +10,13 @@
 
 namespace Horizon::Engine
 {
-	HCLASS();
+	HCLASS(SystemOrder[300]);
 	class H_EXPORT RenderSystem : public System
 	{
 		HORIZON_TYPE_REFLECT(RenderSystem);
 	public:
 		b8 OnInitialize() final;
-		void OnExecute(const EngineFrame& ctx) final;
+		void OnExecute(const EngineFrame& ctx, Scene& currentScene) final;
 		void OnFinalize() final;
 
 		u64 GetSceneView() const;
@@ -29,7 +30,7 @@ namespace Horizon::Engine
 
 		b8 EnsureTargets();
 		RHI::GfxCommandList* BeginFrame();
-		void BuildFrameData(const EngineFrame& ctx);
+		void BuildFrameData(const EngineFrame& ctx, Scene& currentScene);
 		void RenderScene(RHI::GfxCommandList* pCommand, RHI::GfxTexture* pTarget);
 		void EndFrame(RHI::GfxCommandList* pCommand);
 

@@ -6,9 +6,9 @@
 namespace Horizon::Math
 {
 	HCLASS();
-	class H_EXPORT Vec4f : public Reflect::Base
+	class H_EXPORT Vec4f final
 	{
-		HORIZON_TYPE_REFLECT(Vec4f);
+		HORIZON_PRIMITIVE_REFLECT(Vec4f);
 	public:
 		static Vec4f Zero() { return Vec4f(0.f, 0.f, 0.f, 0.f); }
 		static Vec4f One() { return Vec4f(1.f, 1.f, 1.f, 1.f); }

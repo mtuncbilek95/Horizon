@@ -5,6 +5,7 @@
 
 #include <Engine/Core/Engine.h>
 #include <Engine/World/Systems/Render/RenderSystem.h>
+#include <Engine/World/Systems/Location/CameraSystem.h>
 #include <Engine/World/WorldService.h>
 
 #include <Runtime/Containers/StringOps.h>
@@ -25,6 +26,7 @@ namespace Horizon::Editor
 		}
 
 		m_renderer = pWorldService->RequestSystem<Engine::RenderSystem>();
+		m_camera = pWorldService->RequestSystem<Engine::CameraSystem>();
 	}
 
 	void SceneView::OnRender()
@@ -40,10 +42,13 @@ namespace Horizon::Editor
 		if (area.x < 1.0f || area.y < 1.0f)
 			return;
 
-		const Math::Vec2u requested(u32(1280), u32(720));
+		const Math::Vec2u requested(u32(area.x), u32(area.y));
 
 		if (m_renderer->GetImageSize() != requested)
+		{
 			m_renderer->ResizeImage(requested);
+			m_camera->ResizeViewport(requested);
+		}
 
 		const u64 handle = m_renderer->GetSceneView();
 
