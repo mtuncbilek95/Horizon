@@ -2,7 +2,6 @@
 
 #include <Engine/Job/JobSystem.h>
 #include <Runtime/Definitions/Allocator.h>
-#include <Runtime/Containers/ScopedLock.h>
 
 #include <utility>
 
@@ -13,8 +12,8 @@ namespace Horizon::Engine
 		((JobWorker*)userData)->Run();
 	}
 
-	JobWorker::JobWorker(JobSystem* pContext, usize index) : m_owner(pContext), m_index(index), m_inbox(nullptr),
-		m_signal(0), m_working(true)
+	JobWorker::JobWorker(JobSystem* pContext, JobLane lane, usize index) : m_owner(pContext), m_lane(lane), m_index(index),
+		m_inbox(nullptr), m_signal(0), m_working(true)
 	{
 	}
 
@@ -34,7 +33,8 @@ namespace Horizon::Engine
 
 	void JobWorker::Start()
 	{
-		m_worker = PAL::Thread(&JobWorker::ThreadEntryPoint, this, "Thread");
+		m_worker = PAL::Thread(&JobWorker::ThreadEntryPoint, this,
+			m_lane == JobLane::Critical ? "CriticalWorker" : "BackgroundWorker");
 	}
 
 	void JobWorker::Run()
@@ -46,14 +46,14 @@ namespace Horizon::Engine
 			Job job;
 			if (TryPopJob(job))
 			{
-				job();
+				job.Execute();
 				continue;
 			}
 
 			if (auto* pVictim = m_owner->GetRandomVictim(this);
 				pVictim && pVictim->TryStealFromThis(job))
 			{
-				job();
+				job.Execute();
 				continue;
 			}
 
@@ -62,7 +62,7 @@ namespace Horizon::Engine
 			DrainInbox();
 			if (TryPopJob(job))
 			{
-				job();
+				job.Execute();
 				continue;
 			}
 
@@ -86,7 +86,7 @@ namespace Horizon::Engine
 
 	void JobWorker::AddJob(Job&& job)
 	{
-		JobNode* node = Memory::Allocator::Create<JobNode>(Memory::CurrLoc(), std::move(job), nullptr);
+		JobNode* node = Memory::Allocator::Create<JobNode>(Memory::CurrLoc(), std::move(job));
 
 		JobNode* head = m_inbox.Load();
 

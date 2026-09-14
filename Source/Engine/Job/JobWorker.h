@@ -1,10 +1,10 @@
 #pragma once
 
 #include <Engine/Job/Job.h>
+#include <Engine/Job/JobLane.h>
 
 #include <Runtime/Containers/WorkStealingDeque.h>
 #include <Runtime/PAL/Sync/Thread.h>
-#include <Runtime/PAL/Sync/CriticalSection.h>
 #include <Runtime/PAL/Sync/Futex.h>
 #include <Runtime/PAL/Sync/Atomic.h>
 
@@ -20,10 +20,14 @@ namespace Horizon::Engine
 		{
 			Job job;
 			JobNode* next;
+
+			JobNode(Job&& work) : job(std::move(work)), next(nullptr)
+			{
+			}
 		};
 
 	public:
-		JobWorker(JobSystem* pContext, usize index);
+		JobWorker(JobSystem* pContext, JobLane lane, usize index);
 		~JobWorker();
 
 		void Start();
@@ -33,6 +37,8 @@ namespace Horizon::Engine
 		void AddJob(Job&& job);
 
 		b8 TryStealFromThis(Job& out);
+
+		JobLane GetLane() const { return m_lane; }
 		usize GetWorkerIndex() const { return m_index; }
 
 		void SetThreadAffinity(u64 mask);
@@ -43,6 +49,7 @@ namespace Horizon::Engine
 
 	private:
 		JobSystem* m_owner;
+		JobLane m_lane;
 		usize m_index;
 
 		WorkStealingDeque<JobNode*> m_deque;

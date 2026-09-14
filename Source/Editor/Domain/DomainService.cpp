@@ -23,10 +23,12 @@ namespace Horizon::Editor
 
 	Engine::ModuleReport DomainService::OnInitialize()
 	{
+		// If you see this and judge me, FUCK YOU! IT WILL BE AUTOMATIC PLEASE FUCK OFF!
 		m_projectPath = "D:/Projects/Horizon/ExampleProject";
 		m_assetPath = m_projectPath + "/Assets";
 		m_cookPath = m_projectPath + "/Cooked";
 
+		// If you see this and judge me, FUCK YOU! IT WILL BE AUTOMATIC PLEASE FUCK OFF!
 		m_engineResourcePath = "D:/Projects/Horizon/Resources/Engine";
 
 		if (!PAL::Directory::Exists(m_assetPath) && !PAL::Directory::Create(m_assetPath))
