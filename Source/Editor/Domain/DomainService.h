@@ -47,8 +47,11 @@ namespace Horizon::Editor
 
 		std::string m_projectPath;
 		std::string m_assetPath;
-
+		std::string m_cookPath;
 		DomainFolder* m_root = nullptr;
+
+		std::string m_engineResourcePath;
+		DomainFolder* m_engineResource = nullptr;
 
 		PAL::DirectoryWatcher m_watcher;
 		b8 m_watcherHealthy = false;

@@ -34,6 +34,8 @@ namespace Horizon::Engine
 		}
 		System* RequestSystem(Reflect::TypeHandle handl) const;
 
+		Scene* GetCurrentWorld() const { return m_activeWorld; }
+
 	private:
 		ReflectionSystem* m_reflection;
 		List<System*> m_systems;

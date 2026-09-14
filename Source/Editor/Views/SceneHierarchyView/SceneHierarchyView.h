@@ -9,11 +9,6 @@
 
 #include <imgui.h>
 
-namespace Horizon::Engine
-{
-	class World;
-}
-
 namespace Horizon::Editor
 {
 	HCLASS(EditorView[ICON_FA_DIAGRAM_PROJECT, "Scene Hierarchy", false, true, DockZone::Left]);
@@ -23,5 +18,21 @@ namespace Horizon::Editor
 	public:
 		void OnInvoke() final;
 		void OnRender() final;
+
+	private:
+		void BeginRename(Engine::EntityHandle handl);
+		void RenderRenameModal();
+
+	private:
+		ContextMenuRegistry<SceneHierarchyContext> m_context;
+
+		ImGuiSelectionBasicStorage m_selection;
+		List<Engine::EntityHandle> m_entities;
+
+		std::string m_renamePath;
+		Engine::EntityHandle m_renameHandl;
+		c8 m_renameBuffer[256] = {};
+
+		Engine::Scene* m_currentScene = nullptr;
 	};
 }

@@ -21,6 +21,7 @@ namespace Horizon::Engine
 
 		EntityHandle AddEntity();
 		void RemoveEntity(EntityHandle handl);
+		void RemoveEntity(usize index);
 		b8 IsAlive(EntityHandle handl) const;
 
 		template<typename T>

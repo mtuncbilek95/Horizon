@@ -12,8 +12,8 @@ namespace Horizon::Editor
 	class H_EXPORT DomainFolder
 	{
 	public:
-		DomainFolder(DomainFolder* pParent, const std::string& name, const std::string& absolutePath) : m_parent(pParent),
-			m_name(name), m_absolutePath(absolutePath)
+		DomainFolder(DomainFolder* pParent, const std::string& name, const std::string& absolutePath, const std::string& cookPath) : m_parent(pParent),
+			m_name(name), m_absolutePath(absolutePath), m_connectedCookPath(cookPath)
 		{
 		}
 
@@ -49,6 +49,8 @@ namespace Horizon::Editor
 		DomainFolder* m_parent = nullptr;
 		std::string m_name;
 		std::string m_absolutePath;
+
+		std::string m_connectedCookPath;
 
 		List<DomainFolder*> m_folders;
 		List<DomainFile*> m_files;

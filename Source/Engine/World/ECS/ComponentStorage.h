@@ -13,6 +13,7 @@ namespace Horizon::Engine
 	public:
 		virtual ~IComponentStorage() = default;
 
+		virtual void* FindRaw(EntityHandle handl) = 0;
 		virtual ComponentTypeId GetComponentTypeId() const = 0;
 		virtual b8 Contains(EntityHandle entt) const = 0;
 		virtual void Remove(EntityHandle entt) = 0;
@@ -69,6 +70,11 @@ namespace Horizon::Engine
 				return nullptr;
 
 			return &m_dense[denseIndex];
+		}
+
+		void* FindRaw(EntityHandle handl) final 
+		{
+			return Find(handl);
 		}
 
 		void Remove(EntityHandle handl) final

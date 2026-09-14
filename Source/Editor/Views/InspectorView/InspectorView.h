@@ -6,6 +6,12 @@
 #include <Editor/ContextMenu/ContextMenuRegistry.h>
 #include <Runtime/Math/Vec2f.h>
 
+namespace Horizon::Engine
+{
+	class ReflectionSystem;
+	class WorldService;
+}
+
 namespace Horizon::Editor
 {
 	HCLASS(EditorView[ICON_FA_EYE, "Inspector", false, true, DockZone::Right]);
@@ -15,5 +21,9 @@ namespace Horizon::Editor
 	public:
 		void OnInvoke() final;
 		void OnRender() final;
+
+	private:
+		Engine::ReflectionSystem* m_reflSys;
+		Engine::WorldService* m_worldService;
 	};
 }

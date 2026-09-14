@@ -7,8 +7,8 @@
 
 namespace Horizon::Editor
 {
-	DomainFile::DomainFile(DomainFolder* pParent, const std::string& name, const std::string& metaPath, const std::string& sourcePath) :
-		m_parent(pParent), m_name(name), m_metaPath(metaPath), m_sourcePath(sourcePath)
+	DomainFile::DomainFile(DomainFolder* pParent, const std::string& name, const std::string& metaPath, const std::string& sourcePath, const std::string& cookPath) :
+		m_parent(pParent), m_name(name), m_metaPath(metaPath), m_sourcePath(sourcePath), m_cookPath(cookPath)
 	{
 	}
 
@@ -31,7 +31,17 @@ namespace Horizon::Editor
 		return PAL::File::Exists(m_metaPath);
 	}
 
-	b8 DomainFile::LoadMeta()
+	b8 DomainFile::HasSource() const
+	{
+		return PAL::File::Exists(m_sourcePath);
+	}
+
+	b8 DomainFile::HasBinary() const
+	{
+		return PAL::File::Exists(m_cookPath);
+	}
+
+	b8 DomainFile::LoadMetaFile()
 	{
 		if (!PAL::File::Exists(m_metaPath))
 			return false;
@@ -46,7 +56,7 @@ namespace Horizon::Editor
 		return true;
 	}
 
-	b8 DomainFile::WriteMeta(const DomainMeta& meta)
+	b8 DomainFile::WriteMetaFile(const DomainMeta& meta)
 	{
 		if (!meta.Write(m_metaPath))
 			return false;
@@ -60,5 +70,11 @@ namespace Horizon::Editor
 	{
 		std::string newPath = m_parent->GetAbsolutePath() + "/" + newName;
 		PAL::File::Rename(m_sourcePath, newPath);
+	}
+
+	b8 DomainFile::GenerateCookFile()
+	{
+		Terminal::Info(StringOps::GetName(this), "Generating cooked file for {} to {}", m_name, m_cookPath);
+		return true;
 	}
 }

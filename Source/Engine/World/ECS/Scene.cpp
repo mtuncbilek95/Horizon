@@ -30,6 +30,12 @@ namespace Horizon::Engine
 		m_entities.Destroy(handl);
 	}
 
+	void Scene::RemoveEntity(usize index)
+	{
+		EntityHandle handl = m_entities.GetHandleAt(u32(index));
+		RemoveEntity(handl);
+	}
+
 	b8 Scene::IsAlive(EntityHandle handl) const
 	{
 		return m_entities.IsAlive(handl);

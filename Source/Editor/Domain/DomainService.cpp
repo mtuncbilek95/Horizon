@@ -25,12 +25,21 @@ namespace Horizon::Editor
 	{
 		m_projectPath = "D:/Projects/Horizon/ExampleProject";
 		m_assetPath = m_projectPath + "/Assets";
+		m_cookPath = m_projectPath + "/Cooked";
+
+		m_engineResourcePath = "D:/Projects/Horizon/Resources/Engine";
 
 		if (!PAL::Directory::Exists(m_assetPath) && !PAL::Directory::Create(m_assetPath))
 			return Engine::ModuleReport("Asset root cannot be created");
 
-		m_root = Memory::Allocator::Create<DomainFolder>(Memory::CurrLoc(), nullptr, "Assets", m_assetPath);
+		if (!PAL::Directory::Exists(m_cookPath) && !PAL::Directory::Create(m_cookPath))
+			return Engine::ModuleReport("Cook root cannot be created");
+
+		m_root = Memory::Allocator::Create<DomainFolder>(Memory::CurrLoc(), nullptr, "Assets", m_assetPath, m_cookPath);
 		m_root->Refresh();
+
+		// This one is to get embedded assets and files on editor. So I can shove them up my ***.
+		m_engineResource = Memory::Allocator::Create<DomainFolder>(Memory::CurrLoc(), nullptr, "Engine", m_engineResourcePath, "");
 
 		m_watcher = PAL::DirectoryWatcher(m_assetPath, true);
 		m_watcherHealthy = m_watcher.IsValid();
@@ -51,11 +60,9 @@ namespace Horizon::Editor
 		if (!m_watcherHealthy)
 			return;
 
-		if (m_watcher.Dispatch())
-			return;
+		m_watcher.Dispatch();
 
-		Terminal::Error(StringOps::GetName(this), "{} watcher stopped, the domain tree will not refresh", m_assetPath);
-		m_watcherHealthy = false;
+		// Check if every thing is in order.
 	}
 
 	void DomainService::OnFinalize()
@@ -165,9 +172,18 @@ namespace Horizon::Editor
 			return;
 		}
 
-		if (pParent->AddFile(std::string(event.GetName())) == nullptr)
+		// Create file
+		DomainFile* pFile = pParent->AddFile(std::string(event.GetName()));
+		if (pFile == nullptr)
 		{
 			Terminal::Warn(StringOps::GetName(this), "{} could not be tracked", event.relativePath);
+			return;
+		}
+
+		// Create cook file
+		if (!pFile->GenerateCookFile())
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} was not able to get cook file", event.relativePath);
 			return;
 		}
 

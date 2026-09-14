@@ -70,7 +70,7 @@ namespace Horizon::Editor
 			return pExisting;
 
 		DomainFolder* pChild = Memory::Allocator::Create<DomainFolder>(Memory::CurrLoc(), this, name,
-			m_absolutePath + "/" + name);
+			m_absolutePath + "/" + name, m_connectedCookPath);
 
 		usize index = 0;
 
@@ -92,7 +92,7 @@ namespace Horizon::Editor
 		const std::string absolutePath = m_absolutePath + "/" + name;
 
 		DomainFile* pFile = Memory::Allocator::Create<DomainFile>(Memory::CurrLoc(), this, name,
-			absolutePath + std::string(DomainFile::MetaSuffix), absolutePath);
+			absolutePath + std::string(DomainFile::MetaSuffix), absolutePath, m_connectedCookPath);
 
 		usize index = 0;
 
@@ -142,6 +142,7 @@ namespace Horizon::Editor
 				if (entry.name.ends_with(DomainFile::MetaSuffix))
 					continue;
 
+				// Add the file in domain
 				AddFile(entry.name);
 				continue;
 			}

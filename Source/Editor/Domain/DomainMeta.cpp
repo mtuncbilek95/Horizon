@@ -47,35 +47,6 @@ namespace Horizon::Editor
 		if (reader.Key("assetType"))
 			assetTypeName = reader.ReadString();
 
-		subAssets.Clear();
-
-		if (reader.Key("subAssets"))
-		{
-			const usize count = reader.BeginArray();
-
-			for (usize i = 0; i < count; ++i)
-			{
-				reader.BeginObject();
-
-				DomainSubAsset subAsset;
-
-				if (reader.Key("name"))
-					subAsset.name = reader.ReadString();
-
-				if (reader.Key("assetType"))
-					subAsset.assetTypeName = reader.ReadString();
-
-				if (reader.Key("id"))
-					subAsset.id = Guid(reader.ReadString());
-
-				reader.EndObject();
-
-				subAssets.PushBack(std::move(subAsset));
-			}
-
-			reader.EndArray();
-		}
-
 		reader.EndObject();
 
 		if (!id.IsValid())
@@ -102,26 +73,6 @@ namespace Horizon::Editor
 		writer.Key("assetType");
 		writer.WriteString(assetTypeName);
 
-		writer.Key("subAssets");
-		writer.BeginArray(subAssets.GetCount());
-
-		for (const DomainSubAsset& subAsset : subAssets)
-		{
-			writer.BeginObject();
-
-			writer.Key("name");
-			writer.WriteString(subAsset.name);
-
-			writer.Key("assetType");
-			writer.WriteString(subAsset.assetTypeName);
-
-			writer.Key("id");
-			writer.WriteString(subAsset.id.ToString());
-
-			writer.EndObject();
-		}
-
-		writer.EndArray();
 		writer.EndObject();
 
 		if (!PAL::File::Create(metaPath))
