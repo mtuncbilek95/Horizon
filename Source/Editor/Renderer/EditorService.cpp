@@ -39,7 +39,6 @@ namespace Horizon::Editor
 		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
 		renderDesc.pResourceHeap = pGraphSub->GetResourceHeap();
 		renderDesc.colorFormat = m_swapchain->GetDesc().format;
-		renderDesc.frameCount = m_swapchain->GetImageCount();
 
 		m_editorRenderer = Memory::Allocator::Create<EditorRenderer>(Memory::CurrLoc(), renderDesc);
 		Terminal::Debug(StringOps::GetName(this), "EditorRenderer has been initialized!");
@@ -129,7 +128,7 @@ namespace Horizon::Editor
 		m_menuRegistry->RenderGUI();
 		m_viewRegistry->RenderGUI();
 
-		m_editorRenderer->EndRender(m_swapchain->GetImage(m_swapchain->GetCurrentImageIndex()), m_swapchain->GetCurrentImageIndex());
+		m_editorRenderer->EndRender(m_swapchain->GetImage(m_swapchain->GetCurrentImageIndex()));
 
 		m_swapchain->Present(m_queue, m_fence);
 	}

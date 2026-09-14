@@ -76,6 +76,9 @@ namespace Horizon::Editor
 
 		Memory::Allocator::Delete(m_root);
 		m_root = nullptr;
+
+		Memory::Allocator::Delete(m_engineResource);
+		m_engineResource = nullptr;
 	}
 
 	void DomainService::DeclareDependencies(Engine::ModuleGraph& graph)

@@ -5,6 +5,8 @@
 #include <Editor/Font/IconsKenney.h>
 #include <Editor/Renderer/Utils/ImGuiUtils.h>
 
+#include <Engine/Graphics/GraphicsContext.h>
+
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
@@ -39,20 +41,23 @@ namespace Horizon::Editor
 
 		LoadFonts();
 
-		m_device->InitializeImGui(desc.frameCount, m_graphicsQueue, m_resourceHeap, desc.colorFormat);
+		m_device->InitializeImGui(Engine::GraphicsContext::MaxFramesInFlight, m_graphicsQueue, m_resourceHeap, desc.colorFormat);
 
-		m_commandLists.Resize(desc.frameCount);
-		for (u32 i = 0; i < desc.frameCount; i++)
-			m_commandLists[i] = m_device->CreateCommandList(RHI::GfxQueueType::Graphics);
+		m_frames.Resize(Engine::GraphicsContext::MaxFramesInFlight);
+		for (u32 i = 0; i < Engine::GraphicsContext::MaxFramesInFlight; i++)
+			m_frames[i].pCmdList = m_device->CreateCommandList(RHI::GfxQueueType::Graphics);
+
+		m_fence = m_device->CreateFence();
 
 		DefaultStyle();
 	}
 
 	EditorRenderer::~EditorRenderer()
 	{
-		for (RHI::GfxCommandList* cmd : m_commandLists)
-			Memory::Allocator::Delete(cmd);
+		for (auto& frame : m_frames)
+			Memory::Allocator::Delete(frame.pCmdList);
 
+		Memory::Allocator::Delete(m_fence);
 		m_device->ShutdownImGui();
 
 		ImGui::DestroyContext((ImGuiContext*)m_context);
@@ -135,40 +140,40 @@ namespace Horizon::Editor
 		return true;
 	}
 
-	b8 EditorRenderer::EndRender(RHI::GfxTexture* backbuffer, u32 imgIndex)
+	b8 EditorRenderer::EndRender(RHI::GfxTexture* backbuffer)
 	{
 		ImGui::Render();
 
-		RHI::GfxCommandList* cmd = m_commandLists[imgIndex];
+		FrameContext& context = m_frames[m_frameIndex];
 
-		cmd->Begin();
-		cmd->BindDescriptorHeaps(m_resourceHeap, nullptr);
+		m_fence->WaitCPU(context.fenceValue);
+
+		context.pCmdList->Begin();
+		context.pCmdList->BindDescriptorHeaps(m_resourceHeap, nullptr);
 
 		RHI::GfxTextureBarrier toTarget = { backbuffer, RHI::GfxResourceState::Present, RHI::GfxResourceState::RenderTarget };
-
-		cmd->Barrier(&toTarget, 1);
+		context.pCmdList->Barrier(&toTarget, 1);
 
 		const RHI::GfxTextureDesc& bbDesc = backbuffer->GetDesc();
-
 		RHI::GfxRenderBeginDesc pass = {};
 
 		pass.AddColorTarget(backbuffer, RHI::GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
 			.SetSize(bbDesc.width, bbDesc.height);
-		cmd->BeginRendering(pass);
+		context.pCmdList->BeginRendering(pass);
 
-		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), (ID3D12GraphicsCommandList6*)cmd->GetAPIHandle());
+		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), (ID3D12GraphicsCommandList6*)context.pCmdList->GetAPIHandle());
 
-		cmd->EndRendering();
+		context.pCmdList->EndRendering();
 
 		RHI::GfxTextureBarrier toPresent = { backbuffer, RHI::GfxResourceState::RenderTarget, RHI::GfxResourceState::Present };
 
-		cmd->Barrier(&toPresent, 1);
+		context.pCmdList->Barrier(&toPresent, 1);
 
-		cmd->End();
+		context.pCmdList->End();
+		m_graphicsQueue->Submit(&context.pCmdList, 1);
 
-		RHI::GfxCommandList* submitList[] = { cmd };
-
-		m_graphicsQueue->Submit(submitList, 1);
+		context.fenceValue = m_graphicsQueue->Signal(m_fence);
+		m_frameIndex = (m_frameIndex + 1) % Engine::GraphicsContext::MaxFramesInFlight;
 
 		return true;
 	}

@@ -74,18 +74,17 @@ namespace Horizon::Engine
 		m_colorHeap = m_context->GetColorHeap();
 		m_queue = m_context->GetGraphicsQueue();
 
-		m_workableArea = { 1280, 720 };
-		if (!CreateTexture(m_workableArea))
-			return false;
-
-		for (usize i = 0; i < m_context->GetSwapchain()->GetImageCount(); i++)
-			m_commandLists.PushBack(m_device->CreateCommandList(RHI::GfxQueueType::Graphics));
-
-		for (usize i = 0; i < m_context->GetSwapchain()->GetImageCount(); i++)
-			m_frameValues.PushBack(0);
+		ResizeImage({ 1280, 720 });
+		m_slots.Resize(GraphicsContext::MaxFramesInFlight);
+		for (u32 i = 0; i < GraphicsContext::MaxFramesInFlight; i++)
+		{
+			if (!RecreateSlot(i))
+				return false;
+		}
 
 		m_fence = m_device->CreateFence();
 
+#pragma region "Temporary Render"
 		List<u8> vertexByte = RHI::GfxShaderCompiler::Compile(HORIZON_RESOURCE_DIR + std::string("/Shaders/Testers/Triangle.vert.hlsl"), RHI::GfxShaderStage::Vertex, "VSMain");
 		RHI::GfxShaderDesc vertShaderDesc = {};
 		vertShaderDesc.pByteCode = vertexByte.GetData();
@@ -124,7 +123,7 @@ namespace Horizon::Engine
 
 		RHI::GfxBufferDesc cambufDesc = {};
 		cambufDesc.memory = RHI::GfxMemoryType::GpuUpload;
-		cambufDesc.size = sizeof(ViewObject) * u32(m_commandLists.GetCount());
+		cambufDesc.size = sizeof(ViewObject) * u32(GraphicsContext::MaxFramesInFlight);
 		cambufDesc.stride = 0;
 		cambufDesc.usage = RHI::GfxBufferUsage::Storage;
 		pCameraBuf = m_device->CreateBuffer(cambufDesc);
@@ -132,132 +131,25 @@ namespace Horizon::Engine
 		pCamMapped = (u8*)pCameraBuf->Map();
 		std::memcpy(pCamMapped, &pView, sizeof(ViewObject));
 		m_resourceHeap->CreateShaderView(pCameraBuf);
+#pragma endregion
 
 		return true;
 	}
 
 	void RenderSystem::OnExecute(const EngineFrame& ctx, Scene& currentScene)
 	{
-		if (!EnsureTargets())
-			return;
+		RenderSlot& slot = m_slots[m_frameIndex];
 
-		RHI::GfxCommandList* pCommand = BeginFrame();
-
-		BuildFrameData(ctx, currentScene);
-		RenderScene(pCommand, m_lastImage);
-		EndFrame(pCommand);
-	}
-
-	void RenderSystem::OnFinalize()
-	{
-		m_device->WaitIdle();
-
-		m_colorHeap->Recycle();
-		m_resourceHeap->Recycle();
-
-		Memory::Allocator::Delete(m_fence);
-
-		for (auto* pCmd : m_commandLists)
-			Memory::Allocator::Delete(pCmd);
-
-		Memory::Allocator::Delete(pVertexShader);
-		Memory::Allocator::Delete(pPixelShader);
-		Memory::Allocator::Delete(pTrianglePipeline);
-		Memory::Allocator::Delete(pStorageBuf);
-		Memory::Allocator::Delete(pCameraBuf);
-
-		Memory::Allocator::Delete(m_lastImage);
-	}
-
-	u64 RenderSystem::GetSceneView() const
-	{
-		if (!m_lastImage)
-			return kInvalid64;
-
-		return m_resourceHeap->GetGpuHandle(m_lastImage->GetShaderView());
-	}
-
-	void RenderSystem::ResizeImage(const Math::Vec2u& imgSize)
-	{
-		if (imgSize.X() <= 1 || imgSize.Y() <= 1)
-			return;
-
-		m_workableArea = imgSize;
-	}
-
-	b8 RenderSystem::CreateTexture(const Math::Vec2u& imgSize)
-	{
-		RHI::GfxTextureDesc texDesc = {};
-		texDesc.width = imgSize.X();
-		texDesc.height = imgSize.Y();
-		texDesc.type = RHI::GfxTextureType::Tex2D;
-		texDesc.format = RHI::GfxTextureFormat::RGBA8_UNORM;
-		texDesc.usage = RHI::GfxTextureUsage::RenderTarget | RHI::GfxTextureUsage::Sampled;
-		texDesc.clearColor = { 0.1f, 0.2f, 0.3f, 1.f };
-		texDesc.format = RHI::GfxTextureFormat::RGBA8_UNORM;
-		m_lastImage = m_device->CreateTexture(texDesc);
-
-		if (m_lastImage == nullptr)
+		// Ensure about correct off screen size
+		if (slot.currSize != m_targetSize)
 		{
-			Terminal::Error(StringOps::GetName(this), "Scene color target {}x{} could not be created",
-				imgSize.X(), imgSize.Y());
-			return false;
+			if (!RecreateSlot(m_frameIndex))
+			{
+				Terminal::Error(StringOps::GetName(this), "Failed to resize color target slot {}", m_frameIndex);
+				return;
+			}
 		}
-
-		m_lastImage->SetDebugName("Scene - RenderTarget");
-
-		m_colorHeap->CreateRenderTargetView(m_lastImage);
-		m_resourceHeap->CreateShaderView(m_lastImage);
-
-		m_workableArea = imgSize;
-		m_imageState = RHI::GfxResourceState::Common;
-
-		return true;
-	}
-
-	void RenderSystem::DestroyTexture()
-	{
-		if (m_lastImage == nullptr)
-			return;
-
-		Memory::Allocator::Delete(m_lastImage);
-
-		m_lastImage = nullptr;
-	}
-
-	b8 RenderSystem::EnsureTargets()
-	{
-		if (!m_lastImage)
-			return false;
-
-		if (Math::Vec2u(m_lastImage->GetDesc().width, m_lastImage->GetDesc().height) != m_workableArea)
-		{
-			m_device->WaitIdle();
-
-			DestroyTexture();
-			return CreateTexture(m_workableArea);
-		}
-
-		return true;
-	}
-
-	RHI::GfxCommandList* RenderSystem::BeginFrame()
-	{
-		m_colorHeap->Recycle();
-		m_resourceHeap->Recycle();
-
-		RHI::GfxCommandList* pCommand = m_commandLists[m_frameIndex];
-
-		m_fence->WaitCPU(m_frameValues[m_frameIndex]);
-
-		pCommand->Begin();
-		pCommand->BindDescriptorHeaps(m_resourceHeap, nullptr);
-
-		return pCommand;
-	}
-
-	void RenderSystem::BuildFrameData(const EngineFrame& ctx, Scene& currentScene)
-	{
+		
 		const u32 cameraOffset = m_frameIndex * u32(sizeof(ViewObject));
 
 		constants.bufferIndex = pStorageBuf->GetShaderView();
@@ -269,53 +161,164 @@ namespace Horizon::Engine
 			{
 				std::memcpy(pCamMapped + cameraOffset, &camMatrix.m_viewProjection, sizeof(ViewObject));
 			});
-	}
 
-	void RenderSystem::RenderScene(RHI::GfxCommandList* pCommand, RHI::GfxTexture* pTarget)
-	{
+		m_colorHeap->Recycle();
+		m_resourceHeap->Recycle();
+	
+		m_fence->WaitCPU(slot.fenceValue);
+
+		slot.pTargetCmd->Begin();
+		slot.pTargetCmd->BindDescriptorHeaps(m_resourceHeap, nullptr);
 		{
 			RHI::GfxTextureBarrier beginBarrier = {};
-			beginBarrier.pTexture = pTarget;
-			beginBarrier.before = m_imageState;
-			beginBarrier.after = m_imageState = RHI::GfxResourceState::RenderTarget;
+			beginBarrier.pTexture = slot.pTargetTexture;
+			beginBarrier.before = slot.currState;
+			beginBarrier.after = slot.currState = RHI::GfxResourceState::RenderTarget;
 			beginBarrier.firstMip = 0;
 			beginBarrier.firstSlice = 0;
 			beginBarrier.mipCount = 1;
 			beginBarrier.sliceCount = 1;
-			pCommand->Barrier(&beginBarrier, 1);
+			slot.pTargetCmd->Barrier(&beginBarrier, 1);
 		}
 		RHI::GfxRenderBeginDesc renderDesc = RHI::GfxRenderBeginDesc()
-			.AddColorTarget(pTarget, RHI::GfxLoadOp::Clear, { 0.1f, 0.2f, 0.3f, 1.f })
-			.SetSize(pTarget->GetDesc().width, pTarget->GetDesc().height);
+			.AddColorTarget(slot.pTargetTexture, RHI::GfxLoadOp::Clear, { 0.39f, 0.58f, 0.92f, 1.f })
+			.SetSize(slot.pTargetTexture->GetDesc().width, slot.pTargetTexture->GetDesc().height);
 
-		pCommand->BeginRendering(renderDesc);
-		pCommand->SetGraphicsConstants(&constants, sizeof(PushConstants) / sizeof(u32));
+		slot.pTargetCmd->BeginRendering(renderDesc);
+		slot.pTargetCmd->SetGraphicsConstants(&constants, sizeof(PushConstants) / sizeof(u32));
 
-		pCommand->BindPipeline(pTrianglePipeline);
-		pCommand->SetScissor({ 0, 0, (i32)pTarget->GetDesc().width, (i32)pTarget->GetDesc().height });
-		pCommand->SetViewport({ 0, 0, (f32)pTarget->GetDesc().width, (f32)pTarget->GetDesc().height, 0.f, 1.f });
-		pCommand->Draw(indices.GetCount(), 1);
+		slot.pTargetCmd->BindPipeline(pTrianglePipeline);
+		slot.pTargetCmd->SetScissor({ 0, 0, (i32)slot.pTargetTexture->GetDesc().width, (i32)slot.pTargetTexture->GetDesc().height });
+		slot.pTargetCmd->SetViewport({ 0, 0, (f32)slot.pTargetTexture->GetDesc().width, (f32)slot.pTargetTexture->GetDesc().height, 0.f, 1.f });
+		slot.pTargetCmd->Draw(indices.GetCount(), 1);
 
-		pCommand->EndRendering();
+		slot.pTargetCmd->EndRendering();
 		{
 			RHI::GfxTextureBarrier endBarrier = {};
-			endBarrier.pTexture = pTarget;
-			endBarrier.before = m_imageState;
-			endBarrier.after = m_imageState = RHI::GfxResourceState::ShaderResource;
+			endBarrier.pTexture = slot.pTargetTexture;
+			endBarrier.before = slot.currState;
+			endBarrier.after = slot.currState = RHI::GfxResourceState::ShaderResource;
 			endBarrier.firstMip = 0;
 			endBarrier.firstSlice = 0;
 			endBarrier.mipCount = 1;
 			endBarrier.sliceCount = 1;
-			pCommand->Barrier(&endBarrier, 1);
+			slot.pTargetCmd->Barrier(&endBarrier, 1);
+		}
+
+		slot.pTargetCmd->End();
+		m_queue->Submit(&slot.pTargetCmd, 1);
+
+		slot.fenceValue = m_queue->Signal(m_fence);
+		m_frameIndex = (m_frameIndex + 1) % GraphicsContext::MaxFramesInFlight;
+	}
+
+	void RenderSystem::OnFinalize()
+	{
+		m_device->WaitIdle();
+
+		m_colorHeap->Recycle();
+		m_resourceHeap->Recycle();
+
+#pragma region"Temporary Render"
+		pCameraBuf->Unmap();
+		pCamMapped = nullptr;
+		pStorageBuf->Unmap();
+
+		Memory::Allocator::Delete(pCameraBuf);
+		Memory::Allocator::Delete(pStorageBuf);
+		Memory::Allocator::Delete(pTrianglePipeline);
+		Memory::Allocator::Delete(pPixelShader);
+		Memory::Allocator::Delete(pVertexShader);
+#pragma endregion
+
+		Memory::Allocator::Delete(m_fence);
+
+		for (usize i = 0; i < m_slots.GetCount(); i++)
+		{
+			ClearSlot(i);
+			Memory::Allocator::Delete(m_slots[i].pTargetCmd);
 		}
 	}
 
-	void RenderSystem::EndFrame(RHI::GfxCommandList* pCommand)
+	u64 RenderSystem::GetSceneView() const
 	{
-		pCommand->End();
-		m_queue->Submit(&pCommand, 1);
+		if (!m_slots[m_frameIndex].pTargetTexture)
+			return kInvalid64;
 
-		m_frameValues[m_frameIndex] = m_queue->Signal(m_fence);
-		m_frameIndex = (m_frameIndex + 1) % u32(m_commandLists.GetCount());
+		return m_resourceHeap->GetGpuHandle(m_slots[m_frameIndex].pTargetTexture->GetShaderView());
+	}
+
+	void RenderSystem::ResizeImage(const Math::Vec2u& imgSize)
+	{
+		u32 width = Math::Max(1u, imgSize.X());
+		u32 height = Math::Max(1u, imgSize.Y());
+
+		if (width == m_targetSize.X() || height == m_targetSize.Y())
+			return;
+
+		m_targetSize = { width, height };
+	}
+
+	b8 RenderSystem::RecreateSlot(u32 imageIndex)
+	{
+		RenderSlot& slot = m_slots[imageIndex];
+		
+		if (slot.currSize == m_targetSize)
+		{
+			Terminal::Error(StringOps::GetName(this), "It should not be able to come here");
+			return false;
+		}
+
+		m_device->WaitIdle();
+
+		if (!ClearSlot(imageIndex))
+			return false;
+
+		if (slot.pTargetCmd == nullptr)
+			slot.pTargetCmd = m_device->CreateCommandList(RHI::GfxQueueType::Graphics);
+
+		RHI::GfxTextureDesc texDesc = {};
+		texDesc.width = m_targetSize.X();
+		texDesc.height = m_targetSize.Y();
+		texDesc.type = RHI::GfxTextureType::Tex2D;
+		texDesc.format = RHI::GfxTextureFormat::RGBA8_UNORM;
+		texDesc.usage = RHI::GfxTextureUsage::RenderTarget | RHI::GfxTextureUsage::Sampled;
+		texDesc.clearColor = { 0.39f, 0.58f, 0.92f, 1.f };
+		texDesc.format = RHI::GfxTextureFormat::RGBA8_UNORM;
+
+		slot.pTargetTexture = m_device->CreateTexture(texDesc);
+
+		if (slot.pTargetTexture == nullptr)
+		{
+			Terminal::Error(StringOps::GetName(this), "Scene color target {}x{} could not be created",
+				m_targetSize.X(), m_targetSize.Y());
+			return false;
+		}
+
+		slot.pTargetTexture->SetDebugName("Scene - RenderTarget");
+
+		m_colorHeap->CreateRenderTargetView(slot.pTargetTexture);
+		m_resourceHeap->CreateShaderView(slot.pTargetTexture);
+
+		slot.currSize = m_targetSize;
+		slot.currState = RHI::GfxResourceState::Common;
+		slot.fenceValue = 0;
+
+		return true;
+	}
+
+	b8 RenderSystem::ClearSlot(u32 imageIndex)
+	{
+		RenderSlot& slot = m_slots[imageIndex];
+		
+		if (!slot.pTargetTexture)
+			return true;
+
+		Memory::Allocator::Delete(slot.pTargetTexture);
+		slot.pTargetTexture = nullptr;
+
+		slot.fenceValue = 0;
+
+		return true;
 	}
 }

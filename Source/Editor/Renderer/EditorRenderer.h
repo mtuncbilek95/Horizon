@@ -27,11 +27,16 @@ namespace Horizon::Editor
 		RHI::GfxQueue* pQueue = nullptr;
 		RHI::GfxDescriptorHeap* pResourceHeap = nullptr;
 		RHI::GfxTextureFormat colorFormat = RHI::GfxTextureFormat::RGBA8_UNORM;
-		u32 frameCount = 3;
 	};
 
 	class H_EXPORT EditorRenderer
 	{
+		struct FrameContext
+		{
+			RHI::GfxCommandList* pCmdList = nullptr;
+			u32 fenceValue = 0;
+		};
+
 	public:
 		EditorRenderer(const EditorRendererDesc& desc);
 		~EditorRenderer();
@@ -46,19 +51,21 @@ namespace Horizon::Editor
 		void OnResizeWindow(u32 width, u32 height);
 
 		b8 BeginRender(f32 dt);
-		b8 EndRender(RHI::GfxTexture* backbuffer, u32 imgIndex);
+		b8 EndRender(RHI::GfxTexture* backbuffer);
 
 	private:
 		void LoadFonts();
 		void DefaultStyle();
 
 	private:
+		RenderContext m_context;
+
 		RHI::GfxDevice* m_device;
 		RHI::GfxQueue* m_graphicsQueue;
 		RHI::GfxDescriptorHeap* m_resourceHeap;
-
-		RenderContext m_context;
-
-		List<RHI::GfxCommandList*> m_commandLists;
+		List<FrameContext> m_frames;
+		
+		RHI::GfxFence* m_fence;
+		u32 m_frameIndex = 0;
 	};
 }

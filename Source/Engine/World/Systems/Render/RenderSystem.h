@@ -3,8 +3,8 @@
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/World/SystemOrderAttribute.h>
 #include <Engine/World/System.h>
+#include <Engine/World/Systems/Render/RenderSlot.h>
 
-#include <Runtime/RHI/Texture/GfxTexture.h>
 #include <Runtime/RHI/Descriptor/GfxDescriptorHeap.h>
 #include <Runtime/Math/Vec2u.h>
 
@@ -21,18 +21,12 @@ namespace Horizon::Engine
 
 		u64 GetSceneView() const;
 
-		const Math::Vec2u& GetImageSize() { return m_workableArea; }
+		const Math::Vec2u& GetImageSize() const { return m_targetSize; }
 		void ResizeImage(const Math::Vec2u& imgSize);
 
 	private:
-		b8 CreateTexture(const Math::Vec2u& imgSize);
-		void DestroyTexture();
-
-		b8 EnsureTargets();
-		RHI::GfxCommandList* BeginFrame();
-		void BuildFrameData(const EngineFrame& ctx, Scene& currentScene);
-		void RenderScene(RHI::GfxCommandList* pCommand, RHI::GfxTexture* pTarget);
-		void EndFrame(RHI::GfxCommandList* pCommand);
+		b8 RecreateSlot(u32 imageIndex);
+		b8 ClearSlot(u32 imageIndex);
 
 	private:
 		GraphicsContext* m_context = nullptr;
@@ -42,12 +36,10 @@ namespace Horizon::Engine
 		RHI::GfxDescriptorHeap* m_resourceHeap = nullptr;
 		RHI::GfxDescriptorHeap* m_colorHeap = nullptr;
 
-		Math::Vec2u m_workableArea;
-		RHI::GfxTexture* m_lastImage = nullptr;
-		RHI::GfxResourceState m_imageState = RHI::GfxResourceState::Common;
+		List<RenderSlot> m_slots;
 
-		List<RHI::GfxCommandList*> m_commandLists;
-		List<u64> m_frameValues;
+		Math::Vec2u m_targetSize = { 0, 0 };
+
 		RHI::GfxFence* m_fence = nullptr;
 		u32 m_frameIndex = 0;
 	};
