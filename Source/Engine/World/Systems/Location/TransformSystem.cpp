@@ -18,7 +18,7 @@ namespace Horizon::Engine
 		currentScene.ForEach<TransformComponent, LocalToWorldComponent>([&](EntityHandle handl, TransformComponent& transform,
 			LocalToWorldComponent& localToWorld)
 			{
-				localToWorld.m_worldMatrix = Math::Mat4f::TRS(transform.m_position, transform.m_rotation, transform.m_scale);
+				localToWorld.m_worldMatrix = Math::Mat4f::TRS(transform.m_position, Math::Quat::FromEuler(transform.m_rotation), transform.m_scale);
 			});
 	}
 

@@ -108,6 +108,12 @@ namespace Horizon::Editor
 				onResizeDone = false;
 				break;
 			}
+			case PAL::InputMessageType::Focus:
+				m_editorRenderer->OnWindowFocus(true);
+				break;
+			case PAL::InputMessageType::LostFocus:
+				m_editorRenderer->OnWindowFocus(false);
+				break;
 			}
 		}
 
@@ -127,6 +133,11 @@ namespace Horizon::Editor
 
 		m_menuRegistry->RenderGUI();
 		m_viewRegistry->RenderGUI();
+
+		const b8 dragging = m_editorRenderer->CheckMouseDragging();
+		m_engineWindow->SetMouseCapture(dragging);
+		m_engineWindow->SetCursorClip(dragging);
+
 
 		m_editorRenderer->EndRender(m_swapchain->GetImage(m_swapchain->GetCurrentImageIndex()));
 

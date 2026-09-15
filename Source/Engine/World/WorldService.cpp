@@ -11,6 +11,8 @@
 #include <Engine/World/Components/NameComponent.h>
 #include <Engine/World/Components/CameraComponent.h>
 #include <Engine/World/Components/TransformComponent.h>
+#include <Engine/World/Components/MeshComponent.h>
+
 #include <Engine/World/Components/LocalToWorldComponent.h>
 #include <Engine/World/Components/CameraMatrixComponent.h>
 
@@ -62,17 +64,24 @@ namespace Horizon::Engine
 
 		m_activeWorld = Memory::Allocator::Create<Scene>(Memory::CurrLoc());
 
-		EntityHandle e1 = m_activeWorld->AddEntity();
-		auto* nComp = m_activeWorld->AddComponent(e1, NameComponent());
-		auto* tComp = m_activeWorld->AddComponent(e1, TransformComponent());
-		auto* lComp = m_activeWorld->AddComponent(e1, LocalToWorldComponent());
-		auto* cComp = m_activeWorld->AddComponent(e1, CameraComponent());
-		auto* cmComp = m_activeWorld->AddComponent(e1, CameraMatrixComponent());
+		{
+			EntityHandle e1 = m_activeWorld->AddEntity();
+			auto* nComp = m_activeWorld->AddComponent(e1, NameComponent());
+			auto* tComp = m_activeWorld->AddComponent(e1, TransformComponent());
+			auto* lComp = m_activeWorld->AddComponent(e1, LocalToWorldComponent());
+			auto* mComp = m_activeWorld->AddComponent(e1, MeshComponent());
+			nComp->m_name = NameId("SquareObject");
+		}
 
-		nComp->m_name = NameId("TestingName");
-		tComp->m_position = { 1, 0.3f, 1 };
-		tComp->m_scale = { 1, 1, 1 };
-		cComp->m_fov = 90.f;
+		{
+			EntityHandle e1 = m_activeWorld->AddEntity();
+			auto* nComp = m_activeWorld->AddComponent(e1, NameComponent());
+			auto* tComp = m_activeWorld->AddComponent(e1, TransformComponent());
+			auto* lComp = m_activeWorld->AddComponent(e1, LocalToWorldComponent());
+			auto* cComp = m_activeWorld->AddComponent(e1, CameraComponent());
+			auto* cmComp = m_activeWorld->AddComponent(e1, CameraMatrixComponent());
+			nComp->m_name = NameId("Perspective Camera");
+		}
 
 		return ModuleReport();
 	}

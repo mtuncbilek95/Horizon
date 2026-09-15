@@ -1,3 +1,5 @@
+# GenerateReflection.py
+
 import re
 import argparse
 from dataclasses import dataclass
@@ -19,7 +21,6 @@ henumRe = re.compile(r'\bHENUM\s*\(')
 hmetaRe = re.compile(r'\bHMETA\s*\(')
 
 baseRe = re.compile(r':\s*(?:public\s+|protected\s+|private\s+)?([A-Za-z_][\w:]*)')
-fieldDeclRe = re.compile(r'\s*;?\s*([^;{}]+);')
 fieldNameRe = re.compile(r'([A-Za-z_]\w*)\s*$')
 enumeratorRe = re.compile(r'([A-Za-z_]\w*)\s*(?:=(.*))?$', flags=re.S)
 metaStringRe = re.compile(r'\s*"((?:[^"\\]|\\.)*)"')
@@ -272,19 +273,73 @@ def ParseBodyAttributes(body):
     return attributes
 
 
+# Returns the member declaration following an HFIELD marker, up to its terminating semicolon.
+def FieldDeclarationAfter(body, startIndex):
+    depth = 0
+    index = startIndex
+
+    while index < len(body):
+        char = body[index]
+
+        if char in '"\'':
+            index = SkipLiteral(body, index, len(body))
+            continue
+
+        if char in '{([':
+            depth += 1
+        elif char in '})]':
+            depth -= 1
+        elif char == ';' and depth == 0:
+            declaration = body[startIndex:index].strip()
+            return declaration if declaration else None
+
+        index += 1
+
+    return None
+
+
+# Strips the initializer from a declaration so only the type and member name remain.
+def DeclaratorOf(declaration):
+    depth = 0
+    index = 0
+
+    while index < len(declaration):
+        char = declaration[index]
+
+        if char in '"\'':
+            index = SkipLiteral(declaration, index, len(declaration))
+            continue
+
+        if char in '([':
+            depth += 1
+        elif char in ')]':
+            depth -= 1
+        elif char in '={' and depth == 0:
+            return declaration[:index].strip()
+
+        index += 1
+
+    return declaration.strip()
+
+
 # Collects every HFIELD marked member of a class body.
 def ParseFields(body, ownerName):
     fields = []
 
     for marker in hfieldRe.finditer(body):
         payload, payloadEnd = ExtractParens(body, marker.end() - 1)
-        declaration = fieldDeclRe.match(body[payloadEnd + 1:])
+        declarationStart = payloadEnd + 1
+
+        if body[declarationStart:].lstrip().startswith(';'):
+            declarationStart = body.index(';', declarationStart) + 1
+
+        declaration = FieldDeclarationAfter(body, declarationStart)
 
         if not declaration:
             print(f'[warn] {ownerName} has an HFIELD with an unparsable declaration, skipped')
             continue
 
-        nameMatch = fieldNameRe.search(declaration.group(1).split('=')[0].strip())
+        nameMatch = fieldNameRe.search(DeclaratorOf(declaration))
 
         if not nameMatch:
             print(f'[warn] {ownerName} has an HFIELD with no member name, skipped')

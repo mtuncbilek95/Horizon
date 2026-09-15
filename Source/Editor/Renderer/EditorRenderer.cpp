@@ -129,6 +129,12 @@ namespace Horizon::Editor
 		io.DisplaySize = { (f32)width,(f32)height };
 	}
 
+	void EditorRenderer::OnWindowFocus(b8 focused)
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.AddFocusEvent(focused);
+	}
+
 	b8 EditorRenderer::BeginRender(f32 dt)
 	{
 		ImGuiIO& io = ImGui::GetIO();
@@ -176,6 +182,11 @@ namespace Horizon::Editor
 		m_frameIndex = (m_frameIndex + 1) % Engine::GraphicsContext::MaxFramesInFlight;
 
 		return true;
+	}
+
+	b8 EditorRenderer::CheckMouseDragging()
+	{
+		return ImGui::IsAnyItemActive() && ImGui::IsAnyMouseDown();
 	}
 
 	void EditorRenderer::LoadFonts()

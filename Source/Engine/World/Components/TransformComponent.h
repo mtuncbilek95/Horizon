@@ -20,9 +20,9 @@ namespace Horizon::Engine
 		Math::Vec3f m_position;
 
 		HFIELD();
-		Math::Quat m_rotation;
+		Math::Vec3f m_rotation;
 
 		HFIELD();
-		Math::Vec3f m_scale;
+		Math::Vec3f m_scale = { 1.f, 1.f, 1.f };
 	};
 }

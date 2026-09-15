@@ -17,6 +17,7 @@ namespace Horizon::Math
 
 		static Quat Identity() { return Quat(0.f, 0.f, 0.f, 1.f); }
 		static Quat FromAxisAngle(const Vec3f& axis, f32 angleRadians);
+		static Quat FromEuler(const Vec3f& eulerRadians);
 
 	public:
 		Quat();
@@ -52,7 +53,7 @@ namespace Horizon::Math
 
 		b8 operator==(const Quat& other) const;
 		b8 operator!=(const Quat& other) const;
-		
+
 		f32 SizeSquared() const;
 		f32 Size() const;
 		b8 IsNormalized() const;
@@ -65,6 +66,8 @@ namespace Horizon::Math
 
 		Vec3f RotateVector(const Vec3f& value) const;
 		Vec3f UnrotateVector(const Vec3f& value) const;
+
+		Vec3f ToEuler() const;
 
 	private:
 		HFIELD();

@@ -49,9 +49,11 @@ namespace Horizon::Editor
 		void OnKeyboardUp(PAL::KeyCode key);
 		void OnKeyboardChar(u32 value);
 		void OnResizeWindow(u32 width, u32 height);
+		void OnWindowFocus(b8 focused);
 
 		b8 BeginRender(f32 dt);
 		b8 EndRender(RHI::GfxTexture* backbuffer);
+		b8 CheckMouseDragging();
 
 	private:
 		void LoadFonts();

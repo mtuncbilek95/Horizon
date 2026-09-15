@@ -14,10 +14,24 @@
 
 namespace Horizon::Editor
 {
+	InspectorView::~InspectorView()
+	{
+		for (auto* pDrawer : m_drawerList)
+			Memory::Allocator::Delete(pDrawer);
+	}
+
 	void InspectorView::OnInvoke()
 	{
 		m_worldService = GetContext()->pEngine->RequestService<Engine::WorldService>();
 		m_reflSys = GetContext()->pEngine->GetReflectionSystem();
+
+		List<Reflect::Type*> drawerTypes = m_reflSys->GetTypeByBase(Reflect::TypeOf<ComponentDrawer>());
+		for (auto* pType : drawerTypes)
+		{
+			auto* pDrawer = (ComponentDrawer*)pType->Create();
+			m_drawerLookups[pDrawer->GetComponentId()] = m_drawerList.GetCount();
+			m_drawerList.PushBack(pDrawer);
+		}
 	}
 
 	void InspectorView::OnRender()
@@ -43,16 +57,28 @@ namespace Horizon::Editor
 
 			Engine::ComponentTypeId typeId = pStorage->GetComponentTypeId();
 
-			auto* pType = m_reflSys->GetType(typeId);
+			auto it = m_drawerLookups.find(typeId);
+			if (it == m_drawerLookups.end())
+				continue;
 
-			if (typeId == Reflect::TypeOf<Engine::TransformComponent>())
+			ComponentDrawer* pDrawer = m_drawerList[it->second];
+			pDrawer->m_engine = GetContext()->pEngine;
+			pDrawer->m_component = (Engine::ComponentObject*)pStorage->FindRaw(entity);
+
+			Reflect::Type* pType = m_reflSys->GetType(typeId);
+
+			ImGui::PushID((int)i);
+
+			if (ImGui::CollapsingHeader(pType->GetName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				auto* tComp = (Engine::TransformComponent*)pStorage->FindRaw(entity);
-
-				f32 pos[3] = { tComp->m_position.X(), tComp->m_position.Y(), tComp->m_position.Z() };
-				ImGui::DragFloat3("Position", pos, 0.1f);
-				tComp->m_position = { pos[0], pos[1], pos[2] };
+				ImGui::PushFont(nullptr, ImGui::GetStyle().FontSizeBase * 0.875f);
+				ImGui::Indent();
+				pDrawer->OnRender();
+				ImGui::Unindent();
+				ImGui::PopFont();
 			}
+
+			ImGui::PopID();
 		}
 	}
 }

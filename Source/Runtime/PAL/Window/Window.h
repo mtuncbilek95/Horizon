@@ -52,6 +52,11 @@ namespace Horizon::PAL
 		b8 GetVisible() const { return m_visible; }
 		b8 GetActive() const { return m_active; }
 
+		void SetMouseCapture(b8 enabled);
+		void SetCursorClip(b8 enabled);
+
+		void OnCaptureLost() { m_mouseCaptured = false; }
+
 		void Show();
 		void Hide();
 		void PollEvents();
@@ -66,5 +71,7 @@ namespace Horizon::PAL
 		i32 m_posX = 100, m_posY = 100;
 		b8 m_visible = false;
 		b8 m_active = false;
+		b8 m_mouseCaptured = false;
+		b8 m_cursorClipped = false;
 	};
 }

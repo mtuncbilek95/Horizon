@@ -60,6 +60,35 @@ namespace Horizon::PAL
 				pWindow->SubmitMessage(message);
 				break;
 			}
+			case WM_SETFOCUS:
+			{
+				Window* pWindow = GetWindowFromHandle(hwnd);
+
+				InputMessage message = {};
+				message.type = InputMessageType::Focus;
+
+				pWindow->SubmitMessage(message);
+				break;
+			}
+			case WM_KILLFOCUS:
+			{
+				Window* pWindow = GetWindowFromHandle(hwnd);
+
+				InputMessage message = {};
+				message.type = InputMessageType::LostFocus;
+
+				pWindow->SubmitMessage(message);
+				break;
+			}
+			case WM_CAPTURECHANGED:
+			{
+				Window* pWindow = GetWindowFromHandle(hwnd);
+
+				if ((HWND)lParam != hwnd)
+					pWindow->OnCaptureLost();
+
+				break;
+			}
 			case WM_MOUSEMOVE:
 			{
 				Window* pWindow = GetWindowFromHandle(hwnd);
@@ -297,6 +326,53 @@ namespace Horizon::PAL
 		}
 
 		m_messages.PushBack(msg);
+	}
+
+	void Window::SetMouseCapture(b8 enabled)
+	{
+		if (m_mouseCaptured == enabled)
+			return;
+
+		HWND hwnd = ToHWND(m_handle);
+
+		if (enabled)
+		{
+			SetCapture(hwnd);
+			m_mouseCaptured = true;
+			return;
+		}
+
+		if (GetCapture() == hwnd)
+			ReleaseCapture();
+
+		m_mouseCaptured = false;
+	}
+
+	void Window::SetCursorClip(b8 enabled)
+	{
+		if (m_cursorClipped == enabled)
+			return;
+
+		m_cursorClipped = enabled;
+
+		if (!enabled)
+		{
+			ClipCursor(nullptr);
+			return;
+		}
+
+		HWND hwnd = ToHWND(m_handle);
+
+		RECT client = {};
+		GetClientRect(hwnd, &client);
+
+		POINT topLeft = { client.left, client.top };
+		POINT bottomRight = { client.right, client.bottom };
+		ClientToScreen(hwnd, &topLeft);
+		ClientToScreen(hwnd, &bottomRight);
+
+		RECT screen = { topLeft.x, topLeft.y, bottomRight.x, bottomRight.y };
+		ClipCursor(&screen);
 	}
 
 	void Window::Show()

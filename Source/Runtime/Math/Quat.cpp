@@ -1,6 +1,7 @@
 #include "Quat.h"
 
 #include <Runtime/Log/Terminal.h>
+#include <Runtime/Math/Scalar.h>
 
 namespace Horizon::Math
 {
@@ -10,6 +11,15 @@ namespace Horizon::Math
 		const f32 sine = std::sin(half);
 
 		return Quat(axis.X() * sine, axis.Y() * sine, axis.Z() * sine, std::cos(half));
+	}
+
+	Quat Quat::FromEuler(const Vec3f& eulerRadians)
+	{
+		const Quat pitch = FromAxisAngle(Vec3f(1.f, 0.f, 0.f), eulerRadians.X());
+		const Quat yaw = FromAxisAngle(Vec3f(0.f, 1.f, 0.f), eulerRadians.Y());
+		const Quat roll = FromAxisAngle(Vec3f(0.f, 0.f, 1.f), eulerRadians.Z());
+
+		return yaw * pitch * roll;
 	}
 
 	Quat::Quat() : m_x(0.f), m_y(0.f), m_z(0.f), m_w(1.f)
@@ -192,5 +202,31 @@ namespace Horizon::Math
 	Vec3f Quat::UnrotateVector(const Vec3f& value) const
 	{
 		return Conjugate().RotateVector(value);
+	}
+
+	Vec3f Quat::ToEuler() const
+	{
+		const Quat q = IsNormalized() ? *this : GetNormalized();
+
+		const f32 x = q.m_x;
+		const f32 y = q.m_y;
+		const f32 z = q.m_z;
+		const f32 w = q.m_w;
+
+		const f32 sinPitch = Clamp(2.f * (w * x - y * z), -1.f, 1.f);
+
+		if (Abs(sinPitch) > 1.f - KindaSmallNumber)
+		{
+			const f32 pitch = sinPitch > 0.f ? HalfPi : -HalfPi;
+			const f32 yaw = std::atan2(2.f * (w * y - x * z), 1.f - 2.f * (y * y + z * z));
+
+			return Vec3f(pitch, yaw, 0.f);
+		}
+
+		const f32 pitch = std::asin(sinPitch);
+		const f32 yaw = std::atan2(2.f * (x * z + w * y), 1.f - 2.f * (x * x + y * y));
+		const f32 roll = std::atan2(2.f * (x * y + w * z), 1.f - 2.f * (x * x + z * z));
+
+		return Vec3f(pitch, yaw, roll);
 	}
 }

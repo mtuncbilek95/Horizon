@@ -2,6 +2,8 @@
 
 #include <Engine/World/Components/TransformComponent.h>
 #include <Engine/World/Components/CameraComponent.h>
+#include <Engine/World/Components/MeshComponent.h>
+#include <Engine/World/Components/LocalToWorldComponent.h>
 #include <Engine/World/Components/CameraMatrixComponent.h>
 
 #include <Runtime/Log/Terminal.h>
@@ -31,15 +33,45 @@ namespace Horizon::Engine
 
 	List<Vertex> vertices =
 	{
-		{ { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
-		{ { -0.5f,  0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-		{ {  0.5f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
-		{ {  0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f, 1.0f } }
+		{ { -0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+		{ { -0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+		{ {  0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+		{ {  0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
+
+		{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+		{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+		{ { -0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+		{ { -0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
+
+		{ { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+		{ { -0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+		{ { -0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+		{ { -0.5f, -0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
+
+		{ {  0.5f, -0.5f,  0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
+		{ {  0.5f,  0.5f,  0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
+		{ {  0.5f,  0.5f, -0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
+		{ {  0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
+
+		{ { -0.5f,  0.5f,  0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
+		{ { -0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
+		{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
+		{ {  0.5f,  0.5f,  0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
+
+		{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+		{ { -0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+		{ {  0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
+		{ {  0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } }
 	};
 
 	List<u32> indices =
 	{
-		0, 1, 3, 1, 2, 3
+		0, 1, 3, 1, 2, 3,
+		4, 5, 7, 5, 6, 7,
+		8, 9, 11, 9, 10, 11,
+		12, 13, 15, 13, 14, 15,
+		16, 17, 19, 17, 18, 19,
+		20, 21, 23, 21, 22, 23
 	};
 
 	struct PushConstants
@@ -106,7 +138,7 @@ namespace Horizon::Engine
 		pipelineDesc.colorTargetCount = 1;
 		pipelineDesc.depthFormat = RHI::GfxTextureFormat::Undefined;
 		pipelineDesc.topology = RHI::GfxPrimitiveTopology::TriangleList;
-		pipelineDesc.rasterizer.cullMode = RHI::GfxCullMode::None;
+		pipelineDesc.rasterizer.cullMode = RHI::GfxCullMode::Back;
 		pTrianglePipeline = m_device->CreatePipeline(pipelineDesc);
 
 		RHI::GfxBufferDesc bufDesc = {};
@@ -157,9 +189,16 @@ namespace Horizon::Engine
 		constants.cameraOffset = cameraOffset;
 		constants.indexOffset = u32(sizeof(Vertex) * vertices.GetCount());
 
+		Math::Mat4f viewProj = Math::Mat4f::Identity();
 		currentScene.ForEach<CameraMatrixComponent>([&](EntityHandle handl, CameraMatrixComponent& camMatrix)
 			{
-				std::memcpy(pCamMapped + cameraOffset, &camMatrix.m_viewProjection, sizeof(ViewObject));
+				viewProj = camMatrix.m_viewProjection;
+			});
+
+		currentScene.ForEach<MeshComponent, LocalToWorldComponent>([&](EntityHandle handl, MeshComponent& mesh, LocalToWorldComponent& worldMat)
+			{
+				const Math::Mat4f mvp = viewProj * worldMat.m_worldMatrix;
+				std::memcpy(pCamMapped + cameraOffset, &mvp, sizeof(ViewObject));
 			});
 
 		m_colorHeap->Recycle();
