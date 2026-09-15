@@ -137,7 +137,7 @@ namespace Horizon::Editor
 		const b8 dragging = m_editorRenderer->CheckMouseDragging();
 		m_engineWindow->SetMouseCapture(dragging);
 		m_engineWindow->SetCursorClip(dragging);
-
+		m_engineWindow->SetCursorShape(m_editorRenderer->GetMouseCursor());
 
 		m_editorRenderer->EndRender(m_swapchain->GetImage(m_swapchain->GetCurrentImageIndex()));
 

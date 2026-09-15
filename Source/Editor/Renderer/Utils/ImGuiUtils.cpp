@@ -284,4 +284,37 @@ namespace Horizon::Editor
 
 		return ImVec4(r, g, b, a);
 	}
+
+	PAL::CursorType ImGuiUtils::ToCursorType(ImGuiMouseCursor cursorType)
+	{
+		switch (cursorType)
+		{
+		case ImGuiMouseCursor_None:
+			return PAL::CursorType::Hidden;
+		case ImGuiMouseCursor_Arrow:
+			return PAL::CursorType::Arrow;
+		case ImGuiMouseCursor_TextInput:
+			return PAL::CursorType::TextInput;
+		case ImGuiMouseCursor_ResizeAll:
+			return PAL::CursorType::ResizeAll;
+		case ImGuiMouseCursor_ResizeNS:
+			return PAL::CursorType::ResizeNS;
+		case ImGuiMouseCursor_ResizeEW:
+			return PAL::CursorType::ResizeEW;
+		case ImGuiMouseCursor_ResizeNESW:
+			return PAL::CursorType::ResizeNESW;
+		case ImGuiMouseCursor_ResizeNWSE:
+			return PAL::CursorType::ResizeNWSE;
+		case ImGuiMouseCursor_Hand:
+			return PAL::CursorType::Hand;
+		case ImGuiMouseCursor_Wait:
+			return PAL::CursorType::Wait;
+		case ImGuiMouseCursor_Progress:
+			return PAL::CursorType::Progress;
+		case ImGuiMouseCursor_NotAllowed:
+			return PAL::CursorType::NotAllowed;
+		default:
+			return PAL::CursorType::Arrow;
+		}
+	}
 }

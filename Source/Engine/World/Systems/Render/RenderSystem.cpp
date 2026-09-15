@@ -91,6 +91,8 @@ namespace Horizon::Engine
 	ViewObject pView;
 	u8* pCamMapped = nullptr;
 
+	u32 MaxObjects = 256;
+
 	b8 RenderSystem::OnInitialize()
 	{
 		m_context = GetEngine()->RequestContext<GraphicsContext>();
@@ -155,7 +157,7 @@ namespace Horizon::Engine
 
 		RHI::GfxBufferDesc cambufDesc = {};
 		cambufDesc.memory = RHI::GfxMemoryType::GpuUpload;
-		cambufDesc.size = sizeof(ViewObject) * u32(GraphicsContext::MaxFramesInFlight);
+		cambufDesc.size = sizeof(ViewObject) * MaxObjects * u32(GraphicsContext::MaxFramesInFlight);
 		cambufDesc.stride = 0;
 		cambufDesc.usage = RHI::GfxBufferUsage::Storage;
 		pCameraBuf = m_device->CreateBuffer(cambufDesc);
@@ -172,7 +174,6 @@ namespace Horizon::Engine
 	{
 		RenderSlot& slot = m_slots[m_frameIndex];
 
-		// Ensure about correct off screen size
 		if (slot.currSize != m_targetSize)
 		{
 			if (!RecreateSlot(m_frameIndex))
@@ -181,12 +182,9 @@ namespace Horizon::Engine
 				return;
 			}
 		}
-		
-		const u32 cameraOffset = m_frameIndex * u32(sizeof(ViewObject));
 
 		constants.bufferIndex = pStorageBuf->GetShaderView();
 		constants.cameraIndex = pCameraBuf->GetShaderView();
-		constants.cameraOffset = cameraOffset;
 		constants.indexOffset = u32(sizeof(Vertex) * vertices.GetCount());
 
 		Math::Mat4f viewProj = Math::Mat4f::Identity();
@@ -195,15 +193,9 @@ namespace Horizon::Engine
 				viewProj = camMatrix.m_viewProjection;
 			});
 
-		currentScene.ForEach<MeshComponent, LocalToWorldComponent>([&](EntityHandle handl, MeshComponent& mesh, LocalToWorldComponent& worldMat)
-			{
-				const Math::Mat4f mvp = viewProj * worldMat.m_worldMatrix;
-				std::memcpy(pCamMapped + cameraOffset, &mvp, sizeof(ViewObject));
-			});
-
 		m_colorHeap->Recycle();
 		m_resourceHeap->Recycle();
-	
+
 		m_fence->WaitCPU(slot.fenceValue);
 
 		slot.pTargetCmd->Begin();
@@ -224,12 +216,29 @@ namespace Horizon::Engine
 			.SetSize(slot.pTargetTexture->GetDesc().width, slot.pTargetTexture->GetDesc().height);
 
 		slot.pTargetCmd->BeginRendering(renderDesc);
-		slot.pTargetCmd->SetGraphicsConstants(&constants, sizeof(PushConstants) / sizeof(u32));
-
-		slot.pTargetCmd->BindPipeline(pTrianglePipeline);
 		slot.pTargetCmd->SetScissor({ 0, 0, (i32)slot.pTargetTexture->GetDesc().width, (i32)slot.pTargetTexture->GetDesc().height });
 		slot.pTargetCmd->SetViewport({ 0, 0, (f32)slot.pTargetTexture->GetDesc().width, (f32)slot.pTargetTexture->GetDesc().height, 0.f, 1.f });
-		slot.pTargetCmd->Draw(indices.GetCount(), 1);
+		slot.pTargetCmd->BindPipeline(pTrianglePipeline);
+
+		const u32 frameBase = m_frameIndex * MaxObjects;
+		u32 objectIndex = 0;
+
+		currentScene.ForEach<MeshComponent, LocalToWorldComponent>([&](EntityHandle handl, MeshComponent& mesh, LocalToWorldComponent& worldMat)
+			{
+				if (objectIndex >= MaxObjects)
+					return;
+
+				const u32 objectOffset = (frameBase + objectIndex) * u32(sizeof(ViewObject));
+				const Math::Mat4f mvp = viewProj * worldMat.m_worldMatrix;
+
+				std::memcpy(pCamMapped + objectOffset, &mvp, sizeof(ViewObject));
+
+				constants.cameraOffset = objectOffset;
+				slot.pTargetCmd->SetGraphicsConstants(&constants, sizeof(PushConstants) / sizeof(u32));
+				slot.pTargetCmd->Draw(indices.GetCount(), 1);
+
+				objectIndex++;
+			});
 
 		slot.pTargetCmd->EndRendering();
 		{
@@ -301,7 +310,7 @@ namespace Horizon::Engine
 	b8 RenderSystem::RecreateSlot(u32 imageIndex)
 	{
 		RenderSlot& slot = m_slots[imageIndex];
-		
+
 		if (slot.currSize == m_targetSize)
 		{
 			Terminal::Error(StringOps::GetName(this), "It should not be able to come here");
@@ -349,7 +358,7 @@ namespace Horizon::Engine
 	b8 RenderSystem::ClearSlot(u32 imageIndex)
 	{
 		RenderSlot& slot = m_slots[imageIndex];
-		
+
 		if (!slot.pTargetTexture)
 			return true;
 

@@ -16,6 +16,39 @@ namespace Horizon::PAL
 		OSInstance ToOSInstance(HMODULE m) { return (OSInstance)(uptr(m)); }
 		Window* GetWindowFromHandle(HWND hwnd) { return (Window*)GetWindowLongPtr(hwnd, -21); }
 
+		HCURSOR ToWin32Cursor(CursorType type)
+		{
+			switch (type)
+			{
+			case CursorType::Arrow:
+				return LoadCursor(NULL, IDC_ARROW);
+			case CursorType::TextInput:
+				return LoadCursor(NULL, IDC_IBEAM);
+			case CursorType::ResizeAll:
+				return LoadCursor(NULL, IDC_SIZEALL);
+			case CursorType::ResizeNS:
+				return LoadCursor(NULL, IDC_SIZENS);
+			case CursorType::ResizeEW:
+				return LoadCursor(NULL, IDC_SIZEWE);
+			case CursorType::ResizeNESW:
+				return LoadCursor(NULL, IDC_SIZENESW);
+			case CursorType::ResizeNWSE:
+				return LoadCursor(NULL, IDC_SIZENWSE);
+			case CursorType::Hand:
+				return LoadCursor(NULL, IDC_HAND);
+			case CursorType::Wait:
+				return LoadCursor(NULL, IDC_WAIT);
+			case CursorType::Progress:
+				return LoadCursor(NULL, IDC_APPSTARTING);
+			case CursorType::NotAllowed:
+				return LoadCursor(NULL, IDC_NO);
+			case CursorType::Hidden:
+				return NULL;
+			default:
+				return LoadCursor(NULL, IDC_ARROW);
+			}
+		}
+
 		LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		{
 			switch (msg)
@@ -239,7 +272,8 @@ namespace Horizon::PAL
 			{
 				if (LOWORD(lParam) == HTCLIENT)
 				{
-					SetCursor(LoadCursor(NULL, IDC_ARROW));
+					Window* pWindow = GetWindowFromHandle(hwnd);
+					::SetCursor(ToWin32Cursor(pWindow->GetCursorShape()));
 					return TRUE;
 				}
 
@@ -373,6 +407,16 @@ namespace Horizon::PAL
 
 		RECT screen = { topLeft.x, topLeft.y, bottomRight.x, bottomRight.y };
 		ClipCursor(&screen);
+	}
+
+
+	void Window::SetCursorShape(CursorType type)
+	{
+		if (m_cursorType == type)
+			return;
+
+		m_cursorType = type;
+		::SetCursor(ToWin32Cursor(type));
 	}
 
 	void Window::Show()

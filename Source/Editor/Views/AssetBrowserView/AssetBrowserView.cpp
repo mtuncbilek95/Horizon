@@ -184,6 +184,19 @@ namespace Horizon::Editor
 			if (!entry.IsFolder() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				pOpenFile = entry.pFile;
 
+			if (!entry.IsFolder() && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover))
+			{
+				const std::string payloadType = "HZ_ASSET_" + entry.pFile->GetMeta().assetTypeName;
+
+				ImGui::SetDragDropPayload(payloadType.c_str(), entry.pFile, sizeof(DomainFile));
+
+				ImGui::TextUnformatted(ICON_FA_FILE);
+				ImGui::SameLine();
+				ImGui::TextUnformatted(entry.GetName().c_str());
+
+				ImGui::EndDragDropSource();
+			}
+
 			DrawCell(pDrawList, entry, cellMin, cell);
 
 			ImGui::PopID();

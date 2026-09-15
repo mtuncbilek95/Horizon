@@ -1,6 +1,7 @@
 if(NOT DEFINED IMGUI_URL)
     set(IMGUI_URL https://github.com/ocornut/imgui.git)
     set(IMNODES_URL https://github.com/Nelarius/imnodes.git)
+    set(IMGUIZMO_URL https://github.com/CedricGuillemet/ImGuizmo.git)
 endif()
 
 FetchContent_Declare(
@@ -20,10 +21,21 @@ FetchContent_Declare(
     GIT_TAG master
     GIT_SHALLOW TRUE
 )
+FetchContent_Declare(
+    imguizmo
+    EXCLUDE_FROM_ALL
+    GIT_REPOSITORY ${IMGUIZMO_URL}
+    GIT_TAG master
+    GIT_SHALLOW TRUE
+)
 cmake_policy(SET CMP0169 OLD)
 FetchContent_GetProperties(imnodes)
 if(NOT imnodes_POPULATED)
     FetchContent_Populate(imnodes)
+endif()
+FetchContent_GetProperties(imguizmo)
+if(NOT imguizmo_POPULATED)
+    FetchContent_Populate(imguizmo)
 endif()
 
 file(GLOB IMGUI_COMMON_FILES
@@ -68,6 +80,15 @@ source_group(TREE "${imnodes_SOURCE_DIR}" FILES ${TARGET_IMNODE_FILES})
 add_library(ImNodes STATIC ${TARGET_IMNODE_FILES})
 target_include_directories(ImNodes PUBLIC ${imnodes_SOURCE_DIR})
 target_link_libraries(ImNodes PUBLIC Imgui)
+
+file(GLOB TARGET_IMGUIZMO_FILES
+    "${imguizmo_SOURCE_DIR}/src/ImGuizmo.h"
+    "${imguizmo_SOURCE_DIR}/src/ImGuizmo.cpp"
+)
+source_group(TREE "${imguizmo_SOURCE_DIR}/src" FILES ${TARGET_IMGUIZMO_FILES})
+add_library(ImGuizmo STATIC ${TARGET_IMGUIZMO_FILES})
+target_include_directories(ImGuizmo PUBLIC "${imguizmo_SOURCE_DIR}/src")
+target_link_libraries(ImGuizmo PUBLIC Imgui)
 
 if(WIN32)
     include(ConfigureWindows)

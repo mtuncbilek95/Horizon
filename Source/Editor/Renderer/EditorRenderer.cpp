@@ -337,4 +337,14 @@ namespace Horizon::Editor
 		style.CurveTessellationTol = 1.25f;
 		style.WindowMenuButtonPosition = ImGuiDir_None;
 	}
+
+	PAL::CursorType EditorRenderer::GetMouseCursor() const
+	{
+		const ImGuiIO& io = ImGui::GetIO();
+
+		if (io.MouseDrawCursor)
+			return PAL::CursorType::Hidden;
+
+		return ImGuiUtils::ToCursorType(ImGui::GetMouseCursor());
+	}
 }

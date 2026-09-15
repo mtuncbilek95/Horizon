@@ -13,7 +13,7 @@ namespace Horizon::Math
 			if (squared <= SmallNumber)
 				return Vec3f::Zero();
 
-			return value / std::sqrt(squared);
+			return value / Math::Sqrt(squared);
 		}
 	}
 
@@ -348,5 +348,62 @@ namespace Horizon::Math
 	Vec3f Mat4f::GetTranslation() const
 	{
 		return Vec3f(m_data[12], m_data[13], m_data[14]);
+	}
+
+	void Mat4f::DecomposeWorldMatrix(Vec3f& outPos, Vec3f& outRot, Vec3f& outScale) const
+	{
+		outPos = GetTranslation();
+		outScale = Vec3f(ColumnLength(0), ColumnLength(1), ColumnLength(2));
+
+		Mat4f rotation = *this;
+
+		for (i32 col = 0; col < 3; col++)
+		{
+			const f32 length = outScale[col];
+
+			if (length <= SmallNumber)
+				continue;
+
+			for (i32 row = 0; row < 3; row++)
+				rotation(row, col) /= length;
+		}
+
+		outRot = rotation.GetQuatFromRot().GetNormalized().ToEuler();
+	}
+
+	f32 Mat4f::ColumnLength(i32 col) const
+	{
+		const f32 x = (*this)(0, col);
+		const f32 y = (*this)(1, col);
+		const f32 z = (*this)(2, col);
+
+		return Math::Sqrt(x * x + y * y + z * z);
+	}
+
+	Quat Mat4f::GetQuatFromRot() const
+	{
+		const Mat4f& m = *this;
+		const f32 trace = m(0, 0) + m(1, 1) + m(2, 2);
+
+		if (trace > 0.f)
+		{
+			const f32 s = Math::Sqrt(trace + 1.f) * 2.f;
+			return Quat((m(2, 1) - m(1, 2)) / s, (m(0, 2) - m(2, 0)) / s, (m(1, 0) - m(0, 1)) / s, 0.25f * s);
+		}
+
+		if (m(0, 0) > m(1, 1) && m(0, 0) > m(2, 2))
+		{
+			const f32 s = Math::Sqrt(1.f + m(0, 0) - m(1, 1) - m(2, 2)) * 2.f;
+			return Quat(0.25f * s, (m(0, 1) + m(1, 0)) / s, (m(0, 2) + m(2, 0)) / s, (m(2, 1) - m(1, 2)) / s);
+		}
+
+		if (m(1, 1) > m(2, 2))
+		{
+			const f32 s = Math::Sqrt(1.f + m(1, 1) - m(0, 0) - m(2, 2)) * 2.f;
+			return Quat((m(0, 1) + m(1, 0)) / s, 0.25f * s, (m(1, 2) + m(2, 1)) / s, (m(0, 2) - m(2, 0)) / s);
+		}
+
+		const f32 s = Math::Sqrt(1.f + m(2, 2) - m(0, 0) - m(1, 1)) * 2.f;
+		return Quat((m(0, 2) + m(2, 0)) / s, (m(1, 2) + m(2, 1)) / s, 0.25f * s, (m(1, 0) - m(0, 1)) / s);
 	}
 }

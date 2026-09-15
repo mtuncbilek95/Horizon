@@ -38,6 +38,7 @@ namespace Horizon::Math
 		f32 operator[](i32 index) const { return m_data[index]; }
 		f32& operator[](i32 index) { return m_data[index]; }
 
+		f32* Data() { return m_data; }
 		const f32* Data() const { return m_data; }
 		void Store(f32* pOut) const;
 
@@ -62,6 +63,12 @@ namespace Horizon::Math
 		Vec3f TransformVector(const Vec3f& vector) const;
 
 		Vec3f GetTranslation() const;
+
+		void DecomposeWorldMatrix(Vec3f& outPos, Vec3f& outRot, Vec3f& outScale) const;
+
+	private:
+		f32 ColumnLength(i32 col) const;
+		Quat GetQuatFromRot() const;
 
 	private:
 		f32 m_data[16];

@@ -9,7 +9,7 @@ target_include_directories(Engine PRIVATE "${CMAKE_SOURCE_DIR}/Source")
 
 target_link_libraries(Engine
 	PUBLIC
-		Runtime stb
+		Runtime stb ImGuizmo
 )
 
 AddStbMacros(Engine)

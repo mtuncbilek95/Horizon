@@ -2,6 +2,7 @@
 
 #include <Runtime/PAL/Window/KeyCode.h>
 #include <Runtime/PAL/Window/MouseButton.h>
+#include <Runtime/PAL/Window/CursorType.h>
 
 #include <imgui.h>
 #include <string_view>
@@ -14,5 +15,6 @@ namespace Horizon::Editor
 		static ImGuiKey GetModifierKey(const PAL::KeyCode key);
 		static ImGuiMouseButton GetMouseButton(const PAL::MouseButton button);
 		static ImVec4 Hex(std::string_view hex);
+		static PAL::CursorType ToCursorType(ImGuiMouseCursor cursorType);
 	};
 }

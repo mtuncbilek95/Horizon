@@ -4,6 +4,7 @@
 #include <Runtime/PAL/Window/WindowMode.h>
 #include <Runtime/PAL/Window/WindowFlags.h>
 #include <Runtime/PAL/Window/InputMessage.h>
+#include <Runtime/PAL/Window/CursorType.h>
 
 #include <Runtime/Containers/List.h>
 
@@ -51,9 +52,11 @@ namespace Horizon::PAL
 
 		b8 GetVisible() const { return m_visible; }
 		b8 GetActive() const { return m_active; }
+		CursorType GetCursorShape() const { return m_cursorType; }
 
 		void SetMouseCapture(b8 enabled);
 		void SetCursorClip(b8 enabled);
+		void SetCursorShape(CursorType type);
 
 		void OnCaptureLost() { m_mouseCaptured = false; }
 
@@ -73,5 +76,6 @@ namespace Horizon::PAL
 		b8 m_active = false;
 		b8 m_mouseCaptured = false;
 		b8 m_cursorClipped = false;
+		CursorType m_cursorType = CursorType::Arrow;
 	};
 }

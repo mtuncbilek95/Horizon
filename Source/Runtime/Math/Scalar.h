@@ -62,6 +62,12 @@ namespace Horizon::Math
 		return value * value;
 	}
 
+	template<typename T>
+	constexpr f32 Sqrt(T val)
+	{
+		return std::sqrt(val);
+	}
+
 	constexpr f32 Saturate(f32 value)
 	{
 		return Clamp(value, 0.f, 1.f);

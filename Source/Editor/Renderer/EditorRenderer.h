@@ -2,6 +2,7 @@
 
 #include <Runtime/PAL/Window/MouseButton.h>
 #include <Runtime/PAL/Window/KeyCode.h>
+#include <Runtime/PAL/Window/CursorType.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/RHI/Texture/GfxTextureFormat.h>
 
@@ -54,6 +55,8 @@ namespace Horizon::Editor
 		b8 BeginRender(f32 dt);
 		b8 EndRender(RHI::GfxTexture* backbuffer);
 		b8 CheckMouseDragging();
+
+		PAL::CursorType GetMouseCursor() const;
 
 	private:
 		void LoadFonts();
