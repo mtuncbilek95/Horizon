@@ -31,5 +31,7 @@ namespace Horizon::Editor
 
 		List<ComponentDrawer*> m_drawerList;
 		std::unordered_map<Engine::ComponentTypeId, usize> m_drawerLookups;
+
+		std::string m_searchBuffer;
 	};
 }

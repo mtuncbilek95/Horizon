@@ -4,6 +4,7 @@
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/Math/Vec3f.h>
+#include <Runtime/Math/Mat4f.h>
 #include <Runtime/Math/Quat.h>
 
 namespace Horizon::Engine
@@ -24,5 +25,7 @@ namespace Horizon::Engine
 
 		HFIELD();
 		Math::Vec3f m_scale = { 1.f, 1.f, 1.f };
+
+		Math::Mat4f m_worldMatrix;
 	};
 }

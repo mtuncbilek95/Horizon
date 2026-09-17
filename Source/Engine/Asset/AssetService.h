@@ -1,6 +1,9 @@
 #pragma once
 
 #include <Engine/Core/Service.h>
+#include <Engine/Asset/AssetEntry.h>
+#include <Engine/Asset/AssetHandle.h>
+#include <Engine/Asset/AssetStreamer.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/RTTR/Reflection.h>
 
@@ -8,8 +11,6 @@
 
 namespace Horizon::Engine
 {
-	class AssetLoadStrategy;
-
 	class H_EXPORT AssetService : public Service
 	{
 	public:
@@ -21,10 +22,28 @@ namespace Horizon::Engine
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
 
-		AssetLoadStrategy* FindStrategy(Reflect::TypeHandle assetType);
+		template<typename T>
+		AssetHandle<T> Request(const Guid& id)
+		{
+			AssetStreamer* pStreamer = FindStreamer(Reflect::TypeOf<T>());
+
+			if (!pStreamer)
+			{
+				Terminal::Error(StringOps::GetName(this), "No streamer registered for {}", StringOps::GetNameString(typeid(T).name));
+				return {};
+			}
+
+			pStreamer->Request(id);
+			return AssetHandle<T>(id, (T*)(pStreamer->GetObject(id)));
+		}
 
 	private:
-		List<AssetLoadStrategy*> m_loaders;
-		std::unordered_map<Reflect::TypeHandle, usize> m_loaderLookup;
+		AssetStreamer* FindStreamer(Reflect::TypeHandle handle);
+
+	private:
+		List<AssetStreamer*> m_streamers;
+		std::unordered_map<Reflect::TypeHandle, usize> m_streamerLookup;
+
+		std::unordered_map<Guid, AssetEntry> m_assetEntries;
 	};
 }

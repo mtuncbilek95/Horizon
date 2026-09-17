@@ -39,7 +39,7 @@ namespace Horizon::Editor
 		ImGui::TableNextColumn();
 
 		ImGui::AlignTextToFramePadding();
-		ImGui::TextUnformatted("Mesh Id");
+		ImGui::TextUnformatted("Not Implemented Yet");
 		ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f));
 

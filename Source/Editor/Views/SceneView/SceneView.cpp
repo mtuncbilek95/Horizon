@@ -6,7 +6,6 @@
 
 #include <Engine/Core/Engine.h>
 #include <Engine/World/Components/CameraComponent.h>
-#include <Engine/World/Components/LocalToWorldComponent.h>
 #include <Engine/World/Components/TransformComponent.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Engine/World/Systems/Render/RenderSystem.h>
@@ -21,8 +20,6 @@
 
 #include <imgui.h>
 #include <ImGuizmo.h>
-
-#include <cmath>
 
 namespace Horizon::Editor
 {
@@ -88,29 +85,27 @@ namespace Horizon::Editor
 		const ImVec2 imageMin = ImGui::GetCursorScreenPos();
 		ImGui::Image(ImTextureID(handle), area);
 
-		RenderGizmo(imageMin, area);
+		RenderGizmo({ imageMin.x, imageMin.y }, { area.x, area.y });
 	}
 
-	void SceneView::RenderGizmo(const ImVec2& imageMin, const ImVec2& imageSize)
+	void SceneView::RenderGizmo(const Math::Vec2f& imageMin, const  Math::Vec2f& imageSize)
 	{
-		auto* pSelection = GetContext()->pSelection;
-
-		if (!pSelection->Is<Engine::EntityTag>())
+		if (!GetContext()->pSelection->Is<Engine::EntityTag>())
 			return;
 
 		Engine::Scene* pScene = m_world->GetCurrentWorld();
-		const Engine::EntityHandle entity = pSelection->Get<Engine::EntityTag>();
+		const Engine::EntityHandle entity = GetContext()->pSelection->Get<Engine::EntityTag>();
 
 		auto* pTransform = pScene->FindComponent<Engine::TransformComponent>(entity);
-		auto* pLocalToWorld = pScene->FindComponent<Engine::LocalToWorldComponent>(entity);
+		auto* pLocalToWorld = pScene->FindComponent<Engine::TransformComponent>(entity);
 
 		if (pTransform == nullptr || pLocalToWorld == nullptr)
 			return;
 
 		const Engine::CameraComponent* pCamera = nullptr;
-		const Engine::LocalToWorldComponent* pCamTransform = nullptr;
+		const Engine::TransformComponent* pCamTransform = nullptr;
 
-		pScene->ForEach<Engine::CameraComponent, Engine::LocalToWorldComponent>([&](Engine::EntityHandle, Engine::CameraComponent& cameraMatrix, Engine::LocalToWorldComponent& transform)
+		pScene->ForEach<Engine::CameraComponent, Engine::TransformComponent>([&](Engine::EntityHandle, Engine::CameraComponent& cameraMatrix, Engine::TransformComponent& transform)
 			{
 				if (pCamera == nullptr)
 					pCamera = &cameraMatrix;
@@ -135,7 +130,7 @@ namespace Horizon::Editor
 				GuizmoOperation = ImGuizmo::SCALE;
 		}
 
-		ImGuizmo::SetRect(imageMin.x, imageMin.y, imageSize.x, imageSize.y);
+		ImGuizmo::SetRect(imageMin.X(), imageMin.Y(), imageSize.X(), imageSize.Y());
 		ImGuizmo::AllowAxisFlip(false);
 		ImGuizmo::SetGizmoSizeClipSpace(0.15f);
 		ImGuizmo::SetAxisLimit(0.0025f);
@@ -144,14 +139,14 @@ namespace Horizon::Editor
 		ImGuizmo::BeginFrame();
 		ImGuizmo::SetOrthographic(false);
 		ImGuizmo::SetDrawlist();
-		ImGuizmo::SetRect(imageMin.x, imageMin.y, imageSize.x, imageSize.y);
+		ImGuizmo::SetRect(imageMin.X(), imageMin.Y(), imageSize.X(), imageSize.Y());
 
 		Math::Mat4f entityWorld = pLocalToWorld->m_worldMatrix;
 
 		Math::Mat4f viewMat = pCamTransform->m_worldMatrix.Inverse();
-		Math::Mat4f projMat = Math::Mat4f::Perspective(Math::DegToRad(pCamera->m_fov), imageSize.x / imageSize.y, pCamera->m_nearPlane, pCamera->m_farPlane);
+		Math::Mat4f projMat = Math::Mat4f::Perspective(Math::DegToRad(pCamera->m_fov), imageSize.X() / imageSize.Y(), pCamera->m_nearPlane, pCamera->m_farPlane);
 
-		const b8 changed = ImGuizmo::Manipulate(viewMat.Data(), projMat.Data(), GuizmoOperation, GuizmoMode, entityWorld.Data());
+		b8 changed = ImGuizmo::Manipulate(viewMat.Data(), projMat.Data(), GuizmoOperation, GuizmoMode, entityWorld.Data());
 
 		if (!changed)
 			return;

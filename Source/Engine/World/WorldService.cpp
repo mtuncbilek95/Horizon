@@ -13,8 +13,8 @@
 #include <Engine/World/Components/TransformComponent.h>
 #include <Engine/World/Components/MeshComponent.h>
 
-#include <Engine/World/Components/LocalToWorldComponent.h>
-#include <Engine/World/Components/CameraMatrixComponent.h>
+#include <Engine/World/Components/TransformComponent.h>
+#include <Engine/World/Components/CameraComponent.h>
 
 namespace Horizon::Engine
 {
@@ -68,7 +68,6 @@ namespace Horizon::Engine
 			EntityHandle e1 = m_activeWorld->AddEntity();
 			auto* nComp = m_activeWorld->AddComponent(e1, NameComponent());
 			auto* tComp = m_activeWorld->AddComponent(e1, TransformComponent());
-			auto* lComp = m_activeWorld->AddComponent(e1, LocalToWorldComponent());
 			auto* mComp = m_activeWorld->AddComponent(e1, MeshComponent());
 			nComp->m_name = NameId("SquareObject");
 		}
@@ -77,9 +76,7 @@ namespace Horizon::Engine
 			EntityHandle e1 = m_activeWorld->AddEntity();
 			auto* nComp = m_activeWorld->AddComponent(e1, NameComponent());
 			auto* tComp = m_activeWorld->AddComponent(e1, TransformComponent());
-			auto* lComp = m_activeWorld->AddComponent(e1, LocalToWorldComponent());
 			auto* cComp = m_activeWorld->AddComponent(e1, CameraComponent());
-			auto* cmComp = m_activeWorld->AddComponent(e1, CameraMatrixComponent());
 			nComp->m_name = NameId("Perspective Camera");
 		}
 

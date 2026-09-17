@@ -1,7 +1,7 @@
 #include "EditorService.h"
 
 #include <Editor/Domain/DomainService.h>
-#include <Editor/Renderer/EditorContext.h>
+#include <Editor/Models/SelectionModel.h>
 #include <Editor/Renderer/EditorRenderer.h>
 #include <Editor/Views/ViewRegistry.h>
 #include <Editor/MainMenu/MenuRegistry.h>
@@ -43,15 +43,14 @@ namespace Horizon::Editor
 		m_editorRenderer = Memory::Allocator::Create<EditorRenderer>(Memory::CurrLoc(), renderDesc);
 		Terminal::Debug(StringOps::GetName(this), "EditorRenderer has been initialized!");
 
-		EditorContext ctx = {};
-		ctx.pEngine = GetEngine();
-		ctx.pSelection = &m_selection;
+		m_editorContext.pEngine = GetEngine();
+		m_editorContext.pSelection = Memory::Allocator::Create<SelectionModel>(Memory::CurrLoc());
 
 		m_viewRegistry = Memory::Allocator::Create<ViewRegistry>(Memory::CurrLoc());
-		m_viewRegistry->BootstrapViews(ctx);
+		m_viewRegistry->BootstrapViews(m_editorContext);
 
 		m_menuRegistry = Memory::Allocator::Create<MenuRegistry>(Memory::CurrLoc());
-		m_menuRegistry->BootstrapMenus(ctx);
+		m_menuRegistry->BootstrapMenus(m_editorContext);
 
 		return Engine::ModuleReport();
 	}
@@ -154,6 +153,8 @@ namespace Horizon::Editor
 		Memory::Allocator::Delete(m_menuRegistry);
 		Memory::Allocator::Delete(m_viewRegistry);
 		Memory::Allocator::Delete(m_editorRenderer);
+
+		Memory::Allocator::Delete(m_editorContext.pSelection);
 	}
 
 	void EditorService::DeclareDependencies(Engine::ModuleGraph& graph)

@@ -3,7 +3,6 @@
 #include <Engine/World/Components/NameComponent.h>
 #include <Engine/World/Components/TransformComponent.h>
 #include <Engine/World/Components/MeshComponent.h>
-#include <Engine/World/Components/LocalToWorldComponent.h>
 
 namespace Horizon::Editor
 {
@@ -57,7 +56,6 @@ namespace Horizon::Editor
 		pName->m_name = NameId(name);
 
 		context.pCurrentScene->AddComponent(entt, Engine::TransformComponent());
-		context.pCurrentScene->AddComponent(entt, Engine::LocalToWorldComponent());
 		context.pCurrentScene->AddComponent(entt, Engine::MeshComponent());
 	}
 

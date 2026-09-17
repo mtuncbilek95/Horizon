@@ -11,9 +11,18 @@
 #include <Engine/World/ECS/Scene.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/World/Components/TransformComponent.h>
+#include <Engine/World/Components/NameComponent.h>
+
+#include <misc/cpp/imgui_stdlib.h>
 
 namespace Horizon::Editor
 {
+	namespace
+	{
+		static constexpr std::string_view sButtonName = "Add Component";
+		static constexpr std::string_view sPopupName = "UsableComponents";
+	}
+
 	InspectorView::~InspectorView()
 	{
 		for (auto* pDrawer : m_drawerList)
@@ -36,11 +45,9 @@ namespace Horizon::Editor
 
 	void InspectorView::OnRender()
 	{
-		auto* pSelectionModel = GetContext()->pSelection;
-
 		Engine::EntityHandle entity;
-		if (pSelectionModel->Is<Engine::EntityTag>())
-			entity = pSelectionModel->Get<Engine::EntityTag>();
+		if (GetContext()->pSelection->Is<Engine::EntityTag>())
+			entity = GetContext()->pSelection->Get<Engine::EntityTag>();
 		else
 			return;
 
@@ -80,5 +87,45 @@ namespace Horizon::Editor
 
 			ImGui::PopID();
 		}
+
+		auto& style = ImGui::GetStyle();
+		f32 buttonWidth = ImGui::CalcTextSize(sButtonName.data()).x + style.FramePadding.x * 2.f;
+		f32 buttonHeight = ImGui::GetFrameHeight();
+		ImVec2 availRegion = ImGui::GetContentRegionAvail();
+
+		f32 offset = (availRegion.x - buttonWidth) * 0.5f;
+		if (offset > 0)
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
+
+		f32 offsetY = availRegion.y - buttonHeight - style.WindowPadding.y;
+		if (offsetY > 0)
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + offsetY);
+
+		if (ImGui::Button(sButtonName.data(), ImVec2(buttonWidth, 0.f)))
+			ImGui::OpenPopup(sPopupName.data());
+
+		if (!ImGui::BeginPopup(sPopupName.data()))
+			return;
+
+		ImGui::InputTextWithHint("##search", "Search...", &m_searchBuffer);
+		ImGui::Separator();
+
+		for (usize i = 0; i < storages.GetCount(); i++)
+		{
+			Engine::IComponentStorage* pStorage = storages[i];
+			Reflect::Type* pType = m_reflSys->GetType(pStorage->GetComponentTypeId());
+
+			// If the entity already has the component, make it disabled
+			b8 owned = pStorage->Contains(entity);
+
+			if (ImGui::Selectable(pType->GetName().data(), false, owned ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None))
+			{
+				auto* pNameComp = currScene->FindComponent<Engine::NameComponent>(entity);
+				Terminal::Info(StringOps::GetName(this), "{} has been added to {}", pType->GetName(), pNameComp->m_name.ToString());
+				ImGui::CloseCurrentPopup();
+			}
+		}
+
+		ImGui::EndPopup();
 	}
 }

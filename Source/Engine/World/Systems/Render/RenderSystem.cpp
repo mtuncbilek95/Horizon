@@ -3,8 +3,6 @@
 #include <Engine/World/Components/TransformComponent.h>
 #include <Engine/World/Components/CameraComponent.h>
 #include <Engine/World/Components/MeshComponent.h>
-#include <Engine/World/Components/LocalToWorldComponent.h>
-#include <Engine/World/Components/CameraMatrixComponent.h>
 
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/RHI/Buffer/GfxBuffer.h>
@@ -188,7 +186,7 @@ namespace Horizon::Engine
 		constants.indexOffset = u32(sizeof(Vertex) * vertices.GetCount());
 
 		Math::Mat4f viewProj = Math::Mat4f::Identity();
-		currentScene.ForEach<CameraMatrixComponent>([&](EntityHandle handl, CameraMatrixComponent& camMatrix)
+		currentScene.ForEach<CameraComponent>([&](EntityHandle handl, CameraComponent& camMatrix)
 			{
 				viewProj = camMatrix.m_viewProjection;
 			});
@@ -223,7 +221,7 @@ namespace Horizon::Engine
 		const u32 frameBase = m_frameIndex * MaxObjects;
 		u32 objectIndex = 0;
 
-		currentScene.ForEach<MeshComponent, LocalToWorldComponent>([&](EntityHandle handl, MeshComponent& mesh, LocalToWorldComponent& worldMat)
+		currentScene.ForEach<MeshComponent,TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
 			{
 				if (objectIndex >= MaxObjects)
 					return;

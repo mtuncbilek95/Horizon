@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Editor/Models/SelectionModel.h>
+
 namespace Horizon::Engine
 {
 	class Engine;
@@ -7,8 +9,6 @@ namespace Horizon::Engine
 
 namespace Horizon::Editor
 {
-	class SelectionModel;
-
 	struct H_EXPORT EditorContext final
 	{
 		Engine::Engine* pEngine = nullptr;

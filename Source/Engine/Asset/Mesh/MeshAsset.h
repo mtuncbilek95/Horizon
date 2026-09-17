@@ -1,11 +1,17 @@
 #pragma once
 
+#include <Engine/Asset/AssetObject.h>
+
 namespace Horizon::Engine
 {
-	class MeshAsset
+	HCLASS();
+	class H_EXPORT MeshAsset : public AssetObject
 	{
+		HORIZON_TYPE_REFLECT(MeshAsset);
 	public:
 		MeshAsset() = default;
 		~MeshAsset() = default;
+
+	private:
 	};
 }

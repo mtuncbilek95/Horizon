@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Asset/AssetObject.h>
+#include <Engine/Asset/AssetHandle.h>
 #include <Engine/Asset/Mesh/MeshAsset.h>
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
@@ -17,6 +17,6 @@ namespace Horizon::Engine
 		~MeshComponent() = default;
 
 		HFIELD();
-		AssetObject<MeshAsset> m_meshId;
+		AssetHandle<MeshAsset> m_meshId;
 	};
 }

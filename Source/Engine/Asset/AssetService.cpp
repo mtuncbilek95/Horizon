@@ -1,11 +1,14 @@
 #include "AssetService.h"
 
 #include <Engine/Asset/AssetTypeAttribute.h>
-#include <Engine/Asset/AssetLoadStrategy.h>
+#include <Engine/Asset/AssetStreamer.h>
+#include <Engine/Asset/AssetHeader.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Reflection/ReflectionSystem.h>
+#include <Runtime/PAL/File/Directory.h>
+#include <Runtime/PAL/File/File.h>
 
 namespace Horizon::Engine
 {
@@ -13,23 +16,53 @@ namespace Horizon::Engine
 	{
 		auto* pReflect = GetEngine()->GetReflectionSystem();
 
-		List<Reflect::Type*> types = pReflect->GetTypeByAttribute(Reflect::TypeOf<AssetTypeAttribute>());
+		List<Reflect::Type*> types = pReflect->GetTypeByBase(Reflect::TypeOf<AssetStreamer>());
 
-		for (auto* type : types)
+		for (auto* pType : types)
 		{
-			if (type->GetBaseId() != Reflect::TypeOf<AssetLoadStrategy>())
+			AssetStreamer* pStreamer = (AssetStreamer*)pType->Create();
+			pStreamer->m_engine = GetEngine();
+
+			m_streamerLookup[pType->GetTypeId()] = m_streamers.GetCount();
+			m_streamers.PushBack(pStreamer);
+
+			auto* pAssetType = pReflect->GetType(pStreamer->GetAssetType());
+			Terminal::Info(StringOps::GetName(this), "{} has been registered for the {} type", pType->GetName(), pAssetType->GetName());
+		}
+
+		// If you see this and judge me, FUCK YOU! IT WILL BE AUTOMATIC PLEASE FUCK OFF!
+		std::string cookedPath = "D:/Projects/Horizon/ExampleProject/Cooked";
+
+		// TODO: I will most probably move this behaviour somewhere else but lets keep it here for now.
+		List<PAL::Directory::Entry> files = PAL::Directory::Iterate(cookedPath);
+		for (const auto& file : files)
+		{
+			if (file.isDirectory)
+				continue;
+
+			List<u8> headerBytes;
+			PAL::FileAccessRequest handle = PAL::File::RequestAccess(file.fullPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::Exclusive);
+			PAL::File::ReadMemory(handle, headerBytes, 0, sizeof(AssetHeader));
+			PAL::File::ReleaseAccess(handle);
+
+			if (headerBytes.GetCount() < sizeof(AssetHeader))
 			{
-				Terminal::Warn(StringOps::GetName(this), "{} has not inherited from AssetLoadStrategy! It may a different class " 
-					"or you're doing something wrong!", type->GetName());
+				Terminal::Error("AssetService", "'{}' is smaller than an asset header", file.fullPath);
 				continue;
 			}
 
-			AssetLoadStrategy* pStrategy = (AssetLoadStrategy*)type->Create();
-			m_loaderLookup.emplace(pStrategy->GetWorkingAssetHandle(), m_loaders.GetCount());
-			m_loaders.PushBack(pStrategy);
+			AssetHeader header;
+			std::memcpy(&header, headerBytes.GetData(), sizeof(AssetHeader));
 
-			std::string assetName = pReflect->GetType(pStrategy->GetWorkingAssetHandle())->GetName();
-			Terminal::Info(StringOps::GetName(this), "{} has been registered with type {}", type->GetName(), assetName);
+			Reflect::Type* pType = pReflect->GetTypeByName(header.typeName);
+
+			AssetEntry entry = {};
+			entry.assetId = header.id;
+			entry.cookedPath = file.fullPath;
+			entry.assetTypeHandle = pType->GetTypeId();
+			m_assetEntries[header.id] = entry;
+
+			Terminal::Debug(StringOps::GetName(this), "{} has been registered as usable asset", file.name);
 		}
 
 		return ModuleReport();
@@ -40,11 +73,9 @@ namespace Horizon::Engine
 	}
 
 	void AssetService::OnFinalize()
-	{ 
-		for (auto* strategy : m_loaders)
-			Memory::Allocator::Delete(strategy);
-
-		m_loaders.Clear();
+	{
+		for (auto* pStreamer : m_streamers)
+			Memory::Allocator::Delete(pStreamer);
 	}
 
 	void AssetService::DeclareDependencies(ModuleGraph& graph)
@@ -52,16 +83,13 @@ namespace Horizon::Engine
 		graph.Requires<GraphicsContext>();
 	}
 
-	AssetLoadStrategy* AssetService::FindStrategy(Reflect::TypeHandle assetType)
+	AssetStreamer* AssetService::FindStreamer(Reflect::TypeHandle handle)
 	{
-		auto it = m_loaderLookup.find(assetType);
-
-		if (it == m_loaderLookup.end())
-		{
-			Terminal::Error(StringOps::GetName(this), "No load strategy is registered for this asset type");
+		auto it = m_streamerLookup.find(handle);
+		if (it == m_streamerLookup.end())
 			return nullptr;
-		}
 
-		return m_loaders[it->second];
+		return m_streamers[it->second];
 	}
+
 }

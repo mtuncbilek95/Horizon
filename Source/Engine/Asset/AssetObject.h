@@ -1,12 +1,12 @@
 #pragma once
 
+#include <Runtime/RTTR/Reflection.h>
+
 namespace Horizon::Engine
 {
-	template<typename T>
-	class AssetObject
+	class H_EXPORT AssetObject : public Reflect::Base
 	{
 	public:
-		AssetObject() = default;
-		~AssetObject() = default;
+		virtual ~AssetObject() = default;
 	};
 }

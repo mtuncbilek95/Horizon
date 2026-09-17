@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Editor/Models/SelectionModel.h>
+#include <Editor/Renderer/EditorContext.h>
 #include <Engine/Core/Service.h>
 #include <Runtime/PAL/Window/Window.h>
 
@@ -14,7 +14,7 @@ namespace Horizon::RHI
 namespace Horizon::Editor
 {
 	class EditorRenderer;
-
+	class EditorContext;
 	class ViewRegistry;
 	class MenuRegistry;
 
@@ -43,6 +43,6 @@ namespace Horizon::Editor
 		RHI::GfxQueue* m_queue = nullptr;
 		RHI::GfxSwapchain* m_swapchain = nullptr;
 
-		SelectionModel m_selection;
+		EditorContext m_editorContext;
 	};
 }

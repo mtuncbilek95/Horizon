@@ -3,9 +3,7 @@
 #include <Editor/Attributes/EditorViewAttribute.h>
 #include <Editor/Views/ViewObject.h>
 #include <Editor/Font/IconsFontAwesome6.h>
-
-#include <imgui.h>
-#include <ImGuizmo.h>
+#include <Runtime/Math/Vec2f.h>
 
 namespace Horizon::Engine
 {
@@ -30,7 +28,7 @@ namespace Horizon::Editor
 		b8 IsFullBleed() const { return true; }
 
 	private:
-		void RenderGizmo(const ImVec2& imageMin, const ImVec2& imageSize);
+		void RenderGizmo(const  Math::Vec2f& imageMin, const  Math::Vec2f& imageSize);
 
 	private:
 		Engine::RenderSystem* m_renderer = nullptr;

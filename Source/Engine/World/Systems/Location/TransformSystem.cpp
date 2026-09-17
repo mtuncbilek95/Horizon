@@ -1,7 +1,6 @@
 #include "TransformSystem.h"
 
 #include <Engine/World/Components/TransformComponent.h>
-#include <Engine/World/Components/LocalToWorldComponent.h>
 #include <Runtime/Math/Mat4f.h>
 #include <Runtime/Math/Quat.h>
 #include <Runtime/Math/Vec3f.h>
@@ -15,10 +14,9 @@ namespace Horizon::Engine
 
 	void TransformSystem::OnExecute(const EngineFrame& ctx, Scene& currentScene)
 	{
-		currentScene.ForEach<TransformComponent, LocalToWorldComponent>([&](EntityHandle handl, TransformComponent& transform,
-			LocalToWorldComponent& localToWorld)
+		currentScene.ForEach<TransformComponent>([&](EntityHandle handl, TransformComponent& transform)
 			{
-				localToWorld.m_worldMatrix = Math::Mat4f::TRS(transform.m_position, Math::Quat::FromEuler(transform.m_rotation), transform.m_scale);
+				transform.m_worldMatrix = Math::Mat4f::TRS(transform.m_position, Math::Quat::FromEuler(transform.m_rotation), transform.m_scale);
 			});
 	}
 

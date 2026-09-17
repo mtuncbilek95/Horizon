@@ -5,6 +5,7 @@
 #include <Runtime/RTTR/Attributes/AliasAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/Math/Vec3f.h>
+#include <Runtime/Math/Mat4f.h>
 
 namespace Horizon::Engine
 {
@@ -25,7 +26,9 @@ namespace Horizon::Engine
 		HFIELD();
 		f32 m_farPlane = 1000.f;
 
-		HFIELD();
-		b8 m_isPerspective = true;
+		Math::Mat4f m_viewProjection;
+		Math::Mat4f m_view;
+		Math::Mat4f m_projection;
+		Math::Vec3f m_worldPosition;
 	};
 }

@@ -11,6 +11,12 @@
 
 namespace Horizon::Editor
 {
+	namespace
+	{
+		static constexpr std::string_view sContextName = "SceneHierarchyContext";
+		static constexpr std::string_view sPopupName = "Rename - Scene Hierarchy";
+	}
+
 	void SceneHierarchyView::OnInvoke()
 	{
 		auto* pEngine = GetContext()->pEngine;
@@ -30,7 +36,7 @@ namespace Horizon::Editor
 
 		ImGuiMultiSelectFlags msFlags = ImGuiMultiSelectFlags_ClearOnEscape;
 
-		if (!ImGui::IsPopupOpen("SceneHierarchyContext", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
+		if (!ImGui::IsPopupOpen(sContextName.data(), ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
 			msFlags |= ImGuiMultiSelectFlags_BoxSelect1d | ImGuiMultiSelectFlags_ClearOnClickVoid;
 
 		ImGuiMultiSelectIO* pMultiIO = ImGui::BeginMultiSelect(msFlags, m_selection.Size, static_cast<i32>(m_entities.GetCount()));
@@ -82,7 +88,7 @@ namespace Horizon::Editor
 		else
 			GetContext()->pSelection->Clear();
 
-		m_context.RenderGUI("SceneHierarchyContext", context);
+		m_context.RenderGUI(sContextName.data(), context);
 
 		if (context.renameEntity.IsValid())
 			BeginRename(context.renameEntity);
@@ -104,12 +110,12 @@ namespace Horizon::Editor
 		m_renamePath = pNameComp->m_name.ToString();
 
 		std::snprintf(m_renameBuffer, sizeof(m_renameBuffer), "%s", pNameComp->m_name.ToString().data());
-		ImGui::OpenPopup("Rename - Scene Hierarchy");
+		ImGui::OpenPopup(sPopupName.data());
 	}
 
 	void SceneHierarchyView::RenderRenameModal()
 	{
-		if (!ImGui::BeginPopupModal("Rename - Scene Hierarchy", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		if (!ImGui::BeginPopupModal(sPopupName.data(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 			return;
 
 		b8 accepted = ImGui::InputText("##name", m_renameBuffer, sizeof(m_renameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
