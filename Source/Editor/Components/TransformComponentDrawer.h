@@ -13,7 +13,7 @@ namespace Horizon::Editor
 		TransformComponentDrawer() = default;
 		~TransformComponentDrawer() = default;
 
-		void OnRender();
+		void OnRender() final;
 
 		Engine::ComponentTypeId GetComponentId() const { return Reflect::TypeOf<Engine::TransformComponent>(); }
 	};

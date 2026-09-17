@@ -12,6 +12,9 @@ namespace Horizon::Engine
 		MeshAsset() = default;
 		~MeshAsset() = default;
 
+		void BeginUse();
+		void EndUse();
+
 	private:
 	};
 }

@@ -8,134 +8,46 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT IComponentStorage
+	class H_EXPORT ComponentStorage final
 	{
 	public:
-		virtual ~IComponentStorage() = default;
+		ComponentStorage(const Reflect::Type* pType);
+		~ComponentStorage();
 
-		virtual void* FindRaw(EntityHandle handl) = 0;
-		virtual ComponentTypeId GetComponentTypeId() const = 0;
-		virtual b8 Contains(EntityHandle entt) const = 0;
-		virtual void Remove(EntityHandle entt) = 0;
-		virtual usize GetCount() const = 0;
-		virtual EntityHandle GetEntityAt(usize index) const = 0;
+		ComponentStorage(const ComponentStorage&) = delete;
+		ComponentStorage& operator=(const ComponentStorage&) = delete;
+
+		ComponentObject* Insert(EntityHandle handl, void* pSource);
+		ComponentObject* InsertBlind(EntityHandle handl);
+		ComponentObject* Find(EntityHandle handl) const;
+		void Remove(EntityHandle handl);
+		b8 Contains(EntityHandle handl) const;
+
+		ComponentObject* GetAt(usize denseIndex) const;
+		EntityHandle GetEntityAt(usize denseIndex) const { return m_entity[denseIndex]; }
+		usize GetCount() const { return m_count; }
+
+		const Reflect::Type* GetType() const { return m_type; }
+		ComponentTypeId GetComponentTypeId() const { return m_type->GetTypeId(); }
 
 		u32 GetSlot() const { return m_slot; }
 		void SetSlot(u32 slot) { m_slot = slot; }
 
 	private:
-		u32 m_slot = kInvalid32;
-	};
-
-	template<typename T>
-	class H_EXPORT ComponentStorage final : public IComponentStorage
-	{
-	public:
-		ComponentStorage()
-		{
-			// Minimum entity count.
-			m_sparse.Resize(AtLeastEntities);
-
-			for (usize i = 0; i < m_sparse.GetCount(); i++)
-				m_sparse[i] = kInvalid32;
-		}
-		~ComponentStorage() = default;
-
-		T& Insert(EntityHandle handl, T&& comp)
-		{
-			const u32 index = (u32)handl.Index();
-			EnsureSparse(index); // Check if it needs resize.
-
-			u32 denseIndex = m_sparse[index];
-			if (denseIndex != kInvalid32)
-			{
-				Terminal::Warn(StringOps::GetName(this), "Entity {} already owns this component", index);
-				return m_dense[denseIndex];
-			}
-
-			m_sparse[index] = (u32)m_dense.GetCount();
-			m_entity.PushBack(handl);
-
-			return m_dense.EmplaceBack(std::move(comp));
-		}
-
-		T* Find(EntityHandle handl)
-		{
-			u32 index = (u32)handl.Index();
-			if (index >= m_sparse.GetCount())
-				return nullptr;
-
-			u32 denseIndex = m_sparse[index];
-			if (denseIndex == kInvalid32)
-				return nullptr;
-
-			return &m_dense[denseIndex];
-		}
-
-		void* FindRaw(EntityHandle handl) final 
-		{
-			return Find(handl);
-		}
-
-		void Remove(EntityHandle handl) final
-		{
-			const u32 index = (u32)handl.Index();
-
-			if (index >= m_sparse.GetCount() || m_sparse[index] == kInvalid32)
-				return;
-
-			const u32 removeAt = m_sparse[index];
-			const u32 lastAt = (u32)m_dense.GetCount() - 1;
-
-			if (removeAt != lastAt)
-			{
-				m_dense[removeAt] = std::move(m_dense[lastAt]);
-				m_entity[removeAt] = m_entity[lastAt];
-				m_sparse[(u32)m_entity[removeAt].Index()] = removeAt;
-			}
-
-			m_dense.PopBack();
-			m_entity.PopBack();
-			m_sparse[index] = kInvalid32;
-		}
-
-		b8 Contains(EntityHandle entity) const final
-		{
-			const u32 index = (u32)entity.Index();
-
-			if (index >= m_sparse.GetCount())
-				return false;
-
-			return m_sparse[index] != kInvalid32;
-		}
-
-		T& GetAt(usize index) { return m_dense[index]; }
-		ComponentTypeId GetComponentTypeId() const final { return Reflect::TypeOf<T>(); }
-		usize GetCount() const final { return m_dense.GetCount(); }
-		EntityHandle GetEntityAt(usize denseIndex) const final { return m_entity[denseIndex]; }
+		void* SlotAt(usize denseIndex) const;
+		void* AcquireSlot(EntityHandle handl);
+		void EnsureCapacity(usize required);
+		void EnsureSparse(u32 index);
 
 	private:
-		void EnsureSparse(u32 index)
-		{
-			const usize oldCount = m_sparse.GetCount();
+		const Reflect::Type* m_type = nullptr;
+		u8* m_data = nullptr;
+		usize m_count = 0;
+		usize m_capacity = 0;
 
-			if (index < oldCount)
-				return;
-
-			usize newCount = oldCount == 0 ? AtLeastEntities : oldCount;
-
-			while (newCount <= index)
-				newCount *= 2;
-
-			m_sparse.Resize(newCount);
-
-			for (usize i = oldCount; i < newCount; i++)
-				m_sparse[i] = kInvalid32;
-		}
-
-	private:
-		List<T> m_dense;
 		List<EntityHandle> m_entity;
 		List<u32> m_sparse;
+
+		u32 m_slot = kInvalid32;
 	};
 }

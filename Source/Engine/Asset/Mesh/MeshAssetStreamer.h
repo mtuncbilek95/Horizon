@@ -6,6 +6,7 @@
 
 namespace Horizon::Engine
 {
+	class MeshAsset;
 	class MeshResourceCache;
 
 	HCLASS();
@@ -19,6 +20,9 @@ namespace Horizon::Engine
 		void OnInitialize() final;
 		void OnPublish() final;
 		void OnFinalize() final;
+
+		void BeginUse(MeshAsset* pAsset);
+		void EndUse(MeshAsset* pAsset);
 
 		Reflect::TypeHandle GetAssetType() final { return Reflect::TypeOf<MeshAsset>(); }
 

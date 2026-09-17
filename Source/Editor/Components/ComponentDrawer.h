@@ -7,6 +7,7 @@
 namespace Horizon::Engine
 {
 	class Engine;
+	class Scene;
 }
 
 namespace Horizon::Editor

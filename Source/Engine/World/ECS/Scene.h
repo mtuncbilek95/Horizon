@@ -13,7 +13,7 @@ namespace Horizon::Engine
 	class H_EXPORT Scene
 	{
 	public:
-		Scene();
+		Scene(ReflectionSystem* pReflection);
 		~Scene();
 
 		Scene(const Scene&) = delete;
@@ -24,66 +24,37 @@ namespace Horizon::Engine
 		void RemoveEntity(usize index);
 		b8 IsAlive(EntityHandle handl) const;
 
+		ComponentObject* AddComponent(EntityHandle handl, ComponentTypeId typeId);
+		void RemoveComponent(EntityHandle handl, ComponentTypeId typeId);
+		ComponentObject* FindComponent(EntityHandle handl, ComponentTypeId typeId) const;
+		b8 HasComponent(EntityHandle handl, ComponentTypeId typeId) const;
+
 		template<typename T>
 		T* AddComponent(EntityHandle handl, T&& comp)
 		{
-			if (!m_entities.IsAlive(handl))
-			{
-				Terminal::Warn(StringOps::GetName(this), "AddComponent on a dead or stale entity");
-				return nullptr;
-			}
-
-			ComponentStorage<T>* pStorage = m_components.GetOrCreateStorage<T>();
+			ComponentStorage* pStorage = ResolveStorage(Reflect::TypeOf<T>());
 			if (!pStorage)
 				return nullptr;
 
-			T& stored = pStorage->Insert(handl, std::move(comp));
-			m_entities.GetSignatureOf(handl)->set(pStorage->GetSlot());
-
-			return &stored;
+			return static_cast<T*>(AddComponentTo(pStorage, handl, &comp));
 		}
 
 		template<typename T>
 		void RemoveComponent(EntityHandle handl)
 		{
-			if (!m_entities.IsAlive(handl))
-				return;
-
-			ComponentStorage<T>* pStorage = m_components.FindStorage<T>();
-
-			if (!pStorage)
-				return;
-
-			pStorage->Remove(handl);
-
-			if (Signature* pSignature = m_entities.GetSignatureOf(handl))
-				pSignature->reset(pStorage->GetSlot());
+			RemoveComponent(handl, Reflect::TypeOf<T>());
 		}
 
 		template<typename T>
-		T* FindComponent(EntityHandle handl)
+		T* FindComponent(EntityHandle handl) const
 		{
-			if (!m_entities.IsAlive(handl))
-				return nullptr;
-
-			ComponentStorage<T>* pStorage = m_components.FindStorage<T>();
-			if (!pStorage)
-				return nullptr;
-
-			return pStorage->Find(handl);
+			return static_cast<T*>(FindComponent(handl, Reflect::TypeOf<T>()));
 		}
 
 		template<typename T>
 		b8 HasComponent(EntityHandle handl) const
 		{
-			if (!m_entities.IsAlive(handl))
-				return false;
-
-			u32 slot = m_components.FindSlot(Reflect::TypeOf<T>());
-			if (slot == kInvalid32)
-				return false;
-
-			return m_entities.GetSignatureOf(handl)->test(slot);
+			return HasComponent(handl, Reflect::TypeOf<T>());
 		}
 
 		template<typename... Ts, typename Fn>
@@ -91,27 +62,27 @@ namespace Horizon::Engine
 		{
 			if constexpr (sizeof...(Ts) == 1)
 			{
-				auto* pStorage = m_components.FindStorage<Ts...>();
+				ComponentStorage* pStorage = m_components.FindStorage(Reflect::TypeOf<Ts...>());
 
 				if (!pStorage)
 					return;
 
 				for (usize i = 0; i < pStorage->GetCount(); i++)
-					func(pStorage->GetEntityAt(i), pStorage->GetAt(i));
+					func(pStorage->GetEntityAt(i), *static_cast<Ts*>(pStorage->GetAt(i))...);
 			}
 			else
 			{
-				IComponentStorage* storages[] = { m_components.FindStorage<Ts>()... };
+				ComponentStorage* storages[] = { m_components.FindStorage(Reflect::TypeOf<Ts>())... };
 
-				for (IComponentStorage* pStorage : storages)
+				for (ComponentStorage* pStorage : storages)
 				{
 					if (!pStorage)
 						return;
 				}
 
-				IComponentStorage* pDriver = storages[0];
+				ComponentStorage* pDriver = storages[0];
 
-				for (IComponentStorage* pStorage : storages)
+				for (ComponentStorage* pStorage : storages)
 				{
 					if (pStorage->GetCount() < pDriver->GetCount())
 						pDriver = pStorage;
@@ -131,11 +102,18 @@ namespace Horizon::Engine
 		}
 
 		EntityStorage& GetEntities() { return m_entities; }
+		const EntityStorage& GetEntities() const { return m_entities; }
 		ComponentRegistry& GetComponents() { return m_components; }
+		const ComponentRegistry& GetComponents() const { return m_components; }
 
 		u32 GetEntityCount() const { return m_entities.GetAliveCount(); }
 
 	private:
+		ComponentStorage* ResolveStorage(ComponentTypeId typeId);
+		ComponentObject* AddComponentTo(ComponentStorage* pStorage, EntityHandle handl, void* pSource);
+
+	private:
+		ReflectionSystem* m_reflection = nullptr;
 		EntityStorage m_entities;
 		ComponentRegistry m_components;
 	};

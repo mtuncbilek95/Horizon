@@ -62,9 +62,9 @@ namespace Horizon::Engine
 			}
 		}
 
-		m_activeWorld = Memory::Allocator::Create<Scene>(Memory::CurrLoc());
+		m_activeWorld = Memory::Allocator::Create<Scene>(Memory::CurrLoc(), pReflect);
 
-		{
+		/*{
 			EntityHandle e1 = m_activeWorld->AddEntity();
 			auto* nComp = m_activeWorld->AddComponent(e1, NameComponent());
 			auto* tComp = m_activeWorld->AddComponent(e1, TransformComponent());
@@ -78,7 +78,7 @@ namespace Horizon::Engine
 			auto* tComp = m_activeWorld->AddComponent(e1, TransformComponent());
 			auto* cComp = m_activeWorld->AddComponent(e1, CameraComponent());
 			nComp->m_name = NameId("Perspective Camera");
-		}
+		}*/
 
 		return ModuleReport();
 	}

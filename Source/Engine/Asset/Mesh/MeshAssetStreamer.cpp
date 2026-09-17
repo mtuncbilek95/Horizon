@@ -13,4 +13,12 @@ namespace Horizon::Engine
 	void MeshAssetStreamer::OnFinalize()
 	{
 	}
+
+	void MeshAssetStreamer::BeginUse(MeshAsset* pAsset)
+	{
+	}
+
+	void MeshAssetStreamer::EndUse(MeshAsset* pAsset)
+	{
+	}
 }

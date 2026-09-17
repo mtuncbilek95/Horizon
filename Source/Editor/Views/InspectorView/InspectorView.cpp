@@ -53,11 +53,11 @@ namespace Horizon::Editor
 
 		auto* currScene = m_worldService->GetCurrentWorld();
 
-		const List<Engine::IComponentStorage*>& storages = currScene->GetComponents().GetStorages();
+		const List<Engine::ComponentStorage*>& storages = currScene->GetComponents().GetStorages();
 
 		for (usize i = 0; i < storages.GetCount(); i++)
 		{
-			Engine::IComponentStorage* pStorage = storages[i];
+			Engine::ComponentStorage* pStorage = storages[i];
 
 			if (!pStorage->Contains(entity))
 				continue;
@@ -70,7 +70,7 @@ namespace Horizon::Editor
 
 			ComponentDrawer* pDrawer = m_drawerList[it->second];
 			pDrawer->m_engine = GetContext()->pEngine;
-			pDrawer->m_component = (Engine::ComponentObject*)pStorage->FindRaw(entity);
+			pDrawer->m_component = (Engine::ComponentObject*)pStorage->Find(entity);
 
 			Reflect::Type* pType = m_reflSys->GetType(typeId);
 
@@ -110,18 +110,26 @@ namespace Horizon::Editor
 		ImGui::InputTextWithHint("##search", "Search...", &m_searchBuffer);
 		ImGui::Separator();
 
-		for (usize i = 0; i < storages.GetCount(); i++)
+		List<Reflect::Type*> compTypes = m_reflSys->GetTypeByBase(Reflect::TypeOf<Engine::ComponentObject>());
+		for (usize i = 0; i < compTypes.GetCount(); i++)
 		{
-			Engine::IComponentStorage* pStorage = storages[i];
-			Reflect::Type* pType = m_reflSys->GetType(pStorage->GetComponentTypeId());
+			const Reflect::Type* pCompType = compTypes[i];
 
-			// If the entity already has the component, make it disabled
-			b8 owned = pStorage->Contains(entity);
+			if (pCompType->GetTypeId() == Reflect::TypeOf<Engine::NameComponent>())
+				continue;
 
-			if (ImGui::Selectable(pType->GetName().data(), false, owned ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None))
+			auto it = m_drawerLookups.find(pCompType->GetTypeId());
+			if (it == m_drawerLookups.end())
+				continue;
+
+			b8 ownedByEntt = currScene->HasComponent(entity, pCompType->GetTypeId());
+
+			if (ImGui::Selectable(pCompType->GetName().data(), false, ownedByEntt ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None))
 			{
+				auto* _ = currScene->AddComponent(entity, pCompType->GetTypeId());
+
 				auto* pNameComp = currScene->FindComponent<Engine::NameComponent>(entity);
-				Terminal::Info(StringOps::GetName(this), "{} has been added to {}", pType->GetName(), pNameComp->m_name.ToString());
+				Terminal::Info(StringOps::GetName(this), "{} has been added to {}", pCompType->GetName(), pNameComp->m_name.ToString());
 				ImGui::CloseCurrentPopup();
 			}
 		}
