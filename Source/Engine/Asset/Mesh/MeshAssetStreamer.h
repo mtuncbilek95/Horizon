@@ -18,11 +18,7 @@ namespace Horizon::Engine
 		~MeshAssetStreamer() = default;
 
 		void OnInitialize() final;
-		void OnPublish() final;
 		void OnFinalize() final;
-
-		void BeginUse(MeshAsset* pAsset);
-		void EndUse(MeshAsset* pAsset);
 
 		Reflect::TypeHandle GetAssetType() final { return Reflect::TypeOf<MeshAsset>(); }
 

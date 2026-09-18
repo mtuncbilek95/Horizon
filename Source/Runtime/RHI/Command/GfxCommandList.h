@@ -37,6 +37,7 @@ namespace Horizon::RHI
 
 		virtual void SetViewports(const GfxViewport* pViewports, u32 count) = 0;
 		virtual void SetScissors(const GfxScissor* pScissors, u32 count) = 0;
+		virtual void BindVertexBuffer(GfxBuffer* pBuffer, u32 binding, u32 stride, u64 offset = 0) = 0;
 		virtual void BindIndexBuffer(GfxBuffer* pBuffer, GfxIndexType type = GfxIndexType::Index32) = 0;
 		virtual void Draw(u32 vtxCount, u32 instCount, u32 firstVtx = 0, u32 firstInst = 0) = 0;
 		virtual void DrawIndexed(u32 idxCount, u32 instCount, u32 firstIdx = 0, i32 vtxOffset = 0, u32 firstInst = 0) = 0;

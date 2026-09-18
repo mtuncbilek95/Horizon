@@ -14,15 +14,9 @@ namespace Horizon::Engine
 		Engine* GetEngine() const { return m_engine; }
 
 		virtual void OnInitialize() = 0;
-		virtual void OnPublish() = 0;
 		virtual void OnFinalize() = 0;
 
 		virtual Reflect::TypeHandle GetAssetType() = 0;
-
-		u32 Request(const Guid& id);
-		void Release(const Guid& id);
-		AssetResidency GetState(const Guid& id) const;
-		u32 GetSlot(const Guid& id) const;
 
 	private:
 		Engine* m_engine;

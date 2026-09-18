@@ -638,7 +638,8 @@ namespace Horizon::RHI
 		vdesc.Desc_1_1.pParameters = params;
 		vdesc.Desc_1_1.NumStaticSamplers = _countof(samplers);
 		vdesc.Desc_1_1.pStaticSamplers = samplers;
-		vdesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED;
+		vdesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED
+			| D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 		ID3DBlob* pBlob = nullptr;
 		ID3DBlob* pError = nullptr;

@@ -15,5 +15,6 @@ namespace Horizon::Engine
 	private:
 		Engine* m_engine = nullptr;
 		RHI::GfxDevice* m_device = nullptr;
+
 	};
 }

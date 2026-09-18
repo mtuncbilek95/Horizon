@@ -4,13 +4,4 @@
 
 namespace Horizon::Engine
 {
-	void MeshAsset::BeginUse()
-	{
-		GetStreamer<MeshAssetStreamer>()->BeginUse(this);
-	}
-
-	void MeshAsset::EndUse()
-	{
-		GetStreamer<MeshAssetStreamer>()->EndUse(this);
-	}
 }

@@ -2,6 +2,9 @@
 
 #include <Engine/Asset/AssetObject.h>
 
+#include <Runtime/RHI/Device/GfxDevice.h>
+#include <Runtime/RHI/Buffer/GfxBuffer.h>
+
 namespace Horizon::Engine
 {
 	HCLASS();
@@ -12,9 +15,15 @@ namespace Horizon::Engine
 		MeshAsset() = default;
 		~MeshAsset() = default;
 
-		void BeginUse();
-		void EndUse();
+		RHI::GfxBuffer* GetVertexBuffer() const { return m_vertexBuffer; }
+		RHI::GfxBuffer* GetIndexBuffer() const { return m_indexBuffer; }
+
+		u32 GetIndexCount() const { return m_indexCount; }
 
 	private:
+		RHI::GfxBuffer* m_vertexBuffer;
+		RHI::GfxBuffer* m_indexBuffer;
+
+		u32 m_indexCount = 0;
 	};
 }

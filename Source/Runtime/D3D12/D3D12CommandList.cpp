@@ -320,6 +320,19 @@ namespace Horizon::RHI
 		m_list->RSSetScissorRects(count, native);
 	}
 
+	void D3D12CommandList::BindVertexBuffer(GfxBuffer* pBuffer, u32 binding, u32 stride, u64 offset)
+	{
+		auto* pD3DBuffer = static_cast<D3D12Buffer*>(pBuffer);
+
+		D3D12_VERTEX_BUFFER_VIEW view = {};
+
+		view.BufferLocation = pD3DBuffer->Handle()->GetGPUVirtualAddress() + offset;
+		view.SizeInBytes = u32(pD3DBuffer->GetDesc().size - offset);
+		view.StrideInBytes = stride;
+
+		m_list->IASetVertexBuffers(binding, 1, &view);
+	}
+
 	void D3D12CommandList::BindIndexBuffer(GfxBuffer* pBuffer, GfxIndexType type)
 	{
 		auto* pD3DBuffer = static_cast<D3D12Buffer*>(pBuffer);

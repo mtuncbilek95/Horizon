@@ -89,6 +89,8 @@ namespace Horizon::Engine
 		slot.pTargetCmd->BeginRendering(renderDesc);
 		slot.pTargetCmd->SetScissor({ 0, 0, (i32)slot.pTargetTexture->GetDesc().width, (i32)slot.pTargetTexture->GetDesc().height });
 		slot.pTargetCmd->SetViewport({ 0, 0, (f32)slot.pTargetTexture->GetDesc().width, (f32)slot.pTargetTexture->GetDesc().height, 0.f, 1.f });
+		// slot.pTargetCmd->SetGraphicsConstants();
+		// slot.pTargetCmd->BindPipeline();
 
 		currentScene.ForEach<MeshComponent, TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
 			{
@@ -98,7 +100,9 @@ namespace Horizon::Engine
 				if (!pAsset)
 					return;
 
-				pAsset->BeginUse();
+				slot.pTargetCmd->BindVertexBuffer(pAsset->GetVertexBuffer(), 0, 24, 0);
+				slot.pTargetCmd->BindIndexBuffer(pAsset->GetIndexBuffer(), RHI::GfxIndexType::Index32);
+				slot.pTargetCmd->DrawIndexed(pAsset->GetIndexCount(), 1);
 			});
 
 		slot.pTargetCmd->EndRendering();

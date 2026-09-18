@@ -7,8 +7,8 @@
 #include <Runtime/RHI/Pipeline/GfxDepthStencilState.h>
 #include <Runtime/RHI/Pipeline/GfxPrimitiveTopology.h>
 #include <Runtime/RHI/Pipeline/GfxRasterizerState.h>
+#include <Runtime/RHI/Pipeline/GfxVertexLayout.h>
 #include <Runtime/RHI/Texture/GfxTextureFormat.h>
-
 namespace Horizon::RHI
 {
 	class GfxShader;
@@ -19,6 +19,8 @@ namespace Horizon::RHI
 		GfxShader* pMeshShader = nullptr;
 		GfxShader* pVertexShader = nullptr;
 		GfxShader* pPixelShader = nullptr;
+
+		GfxVertexLayout inputLayout = {};
 		GfxTextureFormat colorFormats[8] = {};
 		u32 colorTargetCount = 0;
 		GfxTextureFormat depthFormat = GfxTextureFormat::Undefined;

@@ -45,6 +45,53 @@ namespace Horizon::RHI
 			return static_cast<D3D12Shader*>(pShader)->Bytecode();
 		}
 
+		D3D12_INPUT_CLASSIFICATION ToInputClassification(GfxVertexInputRate rate)
+		{
+			if (rate == GfxVertexInputRate::PerInstance)
+				return D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA;
+
+			return D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+		}
+
+		D3D12_INPUT_LAYOUT_DESC BuildInputLayout(const GfxVertexLayout& layout, D3D12_INPUT_ELEMENT_DESC(&elements)[GfxVertexLayout::MaxAttributes])
+		{
+			D3D12_INPUT_LAYOUT_DESC inputLayout = {};
+
+			if (layout.IsEmpty())
+				return inputLayout;
+
+			for (u32 i = 0; i < layout.attributeCount; i++)
+			{
+				const GfxVertexAttribute& attribute = layout.attributes[i];
+				D3D12_INPUT_ELEMENT_DESC& element = elements[i];
+
+				element.SemanticName = attribute.semantic.data();
+				element.SemanticIndex = attribute.semanticIndex;
+				element.Format = Helpers::ToFormat(attribute.format);
+				element.InputSlot = attribute.binding;
+				element.AlignedByteOffset = attribute.offset;
+				element.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+				element.InstanceDataStepRate = 0;
+
+				for (u32 b = 0; b < layout.bindingCount; b++)
+				{
+					const GfxVertexBinding& binding = layout.bindings[b];
+
+					if (binding.binding != attribute.binding)
+						continue;
+
+					element.InputSlotClass = ToInputClassification(binding.inputRate);
+					element.InstanceDataStepRate = binding.inputRate == GfxVertexInputRate::PerInstance ? 1 : 0;
+					break;
+				}
+			}
+
+			inputLayout.pInputElementDescs = elements;
+			inputLayout.NumElements = layout.attributeCount;
+
+			return inputLayout;
+		}
+
 		D3D12_BLEND_DESC BuildBlendDesc(const GfxGraphicsPipelineDesc& desc)
 		{
 			D3D12_BLEND_DESC blendDesc = {};
@@ -160,12 +207,13 @@ namespace Horizon::RHI
 		}
 		else
 		{
+			D3D12_INPUT_ELEMENT_DESC inputElements[GfxVertexLayout::MaxAttributes] = {};
 			D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
 
 			psoDesc.pRootSignature = m_rootSignature;
 			psoDesc.VS = ToBytecode(desc.pVertexShader);
 			psoDesc.PS = ToBytecode(desc.pPixelShader);
-			psoDesc.InputLayout = { nullptr, 0 };
+			psoDesc.InputLayout = BuildInputLayout(desc.inputLayout, inputElements);
 			psoDesc.BlendState = BuildBlendDesc(desc);
 			psoDesc.SampleMask = UINT_MAX;
 			psoDesc.RasterizerState = BuildRasterizerDesc(desc);
