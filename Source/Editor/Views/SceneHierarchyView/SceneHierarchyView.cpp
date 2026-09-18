@@ -15,6 +15,35 @@ namespace Horizon::Editor
 	{
 		static constexpr std::string_view sContextName = "SceneHierarchyContext";
 		static constexpr std::string_view sPopupName = "Rename - Scene Hierarchy";
+
+		void DrawZebraBackground()
+		{
+			ImDrawList* pDrawList = ImGui::GetWindowDrawList();
+			const ImGuiStyle& style = ImGui::GetStyle();
+
+			const f32 halfSpacing = std::floor(style.ItemSpacing.y * 0.5f);
+			const f32 rowPitch = ImGui::GetTextLineHeightWithSpacing();
+
+			const ImVec2 cursor = ImGui::GetCursorScreenPos();
+			const ImVec2 windowPos = ImGui::GetWindowPos();
+			const f32 left = windowPos.x;
+			const f32 right = windowPos.x + ImGui::GetWindowWidth();
+			const f32 bottom = windowPos.y + ImGui::GetWindowHeight();
+
+			const ImU32 evenColor = ImGui::GetColorU32(ImGuiCol_TableRowBg);
+			const ImU32 oddColor = ImGui::GetColorU32(ImGuiCol_TableRowBgAlt);
+
+			f32 y = cursor.y - halfSpacing;
+			usize row = 0;
+
+			while (y < bottom)
+			{
+				const ImU32 color = (row % 2 == 0) ? evenColor : oddColor;
+				pDrawList->AddRectFilled(ImVec2(left, y), ImVec2(right, y + rowPitch), color);
+				y += rowPitch;
+				row++;
+			}
+		}
 	}
 
 	void SceneHierarchyView::OnInvoke()
@@ -49,6 +78,8 @@ namespace Horizon::Editor
 			};
 
 		m_selection.ApplyRequests(pMultiIO);
+
+		DrawZebraBackground();
 
 		for (usize i = 0; i < m_entities.GetCount(); i++)
 		{

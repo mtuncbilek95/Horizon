@@ -18,6 +18,7 @@ namespace Horizon::Editor
 	public:
 		void OnInvoke() final;
 		void OnRender() final;
+		b8 IsFullBleed() const final { return true; }
 
 	private:
 		void BeginRename(Engine::EntityHandle handl);

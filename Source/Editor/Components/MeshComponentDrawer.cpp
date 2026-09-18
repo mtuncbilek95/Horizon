@@ -43,7 +43,7 @@ namespace Horizon::Editor
 		ImGui::TableNextColumn();
 		ImGui::SetNextItemWidth(std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f));
 
-		/*if (ImGui::BeginDragDropTarget())
+		if (ImGui::BeginDragDropTarget())
 		{
 			const ImGuiDragDropFlags acceptFlags = ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect;
 
@@ -52,8 +52,6 @@ namespace Horizon::Editor
 				const DomainFile* givenFile = (DomainFile*)(pPayload->Data);
 				Terminal::Warn(StringOps::GetName(this), "{} about to drop on MeshId", givenFile->GetName());
 
-				accepting = true;
-
 				if (pPayload->IsDelivery())
 				{
 					Terminal::Info(StringOps::GetName(this), "{} dropped on MeshId", givenFile->GetName());
@@ -61,7 +59,7 @@ namespace Horizon::Editor
 			}
 
 			ImGui::EndDragDropTarget();
-		}*/
+		}
 
 		ImGui::EndTable();
 		ImGui::PopStyleVar();

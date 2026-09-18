@@ -17,80 +17,6 @@
 
 namespace Horizon::Engine
 {
-	RHI::GfxShader* pVertexShader = nullptr;
-	RHI::GfxShader* pPixelShader = nullptr;
-	RHI::GfxPipeline* pTrianglePipeline = nullptr;
-	RHI::GfxBuffer* pStorageBuf = nullptr;
-	RHI::GfxBuffer* pCameraBuf = nullptr;
-
-	struct Vertex
-	{
-		f32 position[3];
-		f32 color[4];
-	};
-
-	List<Vertex> vertices =
-	{
-		{ { -0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
-		{ { -0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
-		{ {  0.5f,  0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
-		{ {  0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } },
-
-		{ {  0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-		{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-		{ { -0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-		{ { -0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } },
-
-		{ { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
-		{ { -0.5f,  0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
-		{ { -0.5f,  0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
-		{ { -0.5f, -0.5f,  0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } },
-
-		{ {  0.5f, -0.5f,  0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
-		{ {  0.5f,  0.5f,  0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
-		{ {  0.5f,  0.5f, -0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
-		{ {  0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f, 0.0f, 1.0f } },
-
-		{ { -0.5f,  0.5f,  0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
-		{ { -0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
-		{ {  0.5f,  0.5f, -0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
-		{ {  0.5f,  0.5f,  0.5f }, { 0.0f, 1.0f, 1.0f, 1.0f } },
-
-		{ { -0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
-		{ { -0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
-		{ {  0.5f, -0.5f,  0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } },
-		{ {  0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f, 1.0f, 1.0f } }
-	};
-
-	List<u32> indices =
-	{
-		0, 1, 3, 1, 2, 3,
-		4, 5, 7, 5, 6, 7,
-		8, 9, 11, 9, 10, 11,
-		12, 13, 15, 13, 14, 15,
-		16, 17, 19, 17, 18, 19,
-		20, 21, 23, 21, 22, 23
-	};
-
-	struct PushConstants
-	{
-		u32 bufferIndex;
-		u32 cameraIndex;
-		u32 cameraOffset;
-		u32 indexOffset;
-		f32 deltaTime;
-	};
-	PushConstants constants = {};
-
-	struct ViewObject
-	{
-		Math::Mat4f mvp = Math::Mat4f::Identity();
-	};
-	ViewObject pView;
-	u8* pCamMapped = nullptr;
-
-	u32 MaxObjects = 256;
-
 	b8 RenderSystem::OnInitialize()
 	{
 		m_context = GetEngine()->RequestContext<GraphicsContext>();
@@ -116,55 +42,6 @@ namespace Horizon::Engine
 
 		m_fence = m_device->CreateFence();
 
-#pragma region "Temporary Render"
-		List<u8> vertexByte = RHI::GfxShaderCompiler::Compile(HORIZON_RESOURCE_DIR + std::string("/Shaders/Testers/Triangle.vert.hlsl"), RHI::GfxShaderStage::Vertex, "VSMain");
-		RHI::GfxShaderDesc vertShaderDesc = {};
-		vertShaderDesc.pByteCode = vertexByte.GetData();
-		vertShaderDesc.byteCodeSize = vertexByte.GetCount();
-		vertShaderDesc.stage = RHI::GfxShaderStage::Vertex;
-		pVertexShader = m_device->CreateShader(vertShaderDesc);
-
-		List<u8> pixelByte = RHI::GfxShaderCompiler::Compile(HORIZON_RESOURCE_DIR + std::string("/Shaders/Testers/Triangle.frag.hlsl"), RHI::GfxShaderStage::Pixel, "PSMain");
-		RHI::GfxShaderDesc pixShaderDesc = {};
-		pixShaderDesc.pByteCode = pixelByte.GetData();
-		pixShaderDesc.byteCodeSize = pixelByte.GetCount();
-		pixShaderDesc.stage = RHI::GfxShaderStage::Pixel;
-		pPixelShader = m_device->CreateShader(pixShaderDesc);
-
-		RHI::GfxGraphicsPipelineDesc pipelineDesc = {};
-		pipelineDesc.pVertexShader = pVertexShader;
-		pipelineDesc.pPixelShader = pPixelShader;
-		pipelineDesc.colorFormats[0] = RHI::GfxTextureFormat::RGBA8_UNORM;
-		pipelineDesc.colorTargetCount = 1;
-		pipelineDesc.depthFormat = RHI::GfxTextureFormat::Undefined;
-		pipelineDesc.topology = RHI::GfxPrimitiveTopology::TriangleList;
-		pipelineDesc.rasterizer.cullMode = RHI::GfxCullMode::Back;
-		pTrianglePipeline = m_device->CreatePipeline(pipelineDesc);
-
-		RHI::GfxBufferDesc bufDesc = {};
-		bufDesc.memory = RHI::GfxMemoryType::GpuUpload;
-		bufDesc.size = vertices.GetCount() * sizeof(Vertex) + indices.GetCount() * sizeof(u32);
-		bufDesc.stride = 0;
-		bufDesc.usage = RHI::GfxBufferUsage::Storage;
-		pStorageBuf = m_device->CreateBuffer(bufDesc);
-
-		u8* mapped = (u8*)pStorageBuf->Map();
-		std::memcpy(mapped, vertices.GetData(), vertices.GetCount() * sizeof(Vertex));
-		std::memcpy(mapped + (vertices.GetCount() * sizeof(Vertex)), indices.GetData(), indices.GetCount() * sizeof(u32));
-		m_resourceHeap->CreateShaderView(pStorageBuf);
-
-		RHI::GfxBufferDesc cambufDesc = {};
-		cambufDesc.memory = RHI::GfxMemoryType::GpuUpload;
-		cambufDesc.size = sizeof(ViewObject) * MaxObjects * u32(GraphicsContext::MaxFramesInFlight);
-		cambufDesc.stride = 0;
-		cambufDesc.usage = RHI::GfxBufferUsage::Storage;
-		pCameraBuf = m_device->CreateBuffer(cambufDesc);
-
-		pCamMapped = (u8*)pCameraBuf->Map();
-		std::memcpy(pCamMapped, &pView, sizeof(ViewObject));
-		m_resourceHeap->CreateShaderView(pCameraBuf);
-#pragma endregion
-
 		return true;
 	}
 
@@ -180,10 +57,6 @@ namespace Horizon::Engine
 				return;
 			}
 		}
-
-		constants.bufferIndex = pStorageBuf->GetShaderView();
-		constants.cameraIndex = pCameraBuf->GetShaderView();
-		constants.indexOffset = u32(sizeof(Vertex) * vertices.GetCount());
 
 		Math::Mat4f viewProj = Math::Mat4f::Identity();
 		currentScene.ForEach<CameraComponent>([&](EntityHandle handl, CameraComponent& camMatrix)
@@ -216,26 +89,16 @@ namespace Horizon::Engine
 		slot.pTargetCmd->BeginRendering(renderDesc);
 		slot.pTargetCmd->SetScissor({ 0, 0, (i32)slot.pTargetTexture->GetDesc().width, (i32)slot.pTargetTexture->GetDesc().height });
 		slot.pTargetCmd->SetViewport({ 0, 0, (f32)slot.pTargetTexture->GetDesc().width, (f32)slot.pTargetTexture->GetDesc().height, 0.f, 1.f });
-		slot.pTargetCmd->BindPipeline(pTrianglePipeline);
 
-		const u32 frameBase = m_frameIndex * MaxObjects;
-		u32 objectIndex = 0;
-
-		currentScene.ForEach<MeshComponent,TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
+		currentScene.ForEach<MeshComponent, TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
 			{
-				if (objectIndex >= MaxObjects)
+				MeshAsset* pAsset = mesh.m_meshId.GetAsset();
+
+				// No asset, no call
+				if (!pAsset)
 					return;
 
-				const u32 objectOffset = (frameBase + objectIndex) * u32(sizeof(ViewObject));
-				const Math::Mat4f mvp = viewProj * worldMat.m_worldMatrix;
-
-				std::memcpy(pCamMapped + objectOffset, &mvp, sizeof(ViewObject));
-
-				constants.cameraOffset = objectOffset;
-				slot.pTargetCmd->SetGraphicsConstants(&constants, sizeof(PushConstants) / sizeof(u32));
-				slot.pTargetCmd->Draw(indices.GetCount(), 1);
-
-				objectIndex++;
+				pAsset->BeginUse();
 			});
 
 		slot.pTargetCmd->EndRendering();
@@ -264,18 +127,6 @@ namespace Horizon::Engine
 
 		m_colorHeap->Recycle();
 		m_resourceHeap->Recycle();
-
-#pragma region"Temporary Render"
-		pCameraBuf->Unmap();
-		pCamMapped = nullptr;
-		pStorageBuf->Unmap();
-
-		Memory::Allocator::Delete(pCameraBuf);
-		Memory::Allocator::Delete(pStorageBuf);
-		Memory::Allocator::Delete(pTrianglePipeline);
-		Memory::Allocator::Delete(pPixelShader);
-		Memory::Allocator::Delete(pVertexShader);
-#pragma endregion
 
 		Memory::Allocator::Delete(m_fence);
 

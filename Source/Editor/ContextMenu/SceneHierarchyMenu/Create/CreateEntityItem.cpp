@@ -56,6 +56,6 @@ namespace Horizon::Editor
 
 	b8 CreateEntityItem::IsEnabled(const SceneHierarchyContext& context)
 	{
-		return context.pCurrentScene && context.selectedEntities.GetCount() == 0;
+		return context.pCurrentScene;
 	}
 }
