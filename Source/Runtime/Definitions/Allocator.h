@@ -38,6 +38,8 @@ namespace Horizon::Memory
 
 			pAddress->~T();
 			FreeRaw(pBase);
+
+			pAddress = nullptr;
 		}
 
 		static void* AllocateRaw(usize size, usize align, SourceLocation loc);

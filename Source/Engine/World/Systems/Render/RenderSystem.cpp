@@ -3,6 +3,7 @@
 #include <Engine/World/Components/TransformComponent.h>
 #include <Engine/World/Components/CameraComponent.h>
 #include <Engine/World/Components/MeshComponent.h>
+#include <Engine/Asset/AssetService.h>
 
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/RHI/Buffer/GfxBuffer.h>
@@ -92,15 +93,24 @@ namespace Horizon::Engine
 		// slot.pTargetCmd->SetGraphicsConstants();
 		// slot.pTargetCmd->BindPipeline();
 
+		AssetService* pAssetService = GetEngine()->RequestService<AssetService>();
+
 		currentScene.ForEach<MeshComponent, TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
 			{
-				MeshAsset* pAsset = mesh.m_meshId.GetAsset();
+				AssetHandle<MeshAsset>& meshHandle = mesh.m_meshId;
 
-				// No asset, no call
+				if (!meshHandle.GetId().IsValid())
+					return;
+
+				if (!meshHandle.GetAsset())
+					meshHandle = pAssetService->RequestAsset<MeshAsset>(meshHandle.GetId());
+
+				MeshAsset* pAsset = meshHandle.GetAsset();
+
 				if (!pAsset)
 					return;
 
-				slot.pTargetCmd->BindVertexBuffer(pAsset->GetVertexBuffer(), 0, 24, 0);
+				slot.pTargetCmd->BindVertexBuffer(pAsset->GetVertexBuffer(), 0, 0, 0);
 				slot.pTargetCmd->BindIndexBuffer(pAsset->GetIndexBuffer(), RHI::GfxIndexType::Index32);
 				slot.pTargetCmd->DrawIndexed(pAsset->GetIndexCount(), 1);
 			});

@@ -23,13 +23,15 @@ namespace Horizon::Editor
 
 	Engine::ModuleReport DomainService::OnInitialize()
 	{
+		Engine::AssetService* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
+
+		if (pAssetService == nullptr)
+			return Engine::ModuleReport("Asset service cannot be reached");
+
 		// If you see this and judge me, FUCK YOU! IT WILL BE AUTOMATIC PLEASE FUCK OFF!
 		m_projectPath = "D:/Projects/Horizon/ExampleProject";
 		m_assetPath = m_projectPath + "/Assets";
 		m_cookPath = m_projectPath + "/Cooked";
-
-		// If you see this and judge me, FUCK YOU! IT WILL BE AUTOMATIC PLEASE FUCK OFF!
-		m_engineResourcePath = "D:/Projects/Horizon/Resources/Engine";
 
 		if (!PAL::Directory::Exists(m_assetPath) && !PAL::Directory::Create(m_assetPath))
 			return Engine::ModuleReport("Asset root cannot be created");
@@ -40,8 +42,8 @@ namespace Horizon::Editor
 		m_root = Memory::Allocator::Create<DomainFolder>(Memory::CurrLoc(), nullptr, "Assets", m_assetPath, m_cookPath);
 		m_root->Refresh();
 
-		// This one is to get embedded assets and files on editor. So I can shove them up my ***.
-		m_engineResource = Memory::Allocator::Create<DomainFolder>(Memory::CurrLoc(), nullptr, "Engine", m_engineResourcePath, "");
+		m_projectSource = Memory::Allocator::Create<Engine::LooseSourceFile>(Memory::CurrLoc(), "Project");
+		pAssetService->AddSource(m_projectSource);
 
 		m_watcher = PAL::DirectoryWatcher(m_assetPath, true);
 		m_watcherHealthy = m_watcher.IsValid();
@@ -77,15 +79,12 @@ namespace Horizon::Editor
 			return;
 
 		Memory::Allocator::Delete(m_root);
-		m_root = nullptr;
-
-		Memory::Allocator::Delete(m_engineResource);
-		m_engineResource = nullptr;
+		Memory::Allocator::Delete(m_projectSource);
 	}
 
 	void DomainService::DeclareDependencies(Engine::ModuleGraph& graph)
 	{
-		graph.Precedes<Engine::AssetService>();
+		graph.Requires<Engine::AssetService>();
 	}
 
 	void DomainService::BindWatcher()
@@ -193,6 +192,10 @@ namespace Horizon::Editor
 		}
 
 		++m_revision;
+	}
+
+	void DomainService::OnEntryModified(const PAL::DirectoryWatcher::Event& event)
+	{
 	}
 
 	void DomainService::OnEntryRemoved(const PAL::DirectoryWatcher::Event& event)

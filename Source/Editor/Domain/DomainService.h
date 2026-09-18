@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Engine/Core/Service.h>
-#include <Runtime/Containers/Guid.h>
+#include <Engine/Asset/Sources/LooseSourceFile.h>
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
+#include <Runtime/Containers/Guid.h>
 
 #include <string>
 #include <string_view>
@@ -39,6 +40,7 @@ namespace Horizon::Editor
 		void BindWatcher();
 
 		void OnEntryAdded(const PAL::DirectoryWatcher::Event& event);
+		void OnEntryModified(const PAL::DirectoryWatcher::Event& event);
 		void OnEntryRemoved(const PAL::DirectoryWatcher::Event& event);
 		void OnEntryRenamed(const PAL::DirectoryWatcher::Event& event);
 		void OnWatcherOverflow();
@@ -50,8 +52,7 @@ namespace Horizon::Editor
 		std::string m_cookPath;
 		DomainFolder* m_root = nullptr;
 
-		std::string m_engineResourcePath;
-		DomainFolder* m_engineResource = nullptr;
+		Engine::LooseSourceFile* m_projectSource = nullptr;
 
 		PAL::DirectoryWatcher m_watcher;
 		b8 m_watcherHealthy = false;

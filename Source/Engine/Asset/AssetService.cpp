@@ -7,6 +7,7 @@
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Reflection/ReflectionSystem.h>
+#include <Runtime/Containers/StringOps.h>
 #include <Runtime/PAL/File/Directory.h>
 #include <Runtime/PAL/File/File.h>
 
@@ -83,6 +84,27 @@ namespace Horizon::Engine
 		graph.Requires<GraphicsContext>();
 	}
 
+
+	void AssetService::AddSource(AssetSourceFile* pSource)
+	{
+		if (pSource == nullptr)
+		{
+			Terminal::Error(StringOps::GetName(this), "A null asset source cannot be added");
+			return;
+		}
+
+		for (auto* pExisting : m_sources)
+		{
+			if (pExisting == pSource)
+			{
+				Terminal::Warn(StringOps::GetName(this), "{} is already added as an asset source", pSource->GetName());
+				return;
+			}
+		}
+
+		m_sources.PushBack(pSource);
+	}
+
 	AssetStreamer* AssetService::FindStreamer(Reflect::TypeHandle handle)
 	{
 		auto it = m_streamerLookup.find(handle);
@@ -91,5 +113,4 @@ namespace Horizon::Engine
 
 		return m_streamers[it->second];
 	}
-
 }
