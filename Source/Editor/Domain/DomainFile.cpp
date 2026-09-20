@@ -11,6 +11,64 @@
 
 namespace Horizon::Editor
 {
+	b8 DomainFile::WriteCookFile(const std::string& cookedPath, const Guid& id, const std::string& assetTypeName, const List<u8>& content, usize propertySize)
+	{
+		if (assetTypeName.empty() || assetTypeName.size() >= MaxTypeBufferLength)
+		{
+			Terminal::Error("DomainFile", "{} has an asset type name that cannot fit the header", cookedPath);
+			return false;
+		}
+
+		if (propertySize > content.GetCount())
+		{
+			Terminal::Error("DomainFile", "{} has a property size of {} but only {} bytes of content", cookedPath, propertySize, content.GetCount());
+			return false;
+		}
+
+		Engine::AssetHeader header = {};
+		header.magic = Engine::AssetHeader::Magic;
+		header.version = Engine::AssetHeader::Version;
+		header.id = id;
+		std::memcpy(header.typeName, assetTypeName.data(), assetTypeName.size());
+		header.propertyOffset = sizeof(Engine::AssetHeader);
+		header.propertySize = propertySize;
+		header.payloadOffset = sizeof(Engine::AssetHeader) + propertySize;
+		header.payloadSize = content.GetCount() - propertySize;
+
+		List<u8> bytes(sizeof(Engine::AssetHeader) + content.GetCount());
+		std::memcpy(bytes.GetData(), &header, sizeof(Engine::AssetHeader));
+
+		if (!content.IsEmpty())
+			std::memcpy(bytes.GetData() + sizeof(Engine::AssetHeader), content.GetData(), content.GetCount());
+
+		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
+		{
+			Terminal::Error("DomainFile", "{} cannot be replaced", cookedPath);
+			return false;
+		}
+
+		if (!PAL::File::Create(cookedPath))
+		{
+			Terminal::Error("DomainFile", "{} cannot be created", cookedPath);
+			return false;
+		}
+
+		PAL::FileAccessRequest request = PAL::File::RequestAccess(cookedPath, PAL::FileOperationAccessPolicy::Write,
+			PAL::FileOperationSharePolicy::Exclusive);
+
+		const b8 wasWritten = PAL::File::WriteMemory(request, bytes);
+
+		PAL::File::ReleaseAccess(request);
+
+		if (!wasWritten)
+		{
+			Terminal::Error("DomainFile", "{} cannot be written", cookedPath);
+			return false;
+		}
+
+		return true;
+	}
+
 	DomainFile::DomainFile(DomainFolder* pParent, const std::string& name, const std::string& metaPath, const std::string& sourcePath, const std::string& cookFolder) :
 		m_parent(pParent), m_name(name), m_metaPath(metaPath), m_sourcePath(sourcePath), m_cookFolder(cookFolder)
 	{
@@ -99,67 +157,14 @@ namespace Horizon::Editor
 		return true;
 	}
 
-	b8 DomainFile::WriteCookFile(const List<u8>& content, usize propertySize)
+	b8 DomainFile::WriteCookFile(const List<u8>& content, usize propertySize) const
 	{
 		const std::string cookedPath = GetCookedPath();
 
 		if (cookedPath.empty())
 			return false;
 
-		if (m_meta.assetTypeName.empty() || m_meta.assetTypeName.size() >= MaxTypeBufferLength)
-		{
-			Terminal::Error(StringOps::GetName(this), "{} has an asset type name that cannot fit the header", m_name);
-			return false;
-		}
-
-		if (propertySize > content.GetCount())
-		{
-			Terminal::Error(StringOps::GetName(this), "{} has a property size of {} but only {} bytes of content", m_name, propertySize, content.GetCount());
-			return false;
-		}
-
-		Engine::AssetHeader header = {};
-		header.magic = Engine::AssetHeader::Magic;
-		header.version = Engine::AssetHeader::Version;
-		header.id = m_meta.id;
-		std::memcpy(header.typeName, m_meta.assetTypeName.data(), m_meta.assetTypeName.size());
-		header.propertyOffset = sizeof(Engine::AssetHeader);
-		header.propertySize = propertySize;
-		header.payloadOffset = sizeof(Engine::AssetHeader) + propertySize;
-		header.payloadSize = content.GetCount() - propertySize;
-
-		List<u8> bytes(sizeof(Engine::AssetHeader) + content.GetCount());
-		std::memcpy(bytes.GetData(), &header, sizeof(Engine::AssetHeader));
-
-		if (!content.IsEmpty())
-			std::memcpy(bytes.GetData() + sizeof(Engine::AssetHeader), content.GetData(), content.GetCount());
-
-		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
-		{
-			Terminal::Error(StringOps::GetName(this), "{} cannot be replaced", cookedPath);
-			return false;
-		}
-
-		if (!PAL::File::Create(cookedPath))
-		{
-			Terminal::Error(StringOps::GetName(this), "{} cannot be created", cookedPath);
-			return false;
-		}
-
-		PAL::FileAccessRequest request = PAL::File::RequestAccess(cookedPath, PAL::FileOperationAccessPolicy::Write,
-			PAL::FileOperationSharePolicy::Exclusive);
-
-		const b8 wasWritten = PAL::File::WriteMemory(request, bytes);
-
-		PAL::File::ReleaseAccess(request);
-
-		if (!wasWritten)
-		{
-			Terminal::Error(StringOps::GetName(this), "{} cannot be written", cookedPath);
-			return false;
-		}
-
-		return true;
+		return WriteCookFile(cookedPath, m_meta.id, m_meta.assetTypeName, content, propertySize);
 	}
 
 	void DomainFile::Rename(const std::string& newName)

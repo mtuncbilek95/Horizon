@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Editor/Importer/AssetImportTask.h>
 #include <Engine/Core/Service.h>
 #include <Engine/Asset/Sources/LooseSourceFile.h>
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
@@ -17,10 +18,11 @@ namespace Horizon::Editor
 
 	class H_EXPORT DomainService : public Engine::Service
 	{
+		static constexpr usize MaxConcurrentImports = 2;
 	public:
-		DomainService();
-		~DomainService();
+		static void RunImport(ImportTask* pTask);
 
+	public:
 		Engine::ModuleReport OnInitialize() final;
 		void OnExecute(const Engine::EngineFrame& ctx) final;
 		void OnFinalize() final;
@@ -57,10 +59,11 @@ namespace Horizon::Editor
 		std::string ResolveAssetTypeName(DomainFile* pFile);
 		void MoveMeta(const std::string& oldMetaPath, const std::string& newMetaPath);
 
-		void QueueImport(const Guid& id);
 		void ProcessPendingImports();
+		void CommitFinishedImports();
+		b8 IsImportActive(const Guid& id) const;
 		b8 IsSourceReady(DomainFile* pFile) const;
-		b8 ImportFile(DomainFile* pFile);
+		b8 StartImport(DomainFile* pFile);
 		b8 RegisterCooked(DomainFile* pFile);
 
 	private:
@@ -73,6 +76,7 @@ namespace Horizon::Editor
 		ImporterContext* m_importerContext = nullptr;
 
 		List<Guid> m_pendingImports;
+		List<ImportTask*> m_activeImports;
 
 		PAL::DirectoryWatcher m_watcher;
 		b8 m_watcherHealthy = false;

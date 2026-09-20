@@ -8,6 +8,7 @@
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Asset/AssetService.h>
 #include <Engine/Reflection/ReflectionSystem.h>
+#include <Engine/Job/JobSystem.h>
 
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
@@ -17,12 +18,31 @@
 
 namespace Horizon::Editor
 {
-	DomainService::DomainService()
+	void DomainService::RunImport(ImportTask* pTask)
 	{
-	}
+		Terminal::Info("DomainService", "{} is being imported on thread {}", pTask->sourcePath, PAL::Thread::CurrentId());
 
-	DomainService::~DomainService()
-	{
+		List<u8> content;
+		pTask->result = pTask->pImporter->ImportAsset(pTask->pEngine, pTask->sourcePath, content);
+
+		if (pTask->result != AssetImportResult::Success)
+			return;
+
+		const std::string tempPath = pTask->cookedPath + ".tmp";
+
+		if (!DomainFile::WriteCookFile(tempPath, pTask->id, pTask->assetTypeName, content, pTask->pImporter->GetPropertySize()))
+			return;
+
+		if (PAL::File::Exists(pTask->cookedPath) && !PAL::File::Delete(pTask->cookedPath))
+		{
+			Terminal::Error("DomainService", "{} cannot be replaced", pTask->cookedPath);
+			return;
+		}
+
+		pTask->wasCooked = PAL::File::Rename(tempPath, pTask->cookedPath);
+
+		if (pTask->wasCooked)
+			Terminal::Info("DomainService", "{} has been imported via thread {} with {} bytes", pTask->sourcePath, PAL::Thread::CurrentId(), content.GetCount());
 	}
 
 	Engine::ModuleReport DomainService::OnInitialize()
@@ -74,6 +94,7 @@ namespace Horizon::Editor
 		if (m_watcherHealthy)
 			m_watcher.Dispatch();
 
+		CommitFinishedImports();
 		ProcessPendingImports();
 	}
 
@@ -84,6 +105,16 @@ namespace Horizon::Editor
 		m_watcherHealthy = false;
 
 		m_pendingImports.Clear();
+
+		Engine::JobSystem* pJobSystem = GetEngine()->GetJobSystem();
+
+		for (ImportTask* pTask : m_activeImports)
+		{
+			pJobSystem->WaitTicket(pTask->ticket);
+			Memory::Allocator::Delete(pTask);
+		}
+
+		m_activeImports.Clear();
 
 		if (m_root == nullptr)
 			return;
@@ -169,7 +200,7 @@ namespace Horizon::Editor
 
 	void DomainService::OnEntryAdded(const PAL::DirectoryWatcher::Event& event)
 	{
-		if (event.GetExtension() == DomainFile::MetaSuffix)
+		if (event.GetName().ends_with(DomainFile::MetaSuffix))
 			return;
 
 		DomainFolder* pParent = m_root->ResolveFolder(event.GetParent());
@@ -203,11 +234,13 @@ namespace Horizon::Editor
 
 	void DomainService::OnEntryModified(const PAL::DirectoryWatcher::Event& event)
 	{
+		if (event.GetName().ends_with(DomainFile::MetaSuffix))
+			return;
 	}
 
 	void DomainService::OnEntryRemoved(const PAL::DirectoryWatcher::Event& event)
 	{
-		if (event.GetExtension() == DomainFile::MetaSuffix)
+		if (event.GetName().ends_with(DomainFile::MetaSuffix))
 			return;
 
 		DomainFolder* pParent = m_root->ResolveFolder(event.GetParent());
@@ -231,7 +264,7 @@ namespace Horizon::Editor
 
 	void DomainService::OnEntryRenamed(const PAL::DirectoryWatcher::Event& event)
 	{
-		if (event.GetExtension() == DomainFile::MetaSuffix)
+		if (event.GetName().ends_with(DomainFile::MetaSuffix))
 			return;
 
 		DomainFolder* pOldParent = m_root->ResolveFolder(event.GetOldParent());
@@ -269,6 +302,7 @@ namespace Horizon::Editor
 
 	void DomainService::TrackFile(DomainFile* pFile)
 	{
+		// Check if we have meta and load the fuck out of it, if not generate
 		if (!EnsureMeta(pFile))
 			return;
 
@@ -277,11 +311,16 @@ namespace Horizon::Editor
 
 		if (pFile->HasBinary())
 		{
+			// TODO: Having binary doesn't mean its valid
 			RegisterCooked(pFile);
 			return;
 		}
 
-		QueueImport(pFile->GetID());
+		if (m_pendingImports.Contains(pFile->GetID()))
+			return;
+
+		// Just add to import job tracking list.
+		m_pendingImports.PushBack(pFile->GetID());
 	}
 
 	void DomainService::ForgetFile(DomainFile* pFile)
@@ -334,6 +373,11 @@ namespace Horizon::Editor
 
 	std::string DomainService::ResolveAssetTypeName(DomainFile* pFile)
 	{
+		// TODO: I guess if std::string is empty the DomainFile that we're working on should be deleted instead 
+		// of being imported weirdly.
+		
+		// This function just takes MeshAsset, Texture2DAsset, AnimationAsset, RenderGraphAsset etc.
+		// And it takes from extension + importer. I couldn't find a better way.
 		AssetImporter* pImporter = m_importerContext->GetImporter(pFile->GetExtension());
 
 		if (pImporter == nullptr)
@@ -353,7 +397,7 @@ namespace Horizon::Editor
 
 		if (pAttr == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} carries no import type attribute", pImporterType->GetName());
+			Terminal::Error(StringOps::GetName(this), "{} has no ImportTypeAttribute", pImporterType->GetName());
 			return std::string();
 		}
 
@@ -380,21 +424,19 @@ namespace Horizon::Editor
 			Terminal::Warn(StringOps::GetName(this), "{} could not follow its source to {}", oldMetaPath, newMetaPath);
 	}
 
-	void DomainService::QueueImport(const Guid& id)
-	{
-		if (m_pendingImports.Contains(id))
-			return;
-
-		m_pendingImports.PushBack(id);
-	}
-
 	void DomainService::ProcessPendingImports()
 	{
-		if (m_pendingImports.IsEmpty())
+		if (m_pendingImports.IsEmpty() || m_activeImports.GetCount() >= MaxConcurrentImports)
 			return;
 
 		const Guid id = m_pendingImports.Front();
 		m_pendingImports.PopFront();
+
+		if (IsImportActive(id))
+		{
+			m_pendingImports.PushBack(id);
+			return;
+		}
 
 		DomainFile* pFile = FindFileByGuid(m_root, id);
 
@@ -407,7 +449,53 @@ namespace Horizon::Editor
 			return;
 		}
 
-		ImportFile(pFile);
+		StartImport(pFile);
+	}
+
+	void DomainService::CommitFinishedImports()
+	{
+		Engine::JobSystem* pJobSystem = GetEngine()->GetJobSystem();
+
+		for (usize i = 0; i < m_activeImports.GetCount();)
+		{
+			ImportTask* pTask = m_activeImports[i];
+			const Engine::CompletionState state = pJobSystem->GetTicketState(pTask->ticket);
+
+			if (state == Engine::CompletionState::Pending || state == Engine::CompletionState::Running)
+			{
+				++i;
+				continue;
+			}
+
+			m_activeImports.RemoveAt(i);
+
+			DomainFile* pFile = FindFileByGuid(m_root, pTask->id);
+
+			if (pTask->result != AssetImportResult::Success)
+				Terminal::Error(StringOps::GetName(this), "{} could not be imported, result code is {}", pTask->sourcePath, static_cast<u32>(pTask->result));
+			else if (!pTask->wasCooked)
+				Terminal::Error(StringOps::GetName(this), "{} was imported but could not be cooked", pTask->sourcePath);
+			else if (pFile == nullptr)
+			{
+				Terminal::Warn(StringOps::GetName(this), "{} vanished while it was being imported", pTask->sourcePath);
+				PAL::File::Delete(pTask->cookedPath);
+			}
+			else if (RegisterCooked(pFile))
+				++m_revision;
+
+			Memory::Allocator::Delete(pTask);
+		}
+	}
+
+	b8 DomainService::IsImportActive(const Guid& id) const
+	{
+		for (const ImportTask* pTask : m_activeImports)
+		{
+			if (pTask->id == id)
+				return true;
+		}
+
+		return false;
 	}
 
 	b8 DomainService::IsSourceReady(DomainFile* pFile) const
@@ -423,7 +511,7 @@ namespace Horizon::Editor
 		return true;
 	}
 
-	b8 DomainService::ImportFile(DomainFile* pFile)
+	b8 DomainService::StartImport(DomainFile* pFile)
 	{
 		AssetImporter* pImporter = m_importerContext->GetImporter(pFile->GetExtension());
 
@@ -433,22 +521,32 @@ namespace Horizon::Editor
 			return false;
 		}
 
-		List<u8> payload;
-		const AssetImportResult result = pImporter->ImportAsset(GetEngine(), pFile->GetSourcePath(), payload);
+		const std::string cookedPath = pFile->GetCookedPath();
 
-		if (result != AssetImportResult::Success)
+		if (cookedPath.empty())
+			return false;
+
+		ImportTask* pTask = Memory::Allocator::Create<ImportTask>(Memory::CurrLoc());
+		pTask->id = pFile->GetID();
+		pTask->sourcePath = pFile->GetSourcePath();
+		pTask->cookedPath = cookedPath;
+		pTask->assetTypeName = pFile->GetMeta().assetTypeName;
+		pTask->pImporter = pImporter;
+		pTask->pEngine = GetEngine();
+
+		pTask->ticket = GetEngine()->GetJobSystem()->SubmitJob(Engine::JobLane::Background, Engine::Job([pTask]()
+			{
+				RunImport(pTask);
+			}));
+
+		if (pTask->ticket == Engine::InvalidSubmitTicket)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be imported, result code is {}", pFile->GetSourcePath(), static_cast<u32>(result));
+			Terminal::Error(StringOps::GetName(this), "{} could not be submitted as an import job", pTask->sourcePath);
+			Memory::Allocator::Delete(pTask);
 			return false;
 		}
 
-		if (!pFile->WriteCookFile(payload, pImporter->GetPropertySize()))
-			return false;
-
-		if (!RegisterCooked(pFile))
-			return false;
-
-		++m_revision;
+		m_activeImports.PushBack(pTask);
 
 		return true;
 	}

@@ -38,6 +38,7 @@ namespace Horizon::Editor
 
 	AssetImporter* ImporterContext::GetImporter(Reflect::TypeHandle handl) const
 	{
+		// I just wanted to write a disgusting err message. Cry me a river.
 		auto it = m_typeLookup.find(handl);
 		if (it == m_typeLookup.end())
 		{

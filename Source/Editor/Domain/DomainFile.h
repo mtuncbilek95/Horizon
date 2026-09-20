@@ -13,6 +13,9 @@ namespace Horizon::Editor
 	class H_EXPORT DomainFile
 	{
 	public:
+		static b8 WriteCookFile(const std::string& cookedPath, const Guid& id, const std::string& assetTypeName, const List<u8>& content, usize propertySize);
+
+	public:
 		static constexpr std::string_view MetaSuffix = ".hmeta";
 		static constexpr std::string_view CookSuffix = ".hasset";
 
@@ -39,7 +42,7 @@ namespace Horizon::Editor
 		b8 LoadMetaFile();
 		b8 WriteMetaFile(const DomainMeta& meta);
 
-		b8 WriteCookFile(const List<u8>& content, usize propertySize);
+		b8 WriteCookFile(const List<u8>& content, usize propertySize) const;
 
 		void Rename(const std::string& newName);
 
