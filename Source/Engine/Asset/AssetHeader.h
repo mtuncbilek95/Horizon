@@ -7,6 +7,9 @@ namespace Horizon::Engine
 {
 	struct AssetHeader
 	{
+		static constexpr u32 Magic = 0x54534148;
+		static constexpr u32 Version = 1;
+
 		u32 magic;
 		u32 version;
 		Guid id;

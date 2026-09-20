@@ -9,7 +9,7 @@ target_include_directories(Editor PRIVATE "${CMAKE_SOURCE_DIR}/Source")
 
 target_link_libraries(Editor
 	PUBLIC
-		Engine Runtime Imgui
+		Engine Runtime Imgui TinyFbx
 )
 
 if(USE_TEST_ENVIRONMENT)

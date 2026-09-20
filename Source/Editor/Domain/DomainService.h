@@ -4,6 +4,7 @@
 #include <Engine/Asset/Sources/LooseSourceFile.h>
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
 #include <Runtime/Containers/Guid.h>
+#include <Runtime/Containers/List.h>
 
 #include <string>
 #include <string_view>
@@ -12,6 +13,7 @@ namespace Horizon::Editor
 {
 	class DomainFolder;
 	class DomainFile;
+	class ImporterContext;
 
 	class H_EXPORT DomainService : public Engine::Service
 	{
@@ -47,12 +49,30 @@ namespace Horizon::Editor
 
 		DomainFile* FindFileByGuid(DomainFolder* pFolder, const Guid& guid) const;
 
+		void TrackFolder(DomainFolder* pFolder);
+		void TrackFile(DomainFile* pFile);
+		void ForgetFile(DomainFile* pFile);
+
+		b8 EnsureMeta(DomainFile* pFile);
+		std::string ResolveAssetTypeName(DomainFile* pFile);
+		void MoveMeta(const std::string& oldMetaPath, const std::string& newMetaPath);
+
+		void QueueImport(const Guid& id);
+		void ProcessPendingImports();
+		b8 IsSourceReady(DomainFile* pFile) const;
+		b8 ImportFile(DomainFile* pFile);
+		b8 RegisterCooked(DomainFile* pFile);
+
+	private:
 		std::string m_projectPath;
 		std::string m_assetPath;
 		std::string m_cookPath;
 		DomainFolder* m_root = nullptr;
 
 		Engine::LooseSourceFile* m_projectSource = nullptr;
+		ImporterContext* m_importerContext = nullptr;
+
+		List<Guid> m_pendingImports;
 
 		PAL::DirectoryWatcher m_watcher;
 		b8 m_watcherHealthy = false;

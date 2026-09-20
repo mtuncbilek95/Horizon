@@ -1,12 +1,16 @@
 #include "MeshComponentDrawer.h"
 
-#include <Editor/Domain/DomainFile.h>
 #include <Editor/Font/IconsFontAwesome6.h>
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
+#include <Runtime/Containers/Guid.h>
 
 #include <imgui.h>
+
+#include <algorithm>
+#include <cstring>
+#include <string>
 
 namespace Horizon::Editor
 {
@@ -26,7 +30,7 @@ namespace Horizon::Editor
 
 		ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(6.0f, 2.0f));
 
-		if (!ImGui::BeginTable("cameraComp", 2, ImGuiTableFlags_SizingFixedFit))
+		if (!ImGui::BeginTable("meshComp", 2, ImGuiTableFlags_SizingFixedFit))
 		{
 			ImGui::PopStyleVar();
 			return;
@@ -39,22 +43,30 @@ namespace Horizon::Editor
 		ImGui::TableNextColumn();
 
 		ImGui::AlignTextToFramePadding();
-		ImGui::TextUnformatted("Not Implemented Yet");
+		ImGui::TextUnformatted("Mesh");
 		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f));
+
+		const Guid& currentId = pMeshComp->m_meshId.GetId();
+		const std::string label = (currentId.IsValid() ? currentId.ToString() : std::string("None")) + "##meshId";
+		const f32 width = std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f);
+
+		ImGui::Button(label.c_str(), ImVec2(width, 0.0f));
 
 		if (ImGui::BeginDragDropTarget())
 		{
-			const ImGuiDragDropFlags acceptFlags = ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect;
-
-			if (const ImGuiPayload* pPayload = ImGui::AcceptDragDropPayload(nullptr, acceptFlags))
+			if (const ImGuiPayload* pPayload = ImGui::AcceptDragDropPayload("HZ_ASSET_MeshAsset"))
 			{
-				const DomainFile* givenFile = (DomainFile*)(pPayload->Data);
-				Terminal::Warn(StringOps::GetName(this), "{} about to drop on MeshId", givenFile->GetName());
-
-				if (pPayload->IsDelivery())
+				if (pPayload->DataSize == sizeof(Guid))
 				{
-					Terminal::Info(StringOps::GetName(this), "{} dropped on MeshId", givenFile->GetName());
+					Guid droppedId;
+					std::memcpy(&droppedId, pPayload->Data, sizeof(Guid));
+
+					pMeshComp->m_meshId = Engine::AssetHandle<Engine::MeshAsset>(droppedId, nullptr);
+					Terminal::Info(StringOps::GetName(this), "{} dropped on MeshId", droppedId.ToString());
+				}
+				else
+				{
+					Terminal::Error(StringOps::GetName(this), "Dropped payload is {} bytes, a Guid was expected", pPayload->DataSize);
 				}
 			}
 

@@ -23,6 +23,6 @@ namespace Horizon::Engine
 
 	private:
 		Guid m_id;
-		T* m_object;
+		T* m_object = nullptr;
 	};
 }

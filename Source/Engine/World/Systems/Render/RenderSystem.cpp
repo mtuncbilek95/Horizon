@@ -4,6 +4,7 @@
 #include <Engine/World/Components/CameraComponent.h>
 #include <Engine/World/Components/MeshComponent.h>
 #include <Engine/Asset/AssetService.h>
+#include <Engine/Asset/Mesh/MeshVertex.h>
 
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/RHI/Buffer/GfxBuffer.h>
@@ -16,8 +17,148 @@
 
 #include <Runtime/Math/Mat4f.h>
 
+#include <cstddef>
+#include <string>
+
 namespace Horizon::Engine
 {
+	static constexpr RHI::GfxTextureFormat sFunDepthFormat = RHI::GfxTextureFormat::D32_FLOAT;
+
+	RHI::GfxPipeline* sFunPipeline = nullptr;
+	RHI::GfxDescriptorHeap* sFunDepthHeap = nullptr;
+	RHI::GfxTexture* sFunDepthTextures[GraphicsContext::MaxFramesInFlight] = {};
+
+	static RHI::GfxShader* CreateFunShader(RHI::GfxDevice* pDevice, const std::string& filePath, RHI::GfxShaderStage stage, const std::string& entryPoint)
+	{
+		List<u8> byteCode = RHI::GfxShaderCompiler::Compile(filePath, stage, entryPoint);
+
+		if (byteCode.IsEmpty())
+		{
+			Terminal::Error("RenderSystem", "{} could not be compiled with entry point {}", filePath, entryPoint);
+			return nullptr;
+		}
+
+		RHI::GfxShaderDesc shaderDesc = {};
+		shaderDesc.stage = stage;
+		shaderDesc.pByteCode = byteCode.GetData();
+		shaderDesc.byteCodeSize = byteCode.GetCount();
+
+		RHI::GfxShader* pShader = pDevice->CreateShader(shaderDesc);
+
+		if (pShader == nullptr)
+			Terminal::Error("RenderSystem", "{} could not be turned into a shader object", filePath);
+
+		return pShader;
+	}
+
+	static RHI::GfxPipeline* CreateFunPipeline(RHI::GfxDevice* pDevice)
+	{
+		const std::string shaderRoot = std::string(HORIZON_RESOURCE_DIR) + "/Shaders/Testers/";
+
+		RHI::GfxShader* pVertexShader = CreateFunShader(pDevice, shaderRoot + "BasicMesh.vert.hlsl", RHI::GfxShaderStage::Vertex, "VSMain");
+
+		if (pVertexShader == nullptr)
+			return nullptr;
+
+		RHI::GfxShader* pPixelShader = CreateFunShader(pDevice, shaderRoot + "BasicMesh.frag.hlsl", RHI::GfxShaderStage::Pixel, "PSMain");
+
+		if (pPixelShader == nullptr)
+		{
+			Memory::Allocator::Delete(pVertexShader);
+			return nullptr;
+		}
+
+		RHI::GfxGraphicsPipelineDesc pipelineDesc = {};
+		pipelineDesc.pVertexShader = pVertexShader;
+		pipelineDesc.pPixelShader = pPixelShader;
+
+		pipelineDesc.inputLayout
+			.AddBinding(0, sizeof(MeshVertex))
+			.AddAttribute("POSITION", 0, RHI::GfxTextureFormat::RGBA32_FLOAT, 0, offsetof(MeshVertex, position))
+			.AddAttribute("NORMAL", 0, RHI::GfxTextureFormat::RGBA32_FLOAT, 0, offsetof(MeshVertex, normal))
+			.AddAttribute("TANGENT", 0, RHI::GfxTextureFormat::RGBA32_FLOAT, 0, offsetof(MeshVertex, tangent))
+			.AddAttribute("COLOR", 0, RHI::GfxTextureFormat::RGBA32_FLOAT, 0, offsetof(MeshVertex, color))
+			.AddAttribute("TEXCOORD", 0, RHI::GfxTextureFormat::RG32_FLOAT, 0, offsetof(MeshVertex, uv));
+
+		pipelineDesc.colorFormats[0] = RHI::GfxTextureFormat::RGBA8_UNORM;
+		pipelineDesc.colorTargetCount = 1;
+		pipelineDesc.depthFormat = sFunDepthFormat;
+		pipelineDesc.topology = RHI::GfxPrimitiveTopology::TriangleList;
+
+		pipelineDesc.rasterizer.fillMode = RHI::GfxFillMode::Solid;
+		pipelineDesc.rasterizer.cullMode = RHI::GfxCullMode::None;
+
+		pipelineDesc.depthStencil.depthTest = true;
+		pipelineDesc.depthStencil.depthWrite = true;
+		pipelineDesc.depthStencil.depthCompare = RHI::GfxCompareOp::Less;
+
+		RHI::GfxPipeline* pPipeline = pDevice->CreatePipeline(pipelineDesc);
+
+		Memory::Allocator::Delete(pVertexShader);
+		Memory::Allocator::Delete(pPixelShader);
+
+		if (pPipeline == nullptr)
+		{
+			Terminal::Error("RenderSystem", "BasicMesh pipeline could not be created");
+			return nullptr;
+		}
+
+		pPipeline->SetDebugName("BasicMesh - Pipeline");
+
+		return pPipeline;
+	}
+
+	static RHI::GfxDescriptorHeap* CreateFunDepthHeap(RHI::GfxDevice* pDevice)
+	{
+		RHI::GfxDescriptorHeapDesc heapDesc = {};
+		heapDesc.type = RHI::GfxDescriptorHeapType::Depth;
+		heapDesc.capacity = 16;
+		heapDesc.shaderVisible = false;
+
+		RHI::GfxDescriptorHeap* pHeap = pDevice->CreateDescriptorHeap(heapDesc);
+
+		if (pHeap == nullptr)
+			Terminal::Error("RenderSystem", "Depth descriptor heap could not be created");
+
+		return pHeap;
+	}
+
+	static void ClearFunDepthTexture(u32 imageIndex)
+	{
+		if (sFunDepthTextures[imageIndex] == nullptr)
+			return;
+
+		Memory::Allocator::Delete(sFunDepthTextures[imageIndex]);
+		sFunDepthTextures[imageIndex] = nullptr;
+	}
+
+	static b8 RecreateFunDepthTexture(RHI::GfxDevice* pDevice, u32 imageIndex, const Math::Vec2u& size)
+	{
+		ClearFunDepthTexture(imageIndex);
+
+		RHI::GfxTextureDesc texDesc = {};
+		texDesc.width = size.X();
+		texDesc.height = size.Y();
+		texDesc.type = RHI::GfxTextureType::Tex2D;
+		texDesc.format = sFunDepthFormat;
+		texDesc.usage = RHI::GfxTextureUsage::DepthStencil;
+
+		RHI::GfxTexture* pTexture = pDevice->CreateTexture(texDesc);
+
+		if (pTexture == nullptr)
+		{
+			Terminal::Error("RenderSystem", "Scene depth target {}x{} could not be created", size.X(), size.Y());
+			return false;
+		}
+
+		pTexture->SetDebugName("Scene - DepthTarget");
+		sFunDepthHeap->CreateDepthStencilView(pTexture);
+
+		sFunDepthTextures[imageIndex] = pTexture;
+
+		return true;
+	}
+
 	b8 RenderSystem::OnInitialize()
 	{
 		m_context = GetEngine()->RequestContext<GraphicsContext>();
@@ -33,6 +174,14 @@ namespace Horizon::Engine
 		m_colorHeap = m_context->GetColorHeap();
 		m_queue = m_context->GetGraphicsQueue();
 
+		sFunDepthHeap = CreateFunDepthHeap(m_device);
+
+		if (sFunDepthHeap == nullptr)
+		{
+			Terminal::Error(StringOps::GetName(this), "Depth heap is unavailable, render system stays down");
+			return false;
+		}
+
 		ResizeImage({ 1280, 720 });
 		m_slots.Resize(GraphicsContext::MaxFramesInFlight);
 		for (u32 i = 0; i < GraphicsContext::MaxFramesInFlight; i++)
@@ -42,6 +191,14 @@ namespace Horizon::Engine
 		}
 
 		m_fence = m_device->CreateFence();
+
+		sFunPipeline = CreateFunPipeline(m_device);
+
+		if (sFunPipeline == nullptr)
+		{
+			Terminal::Error(StringOps::GetName(this), "Mesh pipeline is unavailable, render system stays down");
+			return false;
+		}
 
 		return true;
 	}
@@ -67,6 +224,7 @@ namespace Horizon::Engine
 
 		m_colorHeap->Recycle();
 		m_resourceHeap->Recycle();
+		sFunDepthHeap->Recycle();
 
 		m_fence->WaitCPU(slot.fenceValue);
 
@@ -85,13 +243,13 @@ namespace Horizon::Engine
 		}
 		RHI::GfxRenderBeginDesc renderDesc = RHI::GfxRenderBeginDesc()
 			.AddColorTarget(slot.pTargetTexture, RHI::GfxLoadOp::Clear, { 0.39f, 0.58f, 0.92f, 1.f })
+			.SetDepth(sFunDepthTextures[m_frameIndex], RHI::GfxLoadOp::Clear, 1.0f)
 			.SetSize(slot.pTargetTexture->GetDesc().width, slot.pTargetTexture->GetDesc().height);
 
 		slot.pTargetCmd->BeginRendering(renderDesc);
 		slot.pTargetCmd->SetScissor({ 0, 0, (i32)slot.pTargetTexture->GetDesc().width, (i32)slot.pTargetTexture->GetDesc().height });
 		slot.pTargetCmd->SetViewport({ 0, 0, (f32)slot.pTargetTexture->GetDesc().width, (f32)slot.pTargetTexture->GetDesc().height, 0.f, 1.f });
-		// slot.pTargetCmd->SetGraphicsConstants();
-		// slot.pTargetCmd->BindPipeline();
+		slot.pTargetCmd->BindPipeline(sFunPipeline);
 
 		AssetService* pAssetService = GetEngine()->RequestService<AssetService>();
 
@@ -110,7 +268,9 @@ namespace Horizon::Engine
 				if (!pAsset)
 					return;
 
-				slot.pTargetCmd->BindVertexBuffer(pAsset->GetVertexBuffer(), 0, 0, 0);
+				Math::Mat4f mvp = viewProj * worldMat.m_worldMatrix;
+				slot.pTargetCmd->SetGraphicsConstants(&mvp, sizeof(Math::Mat4f) / sizeof(u32));
+				slot.pTargetCmd->BindVertexBuffer(pAsset->GetVertexBuffer(), 0, pAsset->GetVertexStride(), 0);
 				slot.pTargetCmd->BindIndexBuffer(pAsset->GetIndexBuffer(), RHI::GfxIndexType::Index32);
 				slot.pTargetCmd->DrawIndexed(pAsset->GetIndexCount(), 1);
 			});
@@ -139,8 +299,11 @@ namespace Horizon::Engine
 	{
 		m_device->WaitIdle();
 
-		m_colorHeap->Recycle();
-		m_resourceHeap->Recycle();
+		if (sFunPipeline)
+		{
+			Memory::Allocator::Delete(sFunPipeline);
+			sFunPipeline = nullptr;
+		}
 
 		Memory::Allocator::Delete(m_fence);
 
@@ -148,6 +311,16 @@ namespace Horizon::Engine
 		{
 			ClearSlot(i);
 			Memory::Allocator::Delete(m_slots[i].pTargetCmd);
+		}
+
+		m_colorHeap->Recycle();
+		m_resourceHeap->Recycle();
+
+		if (sFunDepthHeap)
+		{
+			sFunDepthHeap->Recycle();
+			Memory::Allocator::Delete(sFunDepthHeap);
+			sFunDepthHeap = nullptr;
 		}
 	}
 
@@ -211,6 +384,9 @@ namespace Horizon::Engine
 		m_colorHeap->CreateRenderTargetView(slot.pTargetTexture);
 		m_resourceHeap->CreateShaderView(slot.pTargetTexture);
 
+		if (!RecreateFunDepthTexture(m_device, imageIndex, m_targetSize))
+			return false;
+
 		slot.currSize = m_targetSize;
 		slot.currState = RHI::GfxResourceState::Common;
 		slot.fenceValue = 0;
@@ -221,6 +397,8 @@ namespace Horizon::Engine
 	b8 RenderSystem::ClearSlot(u32 imageIndex)
 	{
 		RenderSlot& slot = m_slots[imageIndex];
+
+		ClearFunDepthTexture(imageIndex);
 
 		if (!slot.pTargetTexture)
 			return true;
