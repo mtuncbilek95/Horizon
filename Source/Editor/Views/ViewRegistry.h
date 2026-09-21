@@ -15,7 +15,7 @@ namespace Horizon::Editor
 		~ViewRegistry();
 
 		void BootstrapViews(const EditorContext& ctx);
-		void RenderGUI();
+		void RenderGUI(const Engine::EngineFrame& context);
 
 		template<typename T>
 		T* GetViewObject()

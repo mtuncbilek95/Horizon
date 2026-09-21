@@ -17,7 +17,7 @@ namespace Horizon::Editor
 		HORIZON_TYPE_REFLECT(SceneHierarchyView);
 	public:
 		void OnInvoke() final;
-		void OnRender() final;
+		void OnRender(const Engine::EngineFrame& context) final;
 		b8 IsFullBleed() const final { return true; }
 
 	private:

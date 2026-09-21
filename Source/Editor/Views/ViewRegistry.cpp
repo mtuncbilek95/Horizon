@@ -79,7 +79,7 @@ namespace Horizon::Editor
 		}
 	}
 
-	void ViewRegistry::RenderGUI()
+	void ViewRegistry::RenderGUI(const Engine::EngineFrame& context)
 	{
 		ImGuiViewport* pViewport = ImGui::GetMainViewport();
 
@@ -108,7 +108,7 @@ namespace Horizon::Editor
 			if (view->IsFullBleed())
 				ImGui::PopStyleVar(2);
 
-			view->OnRender();
+			view->OnRender(context);
 			ImGui::End();
 		}
 	}

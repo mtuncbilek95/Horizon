@@ -21,9 +21,6 @@ namespace Horizon::Engine
 
 		RHI::GfxDevice* GetDevice() const { return m_device; }
 
-		RHI::GfxDescriptorHeap* GetResourceHeap() const { return m_resourceHeap; }
-		RHI::GfxDescriptorHeap* GetColorHeap() const { return m_colorHeap; }
-		
 		RHI::GfxQueue* GetGraphicsQueue() const { return m_graphicsQueue; }
 		RHI::GfxQueue* GetComputeQueue() const { return m_computeQueue; }
 		RHI::GfxQueue* GetTransferQueue() const { return m_transferQueue; }
@@ -37,9 +34,6 @@ namespace Horizon::Engine
 	private:
 		RHI::GfxDevice* m_device = nullptr;
 
-		RHI::GfxDescriptorHeap* m_resourceHeap = nullptr;
-		RHI::GfxDescriptorHeap* m_colorHeap = nullptr;
-		
 		RHI::GfxQueue* m_graphicsQueue = nullptr;
 		RHI::GfxQueue* m_computeQueue = nullptr;
 		RHI::GfxQueue* m_transferQueue = nullptr;

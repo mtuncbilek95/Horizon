@@ -1,9 +1,11 @@
 #pragma once
 
 #include <Runtime/RHI/Device/GfxDevice.h>
+#include <Runtime/RHI/Descriptor/GfxDescriptorHeapType.h>
 #include <Runtime/D3D12/D3D12Helpers.h>
 
 #include <Runtime/Containers/List.h>
+#include <Runtime/PAL/Sync/CriticalSection.h>
 
 namespace Horizon::RHI
 {
@@ -11,6 +13,29 @@ namespace Horizon::RHI
 
 	class H_EXPORT D3D12Device final : public GfxDevice
 	{
+		static constexpr u32 kDescriptorRootCount = 4;
+
+		struct DescriptorRange
+		{
+			u32 base = 0;
+			u32 count = 0;
+		};
+
+		struct DescriptorRoot
+		{
+			ID3D12DescriptorHeap* pHeap = nullptr;
+
+			D3D12_CPU_DESCRIPTOR_HANDLE cpuStart{};
+			D3D12_GPU_DESCRIPTOR_HANDLE gpuStart{};
+
+			u32 descriptorSize = 0;
+			u32 capacity = 0;
+			u32 top = 0;
+			u32 blockCount = 0;
+
+			List<DescriptorRange> freeRanges;
+		};
+
 	public:
 		~D3D12Device() final;
 
@@ -50,7 +75,11 @@ namespace Horizon::RHI
 
 		void ForgetQueue(D3D12Queue* pQueue);
 
+		u32 AllocateDescriptorBlock(GfxDescriptorHeapType type, u32 count);
+		void ReleaseDescriptorBlock(GfxDescriptorHeapType type, u32 base, u32 count);
+
 	private:
+		void CreateDescriptorRoots(const GfxDeviceDesc& desc);
 		void CreateRootSignature();
 		void CreateCommandSignatures();
 		void CreateTerminalLog();
@@ -74,6 +103,9 @@ namespace Horizon::RHI
 
 		ID3D12Fence* m_idleFence = nullptr;
 		u64 m_idleValue = 0;
+
+		DescriptorRoot m_descriptorRoots[kDescriptorRootCount];
+		PAL::CriticalSection m_descriptorLock;
 
 		List<D3D12Queue*> m_queues;
 	};

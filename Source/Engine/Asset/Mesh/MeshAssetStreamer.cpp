@@ -8,6 +8,7 @@
 #include <Runtime/PAL/File/File.h>
 
 #include <cstring>
+#include <utility>
 
 namespace Horizon::Engine
 {
@@ -43,21 +44,42 @@ namespace Horizon::Engine
 		if (!ReadCooked(entry, properties, payload))
 			return nullptr;
 
+		const usize subMeshBytes = (usize)properties.subMeshCount * sizeof(MeshSubMesh);
 		const usize vertexBytes = (usize)properties.vertexCount * properties.vertexStride;
 		const usize indexBytes = (usize)properties.indexCount * properties.indexStride;
 
-		if (properties.vertexStride != sizeof(MeshVertex) || properties.indexStride != sizeof(u32) || vertexBytes == 0 || indexBytes == 0 || payload.GetCount() != vertexBytes + indexBytes)
+		if (properties.vertexStride != sizeof(MeshVertex) || properties.indexStride != sizeof(u32) || subMeshBytes == 0 || vertexBytes == 0 || indexBytes == 0 || payload.GetCount() != subMeshBytes + vertexBytes + indexBytes)
 		{
 			Terminal::Error(StringOps::GetName(this), "{} has mesh properties that do not match its payload", entry.cookedPath);
 			return nullptr;
 		}
 
-		RHI::GfxBuffer* pVertexBuffer = CreateFilledBuffer(RHI::GfxBufferUsage::None, payload.GetData(), vertexBytes, properties.vertexStride);
+		List<MeshSubMesh> subMeshes(properties.subMeshCount);
+		std::memcpy(subMeshes.GetData(), payload.GetData(), subMeshBytes);
+
+		for (usize i = 0; i < subMeshes.GetCount(); ++i)
+		{
+			const MeshSubMesh& subMesh = subMeshes[i];
+
+			const b8 hasValidIndices = subMesh.indexCount != 0 && (u64)subMesh.indexOffset + subMesh.indexCount <= properties.indexCount;
+			const b8 hasValidVertices = subMesh.vertexCount != 0 && (u64)subMesh.vertexOffset + subMesh.vertexCount <= properties.vertexCount;
+
+			if (!hasValidIndices || !hasValidVertices)
+			{
+				Terminal::Error(StringOps::GetName(this), "{} has submesh {} pointing outside of its buffers", entry.cookedPath, i);
+				return nullptr;
+			}
+		}
+
+		const u8* pVertexData = payload.GetData() + subMeshBytes;
+		const u8* pIndexData = pVertexData + vertexBytes;
+
+		RHI::GfxBuffer* pVertexBuffer = CreateFilledBuffer(RHI::GfxBufferUsage::None, pVertexData, vertexBytes, properties.vertexStride);
 
 		if (pVertexBuffer == nullptr)
 			return nullptr;
 
-		RHI::GfxBuffer* pIndexBuffer = CreateFilledBuffer(RHI::GfxBufferUsage::Index, payload.GetData() + vertexBytes, indexBytes, properties.indexStride);
+		RHI::GfxBuffer* pIndexBuffer = CreateFilledBuffer(RHI::GfxBufferUsage::Index, pIndexData, indexBytes, properties.indexStride);
 
 		if (pIndexBuffer == nullptr)
 		{
@@ -71,10 +93,11 @@ namespace Horizon::Engine
 		pAsset->m_vertexCount = properties.vertexCount;
 		pAsset->m_indexCount = properties.indexCount;
 		pAsset->m_vertexStride = properties.vertexStride;
+		pAsset->m_subMeshes = std::move(subMeshes);
 
 		Bind(pAsset, entry.assetId, AssetResidency::Resident);
 
-		Terminal::Info(StringOps::GetName(this), "{} is resident with {} vertices and {} indices", entry.assetId.ToString(), properties.vertexCount, properties.indexCount);
+		Terminal::Info(StringOps::GetName(this), "{} is resident with {} submeshes, {} vertices and {} indices", entry.assetId.ToString(), properties.subMeshCount, properties.vertexCount, properties.indexCount);
 
 		return pAsset;
 	}
@@ -138,7 +161,7 @@ namespace Horizon::Engine
 	{
 		RHI::GfxBufferDesc desc = {};
 		desc.usage = usage;
-		desc.memory = RHI::GfxMemoryType::Upload;
+		desc.memory = RHI::GfxMemoryType::GpuUpload;
 		desc.size = size;
 		desc.stride = stride;
 

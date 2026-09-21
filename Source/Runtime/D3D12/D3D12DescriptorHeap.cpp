@@ -2,7 +2,6 @@
 
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
-#include <Runtime/Math/Scalar.h>
 
 #include <Runtime/D3D12/D3D12Buffer.h>
 #include <Runtime/D3D12/D3D12Device.h>
@@ -64,12 +63,17 @@ namespace Horizon::RHI
 
 	D3D12DescriptorHeap::~D3D12DescriptorHeap()
 	{
-		if (m_heap)
-			m_heap->Release();
+		auto* pDevice = static_cast<D3D12Device*>(m_ownerDevice);
+
+		if (pDevice && m_heap)
+			pDevice->ReleaseDescriptorBlock(m_desc.type, m_base, m_desc.capacity);
 	}
 
 	u32 D3D12DescriptorHeap::Allocate()
 	{
+		if (m_freeList.IsEmpty())
+			ReclaimPending();
+
 		if (!m_freeList.IsEmpty())
 		{
 			const u32 index = m_freeList.Back();
@@ -81,12 +85,13 @@ namespace Horizon::RHI
 
 		if (m_top >= m_desc.capacity)
 		{
-			Terminal::Error(StringOps::GetName(this), "Heap type {} is full, capacity {}", u32(m_desc.type), m_desc.capacity);
+			Terminal::Error(StringOps::GetName(this), "Heap type {} at base {} is full, capacity {}, {} slots are waiting on the GPU",
+				u32(m_desc.type), m_base, m_desc.capacity, m_pending.GetCount());
 			return kInvalid32;
 		}
 
 		m_allocatedCount++;
-		return m_top++;
+		return m_base + m_top++;
 	}
 
 	void D3D12DescriptorHeap::Free(u32 index)
@@ -94,37 +99,51 @@ namespace Horizon::RHI
 		if (index == kInvalid32)
 			return;
 
-		if (index >= m_top)
+		if (index < m_base || index >= m_base + m_top)
 		{
-			Terminal::Error(StringOps::GetName(this), "Free called with index {} beyond the high water mark {}", index, m_top);
+			Terminal::Error(StringOps::GetName(this), "Free called with index {} outside the used range {}..{}", index, m_base, m_base + m_top);
 			return;
 		}
 
-		m_pending[m_pendingSlot].PushBack(index);
-	}
-
-	void D3D12DescriptorHeap::Recycle()
-	{
-		const u32 frames = m_desc.framesInFlight == 0
-			? 1 : Math::Min(m_desc.framesInFlight, kMaxPendingFrames);
-
-		m_pendingSlot = (m_pendingSlot + 1) % frames;
-
-		List<u32>& bucket = m_pending[m_pendingSlot];
-
-		for (u32 index : bucket)
+		if (m_allocatedCount == 0)
 		{
-			if (m_allocatedCount == 0)
-			{
-				Terminal::Error(StringOps::GetName(this), "Descriptor {} freed more times than allocated", index);
-				continue;
-			}
-
-			m_freeList.PushBack(index);
-			m_allocatedCount--;
+			Terminal::Error(StringOps::GetName(this), "Descriptor {} freed more times than allocated", index);
+			return;
 		}
 
-		bucket.Clear();
+		m_pending.PushBack(PendingSlot{ index, m_ownerDevice->GetFrameNumber() });
+		m_allocatedCount--;
+	}
+
+	void D3D12DescriptorHeap::FlushPending()
+	{
+		for (const PendingSlot& slot : m_pending)
+			m_freeList.PushBack(slot.index);
+
+		m_pending.Clear();
+	}
+
+	void D3D12DescriptorHeap::ReclaimPending()
+	{
+		const u64 frame = m_ownerDevice->GetFrameNumber();
+		const usize count = m_pending.GetCount();
+		usize ready = 0;
+
+		while (ready < count && frame - m_pending[ready].frame >= m_desc.framesInFlight)
+		{
+			m_freeList.PushBack(m_pending[ready].index);
+			ready++;
+		}
+
+		if (ready == 0)
+			return;
+
+		const usize remaining = count - ready;
+
+		for (usize i = 0; i < remaining; i++)
+			m_pending[i] = m_pending[ready + i];
+
+		m_pending.Resize(remaining);
 	}
 
 	b8 D3D12DescriptorHeap::ExpectType(GfxDescriptorHeapType type, const char* pWhat) const

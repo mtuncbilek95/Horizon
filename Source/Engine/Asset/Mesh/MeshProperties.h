@@ -10,5 +10,6 @@ namespace Horizon::Engine
 		u32 indexCount;
 		u32 vertexStride;
 		u32 indexStride;
+		u32 subMeshCount;
 	};
 }

@@ -43,7 +43,7 @@ namespace Horizon::Editor
 		}
 	}
 
-	void InspectorView::OnRender()
+	void InspectorView::OnRender(const Engine::EngineFrame& context)
 	{
 		Engine::EntityHandle entity;
 		if (GetContext()->pSelection->Is<Engine::EntityTag>())

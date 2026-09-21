@@ -60,7 +60,7 @@ namespace Horizon::Editor
 		m_contextMenu.BootstrapContext(GetContext()->pEngine, "AssetBrowserView");
 	}
 
-	void AssetBrowserView::OnRender()
+	void AssetBrowserView::OnRender(const Engine::EngineFrame& context)
 	{
 		if (m_currentFolder == nullptr)
 		{
@@ -76,16 +76,16 @@ namespace Horizon::Editor
 		RebuildEntries(pFolder);
 		RenderGrid();
 
-		AssetBrowserContext context = {};
-		context.pEngine = GetContext()->pEngine;
-		context.currentFolder = pFolder;
+		AssetBrowserContext browserContext = {};
+		browserContext.pEngine = GetContext()->pEngine;
+		browserContext.currentFolder = pFolder;
 
-		CollectSelected(context);
+		CollectSelected(browserContext);
 
-		m_contextMenu.RenderGUI("AssetBrowserContextMenu", context);
+		m_contextMenu.RenderGUI("AssetBrowserContextMenu", browserContext);
 
-		if (!context.renamePath.empty())
-			BeginRename(context.renamePath);
+		if (!browserContext.renamePath.empty())
+			BeginRename(browserContext.renamePath);
 
 		RenderRenameModal();
 	}

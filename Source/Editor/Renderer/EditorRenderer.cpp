@@ -14,6 +14,7 @@
 #include <Runtime/RHI/Queue/GfxQueue.h>
 #include <Runtime/RHI/Fence/GfxFence.h>
 #include <Runtime/RHI/Command/GfxCommandList.h>
+#include <Runtime/RHI/Descriptor/GfxDescriptorHeap.h>
 #include <Runtime/RHI/Pipeline/GfxPipeline.h>
 #include <Runtime/RHI/Buffer/GfxBuffer.h>
 #include <Runtime/RHI/Texture/GfxTexture.h>
@@ -28,7 +29,7 @@
 namespace Horizon::Editor
 {
 	EditorRenderer::EditorRenderer(const EditorRendererDesc& desc) : m_device(desc.pDevice),
-		m_graphicsQueue(desc.pQueue), m_resourceHeap(desc.pResourceHeap)
+		m_graphicsQueue(desc.pQueue)
 	{
 		m_context = ImGui::CreateContext();
 		ImGui::SetCurrentContext((ImGuiContext*)m_context);
@@ -40,6 +41,18 @@ namespace Horizon::Editor
 		io.DisplayFramebufferScale = { 1.0f, 1.0f };
 
 		LoadFonts();
+
+		RHI::GfxDescriptorHeapDesc heapDesc = {};
+		heapDesc.type = RHI::GfxDescriptorHeapType::Resource;
+		heapDesc.capacity = kImGuiHeapCapacity;
+
+		m_resourceHeap = m_device->CreateDescriptorHeap(heapDesc);
+
+		if (m_resourceHeap == nullptr)
+		{
+			Terminal::Error(StringOps::GetName(this), "ImGui resource heap with capacity {} could not be created", kImGuiHeapCapacity);
+			return;
+		}
 
 		m_device->InitializeImGui(Engine::GraphicsContext::MaxFramesInFlight, m_graphicsQueue, m_resourceHeap, desc.colorFormat);
 
@@ -54,11 +67,15 @@ namespace Horizon::Editor
 
 	EditorRenderer::~EditorRenderer()
 	{
+		m_device->WaitIdle();
+
 		for (auto& frame : m_frames)
 			Memory::Allocator::Delete(frame.pCmdList);
 
 		Memory::Allocator::Delete(m_fence);
 		m_device->ShutdownImGui();
+
+		Memory::Allocator::Delete(m_resourceHeap);
 
 		ImGui::DestroyContext((ImGuiContext*)m_context);
 	}

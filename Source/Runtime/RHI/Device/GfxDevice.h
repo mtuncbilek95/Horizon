@@ -61,6 +61,12 @@ namespace Horizon::RHI
 		virtual GfxTextureFootprint GetTextureFootprint(const GfxTextureDesc& desc, u32 mipLevel = 0, u32 arraySlice = 0) const = 0;
 
 		virtual void WaitIdle() = 0;
+
+		u64 GetFrameNumber() const { return m_frameNumber; }
+		void AdvanceFrame() { m_frameNumber++; }
+
+	protected:
+		u64 m_frameNumber = 0;
 	};
 	GfxDevice* CreateDevice(const GfxDeviceDesc& desc);
 }

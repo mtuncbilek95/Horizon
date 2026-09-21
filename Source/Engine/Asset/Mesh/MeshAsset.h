@@ -1,7 +1,9 @@
 #pragma once
 
 #include <Engine/Asset/AssetObject.h>
+#include <Engine/Asset/Mesh/MeshSubMesh.h>
 
+#include <Runtime/Containers/List.h>
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Buffer/GfxBuffer.h>
 
@@ -23,6 +25,8 @@ namespace Horizon::Engine
 		u32 GetIndexCount() const { return m_indexCount; }
 		u32 GetVertexStride() const { return m_vertexStride; }
 
+		const List<MeshSubMesh>& GetSubMeshes() const { return m_subMeshes; }
+
 	private:
 		RHI::GfxBuffer* m_vertexBuffer = nullptr;
 		RHI::GfxBuffer* m_indexBuffer = nullptr;
@@ -30,5 +34,7 @@ namespace Horizon::Engine
 		u32 m_vertexCount = 0;
 		u32 m_indexCount = 0;
 		u32 m_vertexStride = 0;
+
+		List<MeshSubMesh> m_subMeshes;
 	};
 }

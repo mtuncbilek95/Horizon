@@ -10,6 +10,5 @@ namespace Horizon::RHI
 		GfxDescriptorHeapType type = GfxDescriptorHeapType::Resource;
 		u32 capacity = 0;
 		u32 framesInFlight = 3;
-		b8 shaderVisible = false;
 	};
 }

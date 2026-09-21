@@ -1,5 +1,6 @@
 #include "D3D12Device.h"
 
+#include <Runtime/Containers/ScopedLock.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
@@ -81,6 +82,17 @@ namespace Horizon::RHI
 		if (m_rootSignature)
 			m_rootSignature->Release();
 
+		for (u32 i = 0; i < kDescriptorRootCount; i++)
+		{
+			DescriptorRoot& root = m_descriptorRoots[i];
+
+			if (root.blockCount != 0)
+				Terminal::Error(StringOps::GetName(this), "Descriptor root {} still has {} blocks that were never released", i, root.blockCount);
+
+			if (root.pHeap)
+				root.pHeap->Release();
+		}
+
 		if (m_allocator)
 			m_allocator->Release();
 
@@ -144,6 +156,7 @@ namespace Horizon::RHI
 		CHECK_HR(hr, "ID3D12Fence - CreateFence (idle)");
 
 		CreateTerminalLog();
+		CreateDescriptorRoots(desc);
 		CreateRootSignature();
 		CreateCommandSignatures();
 	}
@@ -180,25 +193,32 @@ namespace Horizon::RHI
 
 	GfxDescriptorHeap* D3D12Device::CreateDescriptorHeap(const GfxDescriptorHeapDesc& desc)
 	{
+		if (desc.capacity == 0)
+		{
+			Terminal::Error(StringOps::GetName(this), "Descriptor heap type {} was requested with zero capacity", u32(desc.type));
+			return nullptr;
+		}
+
+		const u32 base = AllocateDescriptorBlock(desc.type, desc.capacity);
+
+		if (base == kInvalid32)
+		{
+			Terminal::Error(StringOps::GetName(this), "Descriptor heap type {} with capacity {} could not be created", u32(desc.type), desc.capacity);
+			return nullptr;
+		}
+
+		const DescriptorRoot& root = m_descriptorRoots[u32(desc.type)];
+
 		auto* pHeap = Memory::Allocator::Create<D3D12DescriptorHeap>(Memory::CurrLoc());
 
 		pHeap->m_ownerDevice = this;
 		pHeap->m_desc = desc;
 
-		D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-
-		heapDesc.Type = Helpers::ToDescriptorHeapType(desc.type);
-		heapDesc.NumDescriptors = desc.capacity;
-		heapDesc.Flags = desc.shaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
-			: D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-
-		HRESULT hr = m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&pHeap->m_heap));
-		CHECK_HR(hr, "ID3D12DescriptorHeap - CreateDescriptorHeap");
-
-		pHeap->m_descriptorSize = m_device->GetDescriptorHandleIncrementSize(heapDesc.Type);
-		pHeap->m_cpuStart = pHeap->m_heap->GetCPUDescriptorHandleForHeapStart();
-		pHeap->m_gpuStart = desc.shaderVisible ? pHeap->m_heap->GetGPUDescriptorHandleForHeapStart()
-			: D3D12_GPU_DESCRIPTOR_HANDLE{};
+		pHeap->m_heap = root.pHeap;
+		pHeap->m_cpuStart = root.cpuStart;
+		pHeap->m_gpuStart = root.gpuStart;
+		pHeap->m_descriptorSize = root.descriptorSize;
+		pHeap->m_base = base;
 
 		return pHeap;
 	}
@@ -212,9 +232,16 @@ namespace Horizon::RHI
 			return nullptr;
 		}
 
-		if (!desc.pColorHeap)
+		GfxDescriptorHeapDesc colorHeapDesc = {};
+
+		colorHeapDesc.type = GfxDescriptorHeapType::Color;
+		colorHeapDesc.capacity = kMaxSwapchainImages;
+
+		GfxDescriptorHeap* pColorHeap = CreateDescriptorHeap(colorHeapDesc);
+
+		if (!pColorHeap)
 		{
-			Terminal::Error(StringOps::GetName(this), "Swapchain needs a color descriptor heap to build its render targets");
+			Terminal::Error(StringOps::GetName(this), "Swapchain could not take a color descriptor block for its render targets");
 			return nullptr;
 		}
 
@@ -224,6 +251,7 @@ namespace Horizon::RHI
 		pSwapchain->m_ownerDevice = this;
 		pSwapchain->m_device = this;
 		pSwapchain->m_desc = desc;
+		pSwapchain->m_colorHeap = pColorHeap;
 		pSwapchain->m_syncInterval = Helpers::ToSyncInterval(desc.presentMode);
 		pSwapchain->m_presentFlags = Helpers::ToPresentFlags(desc.presentMode);
 
@@ -563,6 +591,89 @@ namespace Horizon::RHI
 		m_queues.Remove(pQueue);
 	}
 
+	u32 D3D12Device::AllocateDescriptorBlock(GfxDescriptorHeapType type, u32 count)
+	{
+		ScopedLock<PAL::CriticalSection> lock(m_descriptorLock);
+
+		DescriptorRoot& root = m_descriptorRoots[u32(type)];
+
+		for (usize i = 0; i < root.freeRanges.GetCount(); i++)
+		{
+			DescriptorRange& range = root.freeRanges[i];
+
+			if (range.count < count)
+				continue;
+
+			const u32 base = range.base;
+
+			range.base += count;
+			range.count -= count;
+
+			if (range.count == 0)
+				root.freeRanges.RemoveAt(i);
+
+			root.blockCount++;
+			return base;
+		}
+
+		if (count > root.capacity - root.top)
+		{
+			Terminal::Error(StringOps::GetName(this), "Descriptor root {} cannot give {} descriptors, {} of {} are taken",
+				u32(type), count, root.top, root.capacity);
+			return kInvalid32;
+		}
+
+		const u32 base = root.top;
+
+		root.top += count;
+		root.blockCount++;
+
+		return base;
+	}
+
+	void D3D12Device::ReleaseDescriptorBlock(GfxDescriptorHeapType type, u32 base, u32 count)
+	{
+		ScopedLock<PAL::CriticalSection> lock(m_descriptorLock);
+
+		DescriptorRoot& root = m_descriptorRoots[u32(type)];
+
+		if (root.blockCount == 0)
+		{
+			Terminal::Error(StringOps::GetName(this), "Descriptor root {} got block {}+{} back but has no blocks out", u32(type), base, count);
+			return;
+		}
+
+		List<DescriptorRange>& ranges = root.freeRanges;
+		usize at = 0;
+
+		while (at < ranges.GetCount() && ranges[at].base < base)
+			at++;
+
+		ranges.PushAt(at, DescriptorRange{ base, count });
+
+		if (at + 1 < ranges.GetCount() && ranges[at].base + ranges[at].count == ranges[at + 1].base)
+		{
+			ranges[at].count += ranges[at + 1].count;
+			ranges.RemoveAt(at + 1);
+		}
+
+		if (at > 0 && ranges[at - 1].base + ranges[at - 1].count == ranges[at].base)
+		{
+			ranges[at - 1].count += ranges[at].count;
+			ranges.RemoveAt(at);
+		}
+
+		const DescriptorRange& last = ranges.Back();
+
+		if (last.base + last.count == root.top)
+		{
+			root.top = last.base;
+			ranges.PopBack();
+		}
+
+		root.blockCount--;
+	}
+
 	void D3D12Device::WaitIdle()
 	{
 		if (!m_idleFence)
@@ -576,6 +687,40 @@ namespace Horizon::RHI
 
 			if (m_idleFence->GetCompletedValue() < value)
 				m_idleFence->SetEventOnCompletion(value, nullptr);
+		}
+	}
+
+	void D3D12Device::CreateDescriptorRoots(const GfxDeviceDesc& desc)
+	{
+		u32 capacities[kDescriptorRootCount] = {};
+
+		capacities[u32(GfxDescriptorHeapType::Resource)] = desc.resourceDescriptorCapacity;
+		capacities[u32(GfxDescriptorHeapType::Sampler)] = desc.samplerDescriptorCapacity;
+		capacities[u32(GfxDescriptorHeapType::Color)] = desc.colorDescriptorCapacity;
+		capacities[u32(GfxDescriptorHeapType::Depth)] = desc.depthDescriptorCapacity;
+
+		for (u32 i = 0; i < kDescriptorRootCount; i++)
+		{
+			const GfxDescriptorHeapType type = GfxDescriptorHeapType(i);
+			const b8 bShaderVisible = type == GfxDescriptorHeapType::Resource || type == GfxDescriptorHeapType::Sampler;
+
+			DescriptorRoot& root = m_descriptorRoots[i];
+
+			D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
+
+			heapDesc.Type = Helpers::ToDescriptorHeapType(type);
+			heapDesc.NumDescriptors = capacities[i];
+			heapDesc.Flags = bShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+				: D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+
+			HRESULT hr = m_device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&root.pHeap));
+			CHECK_HR(hr, "ID3D12DescriptorHeap - CreateDescriptorHeap");
+
+			root.descriptorSize = m_device->GetDescriptorHandleIncrementSize(heapDesc.Type);
+			root.cpuStart = root.pHeap->GetCPUDescriptorHandleForHeapStart();
+			root.gpuStart = bShaderVisible ? root.pHeap->GetGPUDescriptorHandleForHeapStart()
+				: D3D12_GPU_DESCRIPTOR_HANDLE{};
+			root.capacity = capacities[i];
 		}
 	}
 

@@ -17,14 +17,15 @@ namespace Horizon::RHI
 	{
 		ReleaseImages();
 
+		if (m_colorHeap)
+			Memory::Allocator::Delete(m_colorHeap);
+
 		if (m_swapchain)
 			m_swapchain->Release();
 	}
 
 	void D3D12Swapchain::AcquireImages()
 	{
-		auto* pColorHeap = static_cast<D3D12DescriptorHeap*>(m_desc.pColorHeap);
-
 		m_images.Resize(m_desc.imageCount);
 
 		for (u32 i = 0; i < m_desc.imageCount; i++)
@@ -44,7 +45,7 @@ namespace Horizon::RHI
 			CHECK_HR(hr, "IDXGISwapChain4 - GetBuffer");
 
 			m_images[i] = pImage;
-			pColorHeap->CreateRenderTargetView(pImage);
+			m_colorHeap->CreateRenderTargetView(pImage);
 		}
 	}
 
@@ -92,6 +93,7 @@ namespace Horizon::RHI
 		CHECK_REASON(hr, "IDXGISwapChain4 - Present");
 
 		m_imageFenceValues[m_imageIndex] = pQueue->Signal(pFence);
+		m_device->AdvanceFrame();
 	}
 
 	void D3D12Swapchain::Resize(u32 width, u32 height)
@@ -101,6 +103,7 @@ namespace Horizon::RHI
 
 		m_device->WaitIdle();
 		ReleaseImages();
+		m_colorHeap->FlushPending();
 
 		const DXGI_FORMAT format = Helpers::ToSwapchainFormat(Helpers::ToFormat(m_desc.format));
 

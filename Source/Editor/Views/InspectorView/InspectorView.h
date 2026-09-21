@@ -23,7 +23,7 @@ namespace Horizon::Editor
 		~InspectorView();
 
 		void OnInvoke() final;
-		void OnRender() final;
+		void OnRender(const Engine::EngineFrame& context) final;
 
 	private:
 		Engine::ReflectionSystem* m_reflSys;

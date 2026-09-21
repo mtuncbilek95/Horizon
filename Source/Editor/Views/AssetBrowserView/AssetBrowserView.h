@@ -33,7 +33,7 @@ namespace Horizon::Editor
 
 	public:
 		void OnInvoke() final;
-		void OnRender() final;
+		void OnRender(const Engine::EngineFrame& context) final;
 
 	private:
 		void RenderToolbar(DomainFolder* pFolder);

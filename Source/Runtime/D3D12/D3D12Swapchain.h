@@ -9,6 +9,7 @@ namespace Horizon::RHI
 {
 	class D3D12Device;
 	class D3D12Texture;
+	class GfxDescriptorHeap;
 
 	class D3D12Swapchain final : public GfxSwapchain
 	{
@@ -30,6 +31,7 @@ namespace Horizon::RHI
 
 		IDXGISwapChain4* m_swapchain = nullptr;
 		D3D12Device* m_device = nullptr;
+		GfxDescriptorHeap* m_colorHeap = nullptr;
 
 		List<D3D12Texture*> m_images;
 

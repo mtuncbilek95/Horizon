@@ -23,7 +23,7 @@ namespace Horizon::Editor
 		~SceneView() = default;
 
 		void OnInvoke() final;
-		void OnRender() final;
+		void OnRender(const Engine::EngineFrame& context) final;
 
 		b8 IsFullBleed() const { return true; }
 
@@ -34,5 +34,10 @@ namespace Horizon::Editor
 		Engine::RenderSystem* m_renderer = nullptr;
 		Engine::CameraSystem* m_camera = nullptr;
 		Engine::WorldService* m_world = nullptr;
+
+		f32 m_fpsElapsed = 0;
+		f32 m_fpsFrameCount = 0;
+		f32 m_fpsInterval = 0.5f;
+		f32 m_fps = 0;
 	};
 }

@@ -37,7 +37,6 @@ namespace Horizon::Editor
 		EditorRendererDesc renderDesc = {};
 		renderDesc.pDevice = pGraphSub->GetDevice();
 		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
-		renderDesc.pResourceHeap = pGraphSub->GetResourceHeap();
 		renderDesc.colorFormat = m_swapchain->GetDesc().format;
 
 		m_editorRenderer = Memory::Allocator::Create<EditorRenderer>(Memory::CurrLoc(), renderDesc);
@@ -131,7 +130,7 @@ namespace Horizon::Editor
 		m_editorRenderer->BeginRender(ctx.DeltaTime());
 
 		m_menuRegistry->RenderGUI();
-		m_viewRegistry->RenderGUI();
+		m_viewRegistry->RenderGUI(ctx);
 
 		const b8 dragging = m_editorRenderer->CheckMouseDragging();
 		m_engineWindow->SetMouseCapture(dragging);

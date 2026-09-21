@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Engine/Core/EngineFrame.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <string>
 
@@ -20,7 +21,7 @@ namespace Horizon::Editor
 		virtual ~ViewObject() = default;
 
 		virtual void OnInvoke() = 0;
-		virtual void OnRender() = 0;
+		virtual void OnRender(const Engine::EngineFrame& context) = 0;
 
 		virtual b8 IsFullBleed() const { return false; }
 

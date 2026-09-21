@@ -12,12 +12,19 @@ namespace Horizon::RHI
 	class D3D12DescriptorHeap final : public GfxDescriptorHeap
 	{
 		friend class D3D12Device;
+
+		struct PendingSlot
+		{
+			u32 index = kInvalid32;
+			u64 frame = 0;
+		};
+
 	public:
 		~D3D12DescriptorHeap() final;
 
 		u32 Allocate() final;
 		void Free(u32 index) final;
-		void Recycle() final;
+		void FlushPending() final;
 
 		u32 CreateShaderView(GfxTexture* pTexture) final;
 		u32 CreateStorageView(GfxTexture* pTexture, u32 mipLevel = 0) final;
@@ -30,14 +37,14 @@ namespace Horizon::RHI
 		u64 GetGpuHandle(u32 index) const final { return GpuAt(index).ptr; }
 
 		ID3D12DescriptorHeap* Handle() const { return m_heap; }
+		u32 Base() const { return m_base; }
 
 		D3D12_CPU_DESCRIPTOR_HANDLE CpuAt(u32 index) const { return { m_cpuStart.ptr + usize(index) * m_descriptorSize }; }
 		D3D12_GPU_DESCRIPTOR_HANDLE GpuAt(u32 index) const { return { m_gpuStart.ptr + u64(index) * m_descriptorSize }; }
 		u32 IndexOf(D3D12_CPU_DESCRIPTOR_HANDLE handle) const { return u32((handle.ptr - m_cpuStart.ptr) / m_descriptorSize); }
 
 	private:
-		static constexpr u32 kMaxPendingFrames = 8;
-
+		void ReclaimPending();
 		b8 ExpectType(GfxDescriptorHeapType type, const char* pWhat) const;
 
 		ID3D12DescriptorHeap* m_heap = nullptr;
@@ -46,10 +53,10 @@ namespace Horizon::RHI
 		D3D12_GPU_DESCRIPTOR_HANDLE m_gpuStart{};
 
 		u32 m_descriptorSize = 0;
+		u32 m_base = 0;
 		u32 m_top = 0;
 
 		List<u32> m_freeList;
-		List<u32> m_pending[kMaxPendingFrames];
-		u32 m_pendingSlot = 0;
+		List<PendingSlot> m_pending;
 	};
 }

@@ -56,7 +56,7 @@ namespace Horizon::Editor
 		style.Colors[ImGuizmo::PLANE_Z] = ImVec4(0.2f, 0.2f, 0.9f, 1.f);
 	}
 
-	void SceneView::OnRender()
+	void SceneView::OnRender(const Engine::EngineFrame& context)
 	{
 		if (m_renderer == nullptr)
 		{
@@ -84,6 +84,21 @@ namespace Horizon::Editor
 
 		const ImVec2 imageMin = ImGui::GetCursorScreenPos();
 		ImGui::Image(ImTextureID(handle), area);
+
+		ImGui::SetCursorScreenPos(ImVec2(imageMin.x + 24, imageMin.y + 24));
+
+		m_fpsElapsed += context.DeltaTime();
+		m_fpsFrameCount++;
+
+		if (m_fpsElapsed >= m_fpsInterval)
+		{
+			m_fps = static_cast<f32>(m_fpsFrameCount) / m_fpsElapsed;
+			m_fpsElapsed = 0.0f;
+			m_fpsFrameCount = 0;
+		}
+
+		std::string fpsCounter = std::format("FPS: {:.2f}", m_fps);
+		ImGui::TextColored(ImVec4(0.1, 0.8, 0.2, 1), fpsCounter.c_str());
 
 		RenderGizmo({ imageMin.x, imageMin.y }, { area.x, area.y });
 	}

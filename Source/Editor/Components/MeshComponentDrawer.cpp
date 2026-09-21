@@ -1,6 +1,8 @@
 #include "MeshComponentDrawer.h"
 
 #include <Editor/Font/IconsFontAwesome6.h>
+#include <Editor/Domain/DomainService.h>
+#include <Editor/Domain/DomainFile.h>
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
@@ -46,8 +48,13 @@ namespace Horizon::Editor
 		ImGui::TextUnformatted("Mesh");
 		ImGui::TableNextColumn();
 
+		// TODO: Clean this shit up man!
+		DomainFile* pFile = nullptr;
+		if(pMeshComp->m_meshId.GetId().IsValid())
+			pFile = GetEngine()->RequestService<DomainService>()->FindFileByGuid(pMeshComp->m_meshId.GetId());
+
 		const Guid& currentId = pMeshComp->m_meshId.GetId();
-		const std::string label = (currentId.IsValid() ? currentId.ToString() : std::string("None")) + "##meshId";
+		const std::string label = (currentId.IsValid() ? pFile->GetName() : std::string("None")) + "##meshId";
 		const f32 width = std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f);
 
 		ImGui::Button(label.c_str(), ImVec2(width, 0.0f));

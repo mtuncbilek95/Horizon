@@ -23,6 +23,7 @@
 namespace Horizon::Engine
 {
 	static constexpr RHI::GfxTextureFormat sFunDepthFormat = RHI::GfxTextureFormat::D32_FLOAT;
+	static constexpr u32 sFunHeapCapacity = 16;
 
 	RHI::GfxPipeline* sFunPipeline = nullptr;
 	RHI::GfxDescriptorHeap* sFunDepthHeap = nullptr;
@@ -108,17 +109,16 @@ namespace Horizon::Engine
 		return pPipeline;
 	}
 
-	static RHI::GfxDescriptorHeap* CreateFunDepthHeap(RHI::GfxDevice* pDevice)
+	static RHI::GfxDescriptorHeap* CreateFunHeap(RHI::GfxDevice* pDevice, RHI::GfxDescriptorHeapType type, u32 capacity)
 	{
 		RHI::GfxDescriptorHeapDesc heapDesc = {};
-		heapDesc.type = RHI::GfxDescriptorHeapType::Depth;
-		heapDesc.capacity = 16;
-		heapDesc.shaderVisible = false;
+		heapDesc.type = type;
+		heapDesc.capacity = capacity;
 
 		RHI::GfxDescriptorHeap* pHeap = pDevice->CreateDescriptorHeap(heapDesc);
 
 		if (pHeap == nullptr)
-			Terminal::Error("RenderSystem", "Depth descriptor heap could not be created");
+			Terminal::Error("RenderSystem", "Descriptor heap type {} with capacity {} could not be created", u32(type), capacity);
 
 		return pHeap;
 	}
@@ -144,7 +144,6 @@ namespace Horizon::Engine
 		texDesc.usage = RHI::GfxTextureUsage::DepthStencil;
 
 		RHI::GfxTexture* pTexture = pDevice->CreateTexture(texDesc);
-
 		if (pTexture == nullptr)
 		{
 			Terminal::Error("RenderSystem", "Scene depth target {}x{} could not be created", size.X(), size.Y());
@@ -170,15 +169,15 @@ namespace Horizon::Engine
 		}
 
 		m_device = m_context->GetDevice();
-		m_resourceHeap = m_context->GetResourceHeap();
-		m_colorHeap = m_context->GetColorHeap();
 		m_queue = m_context->GetGraphicsQueue();
 
-		sFunDepthHeap = CreateFunDepthHeap(m_device);
+		m_resourceHeap = CreateFunHeap(m_device, RHI::GfxDescriptorHeapType::Resource, sFunHeapCapacity);
+		m_colorHeap = CreateFunHeap(m_device, RHI::GfxDescriptorHeapType::Color, sFunHeapCapacity);
+		sFunDepthHeap = CreateFunHeap(m_device, RHI::GfxDescriptorHeapType::Depth, sFunHeapCapacity);
 
-		if (sFunDepthHeap == nullptr)
+		if (m_resourceHeap == nullptr || m_colorHeap == nullptr || sFunDepthHeap == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "Depth heap is unavailable, render system stays down");
+			Terminal::Error(StringOps::GetName(this), "Descriptor heaps are unavailable, render system stays down");
 			return false;
 		}
 
@@ -222,10 +221,6 @@ namespace Horizon::Engine
 				viewProj = camMatrix.m_viewProjection;
 			});
 
-		m_colorHeap->Recycle();
-		m_resourceHeap->Recycle();
-		sFunDepthHeap->Recycle();
-
 		m_fence->WaitCPU(slot.fenceValue);
 
 		slot.pTargetCmd->Begin();
@@ -242,7 +237,7 @@ namespace Horizon::Engine
 			slot.pTargetCmd->Barrier(&beginBarrier, 1);
 		}
 		RHI::GfxRenderBeginDesc renderDesc = RHI::GfxRenderBeginDesc()
-			.AddColorTarget(slot.pTargetTexture, RHI::GfxLoadOp::Clear, { 0.39f, 0.58f, 0.92f, 1.f })
+			.AddColorTarget(slot.pTargetTexture, RHI::GfxLoadOp::Clear, { 0.0f, 0.0f, 0.0f, 1.f })
 			.SetDepth(sFunDepthTextures[m_frameIndex], RHI::GfxLoadOp::Clear, 1.0f)
 			.SetSize(slot.pTargetTexture->GetDesc().width, slot.pTargetTexture->GetDesc().height);
 
@@ -272,7 +267,14 @@ namespace Horizon::Engine
 				slot.pTargetCmd->SetGraphicsConstants(&mvp, sizeof(Math::Mat4f) / sizeof(u32));
 				slot.pTargetCmd->BindVertexBuffer(pAsset->GetVertexBuffer(), 0, pAsset->GetVertexStride(), 0);
 				slot.pTargetCmd->BindIndexBuffer(pAsset->GetIndexBuffer(), RHI::GfxIndexType::Index32);
-				slot.pTargetCmd->DrawIndexed(pAsset->GetIndexCount(), 1);
+
+				const List<MeshSubMesh>& subMeshes = pAsset->GetSubMeshes();
+
+				for (usize i = 0; i < subMeshes.GetCount(); ++i)
+				{
+					const MeshSubMesh& subMesh = subMeshes[i];
+					slot.pTargetCmd->DrawIndexed(subMesh.indexCount, 1, subMesh.indexOffset, static_cast<i32>(subMesh.vertexOffset));
+				}
 			});
 
 		slot.pTargetCmd->EndRendering();
@@ -313,12 +315,20 @@ namespace Horizon::Engine
 			Memory::Allocator::Delete(m_slots[i].pTargetCmd);
 		}
 
-		m_colorHeap->Recycle();
-		m_resourceHeap->Recycle();
+		if (m_colorHeap)
+		{
+			Memory::Allocator::Delete(m_colorHeap);
+			m_colorHeap = nullptr;
+		}
+
+		if (m_resourceHeap)
+		{
+			Memory::Allocator::Delete(m_resourceHeap);
+			m_resourceHeap = nullptr;
+		}
 
 		if (sFunDepthHeap)
 		{
-			sFunDepthHeap->Recycle();
 			Memory::Allocator::Delete(sFunDepthHeap);
 			sFunDepthHeap = nullptr;
 		}
@@ -367,11 +377,10 @@ namespace Horizon::Engine
 		texDesc.type = RHI::GfxTextureType::Tex2D;
 		texDesc.format = RHI::GfxTextureFormat::RGBA8_UNORM;
 		texDesc.usage = RHI::GfxTextureUsage::RenderTarget | RHI::GfxTextureUsage::Sampled;
-		texDesc.clearColor = { 0.39f, 0.58f, 0.92f, 1.f };
+		texDesc.clearColor = { 0.0f, 0.0f, 0.0f, 1.f };
 		texDesc.format = RHI::GfxTextureFormat::RGBA8_UNORM;
 
 		slot.pTargetTexture = m_device->CreateTexture(texDesc);
-
 		if (slot.pTargetTexture == nullptr)
 		{
 			Terminal::Error(StringOps::GetName(this), "Scene color target {}x{} could not be created",

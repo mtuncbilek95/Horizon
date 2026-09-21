@@ -7,14 +7,11 @@
 
 namespace Horizon::RHI
 {
-	class GfxDescriptorHeap;
-
 	constexpr u32 kMaxSwapchainImages = 8;
 
 	struct GfxSwapchainDesc
 	{
 		void* pWindowHandle = nullptr;
-		GfxDescriptorHeap* pColorHeap = nullptr;
 		GfxTextureFormat format = GfxTextureFormat::RGBA8_UNORM;
 		GfxPresentMode presentMode = GfxPresentMode::Immediate;
 		u32 width = 0;

@@ -55,7 +55,7 @@ namespace Horizon::Editor
 		m_context.BootstrapContext(GetContext()->pEngine, "SceneHierarchyView");
 	}
 
-	void SceneHierarchyView::OnRender()
+	void SceneHierarchyView::OnRender(const Engine::EngineFrame& context)
 	{
 		m_entities.Clear();
 		m_currentScene->ForEach<Engine::NameComponent>([&](Engine::EntityHandle entt, const Engine::NameComponent&)
@@ -99,9 +99,9 @@ namespace Horizon::Editor
 		pMultiIO = ImGui::EndMultiSelect();
 		m_selection.ApplyRequests(pMultiIO);
 
-		SceneHierarchyContext context = {};
-		context.pEngine = GetContext()->pEngine;
-		context.pCurrentScene = m_currentScene;
+		SceneHierarchyContext sceneContext = {};
+		sceneContext.pEngine = GetContext()->pEngine;
+		sceneContext.pCurrentScene = m_currentScene;
 
 		void* pIt = nullptr;
 		ImGuiID selectedId = 0;
@@ -111,18 +111,18 @@ namespace Horizon::Editor
 			const Engine::EntityHandle entt = m_currentScene->GetEntities().GetHandleAt(selectedId);
 
 			if (entt.IsValid())
-				context.selectedEntities.PushBack(entt);
+				sceneContext.selectedEntities.PushBack(entt);
 		}
 
-		if (context.selectedEntities.GetCount() == 1)
-			GetContext()->pSelection->Set<Engine::EntityTag>(context.selectedEntities[0]);
+		if (sceneContext.selectedEntities.GetCount() == 1)
+			GetContext()->pSelection->Set<Engine::EntityTag>(sceneContext.selectedEntities[0]);
 		else
 			GetContext()->pSelection->Clear();
 
-		m_context.RenderGUI(sContextName.data(), context);
+		m_context.RenderGUI(sContextName.data(), sceneContext);
 
-		if (context.renameEntity.IsValid())
-			BeginRename(context.renameEntity);
+		if (sceneContext.renameEntity.IsValid())
+			BeginRename(sceneContext.renameEntity);
 
 		RenderRenameModal();
 	}
