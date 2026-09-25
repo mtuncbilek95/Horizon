@@ -17,6 +17,6 @@ namespace Horizon::Engine
 		~MeshComponent() = default;
 
 		HFIELD();
-		AssetHandle<MeshAsset> m_meshId;
+		AssetHandle<MeshAsset> m_meshHandle;
 	};
 }

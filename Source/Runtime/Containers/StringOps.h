@@ -9,6 +9,8 @@ namespace Horizon
 {
 	struct H_EXPORT StringOps
 	{
+		static void CopyToChar(c8* pDst, const std::string& src);
+
 		static b8 IsSeparator(c8 value);
 		static c8 ToLowerAscii(c8 value);
 		static b8 StartsWithNoCase(const std::string& value, const std::string& prefix);

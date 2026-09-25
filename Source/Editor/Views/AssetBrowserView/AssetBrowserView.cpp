@@ -186,9 +186,7 @@ namespace Horizon::Editor
 
 			if (!entry.IsFolder() && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover))
 			{
-				const std::string payloadType = "HZ_ASSET_" + entry.pFile->GetMeta().assetTypeName;
-
-				ImGui::SetDragDropPayload(payloadType.c_str(), &entry.pFile->GetID(), sizeof(Guid));
+				ImGui::SetDragDropPayload("HZ_ASSET_FILE", &entry.pFile, sizeof(DomainFile*));
 
 				ImGui::TextUnformatted(ICON_FA_FILE);
 				ImGui::SameLine();

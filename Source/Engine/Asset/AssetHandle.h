@@ -21,6 +21,9 @@ namespace Horizon::Engine
 		const Guid& GetId() const { return m_id; }
 		T* GetAsset() const { return m_object; }
 
+		void SetId(const Guid& id) { m_id = id; }
+		void SetAsset(AssetObject* pObj) { m_object = (T*)pObj; }
+
 	private:
 		Guid m_id;
 		T* m_object = nullptr;

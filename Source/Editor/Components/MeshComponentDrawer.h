@@ -16,5 +16,8 @@ namespace Horizon::Editor
 		void OnRender();
 
 		Engine::ComponentTypeId GetComponentId() const { return Reflect::TypeOf<Engine::MeshComponent>(); }
+
+	private:
+		std::string m_currentLabel;
 	};
 }

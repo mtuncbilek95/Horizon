@@ -250,15 +250,12 @@ namespace Horizon::Engine
 
 		currentScene.ForEach<MeshComponent, TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
 			{
-				AssetHandle<MeshAsset>& meshHandle = mesh.m_meshId;
+				AssetHandle<MeshAsset> meshHandle = mesh.m_meshHandle;
 
 				if (!meshHandle.GetId().IsValid())
 					return;
 
-				if (!meshHandle.GetAsset())
-					meshHandle = pAssetService->RequestAsset<MeshAsset>(meshHandle.GetId());
-
-				MeshAsset* pAsset = meshHandle.GetAsset();
+				MeshAsset* pAsset = nullptr;
 
 				if (!pAsset)
 					return;

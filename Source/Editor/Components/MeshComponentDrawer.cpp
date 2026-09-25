@@ -48,32 +48,27 @@ namespace Horizon::Editor
 		ImGui::TextUnformatted("Mesh");
 		ImGui::TableNextColumn();
 
-		// TODO: Clean this shit up man!
-		DomainFile* pFile = nullptr;
-		if(pMeshComp->m_meshId.GetId().IsValid())
-			pFile = GetEngine()->RequestService<DomainService>()->FindFileByGuid(pMeshComp->m_meshId.GetId());
+		if (!pMeshComp->m_meshHandle.GetId().IsValid())
+			m_currentLabel = "None";
 
-		const Guid& currentId = pMeshComp->m_meshId.GetId();
-		const std::string label = (currentId.IsValid() ? pFile->GetName() : std::string("None")) + "##meshId";
 		const f32 width = std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f);
-
-		ImGui::Button(label.c_str(), ImVec2(width, 0.0f));
+		ImGui::Button(m_currentLabel.c_str(), ImVec2(width, 0.0f));
 
 		if (ImGui::BeginDragDropTarget())
 		{
-			if (const ImGuiPayload* pPayload = ImGui::AcceptDragDropPayload("HZ_ASSET_MeshAsset"))
+			if (const ImGuiPayload* pPayload = ImGui::AcceptDragDropPayload("HZ_ASSET_FILE", ImGuiDragDropFlags_AcceptBeforeDelivery))
 			{
-				if (pPayload->DataSize == sizeof(Guid))
-				{
-					Guid droppedId;
-					std::memcpy(&droppedId, pPayload->Data, sizeof(Guid));
+				if (pPayload->DataSize != sizeof(DomainFile*))
+					return;
 
-					pMeshComp->m_meshId = Engine::AssetHandle<Engine::MeshAsset>(droppedId, nullptr);
-					Terminal::Info(StringOps::GetName(this), "{} dropped on MeshId", droppedId.ToString());
-				}
-				else
+				DomainFile* pDropped = *static_cast<DomainFile* const*>(pPayload->Data);
+				const b8 acceptable = pDropped->GetMeta().assetTypeName == "MeshAsset";
+
+				if (acceptable && pPayload->IsDelivery())
 				{
-					Terminal::Error(StringOps::GetName(this), "Dropped payload is {} bytes, a Guid was expected", pPayload->DataSize);
+					m_currentLabel = pDropped->GetName();
+					pMeshComp->m_meshHandle.SetId(pDropped->GetID());
+					Terminal::Info(StringOps::GetName(this), "{} dropped on MeshId", pDropped->GetID().ToString());
 				}
 			}
 

@@ -2,6 +2,11 @@
 
 namespace Horizon
 {
+	void StringOps::CopyToChar(c8* pDst, const std::string& src)
+	{
+		std::memcpy(pDst, src.data(), src.size());
+	}
+
 	b8 StringOps::IsSeparator(c8 value)
 	{
 		return value == '\\' || value == '/';

@@ -38,14 +38,6 @@ namespace Horizon::Engine
 
 	void AssetService::OnFinalize()
 	{
-		for (auto& [id, pObject] : m_objects)
-		{
-			if (pObject)
-				pObject->GetStreamer()->Unload(pObject);
-		}
-
-		m_objects.clear();
-
 		for (auto* pStreamer : m_streamers)
 		{
 			pStreamer->OnFinalize();
@@ -77,53 +69,7 @@ namespace Horizon::Engine
 
 		m_sources.PushBack(pSource);
 	}
-
-	AssetObject* AssetService::RequestObject(const Guid& id, Reflect::TypeHandle assetType)
-	{
-		auto it = m_objects.find(id);
-
-		if (it != m_objects.end())
-			return it->second;
-
-		const AssetEntry* pEntry = FindEntry(id);
-
-		if (pEntry == nullptr)
-			return nullptr;
-
-		AssetObject* pObject = nullptr;
-
-		if (!(pEntry->assetTypeHandle == assetType))
-		{
-			Terminal::Error(StringOps::GetName(this), "{} was requested with a type that does not match its entry", id.ToString());
-		}
-		else
-		{
-			AssetStreamer* pStreamer = FindStreamer(assetType);
-
-			if (pStreamer == nullptr)
-				Terminal::Error(StringOps::GetName(this), "{} has no streamer for its asset type", id.ToString());
-			else
-				pObject = pStreamer->Load(*pEntry);
-		}
-
-		m_objects[id] = pObject;
-
-		return pObject;
-	}
-
-	const AssetEntry* AssetService::FindEntry(const Guid& id) const
-	{
-		for (auto* pSource : m_sources)
-		{
-			const AssetEntry* pEntry = pSource->Find(id);
-
-			if (pEntry)
-				return pEntry;
-		}
-
-		return nullptr;
-	}
-
+	
 	AssetStreamer* AssetService::FindStreamer(Reflect::TypeHandle handle)
 	{
 		auto it = m_streamerLookup.find(handle);
