@@ -5,22 +5,24 @@
 #include <Editor/Models/SelectionModel.h>
 
 #include <Engine/Core/Engine.h>
-#include <Engine/World/ECS/Scene.h>
 #include <Engine/World/Components/CameraComponent.h>
-#include <Engine/World/Components/TransformComponent.h>
 #include <Engine/World/Components/EditorOnlyComponent.h>
+#include <Engine/World/Components/TransformComponent.h>
+#include <Engine/World/ECS/Scene.h>
 #include <Engine/World/Systems/RenderSystem.h>
-#include <Engine/World/Systems/CameraSystem.h>
 #include <Engine/World/WorldService.h>
 
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
-#include <Runtime/Math/Scalar.h>
 #include <Runtime/Math/Mat4f.h>
 #include <Runtime/Math/Quat.h>
+#include <Runtime/Math/Scalar.h>
+#include <Runtime/Math/Vec3f.h>
 
 #include <imgui.h>
 #include <ImGuizmo.h>
+
+#include <cmath>
 
 namespace Horizon::Editor
 {
@@ -28,6 +30,11 @@ namespace Horizon::Editor
 	{
 		ImGuizmo::OPERATION GuizmoOperation = ImGuizmo::TRANSLATE;
 		ImGuizmo::MODE GuizmoMode = ImGuizmo::WORLD;
+
+		constexpr f32 PitchLimit = Math::HalfPi - 0.01f;
+		constexpr f32 BoostMultiplier = 3.0f;
+		constexpr f32 MinFlySpeed = 0.1f;
+		constexpr f32 MaxFlySpeed = 500.0f;
 	}
 
 	void SceneView::OnInvoke()
@@ -82,6 +89,11 @@ namespace Horizon::Editor
 		if (pCamera == nullptr)
 			return;
 
+		auto* pCamTransform = pScene->FindComponent<Engine::TransformComponent>(m_editorCamera);
+
+		if (pCamTransform == nullptr)
+			return;
+
 		const Math::Vec2f requested = { area.x, area.y };
 
 		if (pCamera->m_targetScreen != requested)
@@ -93,7 +105,26 @@ namespace Horizon::Editor
 			return;
 
 		const ImVec2 imageMin = ImGui::GetCursorScreenPos();
-		ImGui::Image(ImTextureID(handle), area);
+		const ImVec2 imageMax = ImVec2(imageMin.x + area.x, imageMin.y + area.y);
+
+		const b8 hasSelection = GetContext()->pSelection->Is<Engine::EntityTag>();
+		const b8 gizmoWantsMouse = hasSelection && (ImGuizmo::IsOver() || ImGuizmo::IsUsing());
+
+		if (m_flying || !gizmoWantsMouse)
+		{
+			ImGui::InvisibleButton("##scene_input", area, ImGuiButtonFlags_MouseButtonRight);
+			m_flying = ImGui::IsItemActive();
+		}
+		else
+		{
+			ImGui::Dummy(area);
+			m_flying = false;
+		}
+
+		ImGui::GetWindowDrawList()->AddImage(ImTextureID(handle), imageMin, imageMax);
+
+		if (m_flying)
+			UpdateFreeRoam(context, *pCamTransform);
 
 		ImGui::SetCursorScreenPos(ImVec2(imageMin.x + 24, imageMin.y + 24));
 
@@ -127,9 +158,57 @@ namespace Horizon::Editor
 		}
 
 		pScene->AddComponent(m_editorCamera, Engine::EditorOnlyComponent());
-		pScene->AddComponent(m_editorCamera, Engine::TransformComponent());
+
+		Engine::TransformComponent transform = {};
+		transform.m_position = Math::Vec3f(0.f, 2.f, 6.f);
+		transform.m_rotation = Math::Vec3f(Math::DegToRad(-15.f), 0.f, 0.f);
+		pScene->AddComponent(m_editorCamera, std::move(transform));
 
 		return pScene->AddComponent(m_editorCamera, Engine::CameraComponent());
+	}
+
+	void SceneView::UpdateFreeRoam(const Engine::EngineFrame& context, Engine::TransformComponent& transform)
+	{
+		ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+
+		const ImGuiIO& io = ImGui::GetIO();
+
+		f32 pitch = transform.m_rotation.X() - io.MouseDelta.y * m_lookSensitivity;
+		f32 yaw = transform.m_rotation.Y() - io.MouseDelta.x * m_lookSensitivity;
+		pitch = Math::Clamp(pitch, -PitchLimit, PitchLimit);
+
+		transform.m_rotation = Math::Vec3f(pitch, yaw, 0.f);
+
+		if (io.MouseWheel != 0.f)
+			m_flySpeed = Math::Clamp(m_flySpeed * (1.f + io.MouseWheel * 0.1f), MinFlySpeed, MaxFlySpeed);
+
+		const Math::Quat orientation = Math::Quat::FromEuler(transform.m_rotation);
+		const Math::Vec3f forward = orientation.RotateVector(Math::Vec3f(0.f, 0.f, -1.f));
+		const Math::Vec3f right = orientation.RotateVector(Math::Vec3f(1.f, 0.f, 0.f));
+		const Math::Vec3f up = Math::Vec3f(0.f, 1.f, 0.f);
+
+		Math::Vec3f move = Math::Vec3f::Zero();
+
+		if (ImGui::IsKeyDown(ImGuiKey_W))
+			move += forward;
+		if (ImGui::IsKeyDown(ImGuiKey_S))
+			move -= forward;
+		if (ImGui::IsKeyDown(ImGuiKey_D))
+			move += right;
+		if (ImGui::IsKeyDown(ImGuiKey_A))
+			move -= right;
+		if (ImGui::IsKeyDown(ImGuiKey_E))
+			move += up;
+		if (ImGui::IsKeyDown(ImGuiKey_Q))
+			move -= up;
+
+		const f32 length = std::sqrt(move | move);
+
+		if (length < Math::Quat::KindaSmallNumber)
+			return;
+
+		const f32 speed = m_flySpeed * (io.KeyShift ? BoostMultiplier : 1.f);
+		transform.m_position += (move / length) * (speed * context.DeltaTime());
 	}
 
 	void SceneView::RenderGizmo(const Math::Vec2f& imageMin, const Math::Vec2f& imageSize, const Engine::CameraComponent& camera)
@@ -139,13 +218,13 @@ namespace Horizon::Editor
 
 		Engine::Scene* pScene = m_world->GetCurrentWorld();
 		const Engine::EntityHandle entity = GetContext()->pSelection->Get<Engine::EntityTag>();
-
+		
 		auto* pTransform = pScene->FindComponent<Engine::TransformComponent>(entity);
 
 		if (pTransform == nullptr)
 			return;
 
-		if (ImGui::IsWindowHovered() && !ImGuizmo::IsUsing())
+		if (ImGui::IsWindowHovered() && !ImGuizmo::IsUsing() && !m_flying)
 		{
 			if (ImGui::IsKeyPressed(ImGuiKey_W))
 				GuizmoOperation = ImGuizmo::TRANSLATE;
@@ -184,10 +263,5 @@ namespace Horizon::Editor
 		pTransform->m_position = position;
 		pTransform->m_rotation = eulerRadians;
 		pTransform->m_scale = scale;
-	}
-
-	void SceneView::ControlEditorCamera(Engine::TransformComponent& transform)
-	{
-
 	}
 }

@@ -9,11 +9,10 @@
 namespace Horizon::Engine
 {
 	class RenderSystem;
-	class CameraSystem;
 	class WorldService;
-
 	class Scene;
 	class CameraComponent;
+	class TransformComponent;
 }
 
 namespace Horizon::Editor
@@ -33,13 +32,17 @@ namespace Horizon::Editor
 
 	private:
 		Engine::CameraComponent* EnsureEditorCamera(Engine::Scene* pScene);
+		void UpdateFreeRoam(const Engine::EngineFrame& context, Engine::TransformComponent& transform);
 		void RenderGizmo(const Math::Vec2f& imageMin, const Math::Vec2f& imageSize, const Engine::CameraComponent& camera);
-		void ControlEditorCamera(Engine::TransformComponent& transform);
 
 	private:
 		Engine::RenderSystem* m_renderer = nullptr;
 		Engine::WorldService* m_world = nullptr;
 		Engine::EntityHandle m_editorCamera;
+
+		b8 m_flying = false;
+		f32 m_flySpeed = 5.0f;
+		f32 m_lookSensitivity = 0.003f;
 
 		f32 m_fpsElapsed = 0;
 		f32 m_fpsFrameCount = 0;
