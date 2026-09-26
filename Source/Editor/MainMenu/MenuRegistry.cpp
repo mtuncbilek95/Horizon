@@ -1,5 +1,3 @@
-// MenuRegistry.cpp
-
 #include "MenuRegistry.h"
 
 #include <Editor/Attributes/MainMenuItemAttribute.h>
