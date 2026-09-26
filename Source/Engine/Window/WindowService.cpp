@@ -16,7 +16,7 @@ namespace Horizon::Engine
 		winDesc.height = 1080;
 		winDesc.mode = PAL::WindowMode::Windowed;
 		winDesc.titleName = "Horizon Engine";
-
+		winDesc.flags = PAL::WindowFlags::CustomTitleBar;
 
 		m_window = Memory::Allocator::Create<PAL::Window>(Memory::CurrLoc(), winDesc);
 		if (!m_window)

@@ -16,7 +16,7 @@ function(ConfigureWindowsLibrary TARGET)
 		PUBLIC 
 			user32.lib gdi32.lib shell32.lib 
 			Setupapi.lib windowscodecs.lib 
-			Synchronization.lib
+			Synchronization.lib dwmapi.lib
 	)
 endfunction()
 

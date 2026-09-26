@@ -44,6 +44,7 @@ namespace Horizon::Editor
 
 		m_editorContext.pEngine = GetEngine();
 		m_editorContext.pSelection = Memory::Allocator::Create<SelectionModel>(Memory::CurrLoc());
+		m_editorContext.pWindow = pWindowSub->GetWindow();
 
 		m_viewRegistry = Memory::Allocator::Create<ViewRegistry>(Memory::CurrLoc());
 		m_viewRegistry->BootstrapViews(m_editorContext);

@@ -5,6 +5,7 @@
 
 #include <Windows.h>
 #include <windowsx.h>
+#include <dwmapi.h>
 
 namespace Horizon::PAL
 {
@@ -14,7 +15,7 @@ namespace Horizon::PAL
 		HINSTANCE ToHINSTANCE(OSInstance i) { return (HINSTANCE)(uptr(i)); }
 		OSHandle ToOSHandle(HWND h) { return (OSHandle)(uptr(h)); }
 		OSInstance ToOSInstance(HMODULE m) { return (OSInstance)(uptr(m)); }
-		Window* GetWindowFromHandle(HWND hwnd) { return (Window*)GetWindowLongPtr(hwnd, -21); }
+		Window* GetWindowFromHandle(HWND hwnd) { return (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA); }
 
 		HCURSOR ToWin32Cursor(CursorType type)
 		{
@@ -49,15 +50,186 @@ namespace Horizon::PAL
 			}
 		}
 
+		ChromeButton ToChromeButton(WPARAM hitCode)
+		{
+			switch (hitCode)
+			{
+			case HTMINBUTTON:
+				return ChromeButton::Minimize;
+			case HTMAXBUTTON:
+				return ChromeButton::Maximize;
+			case HTCLOSE:
+				return ChromeButton::Close;
+			default:
+				return ChromeButton::None;
+			}
+		}
+
+		LRESULT HitTestCustomFrame(HWND hwnd, Window* pWindow, i32 screenX, i32 screenY)
+		{
+			POINT pt = { screenX, screenY };
+			ScreenToClient(hwnd, &pt);
+
+			RECT client = {};
+			GetClientRect(hwnd, &client);
+
+			const WindowChrome& chrome = pWindow->GetChrome();
+			const i32 border = i32(chrome.resizeBorder);
+
+			if (!pWindow->GetMaximized())
+			{
+				const b8 top = pt.y < border;
+				const b8 bottom = pt.y >= client.bottom - border;
+				const b8 left = pt.x < border;
+				const b8 right = pt.x >= client.right - border;
+
+				if (top && left)
+					return HTTOPLEFT;
+				if (top && right)
+					return HTTOPRIGHT;
+				if (bottom && left)
+					return HTBOTTOMLEFT;
+				if (bottom && right)
+					return HTBOTTOMRIGHT;
+				if (top)
+					return HTTOP;
+				if (bottom)
+					return HTBOTTOM;
+				if (left)
+					return HTLEFT;
+				if (right)
+					return HTRIGHT;
+			}
+
+			if (pt.y >= i32(chrome.captionHeight))
+				return HTCLIENT;
+
+			if (chrome.closeButton.Contains(pt.x, pt.y))
+				return HTCLOSE;
+			if (chrome.maximizeButton.Contains(pt.x, pt.y))
+				return HTMAXBUTTON;
+			if (chrome.minimizeButton.Contains(pt.x, pt.y))
+				return HTMINBUTTON;
+
+			for (const auto& area : chrome.clientAreas)
+			{
+				if (area.Contains(pt.x, pt.y))
+					return HTCLIENT;
+			}
+
+			return HTCAPTION;
+		}
+
+		void ExecuteChromeButton(HWND hwnd, ChromeButton button)
+		{
+			switch (button)
+			{
+			case ChromeButton::Minimize:
+				ShowWindow(hwnd, SW_MINIMIZE);
+				break;
+			case ChromeButton::Maximize:
+				ShowWindow(hwnd, IsZoomed(hwnd) ? SW_RESTORE : SW_MAXIMIZE);
+				break;
+			case ChromeButton::Close:
+				PostMessage(hwnd, WM_CLOSE, 0, 0);
+				break;
+			default:
+				break;
+			}
+		}
+
+		void SubmitScreenMouseMove(HWND hwnd, Window* pWindow, i32 screenX, i32 screenY)
+		{
+			POINT pt = { screenX, screenY };
+			ScreenToClient(hwnd, &pt);
+
+			InputMessage message = {};
+			message.type = InputMessageType::MouseMove;
+			message.mouseX = pt.x;
+			message.mouseY = pt.y;
+
+			pWindow->SubmitMessage(message);
+		}
+
 		LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		{
 			switch (msg)
 			{
-			case WM_CREATE:
+			case WM_NCCREATE:
 			{
 				Window* pWindow = (Window*)((LPCREATESTRUCT)lParam)->lpCreateParams;
-				SetWindowLongPtr(hwnd, -21, (LONG_PTR)pWindow);
-				break;
+				SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pWindow);
+				return DefWindowProc(hwnd, msg, wParam, lParam);
+			}
+			case WM_NCCALCSIZE:
+			{
+				Window* pWindow = GetWindowFromHandle(hwnd);
+
+				if (pWindow == nullptr || !pWindow->GetCustomFrame() || wParam == FALSE)
+					return DefWindowProc(hwnd, msg, wParam, lParam);
+
+				if (IsZoomed(hwnd))
+				{
+					NCCALCSIZE_PARAMS* pParams = (NCCALCSIZE_PARAMS*)lParam;
+
+					const UINT dpi = GetDpiForWindow(hwnd);
+					const i32 padded = GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+					const i32 frameX = GetSystemMetricsForDpi(SM_CXSIZEFRAME, dpi) + padded;
+					const i32 frameY = GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) + padded;
+
+					pParams->rgrc[0].left += frameX;
+					pParams->rgrc[0].top += frameY;
+					pParams->rgrc[0].right -= frameX;
+					pParams->rgrc[0].bottom -= frameY;
+				}
+
+				return 0;
+			}
+			case WM_NCHITTEST:
+			{
+				Window* pWindow = GetWindowFromHandle(hwnd);
+
+				if (pWindow == nullptr || !pWindow->GetCustomFrame())
+					return DefWindowProc(hwnd, msg, wParam, lParam);
+
+				return HitTestCustomFrame(hwnd, pWindow, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+			}
+			case WM_NCMOUSEMOVE:
+			{
+				Window* pWindow = GetWindowFromHandle(hwnd);
+
+				if (pWindow == nullptr || !pWindow->GetCustomFrame())
+					return DefWindowProc(hwnd, msg, wParam, lParam);
+
+				SubmitScreenMouseMove(hwnd, pWindow, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				return DefWindowProc(hwnd, msg, wParam, lParam);
+			}
+			case WM_NCLBUTTONDOWN:
+			{
+				Window* pWindow = GetWindowFromHandle(hwnd);
+				const ChromeButton button = ToChromeButton(wParam);
+
+				if (pWindow == nullptr || !pWindow->GetCustomFrame() || button == ChromeButton::None)
+					return DefWindowProc(hwnd, msg, wParam, lParam);
+
+				pWindow->SetPressedChromeButton(button);
+				return 0;
+			}
+			case WM_NCLBUTTONUP:
+			{
+				Window* pWindow = GetWindowFromHandle(hwnd);
+				const ChromeButton button = ToChromeButton(wParam);
+
+				if (pWindow == nullptr || !pWindow->GetCustomFrame() || button == ChromeButton::None)
+					return DefWindowProc(hwnd, msg, wParam, lParam);
+
+				const ChromeButton pressed = pWindow->GetPressedChromeButton();
+				pWindow->SetPressedChromeButton(ChromeButton::None);
+
+				if (pressed == button)
+					ExecuteChromeButton(hwnd, button);
+
+				return 0;
 			}
 			case WM_CLOSE:
 			{
@@ -84,6 +256,7 @@ namespace Horizon::PAL
 			case WM_SIZE:
 			{
 				Window* pWindow = GetWindowFromHandle(hwnd);
+				pWindow->OnSizeState(wParam == SIZE_MAXIMIZED);
 
 				InputMessage message = {};
 				message.type = InputMessageType::Resize;
@@ -290,11 +463,23 @@ namespace Horizon::PAL
 		{
 			if (HasFlag(flags, WindowFlags::EnableDragDrop))
 				DragAcceptFiles(hwnd, TRUE);
+
+			if (HasFlag(flags, WindowFlags::CustomTitleBar))
+			{
+				SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+				MARGINS margins = { 0, 0, 1, 0 };
+				DwmExtendFrameIntoClientArea(hwnd, &margins);
+
+				COLORREF borderColor = RGB(0x38, 0x38, 0x38);
+				DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &borderColor, sizeof(borderColor));
+			}
 		}
 	}
 
-	Window::Window(const WindowDesc& desc) : m_handle(OSHandle{}), 
-		m_instance(OSInstance{}), m_visible(false), m_active(false)
+	Window::Window(const WindowDesc& desc) : m_desc(desc), m_handle(OSHandle{}),
+		m_instance(OSInstance{}), m_visible(false), m_active(false),
+		m_customFrame(HasFlag(desc.flags, WindowFlags::CustomTitleBar))
 	{
 		constexpr char WindowClassName[] = "HorizonRuntimeWindowClassName";
 
@@ -408,7 +593,6 @@ namespace Horizon::PAL
 		RECT screen = { topLeft.x, topLeft.y, bottomRight.x, bottomRight.y };
 		ClipCursor(&screen);
 	}
-
 
 	void Window::SetCursorShape(CursorType type)
 	{

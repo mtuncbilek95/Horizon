@@ -12,6 +12,8 @@ namespace Horizon::Editor
 {
 	class MenuRegistry
 	{
+		static constexpr f32 kHeight = 32.0f;
+		static constexpr f32 kButtonWidth = 46.0f;
 	public:
 		MenuRegistry() = default;
 		~MenuRegistry();
@@ -25,8 +27,10 @@ namespace Horizon::Editor
 		void SortRecursive(List<MenuItemInstance>& siblings);
 
 		MenuItemInstance& FindOrCreateContainer(List<MenuItemInstance>& siblings, const std::string& name);
+		PAL::ChromeRect RenderChromeButton(const c8* label, b8 danger);
 
 	private:
+		PAL::Window* m_window = nullptr;
 		List<MenuItemInstance> m_menus;
 	};
 }

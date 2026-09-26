@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Editor/Models/SelectionModel.h>
+#include <Runtime/PAL/Window/Window.h>
 
 namespace Horizon::Engine
 {
@@ -11,6 +12,7 @@ namespace Horizon::Editor
 {
 	struct H_EXPORT EditorContext final
 	{
+		PAL::Window* pWindow = nullptr;
 		Engine::Engine* pEngine = nullptr;
 		SelectionModel* pSelection = nullptr;
 	};
