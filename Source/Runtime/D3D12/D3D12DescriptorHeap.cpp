@@ -207,7 +207,6 @@ namespace Horizon::RHI
 		auto* pDevice = static_cast<D3D12Device*>(m_ownerDevice);
 
 		pDevice->Handle()->CreateShaderResourceView(pD3DTexture->m_resource, &viewDesc, CpuAt(index));
-		pD3DTexture->m_shaderView = { this, index };
 
 		return index;
 	}
@@ -281,9 +280,6 @@ namespace Horizon::RHI
 
 		pDevice->Handle()->CreateUnorderedAccessView(pD3DTexture->m_resource, nullptr, &viewDesc, CpuAt(index));
 
-		if (mipLevel == 0)
-			pD3DTexture->m_storageView = { this, index };
-
 		return index;
 	}
 
@@ -302,7 +298,6 @@ namespace Horizon::RHI
 
 		pDevice->Handle()->CreateRenderTargetView(pD3DTexture->m_resource, nullptr, CpuAt(index));
 
-		pD3DTexture->m_renderTargetView = { this, index };
 		pD3DTexture->m_renderTargetHandle = CpuAt(index);
 
 		return index;
@@ -334,7 +329,6 @@ namespace Horizon::RHI
 
 		pDevice->Handle()->CreateDepthStencilView(pD3DTexture->m_resource, &viewDesc, CpuAt(index));
 
-		pD3DTexture->m_depthStencilView = { this, index };
 		pD3DTexture->m_depthStencilHandle = CpuAt(index);
 
 		return index;
@@ -374,7 +368,6 @@ namespace Horizon::RHI
 		auto* pDevice = static_cast<D3D12Device*>(m_ownerDevice);
 
 		pDevice->Handle()->CreateShaderResourceView(pD3DBuffer->m_resource, &viewDesc, CpuAt(index));
-		pD3DBuffer->m_shaderView = { this, index };
 
 		return index;
 	}
@@ -412,7 +405,6 @@ namespace Horizon::RHI
 		auto* pDevice = static_cast<D3D12Device*>(m_ownerDevice);
 
 		pDevice->Handle()->CreateUnorderedAccessView(pD3DBuffer->m_resource, nullptr, &viewDesc, CpuAt(index));
-		pD3DBuffer->m_storageView = { this, index };
 
 		return index;
 	}

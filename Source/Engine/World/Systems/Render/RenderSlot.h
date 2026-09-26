@@ -11,6 +11,9 @@ namespace Horizon::Engine
 		RHI::GfxTexture* pTargetTexture = nullptr;
 		RHI::GfxCommandList* pTargetCmd = nullptr;
 
+		u32 renderTargetView = kInvalid32;
+		u32 shaderView = kInvalid32;
+
 		RHI::GfxResourceState currState = RHI::GfxResourceState::Common;
 		Math::Vec2u currSize = { 0, 0 };
 

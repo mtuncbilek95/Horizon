@@ -10,8 +10,6 @@ namespace Horizon::RHI
 		if (m_mapped)
 			Unmap();
 
-		ReleaseViews();
-
 		if (m_resource)
 			m_resource->Release();
 

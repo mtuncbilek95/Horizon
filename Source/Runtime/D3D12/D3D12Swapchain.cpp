@@ -27,6 +27,7 @@ namespace Horizon::RHI
 	void D3D12Swapchain::AcquireImages()
 	{
 		m_images.Resize(m_desc.imageCount);
+		m_imageViews.Resize(m_desc.imageCount);
 
 		for (u32 i = 0; i < m_desc.imageCount; i++)
 		{
@@ -45,12 +46,17 @@ namespace Horizon::RHI
 			CHECK_HR(hr, "IDXGISwapChain4 - GetBuffer");
 
 			m_images[i] = pImage;
-			m_colorHeap->CreateRenderTargetView(pImage);
+			m_imageViews[i] = m_colorHeap->CreateRenderTargetView(pImage);
 		}
 	}
 
 	void D3D12Swapchain::ReleaseImages()
 	{
+		for (u32 view : m_imageViews)
+			m_colorHeap->Free(view);
+
+		m_imageViews.Clear();
+
 		for (D3D12Texture* pImage : m_images)
 		{
 			if (!pImage)

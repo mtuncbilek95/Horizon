@@ -26,6 +26,7 @@ namespace Horizon::Engine
 	RHI::GfxPipeline* sFunPipeline = nullptr;
 	RHI::GfxDescriptorHeap* sFunDepthHeap = nullptr;
 	RHI::GfxTexture* sFunDepthTextures[GraphicsContext::MaxFramesInFlight] = {};
+	u32 sFunDepthViews[GraphicsContext::MaxFramesInFlight] = {};
 
 	struct FunPushConstant
 	{
@@ -127,6 +128,9 @@ namespace Horizon::Engine
 		if (sFunDepthTextures[imageIndex] == nullptr)
 			return;
 
+		sFunDepthHeap->Free(sFunDepthViews[imageIndex]);
+		sFunDepthViews[imageIndex] = kInvalid32;
+
 		Memory::Allocator::Delete(sFunDepthTextures[imageIndex]);
 		sFunDepthTextures[imageIndex] = nullptr;
 	}
@@ -150,8 +154,8 @@ namespace Horizon::Engine
 		}
 
 		pTexture->SetDebugName("Scene - DepthTarget");
-		sFunDepthHeap->CreateDepthStencilView(pTexture);
 
+		sFunDepthViews[imageIndex] = sFunDepthHeap->CreateDepthStencilView(pTexture);
 		sFunDepthTextures[imageIndex] = pTexture;
 
 		return true;
@@ -334,6 +338,12 @@ namespace Horizon::Engine
 
 		if (m_resourceHeap)
 		{
+			if (sFunVertexSrv != kInvalid32)
+			{
+				m_resourceHeap->Free(sFunVertexSrv);
+				sFunVertexSrv = kInvalid32;
+			}
+
 			Memory::Allocator::Delete(m_resourceHeap);
 			m_resourceHeap = nullptr;
 		}
@@ -350,7 +360,7 @@ namespace Horizon::Engine
 		if (!m_slots[m_frameIndex].pTargetTexture)
 			return kInvalid64;
 
-		return m_resourceHeap->GetGpuHandle(m_slots[m_frameIndex].pTargetTexture->GetShaderView());
+		return m_resourceHeap->GetGpuHandle(m_slots[m_frameIndex].shaderView);
 	}
 
 	void RenderSystem::ResizeImage(const Math::Vec2u& imgSize)
@@ -401,8 +411,8 @@ namespace Horizon::Engine
 
 		slot.pTargetTexture->SetDebugName("Scene - RenderTarget");
 
-		m_colorHeap->CreateRenderTargetView(slot.pTargetTexture);
-		m_resourceHeap->CreateShaderView(slot.pTargetTexture);
+		slot.renderTargetView = m_colorHeap->CreateRenderTargetView(slot.pTargetTexture);
+		slot.shaderView = m_resourceHeap->CreateShaderView(slot.pTargetTexture);
 
 		if (!RecreateFunDepthTexture(m_device, imageIndex, m_targetSize))
 			return false;
@@ -422,6 +432,11 @@ namespace Horizon::Engine
 
 		if (!slot.pTargetTexture)
 			return true;
+
+		m_colorHeap->Free(slot.renderTargetView);
+		m_resourceHeap->Free(slot.shaderView);
+		slot.renderTargetView = kInvalid32;
+		slot.shaderView = kInvalid32;
 
 		Memory::Allocator::Delete(slot.pTargetTexture);
 		slot.pTargetTexture = nullptr;

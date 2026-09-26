@@ -4,8 +4,6 @@ namespace Horizon::RHI
 {
 	D3D12Texture::~D3D12Texture()
 	{
-		ReleaseViews();
-
 		if (m_resource)
 			m_resource->Release();
 

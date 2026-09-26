@@ -34,6 +34,7 @@ namespace Horizon::RHI
 		GfxDescriptorHeap* m_colorHeap = nullptr;
 
 		List<D3D12Texture*> m_images;
+		List<u32> m_imageViews;
 
 		u32 m_syncInterval = 0;
 		u32 m_presentFlags = 0;
