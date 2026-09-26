@@ -3,6 +3,7 @@
 #include <Editor/Attributes/EditorViewAttribute.h>
 #include <Editor/Views/ViewObject.h>
 #include <Editor/Font/IconsFontAwesome6.h>
+#include <Engine/World/ECS/Definitions.h>
 #include <Runtime/Math/Vec2f.h>
 
 namespace Horizon::Engine
@@ -10,6 +11,9 @@ namespace Horizon::Engine
 	class RenderSystem;
 	class CameraSystem;
 	class WorldService;
+
+	class Scene;
+	class CameraComponent;
 }
 
 namespace Horizon::Editor
@@ -28,12 +32,14 @@ namespace Horizon::Editor
 		b8 IsFullBleed() const { return true; }
 
 	private:
-		void RenderGizmo(const  Math::Vec2f& imageMin, const  Math::Vec2f& imageSize);
+		Engine::CameraComponent* EnsureEditorCamera(Engine::Scene* pScene);
+		void RenderGizmo(const Math::Vec2f& imageMin, const Math::Vec2f& imageSize, const Engine::CameraComponent& camera);
+		void ControlEditorCamera(Engine::TransformComponent& transform);
 
 	private:
 		Engine::RenderSystem* m_renderer = nullptr;
-		Engine::CameraSystem* m_camera = nullptr;
 		Engine::WorldService* m_world = nullptr;
+		Engine::EntityHandle m_editorCamera;
 
 		f32 m_fpsElapsed = 0;
 		f32 m_fpsFrameCount = 0;

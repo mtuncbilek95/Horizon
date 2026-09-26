@@ -3,14 +3,14 @@
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/World/SystemOrderAttribute.h>
 #include <Engine/World/System.h>
-#include <Engine/World/Systems/Render/RenderSlot.h>
+#include <Engine/World/Systems/RenderSlot.h>
 
 #include <Runtime/RHI/Descriptor/GfxDescriptorHeap.h>
 #include <Runtime/Math/Vec2u.h>
 
 namespace Horizon::Engine
 {
-	HCLASS(SystemOrder[300]);
+	HCLASS(SystemOrder[u32_max]);
 	class H_EXPORT RenderSystem : public System
 	{
 		HORIZON_TYPE_REFLECT(RenderSystem);

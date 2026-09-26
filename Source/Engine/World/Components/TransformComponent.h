@@ -26,6 +26,8 @@ namespace Horizon::Engine
 		HFIELD();
 		Math::Vec3f m_scale = { 1.f, 1.f, 1.f };
 
+		Math::Quat m_orientation;
+		Math::Vec3f m_lastRotation;
 		Math::Mat4f m_worldMatrix;
 	};
 }

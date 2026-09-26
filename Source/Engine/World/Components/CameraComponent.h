@@ -4,6 +4,7 @@
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Runtime/RTTR/Attributes/AliasAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
+#include <Runtime/Math/Vec2f.h>
 #include <Runtime/Math/Vec3f.h>
 #include <Runtime/Math/Mat4f.h>
 
@@ -25,6 +26,9 @@ namespace Horizon::Engine
 
 		HFIELD();
 		f32 m_farPlane = 1000.f;
+
+		HFIELD();
+		Math::Vec2f m_targetScreen = { 0.f, 0.f };
 
 		Math::Mat4f m_viewProjection;
 		Math::Mat4f m_view;

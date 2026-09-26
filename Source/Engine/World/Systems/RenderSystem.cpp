@@ -207,6 +207,22 @@ namespace Horizon::Engine
 
 	void RenderSystem::OnExecute(const EngineFrame& ctx, Scene& currentScene)
 	{
+		Math::Mat4f viewProj = Math::Mat4f::Identity();
+		b8 hasView = false;
+
+		currentScene.ForEach<CameraComponent>([&](EntityHandle handl, CameraComponent& camera)
+			{
+				if (hasView)
+					return;
+
+				if (camera.m_targetScreen.X() < 1.0f || camera.m_targetScreen.Y() < 1.0f)
+					return;
+
+				viewProj = camera.m_viewProjection;
+				ResizeImage({ u32(camera.m_targetScreen.X()), u32(camera.m_targetScreen.Y()) });
+				hasView = true;
+			});
+
 		RenderSlot& slot = m_slots[m_frameIndex];
 
 		if (slot.currSize != m_targetSize)
@@ -217,12 +233,6 @@ namespace Horizon::Engine
 				return;
 			}
 		}
-
-		Math::Mat4f viewProj = Math::Mat4f::Identity();
-		currentScene.ForEach<CameraComponent>([&](EntityHandle handl, CameraComponent& camMatrix)
-			{
-				viewProj = camMatrix.m_viewProjection;
-			});
 
 		m_fence->WaitCPU(slot.fenceValue);
 

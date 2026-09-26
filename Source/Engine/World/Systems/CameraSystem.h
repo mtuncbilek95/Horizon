@@ -15,10 +15,5 @@ namespace Horizon::Engine
 		b8 OnInitialize() final;
 		void OnExecute(const EngineFrame& ctx, Scene& currentScene) final;
 		void OnFinalize() final;
-
-		void ResizeViewport(const Math::Vec2u& viewport) { m_workableArea = viewport; }
-		
-	private:
-		Math::Vec2u m_workableArea;
 	};
 }
