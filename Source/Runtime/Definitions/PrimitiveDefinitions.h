@@ -52,4 +52,13 @@ namespace Horizon
 	inline constexpr u64 MaxNameBufferLength = 512;
 	inline constexpr u64 MaxBufferLength = 256;
 	inline constexpr u64 MaxPathLength = 2048;
+
+	template<typename T>
+	inline constexpr T MbToByte(T val) { return val * T(1000) * T(1000); }
+	template<typename T>
+	inline constexpr T ByteToMb(T val) { return val / (T(1000) * T(1000)); }
+	template<typename T>
+	inline constexpr T MibToByte(T val) { return val * T(1024) * T(1024); }
+	template<typename T>
+	inline constexpr T ByteToMib(T val) { return val / (T(1024) * T(1024)); }
 }

@@ -6,6 +6,8 @@
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
+#include <Engine/Asset/AssetService.h>
+
 #include <Runtime/Containers/Guid.h>
 
 #include <imgui.h>
@@ -66,8 +68,12 @@ namespace Horizon::Editor
 
 				if (acceptable && pPayload->IsDelivery())
 				{
+					auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
+
 					m_currentLabel = pDropped->GetName();
 					pMeshComp->m_meshHandle.SetId(pDropped->GetID());
+					pMeshComp->m_meshHandle.SetAsset(pAssetService->FindAsset(pDropped->GetID()));
+
 					Terminal::Info(StringOps::GetName(this), "{} dropped on MeshId", pDropped->GetID().ToString());
 				}
 			}

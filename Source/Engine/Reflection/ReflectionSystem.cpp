@@ -40,7 +40,8 @@ namespace Horizon::Engine
 		{
 			Terminal::Debug(StringOps::GetName(this), "{} has been registered to reflection system.", manifest.GetName());
 
-			m_lookup[manifest.GetTypeId()] = index;
+			m_typeLookup[manifest.GetTypeId()] = index;
+			m_nameLookup[manifest.GetName()] = index;
 			m_registeredTypes.PushBack(std::move(manifest));
 			index++;
 		}
@@ -55,8 +56,8 @@ namespace Horizon::Engine
 
 	Reflect::Type* ReflectionSystem::GetType(Reflect::TypeHandle handl)
 	{
-		auto it = m_lookup.find(handl);
-		if (it == m_lookup.end())
+		auto it = m_typeLookup.find(handl);
+		if (it == m_typeLookup.end())
 		{
 			Terminal::Error(StringOps::GetName(this), "Reflect::TypeHandle could not found. I hope you found it xD");
 			return nullptr;
@@ -67,13 +68,14 @@ namespace Horizon::Engine
 
 	Reflect::Type* ReflectionSystem::GetTypeByName(const std::string& name)
 	{
-		for (auto& type : m_registeredTypes)
+		auto it = m_nameLookup.find(name);
+		if (it == m_nameLookup.end())
 		{
-			if (type.GetName() == name)
-				return &type;
+			Terminal::Error(StringOps::GetName(this), "{} could not found in the reflection system.", name);
+			return nullptr;
 		}
 
-		return nullptr;
+		return &m_registeredTypes.At(it->second);
 	}
 
 	List<Reflect::Type*> ReflectionSystem::GetTypeByBase(Reflect::TypeHandle handl)

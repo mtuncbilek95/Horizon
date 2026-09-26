@@ -4,6 +4,7 @@
 #include <Engine/World/Components/CameraComponent.h>
 #include <Engine/World/Components/MeshComponent.h>
 #include <Engine/Asset/AssetService.h>
+#include <Engine/Asset/Mesh/MeshAssetStreamer.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
 
 #include <Runtime/Log/Terminal.h>
@@ -17,9 +18,6 @@
 
 #include <Runtime/Math/Mat4f.h>
 
-#include <cstddef>
-#include <string>
-
 namespace Horizon::Engine
 {
 	static constexpr RHI::GfxTextureFormat sFunDepthFormat = RHI::GfxTextureFormat::D32_FLOAT;
@@ -28,6 +26,16 @@ namespace Horizon::Engine
 	RHI::GfxPipeline* sFunPipeline = nullptr;
 	RHI::GfxDescriptorHeap* sFunDepthHeap = nullptr;
 	RHI::GfxTexture* sFunDepthTextures[GraphicsContext::MaxFramesInFlight] = {};
+
+	struct FunPushConstant
+	{
+		Math::Mat4f mvp;
+		u32 vertexBufferIndex;
+		u32 firstVertex;
+		u32 padding[2];
+	};
+
+	u32 sFunVertexSrv = kInvalid32;
 
 	static RHI::GfxShader* CreateFunShader(RHI::GfxDevice* pDevice, const std::string& filePath, RHI::GfxShaderStage stage, const std::string& entryPoint)
 	{
@@ -72,15 +80,6 @@ namespace Horizon::Engine
 		RHI::GfxGraphicsPipelineDesc pipelineDesc = {};
 		pipelineDesc.pVertexShader = pVertexShader;
 		pipelineDesc.pPixelShader = pPixelShader;
-
-		pipelineDesc.inputLayout
-			.AddBinding(0, sizeof(MeshVertex))
-			.AddAttribute("POSITION", 0, RHI::GfxTextureFormat::RGBA32_FLOAT, 0, offsetof(MeshVertex, position))
-			.AddAttribute("NORMAL", 0, RHI::GfxTextureFormat::RGBA32_FLOAT, 0, offsetof(MeshVertex, normal))
-			.AddAttribute("TANGENT", 0, RHI::GfxTextureFormat::RGBA32_FLOAT, 0, offsetof(MeshVertex, tangent))
-			.AddAttribute("COLOR", 0, RHI::GfxTextureFormat::RGBA32_FLOAT, 0, offsetof(MeshVertex, color))
-			.AddAttribute("TEXCOORD", 0, RHI::GfxTextureFormat::RG32_FLOAT, 0, offsetof(MeshVertex, uv));
-
 		pipelineDesc.colorFormats[0] = RHI::GfxTextureFormat::RGBA8_UNORM;
 		pipelineDesc.colorTargetCount = 1;
 		pipelineDesc.depthFormat = sFunDepthFormat;
@@ -247,30 +246,45 @@ namespace Horizon::Engine
 		slot.pTargetCmd->BindPipeline(sFunPipeline);
 
 		AssetService* pAssetService = GetEngine()->RequestService<AssetService>();
+		auto* pMeshStreamer = static_cast<MeshAssetStreamer*>(pAssetService->FindStreamer(Reflect::TypeOf<MeshAsset>()));
+
+		if (sFunVertexSrv == kInvalid32)
+			sFunVertexSrv = m_resourceHeap->CreateShaderView(pMeshStreamer->GetVertexBuffer());
+
+		slot.pTargetCmd->BindIndexBuffer(pMeshStreamer->GetIndexBuffer(), RHI::GfxIndexType::Index32);
 
 		currentScene.ForEach<MeshComponent, TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
 			{
-				AssetHandle<MeshAsset> meshHandle = mesh.m_meshHandle;
+				const AssetHandle<MeshAsset>& meshHandle = mesh.m_meshHandle;
 
 				if (!meshHandle.GetId().IsValid())
 					return;
 
-				MeshAsset* pAsset = nullptr;
+				MeshAsset* pAsset = meshHandle.GetAsset();
 
 				if (!pAsset)
 					return;
 
-				Math::Mat4f mvp = viewProj * worldMat.m_worldMatrix;
-				slot.pTargetCmd->SetGraphicsConstants(&mvp, sizeof(Math::Mat4f) / sizeof(u32));
-				slot.pTargetCmd->BindVertexBuffer(pAsset->GetVertexBuffer(), 0, pAsset->GetVertexStride(), 0);
-				slot.pTargetCmd->BindIndexBuffer(pAsset->GetIndexBuffer(), RHI::GfxIndexType::Index32);
+				if (pAsset->GetResidencyState() == AssetResidency::Unloaded)
+					pAsset->LoadAsync();
 
-				const List<MeshSubMesh>& subMeshes = pAsset->GetSubMeshes();
+				if (pAsset->GetResidencyState() != AssetResidency::Resident)
+					return;
+
+				FunPushConstant constants = {};
+				constants.mvp = viewProj * worldMat.m_worldMatrix;
+				constants.vertexBufferIndex = sFunVertexSrv;
+				slot.pTargetCmd->SetGraphicsConstants(&constants, sizeof(FunPushConstant) / sizeof(u32));
+
+				const List<MeshSubMesh>& subMeshes = pAsset->GetSubmeshes();
 
 				for (usize i = 0; i < subMeshes.GetCount(); ++i)
 				{
 					const MeshSubMesh& subMesh = subMeshes[i];
-					slot.pTargetCmd->DrawIndexed(subMesh.indexCount, 1, subMesh.indexOffset, static_cast<i32>(subMesh.vertexOffset));
+					const u32 firstVertex = pAsset->GetFirstVertex() + subMesh.vertexOffset;
+
+					slot.pTargetCmd->SetGraphicsConstants(&firstVertex, 1, offsetof(FunPushConstant, firstVertex) / sizeof(u32));
+					slot.pTargetCmd->DrawIndexed(subMesh.indexCount, 1, pAsset->GetFirstIndex() + subMesh.indexOffset, 0);
 				}
 			});
 

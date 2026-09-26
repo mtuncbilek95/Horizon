@@ -3,6 +3,7 @@
 #include <Editor/Attributes/ImportTypeAttribute.h>
 #include <Editor/Domain/DomainFolder.h>
 #include <Editor/Domain/DomainFile.h>
+#include <Editor/Domain/DomainMeta.h>
 #include <Editor/Importer/ImporterContext.h>
 
 #include <Engine/Core/ModuleGraph.h>
@@ -45,6 +46,31 @@ namespace Horizon::Editor
 			Terminal::Info("DomainService", "{} has been imported via thread {} with {} bytes", pTask->sourcePath, PAL::Thread::CurrentId(), content.GetCount());
 	}
 
+	void DomainService::SplitPath(std::string_view relativePath, std::string& outParent, std::string& outName)
+	{
+		const usize separator = relativePath.find_last_of('/');
+
+		if (separator == std::string_view::npos)
+		{
+			outParent.clear();
+			outName = std::string(relativePath);
+			return;
+		}
+
+		outParent = std::string(relativePath.substr(0, separator));
+		outName = std::string(relativePath.substr(separator + 1));
+	}
+
+	std::string DomainService::ExtensionOf(const std::string& name)
+	{
+		std::string extension = StringOps::OnlyExtension(name);
+
+		for (c8& character : extension)
+			character = StringOps::ToLowerAscii(character);
+
+		return extension;
+	}
+
 	Engine::ModuleReport DomainService::OnInitialize()
 	{
 		Engine::AssetService* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
@@ -57,7 +83,6 @@ namespace Horizon::Editor
 		if (m_importerContext == nullptr)
 			return Engine::ModuleReport("Importer context cannot be reached");
 
-		// If you see this and judge me, FUCK YOU! IT WILL BE AUTOMATIC PLEASE FUCK OFF!
 		m_projectPath = "D:/Projects/Horizon/ExampleProject";
 		m_assetPath = m_projectPath + "/Assets";
 		m_cookPath = m_projectPath + "/Cooked";
@@ -68,12 +93,8 @@ namespace Horizon::Editor
 		if (!PAL::Directory::Exists(m_cookPath) && !PAL::Directory::Create(m_cookPath))
 			return Engine::ModuleReport("Cook root cannot be created");
 
-		m_projectSource = Memory::Allocator::Create<Engine::LooseSourceFile>(Memory::CurrLoc(), "Project");
-		pAssetService->AddSource(m_projectSource);
-
 		m_root = Memory::Allocator::Create<DomainFolder>(Memory::CurrLoc(), nullptr, "Assets", m_assetPath, m_cookPath);
-		m_root->Refresh();
-		TrackFolder(m_root);
+		RebuildTree();
 
 		m_watcher = PAL::DirectoryWatcher(m_assetPath, true);
 		m_watcherHealthy = m_watcher.IsValid();
@@ -120,7 +141,6 @@ namespace Horizon::Editor
 			return;
 
 		Memory::Allocator::Delete(m_root);
-		Memory::Allocator::Delete(m_projectSource);
 	}
 
 	void DomainService::DeclareDependencies(Engine::ModuleGraph& graph)
@@ -214,22 +234,16 @@ namespace Horizon::Editor
 		if (event.kind == PAL::WatcherEntryKind::Directory)
 		{
 			DomainFolder* pFolder = pParent->AddFolder(std::string(event.GetName()));
-			pFolder->Refresh();
-			TrackFolder(pFolder);
+
+			List<std::string> sources;
+			pFolder->Refresh(sources);
+			TrackSources(sources);
+
 			++m_revision;
 			return;
 		}
 
-		DomainFile* pFile = pParent->AddFile(std::string(event.GetName()));
-
-		if (pFile == nullptr)
-		{
-			Terminal::Warn(StringOps::GetName(this), "{} could not be tracked", event.relativePath);
-			return;
-		}
-
-		TrackFile(pFile);
-		++m_revision;
+		TrackSource(event.relativePath);
 	}
 
 	void DomainService::OnEntryModified(const PAL::DirectoryWatcher::Event& event)
@@ -251,6 +265,13 @@ namespace Horizon::Editor
 			return;
 		}
 
+		m_pendingImports.Remove(event.relativePath);
+
+		DomainFolder* pFolder = pParent->FindFolder(event.GetName());
+
+		if (pFolder != nullptr)
+			ForgetFolder(pFolder);
+
 		DomainFile* pFile = pParent->FindFile(event.GetName());
 
 		if (pFile != nullptr)
@@ -271,6 +292,8 @@ namespace Horizon::Editor
 
 		if (pOldParent != nullptr)
 		{
+			m_pendingImports.Remove(event.oldRelativePath);
+
 			DomainFile* pOldFile = pOldParent->FindFile(event.GetOldName());
 
 			if (pOldFile != nullptr)
@@ -286,41 +309,76 @@ namespace Horizon::Editor
 	{
 		Terminal::Warn(StringOps::GetName(this), "{} overflowed its notifications, the domain tree is rebuilt", m_assetPath);
 
-		m_root->Refresh();
-		TrackFolder(m_root);
+		RebuildTree();
+	}
+
+	void DomainService::RebuildTree()
+	{
+		List<std::string> sources;
+		m_root->Refresh(sources);
+		TrackSources(sources);
+
 		++m_revision;
 	}
 
-	void DomainService::TrackFolder(DomainFolder* pFolder)
+	void DomainService::TrackSources(const List<std::string>& relativePaths)
 	{
-		for (DomainFile* pFile : pFolder->GetFiles())
-			TrackFile(pFile);
-
-		for (DomainFolder* pChild : pFolder->GetFolders())
-			TrackFolder(pChild);
+		for (const std::string& relativePath : relativePaths)
+			TrackSource(relativePath);
 	}
 
-	void DomainService::TrackFile(DomainFile* pFile)
+	void DomainService::TrackSource(const std::string& relativePath)
 	{
-		// Check if we have meta and load the fuck out of it, if not generate
-		if (!EnsureMeta(pFile))
-			return;
+		std::string parentPath;
+		std::string name;
+		SplitPath(relativePath, parentPath, name);
 
-		if (pFile->GetMeta().assetTypeName.empty())
-			return;
+		DomainFolder* pParent = m_root->ResolveFolder(parentPath);
 
-		if (pFile->HasBinary())
+		if (pParent == nullptr)
 		{
-			// TODO: Having binary doesn't mean its valid
-			RegisterCooked(pFile);
+			Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", parentPath);
 			return;
 		}
 
-		if (m_pendingImports.Contains(pFile->GetID()))
+		if (pParent->FindFile(name) != nullptr)
 			return;
 
-		// Just add to import job tracking list.
-		m_pendingImports.PushBack(pFile->GetID());
+		if (m_pendingImports.Contains(relativePath) || IsImportActive(relativePath))
+			return;
+
+		const std::string sourcePath = pParent->GetAbsolutePath() + "/" + name;
+		const std::string metaPath = sourcePath + std::string(DomainFile::MetaSuffix);
+
+		if (PAL::File::Exists(metaPath))
+		{
+			DomainMeta meta;
+
+			if (!meta.Read(metaPath))
+			{
+				Terminal::Warn(StringOps::GetName(this), "{} has a meta that cannot be loaded, it is left untouched", sourcePath);
+				return;
+			}
+
+			if (meta.id.IsValid() && !meta.assetTypeName.empty() && PAL::File::Exists(CookedPathOf(meta.id)))
+			{
+				if (Materialize(pParent, name, meta, false))
+					++m_revision;
+
+				return;
+			}
+		}
+
+		m_pendingImports.PushBack(relativePath);
+	}
+
+	void DomainService::ForgetFolder(DomainFolder* pFolder)
+	{
+		for (DomainFile* pFile : pFolder->GetFiles())
+			ForgetFile(pFile);
+
+		for (DomainFolder* pChild : pFolder->GetFolders())
+			ForgetFolder(pChild);
 	}
 
 	void DomainService::ForgetFile(DomainFile* pFile)
@@ -330,66 +388,60 @@ namespace Horizon::Editor
 		if (!id.IsValid())
 			return;
 
-		m_pendingImports.Remove(id);
-
-		if (m_projectSource->Find(id) != nullptr)
-			m_projectSource->Unregister(id);
+		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
+		pAssetService->UnregisterAsset(id);
 	}
 
-	b8 DomainService::EnsureMeta(DomainFile* pFile)
+	b8 DomainService::Materialize(DomainFolder* pParent, const std::string& name, const DomainMeta& meta, b8 writeMeta)
 	{
-		if (pFile->HasMeta())
+		Reflect::Type* pType = GetEngine()->GetReflectionSystem()->GetTypeByName(meta.assetTypeName);
+
+		if (pType == nullptr)
 		{
-			if (!pFile->LoadMetaFile())
-			{
-				Terminal::Warn(StringOps::GetName(this), "{} has a meta that cannot be loaded, it is left untouched", pFile->GetSourcePath());
-				return false;
-			}
-
-			if (!pFile->GetMeta().assetTypeName.empty())
-				return true;
-
-			DomainMeta meta = pFile->GetMeta();
-			meta.assetTypeName = ResolveAssetTypeName(pFile);
-
-			if (meta.assetTypeName.empty())
-				return true;
-
-			return pFile->WriteMetaFile(meta);
+			Terminal::Error(StringOps::GetName(this), "{} names an asset type that is not reflected", name);
+			return false;
 		}
 
-		DomainMeta meta;
-		meta.id = Guid::Generate();
-		meta.assetTypeName = ResolveAssetTypeName(pFile);
+		DomainFile* pFile = pParent->AddFile(name);
+		const b8 hasMeta = writeMeta ? pFile->WriteMetaFile(meta) : pFile->LoadMetaFile();
 
-		if (!pFile->WriteMetaFile(meta))
+		if (!hasMeta)
 		{
 			Terminal::Warn(StringOps::GetName(this), "{} could not get a meta", pFile->GetSourcePath());
+			pParent->RemoveEntry(name);
+			return false;
+		}
+
+		Engine::AssetPhysicalEntry entry = {};
+		entry.assetId = pFile->GetID();
+		entry.cookPath = pFile->GetCookedPath();
+		entry.assetType = pType->GetTypeId();
+
+		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
+
+		if (!pAssetService->RegisterAsset(entry))
+		{
+			Terminal::Error(StringOps::GetName(this), "{} could not be registered", pFile->GetSourcePath());
+
+			if (writeMeta)
+				PAL::File::Delete(pFile->GetMetaPath());
+
+			pParent->RemoveEntry(name);
 			return false;
 		}
 
 		return true;
 	}
 
-	std::string DomainService::ResolveAssetTypeName(DomainFile* pFile)
+	std::string DomainService::ResolveAssetTypeName(AssetImporter* pImporter)
 	{
-		// TODO: I guess if std::string is empty the DomainFile that we're working on should be deleted instead 
-		// of being imported weirdly.
-		
-		// This function just takes MeshAsset, Texture2DAsset, AnimationAsset, RenderGraphAsset etc.
-		// And it takes from extension + importer. I couldn't find a better way.
-		AssetImporter* pImporter = m_importerContext->GetImporter(pFile->GetExtension());
-
-		if (pImporter == nullptr)
-			return std::string();
-
 		auto* pReflect = GetEngine()->GetReflectionSystem();
 
 		Reflect::Type* pImporterType = pReflect->GetType(pImporter->GetTypeId());
 
 		if (pImporterType == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} importer has no reflected type", pFile->GetExtension());
+			Terminal::Error(StringOps::GetName(this), "{} importer has no reflected type", StringOps::GetName(pImporter));
 			return std::string();
 		}
 
@@ -412,6 +464,11 @@ namespace Horizon::Editor
 		return pAssetType->GetName();
 	}
 
+	std::string DomainService::CookedPathOf(const Guid& id) const
+	{
+		return m_cookPath + "/" + id.ToString() + std::string(DomainFile::CookSuffix);
+	}
+
 	void DomainService::MoveMeta(const std::string& oldMetaPath, const std::string& newMetaPath)
 	{
 		if (!PAL::File::Exists(oldMetaPath))
@@ -429,27 +486,39 @@ namespace Horizon::Editor
 		if (m_pendingImports.IsEmpty() || m_activeImports.GetCount() >= MaxConcurrentImports)
 			return;
 
-		const Guid id = m_pendingImports.Front();
+		const std::string relativePath = m_pendingImports.Front();
 		m_pendingImports.PopFront();
 
-		if (IsImportActive(id))
+		if (IsImportActive(relativePath))
+			return;
+
+		std::string parentPath;
+		std::string name;
+		SplitPath(relativePath, parentPath, name);
+
+		DomainFolder* pParent = m_root->ResolveFolder(parentPath);
+
+		if (pParent == nullptr)
 		{
-			m_pendingImports.PushBack(id);
+			Terminal::Debug(StringOps::GetName(this), "{} folder vanished before its import could start", parentPath);
 			return;
 		}
 
-		DomainFile* pFile = FindFileByGuid(m_root, id);
-
-		if (pFile == nullptr || !pFile->HasSource())
+		if (pParent->FindFile(name) != nullptr)
 			return;
 
-		if (!IsSourceReady(pFile))
+		const std::string sourcePath = pParent->GetAbsolutePath() + "/" + name;
+
+		if (!PAL::File::Exists(sourcePath))
+			return;
+
+		if (!IsSourceReady(sourcePath))
 		{
-			m_pendingImports.PushBack(id);
+			m_pendingImports.PushBack(relativePath);
 			return;
 		}
 
-		StartImport(pFile);
+		StartImport(pParent, name, relativePath);
 	}
 
 	void DomainService::CommitFinishedImports()
@@ -469,38 +538,54 @@ namespace Horizon::Editor
 
 			m_activeImports.RemoveAt(i);
 
-			DomainFile* pFile = FindFileByGuid(m_root, pTask->id);
-
 			if (pTask->result != AssetImportResult::Success)
 				Terminal::Error(StringOps::GetName(this), "{} could not be imported, result code is {}", pTask->sourcePath, static_cast<u32>(pTask->result));
 			else if (!pTask->wasCooked)
 				Terminal::Error(StringOps::GetName(this), "{} was imported but could not be cooked", pTask->sourcePath);
-			else if (pFile == nullptr)
+			else
 			{
-				Terminal::Warn(StringOps::GetName(this), "{} vanished while it was being imported", pTask->sourcePath);
-				PAL::File::Delete(pTask->cookedPath);
+				std::string parentPath;
+				std::string name;
+				SplitPath(pTask->relativePath, parentPath, name);
+
+				DomainFolder* pParent = m_root->ResolveFolder(parentPath);
+
+				if (pParent == nullptr || pParent->FindFile(name) != nullptr || !PAL::File::Exists(pTask->sourcePath))
+				{
+					Terminal::Warn(StringOps::GetName(this), "{} vanished while it was being imported", pTask->sourcePath);
+					PAL::File::Delete(pTask->cookedPath);
+				}
+				else
+				{
+					DomainMeta meta;
+					meta.id = pTask->id;
+					meta.assetTypeName = pTask->assetTypeName;
+
+					if (Materialize(pParent, name, meta, true))
+						++m_revision;
+					else
+						PAL::File::Delete(pTask->cookedPath);
+				}
 			}
-			else if (RegisterCooked(pFile))
-				++m_revision;
 
 			Memory::Allocator::Delete(pTask);
 		}
 	}
 
-	b8 DomainService::IsImportActive(const Guid& id) const
+	b8 DomainService::IsImportActive(const std::string& relativePath) const
 	{
 		for (const ImportTask* pTask : m_activeImports)
 		{
-			if (pTask->id == id)
+			if (pTask->relativePath == relativePath)
 				return true;
 		}
 
 		return false;
 	}
 
-	b8 DomainService::IsSourceReady(DomainFile* pFile) const
+	b8 DomainService::IsSourceReady(const std::string& sourcePath) const
 	{
-		PAL::FileAccessRequest request = PAL::File::RequestAccess(pFile->GetSourcePath(), PAL::FileOperationAccessPolicy::Read,
+		PAL::FileAccessRequest request = PAL::File::RequestAccess(sourcePath, PAL::FileOperationAccessPolicy::Read,
 			PAL::FileOperationSharePolicy::Exclusive);
 
 		if (!request.IsValid())
@@ -511,26 +596,43 @@ namespace Horizon::Editor
 		return true;
 	}
 
-	b8 DomainService::StartImport(DomainFile* pFile)
+	b8 DomainService::StartImport(DomainFolder* pParent, const std::string& name, const std::string& relativePath)
 	{
-		AssetImporter* pImporter = m_importerContext->GetImporter(pFile->GetExtension());
+		AssetImporter* pImporter = m_importerContext->GetImporter(ExtensionOf(name));
 
 		if (pImporter == nullptr)
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} has no importer", pFile->GetSourcePath());
+			Terminal::Debug(StringOps::GetName(this), "{} has no importer, it stays outside the domain", relativePath);
 			return false;
 		}
 
-		const std::string cookedPath = pFile->GetCookedPath();
+		const std::string assetTypeName = ResolveAssetTypeName(pImporter);
 
-		if (cookedPath.empty())
+		if (assetTypeName.empty())
 			return false;
 
+		const std::string sourcePath = pParent->GetAbsolutePath() + "/" + name;
+		const std::string metaPath = sourcePath + std::string(DomainFile::MetaSuffix);
+
+		Guid id;
+
+		if (PAL::File::Exists(metaPath))
+		{
+			DomainMeta meta;
+
+			if (meta.Read(metaPath) && meta.id.IsValid())
+				id = meta.id;
+		}
+
+		if (!id.IsValid())
+			id = Guid::Generate();
+
 		ImportTask* pTask = Memory::Allocator::Create<ImportTask>(Memory::CurrLoc());
-		pTask->id = pFile->GetID();
-		pTask->sourcePath = pFile->GetSourcePath();
-		pTask->cookedPath = cookedPath;
-		pTask->assetTypeName = pFile->GetMeta().assetTypeName;
+		pTask->id = id;
+		pTask->relativePath = relativePath;
+		pTask->sourcePath = sourcePath;
+		pTask->cookedPath = CookedPathOf(id);
+		pTask->assetTypeName = assetTypeName;
 		pTask->pImporter = pImporter;
 		pTask->pEngine = GetEngine();
 
@@ -551,21 +653,8 @@ namespace Horizon::Editor
 		return true;
 	}
 
-	b8 DomainService::RegisterCooked(DomainFile* pFile)
+	void DomainService::ReimportAsset(DomainFile* pFile)
 	{
-		Reflect::Type* pType = GetEngine()->GetReflectionSystem()->GetTypeByName(pFile->GetMeta().assetTypeName);
 
-		if (pType == nullptr)
-		{
-			Terminal::Error(StringOps::GetName(this), "{} names an asset type that is not reflected", pFile->GetMetaPath());
-			return false;
-		}
-
-		Engine::AssetEntry entry = {};
-		entry.assetId = pFile->GetID();
-		entry.cookedPath = pFile->GetCookedPath();
-		entry.assetTypeHandle = pType->GetTypeId();
-
-		return m_projectSource->Register(entry);
 	}
 }

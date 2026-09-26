@@ -7,11 +7,12 @@
 
 namespace Horizon::Engine
 {
-	struct AssetEntry
+	struct AssetPhysicalEntry
 	{
 		Guid assetId;
-		std::string cookedPath;
+		std::string cookPath;
 
-		Reflect::TypeHandle assetTypeHandle;
+		Reflect::TypeHandle assetType;
+
 	};
 }

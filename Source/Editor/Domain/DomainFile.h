@@ -35,17 +35,10 @@ namespace Horizon::Editor
 		const std::string& GetCookFolder() const { return m_cookFolder; }
 		std::string GetCookedPath() const;
 
-		b8 HasMeta() const;
-		b8 HasSource() const;
-		b8 HasBinary() const;
-
 		b8 LoadMetaFile();
 		b8 WriteMetaFile(const DomainMeta& meta);
 
-		b8 WriteCookFile(const List<u8>& content, usize propertySize) const;
-
 		void Rename(const std::string& newName);
-
 	private:
 		DomainFolder* m_parent = nullptr;
 		DomainMeta m_meta;

@@ -14,10 +14,13 @@ namespace Horizon::RHI
 		virtual GfxBufferRange Allocate(usize size, usize alignment = 16) = 0;
 		virtual void Free(const GfxBufferRange& range) = 0;
 		virtual void Reset() = 0;
+		
 		const GfxBufferArenaDesc& GetDesc() const { return m_desc; }
 		GfxBuffer* GetBuffer() const { return m_buffer; }
 		usize GetCapacity() const { return m_desc.capacity; }
 		usize GetUsedBytes() const { return m_usedBytes; }
+		usize GetStride() const { return m_desc.stride; }
+
 	protected:
 		GfxBufferArenaDesc m_desc{};
 		GfxBuffer* m_buffer = nullptr;

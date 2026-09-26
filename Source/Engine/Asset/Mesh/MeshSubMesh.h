@@ -11,7 +11,6 @@ namespace Horizon::Engine
 		u32 indexCount;
 		u32 vertexOffset;
 		u32 vertexCount;
-		u32 materialIndex;
 		Math::Vec3f boundsMin;
 		Math::Vec3f boundsMax;
 	};

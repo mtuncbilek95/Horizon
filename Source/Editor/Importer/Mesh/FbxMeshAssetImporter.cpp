@@ -101,12 +101,8 @@ namespace Horizon::Editor
 				partVertices.Clear();
 				partVertices.Reserve(part.num_triangles * 3);
 
-				f32 minX = 0.f;
-				f32 minY = 0.f;
-				f32 minZ = 0.f;
-				f32 maxX = 0.f;
-				f32 maxY = 0.f;
-				f32 maxZ = 0.f;
+				f32 minX = 0.f, minY = 0.f, minZ = 0.f;
+				f32 maxX = 0.f, maxY = 0.f, maxZ = 0.f;
 
 				for (usize faceIndex = 0; faceIndex < part.num_faces; ++faceIndex)
 				{
@@ -120,7 +116,7 @@ namespace Horizon::Editor
 							const u32 index = triIndices[tri * 3 + (isMirrored ? 2 - corner : corner)];
 
 							Engine::MeshVertex vertex;
-							vertex.normal = Math::Vec4f::Zero();
+							vertex.normal = Math::Vec3f::Zero();
 							vertex.tangent = Math::Vec4f::Zero();
 							vertex.color = Math::Vec4f::One();
 							vertex.uv = Math::Vec2f::Zero();
@@ -129,7 +125,7 @@ namespace Horizon::Editor
 							const f32 posX = static_cast<f32>(position.x);
 							const f32 posY = static_cast<f32>(position.y);
 							const f32 posZ = static_cast<f32>(position.z);
-							vertex.position.Set(posX, posY, posZ, 1.f);
+							vertex.position.Set(posX, posY, posZ);
 
 							if (partVertices.IsEmpty())
 							{
@@ -150,7 +146,7 @@ namespace Horizon::Editor
 							if (pMesh->vertex_normal.exists)
 							{
 								const ufbx_vec3 normal = NormalizeDirection(ufbx_transform_direction(&toWorldNormal, ufbx_get_vertex_vec3(&pMesh->vertex_normal, index)));
-								vertex.normal.Set(static_cast<f32>(normal.x), static_cast<f32>(normal.y), static_cast<f32>(normal.z), 0.f);
+								vertex.normal.Set(static_cast<f32>(normal.x), static_cast<f32>(normal.y), static_cast<f32>(normal.z));
 							}
 
 							if (pMesh->vertex_tangent.exists)
@@ -209,12 +205,8 @@ namespace Horizon::Editor
 				subMesh.indexCount = static_cast<u32>(partIndices.GetCount());
 				subMesh.vertexOffset = static_cast<u32>(vertexBase);
 				subMesh.vertexCount = static_cast<u32>(uniqueCount);
-				subMesh.materialIndex = kInvalid32;
 				subMesh.boundsMin.Set(minX, minY, minZ);
 				subMesh.boundsMax.Set(maxX, maxY, maxZ);
-
-				if (part.index < pNode->materials.count && pNode->materials.data[part.index] != nullptr)
-					subMesh.materialIndex = pNode->materials.data[part.index]->typed_id;
 
 				subMeshes.PushBack(subMesh);
 			}

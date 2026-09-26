@@ -11,6 +11,7 @@ namespace Horizon::RHI
 	{
 		GfxBufferUsage usage = GfxBufferUsage::Storage;
 		GfxMemoryType memory = GfxMemoryType::GpuOnly;
+		usize stride = 0;
 		usize capacity = 0;
 	};
 }

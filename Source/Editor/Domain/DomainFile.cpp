@@ -114,24 +114,6 @@ namespace Horizon::Editor
 		return m_cookFolder + "/" + m_meta.id.ToString() + std::string(CookSuffix);
 	}
 
-	b8 DomainFile::HasMeta() const
-	{
-		return PAL::File::Exists(m_metaPath);
-	}
-
-	b8 DomainFile::HasSource() const
-	{
-		return PAL::File::Exists(m_sourcePath);
-	}
-
-	b8 DomainFile::HasBinary() const
-	{
-		if (!m_meta.id.IsValid())
-			return false;
-
-		return PAL::File::Exists(GetCookedPath());
-	}
-
 	b8 DomainFile::LoadMetaFile()
 	{
 		if (!PAL::File::Exists(m_metaPath))
@@ -155,16 +137,6 @@ namespace Horizon::Editor
 		m_meta = meta;
 
 		return true;
-	}
-
-	b8 DomainFile::WriteCookFile(const List<u8>& content, usize propertySize) const
-	{
-		const std::string cookedPath = GetCookedPath();
-
-		if (cookedPath.empty())
-			return false;
-
-		return WriteCookFile(cookedPath, m_meta.id, m_meta.assetTypeName, content, propertySize);
 	}
 
 	void DomainFile::Rename(const std::string& newName)

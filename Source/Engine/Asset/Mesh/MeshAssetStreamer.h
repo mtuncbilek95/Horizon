@@ -3,13 +3,14 @@
 #include <Engine/Asset/AssetStreamer.h>
 #include <Engine/Asset/Mesh/MeshAsset.h>
 #include <Engine/Asset/Mesh/MeshProperties.h>
+
 #include <Runtime/Containers/List.h>
+#include <Runtime/RHI/Buffer/GfxBufferArena.h>
 #include <Runtime/RTTR/Reflection.h>
+#include <Runtime/PAL/Sync/CriticalSection.h>
 
 namespace Horizon::Engine
 {
-	class MeshResourceCache;
-
 	HCLASS();
 	class H_EXPORT MeshAssetStreamer : public AssetStreamer
 	{
@@ -21,17 +22,27 @@ namespace Horizon::Engine
 		void OnInitialize() final;
 		void OnFinalize() final;
 
+		void LoadAsync(AssetObject* pAsset) final;
+		void UnloadAsync(AssetObject* pAsset) final;
+
 		Reflect::TypeHandle GetAssetType() final { return Reflect::TypeOf<MeshAsset>(); }
 
-		AssetObject* Load(const AssetEntry& entry) final;
-		void Unload(AssetObject* pObject) final;
+		RHI::GfxBuffer* GetVertexBuffer() const { return m_vertexArena->GetBuffer(); }
+		RHI::GfxBuffer* GetIndexBuffer() const { return m_indexArena->GetBuffer(); }
 
 	private:
-		b8 ReadCooked(const AssetEntry& entry, MeshProperties& outProperties, List<u8>& outPayload);
-		RHI::GfxBuffer* CreateFilledBuffer(RHI::GfxBufferUsage usage, const u8* pData, usize size, u32 stride);
+		void RunLoadAsset(MeshAsset* pAsset);
+		void FailAsset(MeshAsset* pAsset, std::string_view reason);
 
 	private:
 		RHI::GfxDevice* m_device = nullptr;
-		MeshResourceCache* m_pool = nullptr;
+
+		RHI::GfxBufferArena* m_vertexArena = nullptr;
+		u8* m_vertexMap = nullptr;
+		RHI::GfxBufferArena* m_indexArena = nullptr;
+		u8* m_indexMap = nullptr;
+
+		JobSystem* m_jobSystem = nullptr;
+		PAL::CriticalSection m_arenaLock;
 	};
 }

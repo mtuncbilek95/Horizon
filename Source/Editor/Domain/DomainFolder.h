@@ -40,7 +40,7 @@ namespace Horizon::Editor
 		DomainFile* AddFile(const std::string& name);
 		b8 RemoveEntry(std::string_view name);
 
-		void Refresh();
+		void Refresh(List<std::string>& outSources);
 		void Clear();
 
 		void Rename(const std::string& newName);

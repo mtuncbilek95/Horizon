@@ -23,7 +23,8 @@ namespace Horizon::Engine
 
 	private:
 		List<Reflect::Type> m_registeredTypes;
-		std::unordered_map<Reflect::TypeHandle, u32> m_lookup;
+		std::unordered_map<Reflect::TypeHandle, usize> m_typeLookup;
+		std::unordered_map <std::string, usize> m_nameLookup;
 
 		PAL::SymbolLibrary* m_hostLibrary = nullptr;
 	};

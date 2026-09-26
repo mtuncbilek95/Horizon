@@ -27,6 +27,8 @@
 #include <imgui.h>
 #include <backends/imgui_impl_dx12.h>
 
+#include <bit>
+
 namespace Horizon::RHI
 {
 	namespace
@@ -408,12 +410,13 @@ namespace Horizon::RHI
 		bufferDesc.usage = desc.usage;
 		bufferDesc.memory = desc.memory;
 		bufferDesc.size = desc.capacity;
+		bufferDesc.stride = desc.stride;
 
 		GfxBuffer* pBuffer = CreateBuffer(bufferDesc);
 
 		if (!pBuffer)
 		{
-			Terminal::Error(StringOps::GetName(this), "Arena backing buffer of {} bytes could not be created", desc.capacity);
+			Terminal::Error(StringOps::GetName(this), "Buffer Arena backing buffer of {} bytes could not be created", desc.capacity);
 			return nullptr;
 		}
 
@@ -428,7 +431,7 @@ namespace Horizon::RHI
 		blockDesc.Size = desc.capacity;
 
 		HRESULT hr = D3D12MA::CreateVirtualBlock(&blockDesc, &pArena->m_block);
-		CHECK_HR(hr, "D3D12MA::VirtualBlock - CreateVirtualBlock");
+		CHECK_REASON(hr, "D3D12MA::VirtualBlock - CreateVirtualBlock");
 
 		return pArena;
 	}
@@ -726,7 +729,7 @@ namespace Horizon::RHI
 
 	void D3D12Device::CreateRootSignature()
 	{
-		constexpr u32 kRootConstantCount = 16;
+		constexpr u32 kRootConstantCount = 32;
 
 		D3D12_ROOT_PARAMETER1 params[1] = {};
 

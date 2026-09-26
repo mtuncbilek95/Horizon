@@ -1,11 +1,15 @@
 #pragma once
 
 #include <Engine/Asset/AssetObject.h>
+#include <Engine/Asset/Mesh/MeshProperties.h>
 #include <Engine/Asset/Mesh/MeshSubMesh.h>
+#include <Engine/Asset/Mesh/MeshVertex.h>
+#include <Engine/Job/JobSystem.h>
 
 #include <Runtime/Containers/List.h>
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Buffer/GfxBuffer.h>
+#include <Runtime/RHI/Buffer/GfxBufferRange.h>
 
 namespace Horizon::Engine
 {
@@ -18,23 +22,21 @@ namespace Horizon::Engine
 		MeshAsset() = default;
 		~MeshAsset() = default;
 
-		RHI::GfxBuffer* GetVertexBuffer() const { return m_vertexBuffer; }
-		RHI::GfxBuffer* GetIndexBuffer() const { return m_indexBuffer; }
+		void LoadAsync();
+		void UnloadAsync();
 
-		u32 GetVertexCount() const { return m_vertexCount; }
-		u32 GetIndexCount() const { return m_indexCount; }
-		u32 GetVertexStride() const { return m_vertexStride; }
+		const List<MeshSubMesh>& GetSubmeshes() const { return m_submeshes; }
 
-		const List<MeshSubMesh>& GetSubMeshes() const { return m_subMeshes; }
+		u32 GetFirstVertex() const { return m_vertexRange.offset / sizeof(MeshVertex); }
+		u32 GetFirstIndex() const { return m_indexRange.offset / sizeof(u32); }
 
 	private:
-		RHI::GfxBuffer* m_vertexBuffer = nullptr;
-		RHI::GfxBuffer* m_indexBuffer = nullptr;
+		SubmitTicket m_ticket = InvalidSubmitTicket;
 
-		u32 m_vertexCount = 0;
-		u32 m_indexCount = 0;
-		u32 m_vertexStride = 0;
+		List<MeshSubMesh> m_submeshes;
 
-		List<MeshSubMesh> m_subMeshes;
+		MeshProperties m_properties;
+		RHI::GfxBufferRange m_vertexRange;
+		RHI::GfxBufferRange m_indexRange;
 	};
 }

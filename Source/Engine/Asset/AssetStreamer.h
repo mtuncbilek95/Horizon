@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Engine/Asset/AssetEntry.h>
 #include <Engine/Asset/AssetObject.h>
 #include <Engine/Asset/AssetResidency.h>
 #include <Engine/Core/Engine.h>
@@ -18,18 +17,10 @@ namespace Horizon::Engine
 		virtual void OnInitialize() = 0;
 		virtual void OnFinalize() = 0;
 
+		virtual void LoadAsync(AssetObject* pAsset) = 0;
+		virtual void UnloadAsync(AssetObject* pAsset) = 0;
+
 		virtual Reflect::TypeHandle GetAssetType() = 0;
-
-		virtual AssetObject* Load(const AssetEntry& entry) = 0;
-		virtual void Unload(AssetObject* pObject) = 0;
-
-	protected:
-		void Bind(AssetObject* pObject, const Guid& id, AssetResidency state)
-		{
-			pObject->m_id = id;
-			pObject->m_streamer = this;
-			pObject->m_state = state;
-		}
 
 	private:
 		Engine* m_engine = nullptr;

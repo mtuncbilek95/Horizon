@@ -18,6 +18,7 @@ namespace Horizon::Editor
 	struct ImportTask
 	{
 		Guid id;
+		std::string relativePath;
 		std::string sourcePath;
 		std::string cookedPath;
 		std::string assetTypeName;

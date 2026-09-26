@@ -129,25 +129,28 @@ namespace Horizon::Editor
 		return false;
 	}
 
-	void DomainFolder::Refresh()
+	void DomainFolder::Refresh(List<std::string>& outSources)
 	{
 		Clear();
 
+		const std::string relativePath = GetRelativePath();
 		const List<PAL::Directory::Entry> entries = PAL::Directory::Iterate(m_absolutePath);
 
 		for (const PAL::Directory::Entry& entry : entries)
 		{
-			if (!entry.isDirectory)
+			if (entry.isDirectory)
 			{
-				if (entry.name.ends_with(DomainFile::MetaSuffix))
-					continue;
-
-				// Add the file in domain
-				AddFile(entry.name);
+				AddFolder(entry.name)->Refresh(outSources);
 				continue;
 			}
 
-			AddFolder(entry.name)->Refresh();
+			if (entry.name.ends_with(DomainFile::MetaSuffix))
+				continue;
+
+			if (relativePath.empty())
+				outSources.PushBack(entry.name);
+			else
+				outSources.PushBack(relativePath + "/" + entry.name);
 		}
 	}
 
