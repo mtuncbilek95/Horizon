@@ -12,10 +12,6 @@
 
 #include <imgui.h>
 
-#include <algorithm>
-#include <cstring>
-#include <string>
-
 namespace Horizon::Editor
 {
 	void MeshComponentDrawer::OnRender()
@@ -52,9 +48,13 @@ namespace Horizon::Editor
 
 		if (!pMeshComp->m_meshHandle.GetId().IsValid())
 			m_currentLabel = "None";
+		else
+		{
+			DomainFile* pFile = GetEngine()->RequestService<DomainService>()->FindFileByGuid(pMeshComp->m_meshHandle.GetId());
+			m_currentLabel = pFile->GetPureName();
+		}
 
-		const f32 width = std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f);
-		ImGui::Button(m_currentLabel.c_str(), ImVec2(width, 0.0f));
+		ImGui::Button(m_currentLabel.c_str(), ImVec2(-FLT_MIN, 0.f));
 
 		if (ImGui::BeginDragDropTarget())
 		{
@@ -70,7 +70,7 @@ namespace Horizon::Editor
 				{
 					auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
 
-					m_currentLabel = pDropped->GetName();
+					m_currentLabel = pDropped->GetPureName();
 					pMeshComp->m_meshHandle.SetId(pDropped->GetID());
 					pMeshComp->m_meshHandle.SetAsset(pAssetService->FindAsset(pDropped->GetID()));
 

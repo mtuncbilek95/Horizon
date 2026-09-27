@@ -14,6 +14,7 @@ namespace Horizon::Engine
 	class H_EXPORT AssetObject : public Reflect::Base
 	{
 		friend class AssetService;
+		friend class AssetStreamer;
 	public:
 		virtual ~AssetObject() = default;
 

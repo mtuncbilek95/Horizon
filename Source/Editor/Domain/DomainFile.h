@@ -28,6 +28,7 @@ namespace Horizon::Editor
 		DomainFolder* GetParent() const { return m_parent; }
 
 		const std::string& GetName() const { return m_name; }
+		const std::string& GetPureName() const { return m_onlyName; }
 		std::string GetExtension() const;
 
 		const std::string& GetMetaPath() const { return m_metaPath; }
@@ -44,6 +45,7 @@ namespace Horizon::Editor
 		DomainMeta m_meta;
 
 		std::string m_name;
+		std::string m_onlyName;
 
 		std::string m_metaPath;
 		std::string m_sourcePath;

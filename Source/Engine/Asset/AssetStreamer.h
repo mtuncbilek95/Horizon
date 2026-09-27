@@ -22,6 +22,8 @@ namespace Horizon::Engine
 
 		virtual Reflect::TypeHandle GetAssetType() = 0;
 
+		void FailedAssetLog(AssetObject* pAsset, std::string_view reason);
+
 	private:
 		Engine* m_engine = nullptr;
 	};

@@ -1,7 +1,7 @@
 #include "ViewRegistry.h"
 
 #include <Editor/Attributes/EditorViewAttribute.h>
-
+#include <Editor/Views/ViewCommandBinding.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 
@@ -95,6 +95,15 @@ namespace Horizon::Editor
 			m_layoutDirty = true;
 		}
 
+		for (const ViewCommandBinding& binding : ViewCommandBindings)
+		{
+			if (!ImGui::Shortcut(binding.broadcastChord, ImGuiInputFlags_RouteGlobal))
+				continue;
+
+			for (auto* view : m_createdViews)
+				view->OnCommand(binding.command);
+		}
+
 		for (auto* view : m_createdViews)
 		{
 			if (view->IsFullBleed())
@@ -107,6 +116,12 @@ namespace Horizon::Editor
 
 			if (view->IsFullBleed())
 				ImGui::PopStyleVar(2);
+
+			for (const ViewCommandBinding& binding : ViewCommandBindings)
+			{
+				if (ImGui::Shortcut(binding.focusedChord))
+					view->OnCommand(binding.command);
+			}
 
 			view->OnRender(context);
 			ImGui::End();

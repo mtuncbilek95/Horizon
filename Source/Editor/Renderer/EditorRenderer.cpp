@@ -24,8 +24,6 @@
 
 #include <backends/imgui_impl_dx12.h>
 
-#include <fstream>
-
 namespace Horizon::Editor
 {
 	EditorRenderer::EditorRenderer(const EditorRendererDesc& desc) : m_device(desc.pDevice),

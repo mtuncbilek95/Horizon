@@ -2,13 +2,16 @@
 
 #include <Editor/Models/SelectionModel.h>
 #include <Editor/Renderer/EditorContext.h>
-
+#include <Editor/Domain/DomainFile.h>
+#include <Engine/Asset/Scene/SceneSerializer.h>
+#include <Engine/Job/JobSystem.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/World/Components/NameComponent.h>
 #include <Engine/World/Components/EditorOnlyComponent.h>
-
+#include <Runtime/PAL/File/File.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
+#include <Runtime/Serialization/JsonArchive.h>
 
 namespace Horizon::Editor
 {
@@ -21,14 +24,24 @@ namespace Horizon::Editor
 	void SceneHierarchyView::OnInvoke()
 	{
 		auto* pEngine = GetContext()->pEngine;
-		auto* pWorldService = pEngine->RequestService<Engine::WorldService>();
-		m_currentScene = pWorldService->GetCurrentWorld();
-
 		m_context.BootstrapContext(GetContext()->pEngine, "SceneHierarchyView");
 	}
 
 	void SceneHierarchyView::OnRender(const Engine::EngineFrame& context)
 	{
+		if (!m_connectedFile)
+		{
+			ImGui::TextDisabled("No active world");
+			return;
+		}
+		else
+		{
+			auto* pWorldService = GetContext()->pEngine->RequestService<Engine::WorldService>();
+
+			if (m_currentScene != pWorldService->GetCurrentWorld())
+				m_currentScene = pWorldService->GetCurrentWorld();
+		}
+
 		m_entities.Clear();
 		m_currentScene->ForEach<Engine::NameComponent>([&](Engine::EntityHandle entt, const Engine::NameComponent&)
 			{
@@ -62,7 +75,7 @@ namespace Horizon::Editor
 			Engine::NameComponent* nameComp = m_currentScene->FindComponent<Engine::NameComponent>(entt);
 
 			std::string name = ICON_FA_CUBE " ";
-			name += nameComp->m_name.ToString();
+			name += nameComp->m_name;
 
 			ImGui::PushID(i32(id));
 			ImGui::SetNextItemSelectionUserData(u64(i));
@@ -101,6 +114,15 @@ namespace Horizon::Editor
 		RenderRenameModal();
 	}
 
+	b8 SceneHierarchyView::OnCommand(ViewCommand command)
+	{
+		if (command != ViewCommand::Save)
+			return false;
+
+		SaveSceneToSource();
+		return true;
+	}
+
 	void SceneHierarchyView::BeginRename(Engine::EntityHandle handl)
 	{
 		if (!m_renamePath.empty())
@@ -112,9 +134,9 @@ namespace Horizon::Editor
 
 		auto* pNameComp = m_currentScene->FindComponent<Engine::NameComponent>(handl);
 		m_renameHandl = handl;
-		m_renamePath = pNameComp->m_name.ToString();
+		m_renamePath = pNameComp->m_name;
 
-		std::snprintf(m_renameBuffer, sizeof(m_renameBuffer), "%s", pNameComp->m_name.ToString().data());
+		std::snprintf(m_renameBuffer, sizeof(m_renameBuffer), "%s", pNameComp->m_name.data());
 		ImGui::OpenPopup(sPopupName.data());
 	}
 
@@ -128,7 +150,7 @@ namespace Horizon::Editor
 		if (ImGui::Button("OK") || accepted)
 		{
 			auto* pNameComp = m_currentScene->FindComponent<Engine::NameComponent>(m_renameHandl);
-			pNameComp->m_name = NameId(m_renameBuffer);
+			pNameComp->m_name = m_renameBuffer;
 			m_renamePath.clear();
 			m_renameHandl = Engine::EntityHandle();
 			ImGui::CloseCurrentPopup();
@@ -145,4 +167,23 @@ namespace Horizon::Editor
 		ImGui::EndPopup();
 	}
 
+	void SceneHierarchyView::SaveSceneToSource()
+	{
+		auto* pJobSys = GetContext()->pEngine->GetJobSystem();
+
+		pJobSys->SubmitJob(Engine::JobLane::Background, Engine::Job([this]()
+			{
+				Engine::ReflectionSystem* pReflection = GetContext()->pEngine->GetReflectionSystem();
+
+				JsonArchiveWriter writer;
+				Engine::SceneSerializer::Serialize(*m_currentScene, pReflection, writer);
+
+				PAL::FileAccessRequest handle = PAL::File::RequestAccess(GetConnectedFile()->GetSourcePath(),
+					PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::SharedWrite);
+
+				PAL::File::WriteString(handle, writer.ToString());
+
+				PAL::File::ReleaseAccess(handle);
+			}));
+	}
 }

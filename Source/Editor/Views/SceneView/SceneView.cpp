@@ -72,7 +72,6 @@ namespace Horizon::Editor
 		}
 
 		Engine::Scene* pScene = m_world->GetCurrentWorld();
-
 		if (pScene == nullptr)
 		{
 			ImGui::TextDisabled("No active world");
@@ -80,17 +79,14 @@ namespace Horizon::Editor
 		}
 
 		const ImVec2 area = ImGui::GetContentRegionAvail();
-
 		if (area.x < 1.0f || area.y < 1.0f)
 			return;
 
 		Engine::CameraComponent* pCamera = EnsureEditorCamera(pScene);
-
 		if (pCamera == nullptr)
 			return;
 
 		auto* pCamTransform = pScene->FindComponent<Engine::TransformComponent>(m_editorCamera);
-
 		if (pCamTransform == nullptr)
 			return;
 

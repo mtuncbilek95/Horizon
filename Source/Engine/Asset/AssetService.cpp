@@ -20,6 +20,12 @@ namespace Horizon::Engine
 		for (auto* pType : types)
 		{
 			AssetStreamer* pStreamer = (AssetStreamer*)pType->Create();
+			if (!pStreamer)
+			{
+				Terminal::Warn(StringOps::GetName(this), "Forgetting to implement a virtual function can cause the previous error!");
+				continue;
+			}
+
 			pStreamer->m_engine = GetEngine();
 			pStreamer->OnInitialize();
 

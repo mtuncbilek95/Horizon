@@ -2,7 +2,6 @@
 
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
-#include <Runtime/Containers/NameId.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Engine
@@ -16,6 +15,6 @@ namespace Horizon::Engine
 		~NameComponent() = default;
 
 		HFIELD();
-		NameId m_name;
+		std::string m_name;
 	};
 }

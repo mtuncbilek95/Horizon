@@ -35,6 +35,7 @@ namespace Horizon::Engine
 		System* RequestSystem(Reflect::TypeHandle handl) const;
 
 		Scene* GetCurrentWorld() const { return m_activeWorld; }
+		void SetCurrentWorld(Scene* pNewWorld) { m_activeWorld = pNewWorld; }
 
 	private:
 		ReflectionSystem* m_reflection;

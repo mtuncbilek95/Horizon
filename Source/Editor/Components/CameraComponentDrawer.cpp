@@ -36,7 +36,7 @@ namespace Horizon::Editor
 		ImGui::AlignTextToFramePadding();
 		ImGui::TextUnformatted("Field of View");
 		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f));
+		ImGui::SetNextItemWidth(-FLT_MIN);
 		ImGui::DragFloat("##fov", &pCamComp->m_fov, 0.1f, 0, 0, "%.3f", ImGuiSliderFlags_ColorMarkers);
 
 		ImGui::TableNextRow();
@@ -45,7 +45,7 @@ namespace Horizon::Editor
 		ImGui::AlignTextToFramePadding();
 		ImGui::TextUnformatted("Near Plane");
 		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f));
+		ImGui::SetNextItemWidth(-FLT_MIN);
 		ImGui::DragFloat("##nearPlane", &pCamComp->m_nearPlane, 0.1f, 0, 0, "%.3f", ImGuiSliderFlags_ColorMarkers);
 
 		ImGui::TableNextRow();
@@ -54,7 +54,7 @@ namespace Horizon::Editor
 		ImGui::AlignTextToFramePadding();
 		ImGui::TextUnformatted("Far Plane");
 		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f));
+		ImGui::SetNextItemWidth(-FLT_MIN);
 		ImGui::DragFloat("##farPlane", &pCamComp->m_farPlane, 0.1f, 0, 0, "%.3f", ImGuiSliderFlags_ColorMarkers);
 
 

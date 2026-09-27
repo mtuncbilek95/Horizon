@@ -36,7 +36,7 @@ namespace Horizon::Editor
 		ImGui::AlignTextToFramePadding();
 		ImGui::TextUnformatted("Position");
 		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f));
+		ImGui::SetNextItemWidth(-FLT_MIN);
 
 		if (ImGui::DragFloat3("##position", posArr, 0.1f, 0, 0, "%.3f", ImGuiSliderFlags_ColorMarkers))
 			pTransformComp->m_position = { posArr[0], posArr[1], posArr[2] };
@@ -48,7 +48,7 @@ namespace Horizon::Editor
 		ImGui::AlignTextToFramePadding();
 		ImGui::TextUnformatted("Rotation");
 		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f));
+		ImGui::SetNextItemWidth(-FLT_MIN);
 
 		if (ImGui::DragFloat3("##rotation", rotArr, 0.1f, 0, 0, "%.3f", ImGuiSliderFlags_ColorMarkers))
 			pTransformComp->m_rotation = { Math::DegToRad(rotArr[0]), Math::DegToRad(rotArr[1]), Math::DegToRad(rotArr[2]) };
@@ -60,7 +60,7 @@ namespace Horizon::Editor
 		ImGui::AlignTextToFramePadding();
 		ImGui::TextUnformatted("Scale");
 		ImGui::TableNextColumn();
-		ImGui::SetNextItemWidth(std::min(ImGui::GetContentRegionAvail().x, cellMax * 3.0f + spacing * 2.0f));
+		ImGui::SetNextItemWidth(-FLT_MIN);
 
 		if (ImGui::DragFloat3("##scale", sclArr, 0.1f, 0, 0, "%.3f", ImGuiSliderFlags_ColorMarkers))
 			pTransformComp->m_scale = { sclArr[0], sclArr[1], sclArr[2] };

@@ -1,5 +1,3 @@
-#pragma once
-
 #include <Runtime/Serialization/Archive.h>
 #include <Runtime/RTTR/Reflection.h>
 
@@ -9,8 +7,12 @@ namespace Horizon
 	{
 	public:
 		using ResolveFn = const Reflect::Type* (*)(void* userData, Reflect::TypeHandle handle);
+		using ResolveNameFn = const Reflect::Type* (*)(void* userData, const std::string& name);
 
-		Serializer(void* userData, ResolveFn resolve) : m_resolve(resolve), m_userData(userData) {}
+		Serializer(void* userData, ResolveFn resolve, ResolveNameFn resolveName = nullptr) : m_resolve(resolve),
+			m_resolveName(resolveName), m_userData(userData)
+		{
+		}
 
 		void Serialize(const void* pObject, const Reflect::Type& type, IArchiveWriter& writer);
 		void Deserialize(void* pObject, const Reflect::Type& type, IArchiveReader& reader);
@@ -29,9 +31,11 @@ namespace Horizon
 		b8 SeekField(const Reflect::Field& field, IArchiveReader& reader);
 
 		const Reflect::Type* Resolve(Reflect::TypeHandle handle) { return m_resolve(m_userData, handle); }
+		const Reflect::Type* ResolveByName(const std::string& name) { return m_resolveName ? m_resolveName(m_userData, name) : nullptr; }
 
 	private:
 		ResolveFn m_resolve = nullptr;
+		ResolveNameFn m_resolveName = nullptr;
 		void* m_userData = nullptr;
 	};
 }

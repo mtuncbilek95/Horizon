@@ -3,6 +3,7 @@
 #include <Engine/World/Components/TransformComponent.h>
 #include <Engine/World/Components/CameraComponent.h>
 #include <Engine/World/Components/MeshComponent.h>
+#include <Engine/World/Components/FogComponent.h>
 #include <Engine/Asset/AssetService.h>
 #include <Engine/Asset/Mesh/MeshAssetStreamer.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
@@ -30,10 +31,17 @@ namespace Horizon::Engine
 
 	struct FunPushConstant
 	{
-		Math::Mat4f mvp;
+		Math::Mat4f model;
+		Math::Mat4f viewProj;
+		Math::Vec3f cameraPos;
 		u32 vertexBufferIndex;
 		u32 firstVertex;
-		u32 padding[2];
+		f32 fogDensity;
+		f32 fogStartDistance;
+		f32 fogEndDistance;
+		Math::Vec3f fogColor;
+		f32 fogMaxOpacity = 0;
+		u32 fogMode = 0;
 	};
 
 	u32 sFunVertexSrv = kInvalid32;
@@ -208,6 +216,7 @@ namespace Horizon::Engine
 	void RenderSystem::OnExecute(const EngineFrame& ctx, Scene& currentScene)
 	{
 		Math::Mat4f viewProj = Math::Mat4f::Identity();
+		Math::Vec3f camPos = Math::Vec3f::Zero();
 		b8 hasView = false;
 
 		currentScene.ForEach<CameraComponent>([&](EntityHandle handl, CameraComponent& camera)
@@ -219,6 +228,7 @@ namespace Horizon::Engine
 					return;
 
 				viewProj = camera.m_viewProjection;
+				camPos = camera.m_worldPosition;
 				ResizeImage({ u32(camera.m_targetScreen.X()), u32(camera.m_targetScreen.Y()) });
 				hasView = true;
 			});
@@ -266,39 +276,41 @@ namespace Horizon::Engine
 			sFunVertexSrv = m_resourceHeap->CreateShaderView(pMeshStreamer->GetVertexBuffer());
 
 		slot.pTargetCmd->BindIndexBuffer(pMeshStreamer->GetIndexBuffer(), RHI::GfxIndexType::Index32);
+		
+		FunPushConstant constants = {};
+		b8 hasFog = false;
+		currentScene.ForEach<FogComponent>([&](EntityHandle handl, FogComponent fogComp) 
+			{
+				if (hasFog)
+					return;
+
+				constants.fogDensity = fogComp.m_density;
+				constants.fogStartDistance = fogComp.m_startDistance;
+				constants.fogEndDistance = fogComp.m_endDistance;
+				constants.fogColor = { fogComp.m_color.R(), fogComp.m_color.G(), fogComp.m_color.B() };
+				constants.fogMaxOpacity = fogComp.m_maxOpacity;
+				constants.fogMode = (u32)fogComp.m_mode + 1;
+
+				hasFog = true;
+			});
 
 		currentScene.ForEach<MeshComponent, TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
 			{
-				const AssetHandle<MeshAsset>& meshHandle = mesh.m_meshHandle;
-
-				if (!meshHandle.GetId().IsValid())
+				if (!mesh.m_resident)
 					return;
 
-				MeshAsset* pAsset = meshHandle.GetAsset();
-
-				if (!pAsset)
-					return;
-
-				if (pAsset->GetResidencyState() == AssetResidency::Unloaded)
-					pAsset->LoadAsync();
-
-				if (pAsset->GetResidencyState() != AssetResidency::Resident)
-					return;
-
-				FunPushConstant constants = {};
-				constants.mvp = viewProj * worldMat.m_worldMatrix;
+				constants.viewProj = viewProj;
+				constants.model = worldMat.m_worldMatrix;
+				constants.cameraPos = camPos;
 				constants.vertexBufferIndex = sFunVertexSrv;
 				slot.pTargetCmd->SetGraphicsConstants(&constants, sizeof(FunPushConstant) / sizeof(u32));
 
-				const List<MeshSubMesh>& subMeshes = pAsset->GetSubmeshes();
-
-				for (usize i = 0; i < subMeshes.GetCount(); ++i)
+				for (usize i = 0; i < mesh.m_drawRanges.GetCount(); ++i)
 				{
-					const MeshSubMesh& subMesh = subMeshes[i];
-					const u32 firstVertex = pAsset->GetFirstVertex() + subMesh.vertexOffset;
+					const MeshDrawRange& range = mesh.m_drawRanges[i];
 
-					slot.pTargetCmd->SetGraphicsConstants(&firstVertex, 1, offsetof(FunPushConstant, firstVertex) / sizeof(u32));
-					slot.pTargetCmd->DrawIndexed(subMesh.indexCount, 1, pAsset->GetFirstIndex() + subMesh.indexOffset, 0);
+					slot.pTargetCmd->SetGraphicsConstants(&range.firstVertex, 1, offsetof(FunPushConstant, firstVertex) / sizeof(u32));
+					slot.pTargetCmd->DrawIndexed(range.indexCount, 1, range.firstIndex, 0);
 				}
 			});
 

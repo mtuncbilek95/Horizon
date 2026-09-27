@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Editor/AssetAction/AssetAction.h>
 #include <Editor/Views/ViewObject.h>
 #include <Editor/Attributes/EditorViewAttribute.h>
 #include <Editor/Font/IconsFontAwesome6.h>
@@ -11,6 +12,7 @@
 
 #include <imgui.h>
 #include <string>
+#include <unordered_map>
 
 namespace Horizon::Editor
 {
@@ -32,6 +34,9 @@ namespace Horizon::Editor
 		};
 
 	public:
+		AssetBrowserView() = default;
+		~AssetBrowserView() final;
+
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
 
@@ -47,13 +52,20 @@ namespace Horizon::Editor
 		BrowserEntry* FindEntry(const std::string& path);
 
 	private:
+		// Asset Open Actions
+		List<AssetAction*> m_openActions;
+		std::unordered_map<std::string, usize> m_actionNameLookup;
+
+		// Context Menu
 		ContextMenuRegistry<AssetBrowserContext> m_contextMenu;
 
 		DomainFolder* m_currentFolder = nullptr;
 
+		// Safe-use entries
 		List<BrowserEntry> m_entries;
 		ImGuiSelectionBasicStorage m_selection;
 
+		// Rename misc.
 		std::string m_renamePath;
 		b8 m_renameIsFolder = false;
 		c8 m_renameBuffer[256] = {};

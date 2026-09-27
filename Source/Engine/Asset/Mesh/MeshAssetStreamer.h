@@ -32,7 +32,6 @@ namespace Horizon::Engine
 
 	private:
 		void RunLoadAsset(MeshAsset* pAsset);
-		void FailAsset(MeshAsset* pAsset, std::string_view reason);
 
 	private:
 		RHI::GfxDevice* m_device = nullptr;

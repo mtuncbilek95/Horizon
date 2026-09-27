@@ -227,10 +227,23 @@ namespace Horizon
 		if (reader.Key("type"))
 		{
 			const std::string typeName = reader.ReadString();
-			const Reflect::Type* pType = pTarget ? Resolve(pTarget->GetTypeId()) : nullptr;
+			const Reflect::Type* pType = nullptr;
+
+			if (pTarget)
+				pType = Resolve(pTarget->GetTypeId());
+			else
+			{
+				pType = ResolveByName(typeName);
+
+				if (pType && pType->CanConstruct())
+				{
+					pTarget = static_cast<Reflect::Base*>(pType->Create());
+					*static_cast<Reflect::Base**>(pointerSlot) = pTarget;
+				}
+			}
 
 			if (!pTarget)
-				Terminal::Warn("Serializer", "Field '{}' holds no instance, '{}' data skipped", field.GetName(), typeName);
+				Terminal::Warn("Serializer", "Field '{}' holds no instance and '{}' cannot be created, data skipped", field.GetName(), typeName);
 			else if (!pType)
 				Terminal::Warn("Serializer", "Unregistered concrete type in field '{}'", field.GetName());
 			else if (pType->GetName() != typeName)

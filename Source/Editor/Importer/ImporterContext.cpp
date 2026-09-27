@@ -16,9 +16,16 @@ namespace Horizon::Editor
 			if (!pAttr)
 				continue;
 
+			auto* pImporter = (AssetImporter*)pType->Create();
+			if (!pImporter)
+			{
+				Terminal::Warn(StringOps::GetName(this), "Forgetting to implement a virtual function can cause the previous error!");
+				continue;
+			}
+
 			m_extLookup[pAttr->GetExtensions().At(0)] = m_assets.GetCount();
 			m_typeLookup[pAttr->GetType()] = m_assets.GetCount();
-			m_assets.PushBack((AssetImporter*)pType->Create());
+			m_assets.PushBack(pImporter);
 
 			Terminal::Info(StringOps::GetName(this), "{} has been registered", pType->GetName());
 		}

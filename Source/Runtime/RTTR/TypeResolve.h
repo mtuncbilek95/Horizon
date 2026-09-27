@@ -54,7 +54,6 @@ namespace Horizon::Reflect
 		static constexpr TypeKind Kind = KindOf<T>();
 	};
 
-
 	template<typename E>
 	struct TypeResolve<List<E>>
 	{
@@ -72,6 +71,22 @@ namespace Horizon::Reflect
 		using Element = E;
 		static constexpr TypeMode Mode = TypeMode::Pointer;
 		static constexpr TypeKind Kind = KindOf<E>();
+	};
+
+	template<typename Tag>
+	struct TypeResolve<Handle<Tag>>
+	{
+		using Element = u64;
+		static constexpr TypeMode Mode = TypeMode::Compose;
+		static constexpr TypeKind Kind = TypeKind::Unsigned64;
+	};
+
+	template<typename Tag>
+	struct TypeResolve<HandleEx<Tag>>
+	{
+		using Element = u64;
+		static constexpr TypeMode Mode = TypeMode::Compose;
+		static constexpr TypeKind Kind = TypeKind::Unsigned64;
 	};
 
 	template<typename T>

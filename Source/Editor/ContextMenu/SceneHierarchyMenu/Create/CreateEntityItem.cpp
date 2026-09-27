@@ -38,7 +38,7 @@ namespace Horizon::Editor
 
 		context.pCurrentScene->ForEach<Engine::NameComponent>([&](Engine::EntityHandle, const Engine::NameComponent& comp) 
 			{
-				u32 suffix = ParseSuffix(comp.m_name.ToString());
+				u32 suffix = ParseSuffix(comp.m_name);
 
 				if (suffix == kInvalid32)
 					return;
@@ -51,7 +51,7 @@ namespace Horizon::Editor
 
 		Engine::EntityHandle entt = context.pCurrentScene->AddEntity();
 		auto* pName = context.pCurrentScene->AddComponent(entt, Engine::NameComponent());
-		pName->m_name = NameId(name);
+		pName->m_name = name;
 	}
 
 	b8 CreateEntityItem::IsEnabled(const SceneHierarchyContext& context)

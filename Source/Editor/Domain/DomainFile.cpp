@@ -70,7 +70,7 @@ namespace Horizon::Editor
 	}
 
 	DomainFile::DomainFile(DomainFolder* pParent, const std::string& name, const std::string& metaPath, const std::string& sourcePath, const std::string& cookFolder) :
-		m_parent(pParent), m_name(name), m_metaPath(metaPath), m_sourcePath(sourcePath), m_cookFolder(cookFolder)
+		m_parent(pParent), m_name(name), m_metaPath(metaPath), m_sourcePath(sourcePath), m_cookFolder(cookFolder), m_onlyName(name.substr(0, m_name.rfind(".")))
 	{
 	}
 
@@ -141,7 +141,15 @@ namespace Horizon::Editor
 
 	void DomainFile::Rename(const std::string& newName)
 	{
-		std::string newPath = m_parent->GetAbsolutePath() + "/" + newName;
-		PAL::File::Rename(m_sourcePath, newPath);
+		std::string finalName = newName;
+		const std::string extension = GetExtension();
+
+		if (!extension.empty() && !StringOps::EqualsNoCase(StringOps::OnlyExtension(newName), extension))
+			finalName += extension;
+
+		const std::string newPath = m_parent->GetAbsolutePath() + "/" + finalName;
+
+		if (!PAL::File::Rename(m_sourcePath, newPath))
+			Terminal::Error(StringOps::GetName(this), "{} could not be renamed to {}", m_sourcePath, newPath);
 	}
 }

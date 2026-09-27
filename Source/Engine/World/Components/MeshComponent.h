@@ -4,6 +4,7 @@
 #include <Engine/Asset/Mesh/MeshAsset.h>
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
+#include <Engine/Rendering/MeshDrawRange.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Engine
@@ -18,5 +19,9 @@ namespace Horizon::Engine
 
 		HFIELD();
 		AssetHandle<MeshAsset> m_meshHandle;
+
+		List<MeshDrawRange> m_drawRanges;
+		Guid m_resolvedId;
+		b8 m_resident = false;
 	};
 }

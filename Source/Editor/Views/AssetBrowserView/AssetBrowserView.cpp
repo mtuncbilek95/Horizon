@@ -1,5 +1,6 @@
 #include "AssetBrowserView.h"
 
+#include <Editor/AssetAction/ActionTypeAttribute.h>
 #include <Editor/Renderer/EditorContext.h>
 #include <Editor/Domain/DomainService.h>
 #include <Engine/Core/Engine.h>
@@ -49,13 +50,47 @@ namespace Horizon::Editor
 
 	const std::string& AssetBrowserView::BrowserEntry::GetName() const
 	{
-		return pFolder ? pFolder->GetName() : pFile->GetName();
+		return pFolder ? pFolder->GetName() : pFile->GetPureName();
+	}
+
+
+	AssetBrowserView::~AssetBrowserView()
+	{
+		for (auto* pAction : m_openActions)
+			Memory::Allocator::Delete(pAction);
 	}
 
 	void AssetBrowserView::OnInvoke()
 	{
 		auto* pDomain = GetContext()->pEngine->RequestService<DomainService>();
 		m_currentFolder = pDomain->GetRoot();
+
+		// Resolve asset actions
+		auto* pReflect = GetContext()->pEngine->GetReflectionSystem();
+		List<Reflect::Type*> actionTypes = pReflect->GetTypeByBase(Reflect::TypeOf<AssetAction>());
+		for (auto* pType : actionTypes)
+		{
+			auto* pAttr = pType->GetCustomAttribute<ActionTypeAttribute>();
+			if (!pAttr)
+			{
+				Terminal::Error(StringOps::GetName(this), "Can't use AssetActions without ActionTypeAttribute");
+				continue;
+			}
+
+			AssetAction* pAction = (AssetAction*)pType->Create();
+
+			if (!pAction)
+			{
+				Terminal::Warn(StringOps::GetName(this), "Forgetting to implement a virtual function can cause the previous error!");
+				continue;
+			}
+
+			Reflect::Type* pAssetType = pReflect->GetType(pAttr->GetAssetType());
+			m_actionNameLookup[pAssetType->GetName()] = m_openActions.GetCount();
+			m_openActions.PushBack(pAction);
+
+			Terminal::Info(StringOps::GetName(this), "{} has been registered!", pType->GetName());
+		}
 
 		m_contextMenu.BootstrapContext(GetContext()->pEngine, "AssetBrowserView");
 	}
@@ -211,7 +246,17 @@ namespace Horizon::Editor
 			Navigate(pEnterFolder);
 
 		// TODO: Open file
-		//if (pOpenFile != nullptr)
+		if (pOpenFile != nullptr)
+		{
+			auto it = m_actionNameLookup.find(pOpenFile->GetMeta().assetTypeName);
+			if (it == m_actionNameLookup.end())
+			{
+				Terminal::Warn(StringOps::GetName(this), "{} is {} and there is no action for this asset.", pOpenFile->GetPureName(), pOpenFile->GetMeta().assetTypeName);
+				return;
+			}
+
+			m_openActions[it->second]->OnTrigger(GetContext(), pOpenFile);
+		}
 			
 	}
 

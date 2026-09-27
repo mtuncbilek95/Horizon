@@ -37,7 +37,7 @@ namespace Horizon::Engine
 			auto* pSystem = (System*)pType->Create();
 			if (!pSystem)
 			{
-				Terminal::Error(StringOps::GetName(this), "{} has no default constructor. You won't have this system.", pType->GetName());
+				Terminal::Error(StringOps::GetName(this), "{} has virtual function issues. You won't have this system.", pType->GetName());
 				continue;
 			}
 
@@ -62,29 +62,14 @@ namespace Horizon::Engine
 			}
 		}
 
-		m_activeWorld = Memory::Allocator::Create<Scene>(Memory::CurrLoc(), pReflect);
-
-		/*{
-			EntityHandle e1 = m_activeWorld->AddEntity();
-			auto* nComp = m_activeWorld->AddComponent(e1, NameComponent());
-			auto* tComp = m_activeWorld->AddComponent(e1, TransformComponent());
-			auto* mComp = m_activeWorld->AddComponent(e1, MeshComponent());
-			nComp->m_name = NameId("SquareObject");
-		}
-
-		{
-			EntityHandle e1 = m_activeWorld->AddEntity();
-			auto* nComp = m_activeWorld->AddComponent(e1, NameComponent());
-			auto* tComp = m_activeWorld->AddComponent(e1, TransformComponent());
-			auto* cComp = m_activeWorld->AddComponent(e1, CameraComponent());
-			nComp->m_name = NameId("Perspective Camera");
-		}*/
-
 		return ModuleReport();
 	}
 
 	void WorldService::OnExecute(const EngineFrame& ctx)
 	{
+		if (!m_activeWorld)
+			return;
+
 		for (auto* pSystem : m_systems)
 			pSystem->OnExecute(ctx, *m_activeWorld);
 	}
@@ -97,8 +82,6 @@ namespace Horizon::Engine
 			Reflect::Type* pType = m_reflection->GetType(pSystem->GetTypeId());
 			pType->Destroy(pSystem);
 		}
-
-		Memory::Allocator::Delete(m_activeWorld);
 	}
 
 	void WorldService::DeclareDependencies(ModuleGraph& graph)

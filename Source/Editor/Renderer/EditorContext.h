@@ -10,10 +10,16 @@ namespace Horizon::Engine
 
 namespace Horizon::Editor
 {
+	class MenuRegistry;
+	class ViewRegistry;
+
 	struct H_EXPORT EditorContext final
 	{
 		PAL::Window* pWindow = nullptr;
 		Engine::Engine* pEngine = nullptr;
 		SelectionModel* pSelection = nullptr;
+
+		ViewRegistry* pViews = nullptr;
+		MenuRegistry* pMenus = nullptr;
 	};
 }

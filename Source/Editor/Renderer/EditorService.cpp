@@ -47,9 +47,13 @@ namespace Horizon::Editor
 		m_editorContext.pWindow = pWindowSub->GetWindow();
 
 		m_viewRegistry = Memory::Allocator::Create<ViewRegistry>(Memory::CurrLoc());
+
+		m_editorContext.pViews = m_viewRegistry;
 		m_viewRegistry->BootstrapViews(m_editorContext);
 
 		m_menuRegistry = Memory::Allocator::Create<MenuRegistry>(Memory::CurrLoc());
+
+		m_editorContext.pMenus = m_menuRegistry;
 		m_menuRegistry->BootstrapMenus(m_editorContext);
 
 		return Engine::ModuleReport();

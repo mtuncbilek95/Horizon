@@ -9,18 +9,25 @@ struct MeshVertex
 
 struct PushConstant
 {
-    float4x4 mvp;
+    float4x4 model;
+    float4x4 viewProj;
+    float3 cameraPos;
     uint vertexBufferIndex;
     uint firstVertex;
+    float fogDensity;
+    float fogStartDistance;
+    float fogEndDistance;
+    float3 fogColor;
+    float fogMaxOpacity;
+    uint fogMode;
 };
-
 
 struct PixelData
 {
     float4 position : SV_Position;
+    float3 worldPos : TEXCOORD0;
     float3 normal : NORMAL;
-    float4 color : COLOR;
-    float2 uv : TEXCOORD;
+    float2 uv : TEXCOORD1;
 };
 
 ConstantBuffer<PushConstant> pushConstant : register(b0, space0);
@@ -30,14 +37,13 @@ PixelData VSMain(uint vertexId : SV_VertexID)
     StructuredBuffer<MeshVertex> vertices = ResourceDescriptorHeap[pushConstant.vertexBufferIndex];
     const MeshVertex vertex = vertices[pushConstant.firstVertex + vertexId];
 
-    const float3 viewRight = normalize(pushConstant.mvp[0].xyz);
-    const float3 viewUp = normalize(pushConstant.mvp[1].xyz);
-    const float3 viewBack = -normalize(pushConstant.mvp[3].xyz);
-
     PixelData output;
-    output.position = mul(pushConstant.mvp, float4(vertex.position, 1.0f));
-    output.normal = float3(dot(viewRight, vertex.normal), dot(viewUp, vertex.normal), dot(viewBack, vertex.normal));
-    output.color = vertex.color;
+    
+    const float4 worldPos = mul(pushConstant.model, float4(vertex.position, 1.0f));
+    
+    output.worldPos = worldPos.xyz;
+    output.position = mul(pushConstant.viewProj, worldPos);
+    output.normal = mul((float3x3) pushConstant.model, vertex.normal);
     output.uv = vertex.uv;
     return output;
 }

@@ -729,7 +729,7 @@ namespace Horizon::RHI
 
 	void D3D12Device::CreateRootSignature()
 	{
-		constexpr u32 kRootConstantCount = 32;
+		constexpr u32 kRootConstantCount = 64;
 
 		D3D12_ROOT_PARAMETER1 params[1] = {};
 

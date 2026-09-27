@@ -29,3 +29,14 @@ namespace Horizon::Engine
 		T* m_object = nullptr;
 	};
 }
+
+namespace Horizon::Reflect
+{
+	template<typename T>
+	struct TypeResolve<Engine::AssetHandle<T>>
+	{
+		using Element = Guid;
+		static constexpr TypeMode Mode = TypeMode::Compose;
+		static constexpr TypeKind Kind = TypeKind::Object;
+	};
+}

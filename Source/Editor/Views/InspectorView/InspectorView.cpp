@@ -76,14 +76,12 @@ namespace Horizon::Editor
 
 			ImGui::PushID((int)i);
 
-			if (ImGui::CollapsingHeader(pType->GetName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				ImGui::PushFont(nullptr, ImGui::GetStyle().FontSizeBase * 0.875f);
-				ImGui::Indent();
+			ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
+			b8 collapsingHead = ImGui::CollapsingHeader(pType->GetName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+			ImGui::PopFont();
+
+			if (collapsingHead)
 				pDrawer->OnRender();
-				ImGui::Unindent();
-				ImGui::PopFont();
-			}
 
 			ImGui::PopID();
 		}
@@ -129,7 +127,7 @@ namespace Horizon::Editor
 				auto* _ = currScene->AddComponent(entity, pCompType->GetTypeId());
 
 				auto* pNameComp = currScene->FindComponent<Engine::NameComponent>(entity);
-				Terminal::Info(StringOps::GetName(this), "{} has been added to {}", pCompType->GetName(), pNameComp->m_name.ToString());
+				Terminal::Info(StringOps::GetName(this), "{} has been added to {}", pCompType->GetName(), pNameComp->m_name);
 				ImGui::CloseCurrentPopup();
 			}
 		}
