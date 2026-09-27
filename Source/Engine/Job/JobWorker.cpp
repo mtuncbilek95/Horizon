@@ -39,6 +39,11 @@ namespace Horizon::Engine
 
 	void JobWorker::Run()
 	{
+		if (m_lane == JobLane::Background)
+			PAL::Thread::SetCurrentPriority(PAL::ThreadPriority::Normal);
+		else
+			PAL::Thread::SetCurrentPriority(PAL::ThreadPriority::Highest);
+
 		while (m_working.Load())
 		{
 			DrainInbox();

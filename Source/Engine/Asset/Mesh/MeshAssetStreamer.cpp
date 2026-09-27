@@ -69,7 +69,7 @@ namespace Horizon::Engine
 			return;
 		}
 
-		pMeshAsset->m_ticket = m_jobSystem->SubmitJob(JobLane::Background, Job([this, pMeshAsset]()
+		pMeshAsset->m_ticket = m_jobSystem->SubmitJob(JobLane::Critical, Job([this, pMeshAsset]()
 			{
 				RunLoadAsset(pMeshAsset);
 			}));

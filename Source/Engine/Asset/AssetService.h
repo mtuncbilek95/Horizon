@@ -25,6 +25,8 @@ namespace Horizon::Engine
 
 		b8 RegisterAsset(const AssetPhysicalEntry& entry);
 		b8 UnregisterAsset(const Guid& id);
+		b8 RefreshAsset(const Guid& id);
+		b8 HasAsset(const Guid& id) const { return m_idLookup.contains(id); }
 
 		template<typename T>
 		T* FindAsset(const Guid& id)
@@ -33,6 +35,9 @@ namespace Horizon::Engine
 		}
 		AssetObject* FindAsset(const Guid& id);
 		AssetStreamer* FindStreamer(Reflect::TypeHandle handle);
+
+	private:
+		b8 ReadHeader(AssetObject* pAsset);
 
 	private:
 		List<AssetStreamer*> m_streamers;

@@ -156,6 +156,11 @@ namespace Horizon::Editor
 				OnEntryAdded(event);
 			});
 
+		m_watcher.OnModified([this](const PAL::DirectoryWatcher::Event& event)
+			{
+				OnEntryModified(event);
+			});
+
 		m_watcher.OnRemoved([this](const PAL::DirectoryWatcher::Event& event)
 			{
 				OnEntryRemoved(event);
@@ -218,6 +223,19 @@ namespace Horizon::Editor
 		return nullptr;
 	}
 
+	void DomainService::ReimportAsset(DomainFile* pFile)
+	{
+		if (pFile == nullptr)
+			return;
+
+		const std::string relativePath = pFile->GetRelativePath();
+
+		if (m_pendingImports.Contains(relativePath) || IsImportActive(relativePath))
+			return;
+
+		m_pendingImports.PushBack(relativePath);
+	}
+
 	void DomainService::OnEntryAdded(const PAL::DirectoryWatcher::Event& event)
 	{
 		if (event.GetName().ends_with(DomainFile::MetaSuffix))
@@ -250,6 +268,27 @@ namespace Horizon::Editor
 	{
 		if (event.GetName().ends_with(DomainFile::MetaSuffix))
 			return;
+
+		if (event.kind == PAL::WatcherEntryKind::Directory)
+			return;
+
+		DomainFolder* pParent = m_root->ResolveFolder(event.GetParent());
+
+		if (pParent == nullptr)
+		{
+			Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", event.GetParent());
+			return;
+		}
+
+		DomainFile* pFile = pParent->FindFile(event.GetName());
+
+		if (pFile == nullptr)
+		{
+			TrackSource(event.relativePath);
+			return;
+		}
+
+		ReimportAsset(pFile);
 	}
 
 	void DomainService::OnEntryRemoved(const PAL::DirectoryWatcher::Event& event)
@@ -504,9 +543,6 @@ namespace Horizon::Editor
 			return;
 		}
 
-		if (pParent->FindFile(name) != nullptr)
-			return;
-
 		const std::string sourcePath = pParent->GetAbsolutePath() + "/" + name;
 
 		if (!PAL::File::Exists(sourcePath))
@@ -549,11 +585,21 @@ namespace Horizon::Editor
 				SplitPath(pTask->relativePath, parentPath, name);
 
 				DomainFolder* pParent = m_root->ResolveFolder(parentPath);
+				DomainFile* pExisting = pParent != nullptr ? pParent->FindFile(name) : nullptr;
 
-				if (pParent == nullptr || pParent->FindFile(name) != nullptr || !PAL::File::Exists(pTask->sourcePath))
+				if (pParent == nullptr || !PAL::File::Exists(pTask->sourcePath))
 				{
 					Terminal::Warn(StringOps::GetName(this), "{} vanished while it was being imported", pTask->sourcePath);
 					PAL::File::Delete(pTask->cookedPath);
+				}
+				else if (pExisting != nullptr)
+				{
+					auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
+
+					if (pAssetService->RefreshAsset(pTask->id))
+						Terminal::Info(StringOps::GetName(this), "{} has been reimported", pTask->sourcePath);
+
+					++m_revision;
 				}
 				else
 				{
@@ -651,10 +697,5 @@ namespace Horizon::Editor
 		m_activeImports.PushBack(pTask);
 
 		return true;
-	}
-
-	void DomainService::ReimportAsset(DomainFile* pFile)
-	{
-
 	}
 }

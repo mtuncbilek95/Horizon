@@ -9,6 +9,8 @@
 #include <Runtime/PAL/File/File.h>
 #include <Runtime/Containers/StringOps.h>
 
+#include <cstring>
+
 namespace Horizon::Engine
 {
 	ModuleReport AssetService::OnInitialize()
@@ -63,6 +65,7 @@ namespace Horizon::Engine
 	AssetStreamer* AssetService::FindStreamer(Reflect::TypeHandle handle)
 	{
 		auto it = m_streamerLookup.find(handle);
+
 		if (it == m_streamerLookup.end())
 			return nullptr;
 
@@ -80,14 +83,8 @@ namespace Horizon::Engine
 		AssetObject* pNewAssetObject = (AssetObject*)pType->Create();
 		pNewAssetObject->m_streamer = FindStreamer(entry.assetType);
 		pNewAssetObject->m_ownerEntry = entry;
-		
-		List<u8> payload;
-		PAL::FileAccessRequest request = PAL::File::RequestAccess(entry.cookPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::Exclusive);
-		
-		if (PAL::File::ReadMemory(request, payload, 0, sizeof(AssetHeader)))
-			std::memcpy(&pNewAssetObject->m_header, payload.GetData(), sizeof(AssetHeader));
 
-		PAL::File::ReleaseAccess(request);
+		ReadHeader(pNewAssetObject);
 
 		m_idLookup[entry.assetId] = m_usableAssets.GetCount();
 		m_usableAssets.PushBack(pNewAssetObject);
@@ -98,6 +95,7 @@ namespace Horizon::Engine
 	b8 AssetService::UnregisterAsset(const Guid& id)
 	{
 		auto it = m_idLookup.find(id);
+
 		if (it == m_idLookup.end())
 			return true;
 
@@ -109,9 +107,23 @@ namespace Horizon::Engine
 		return true;
 	}
 
+	b8 AssetService::RefreshAsset(const Guid& id)
+	{
+		auto it = m_idLookup.find(id);
+
+		if (it == m_idLookup.end())
+		{
+			Terminal::Error(StringOps::GetName(this), "{} is not registered, nothing to refresh", id.ToString());
+			return false;
+		}
+
+		return ReadHeader(m_usableAssets[it->second]);
+	}
+
 	AssetObject* AssetService::FindAsset(const Guid& id)
 	{
 		auto it = m_idLookup.find(id);
+
 		if (it == m_idLookup.end())
 		{
 			Terminal::Error(StringOps::GetName(this), "{} has not been found in any of the sources.", id.ToString());
@@ -119,5 +131,27 @@ namespace Horizon::Engine
 		}
 
 		return m_usableAssets[it->second];
+	}
+
+	b8 AssetService::ReadHeader(AssetObject* pAsset)
+	{
+		List<u8> payload;
+
+		PAL::FileAccessRequest request = PAL::File::RequestAccess(pAsset->m_ownerEntry.cookPath, PAL::FileOperationAccessPolicy::Read,
+			PAL::FileOperationSharePolicy::SharedRead);
+
+		const b8 wasRead = PAL::File::ReadMemory(request, payload, 0, sizeof(AssetHeader));
+
+		PAL::File::ReleaseAccess(request);
+
+		if (!wasRead || payload.GetCount() < sizeof(AssetHeader))
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has no readable header", pAsset->m_ownerEntry.cookPath);
+			return false;
+		}
+
+		std::memcpy(&pAsset->m_header, payload.GetData(), sizeof(AssetHeader));
+
+		return true;
 	}
 }

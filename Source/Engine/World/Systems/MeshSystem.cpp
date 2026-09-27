@@ -8,39 +8,41 @@ namespace Horizon::Engine
 {
 	b8 MeshSystem::OnInitialize()
 	{
-		return true;
+		m_assetService = GetEngine()->RequestService<AssetService>();
+
+		return m_assetService != nullptr;
 	}
 
 	void MeshSystem::OnExecute(const EngineFrame& ctx, Scene& currentScene)
 	{
 		currentScene.ForEach<MeshComponent>([&](EntityHandle handl, MeshComponent& mesh)
 			{
-				const AssetHandle<MeshAsset>& meshHandle = mesh.m_meshHandle;
+				const Guid& id = mesh.m_meshHandle.GetId();
 
-				if (!meshHandle.GetId().IsValid())
+				if (!id.IsValid())
 				{
-					if (mesh.m_resident)
-					{
-						mesh.m_drawRanges.Clear();
-						mesh.m_resolvedId = Guid();
-						mesh.m_resident = false;
-					}
-
+					ClearResidency(mesh);
 					return;
 				}
 
-				MeshAsset* pAsset = meshHandle.GetAsset();
+				MeshAsset* pAsset = mesh.m_meshHandle.GetAsset();
 
-				if (pAsset == nullptr)
+				if (pAsset == nullptr || pAsset->GetPhysicalEntry().assetId != id)
 				{
-					if (mesh.m_resident)
+					if (!m_assetService->HasAsset(id))
 					{
-						mesh.m_drawRanges.Clear();
-						mesh.m_resolvedId = Guid();
-						mesh.m_resident = false;
+						if (mesh.m_resolvedId != id)
+						{
+							Terminal::Warn(StringOps::GetName(this), "{} is not registered yet, mesh stays hidden until it arrives", id.ToString());
+							mesh.m_resolvedId = id;
+						}
+
+						ClearResidency(mesh);
+						return;
 					}
 
-					return;
+					pAsset = m_assetService->FindAsset<MeshAsset>(id);
+					mesh.m_meshHandle.SetAsset(pAsset);
 				}
 
 				const AssetResidency state = pAsset->GetResidencyState();
@@ -50,38 +52,14 @@ namespace Horizon::Engine
 
 				if (state != AssetResidency::Resident)
 				{
-					if (mesh.m_resident)
-					{
-						mesh.m_drawRanges.Clear();
-						mesh.m_resolvedId = Guid();
-						mesh.m_resident = false;
-					}
-
+					ClearResidency(mesh);
 					return;
 				}
 
-				if (!mesh.m_resident || mesh.m_resolvedId != meshHandle.GetId())
+				if (!mesh.m_resident || mesh.m_resolvedId != id)
 				{
-					const List<MeshSubMesh>& subMeshes = pAsset->GetSubmeshes();
-					const u32 firstVertex = pAsset->GetFirstVertex();
-					const u32 firstIndex = pAsset->GetFirstIndex();
-
-					mesh.m_drawRanges.Clear();
-					mesh.m_drawRanges.Reserve(subMeshes.GetCount());
-
-					for (usize i = 0; i < subMeshes.GetCount(); ++i)
-					{
-						const MeshSubMesh& subMesh = subMeshes[i];
-
-						MeshDrawRange range = {};
-						range.firstVertex = firstVertex + subMesh.vertexOffset;
-						range.firstIndex = firstIndex + subMesh.indexOffset;
-						range.indexCount = subMesh.indexCount;
-
-						mesh.m_drawRanges.PushBack(range);
-					}
-
-					mesh.m_resolvedId = mesh.m_meshHandle.GetId();
+					BuildDrawRanges(mesh, pAsset);
+					mesh.m_resolvedId = id;
 					mesh.m_resident = true;
 				}
 			});
@@ -89,5 +67,35 @@ namespace Horizon::Engine
 
 	void MeshSystem::OnFinalize()
 	{
+	}
+
+	void MeshSystem::ClearResidency(MeshComponent& mesh)
+	{
+		if (!mesh.m_resident)
+			return;
+
+		mesh.m_drawRanges.Clear();
+		mesh.m_resolvedId = Guid();
+		mesh.m_resident = false;
+	}
+
+	void MeshSystem::BuildDrawRanges(MeshComponent& mesh, const MeshAsset* pAsset)
+	{
+		const List<MeshSubMesh>& subMeshes = pAsset->GetSubmeshes();
+		const u32 firstVertex = pAsset->GetFirstVertex();
+		const u32 firstIndex = pAsset->GetFirstIndex();
+
+		mesh.m_drawRanges.Clear();
+		mesh.m_drawRanges.Reserve(subMeshes.GetCount());
+
+		for (const MeshSubMesh& subMesh : subMeshes)
+		{
+			MeshDrawRange range = {};
+			range.firstVertex = firstVertex + subMesh.vertexOffset;
+			range.firstIndex = firstIndex + subMesh.indexOffset;
+			range.indexCount = subMesh.indexCount;
+
+			mesh.m_drawRanges.PushBack(range);
+		}
 	}
 }
