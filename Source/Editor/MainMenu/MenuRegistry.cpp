@@ -120,7 +120,10 @@ namespace Horizon::Editor
 		{
 			const ImVec2 origin = pViewport->Pos;
 
-			ImGui::TextUnformatted(" " ICON_FA_CUBES " ");
+			ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1], 0.f);
+			ImGui::TextUnformatted(" " ICON_FA_METEOR " ");
+			ImGui::PopFont();
+
 			for (auto& root : m_menus)
 				RenderNode(root);
 
@@ -133,6 +136,7 @@ namespace Horizon::Editor
 			menuArea.h = i32(kHeight);
 			chrome.clientAreas.PushBack(menuArea);
 
+			ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1], 0.f); // Title Bold Start
 			const f32 buttonsStart = pViewport->Size.x - kButtonWidth * 3.0f;
 			const std::string& title = m_window->GetName();
 			const f32 titleWidth = ImGui::CalcTextSize(title.c_str()).x;
@@ -143,6 +147,7 @@ namespace Horizon::Editor
 				ImGui::SetCursorPosX(titleX);
 				ImGui::TextDisabled("%s", title.c_str());
 			}
+			ImGui::PopFont(); // Title Bold End
 
 			ImGui::SetCursorPosX(buttonsStart);
 

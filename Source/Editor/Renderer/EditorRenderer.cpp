@@ -213,34 +213,41 @@ namespace Horizon::Editor
 		const std::string fontDir = std::string(HORIZON_RESOURCE_DIR) + "/Fonts/";
 		constexpr f32 fontSize = 16.0f;
 
-		const std::string bodyPath = fontDir + "SanFranciscoDisplay - Regular.OTF";
-		if (!io.Fonts->AddFontFromFileTTF(bodyPath.c_str(), fontSize))
-		{
-			Terminal::Error(StringOps::GetName(this), "Failed to load UI Font: {}", bodyPath);
-			io.Fonts->AddFontDefault();
-		}
+		static const ImWchar faRange[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+		static const ImWchar kiRange[] = { ICON_MIN_KI, ICON_MAX_KI, 0 };
 
-		ImFontConfig iconCfg = {};
-		iconCfg.MergeMode = true;
-		iconCfg.PixelSnapH = true;
-		iconCfg.ExtraSizeScale = 0.85f;
-		iconCfg.GlyphMinAdvanceX = fontSize;
-		iconCfg.GlyphOffset = ImVec2(0.0f, 0.0f);
-
-		const auto mergeIconFont = [&](const char* file, const ImWchar* range,
-			const ImWchar* exclude = nullptr)
+		const auto mergeIconFont = [&](const char* file, const ImWchar* range)
 			{
-				iconCfg.GlyphExcludeRanges = exclude;
+				ImFontConfig iconCfg = {};
+				iconCfg.MergeMode = true;
+				iconCfg.PixelSnapH = true;
+				iconCfg.ExtraSizeScale = 0.85f;
+				iconCfg.GlyphMinAdvanceX = fontSize;
+
 				const std::string path = fontDir + file;
 				if (!io.Fonts->AddFontFromFileTTF(path.c_str(), fontSize, &iconCfg, range))
 					Terminal::Error(StringOps::GetName(this), "Failed to load icon font: {}", path);
 			};
 
-		static const ImWchar faRange[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-		static const ImWchar kiRange[] = { ICON_MIN_KI, ICON_MAX_KI, 0 };
+		const auto loadFamily = [&](const char* file) -> ImFont*
+			{
+				const std::string path = fontDir + file;
+				ImFont* font = io.Fonts->AddFontFromFileTTF(path.c_str(), fontSize);
 
-		mergeIconFont("fa-solid-900.ttf", faRange);
-		mergeIconFont("kenney-icon-font.ttf", kiRange);
+				if (font == nullptr)
+				{
+					Terminal::Error(StringOps::GetName(this), "Failed to load UI Font: {}", path);
+					font = io.Fonts->AddFontDefault();
+				}
+
+				mergeIconFont("fa-solid-900.ttf", faRange);
+				mergeIconFont("kenney-icon-font.ttf", kiRange);
+
+				return font;
+			};
+
+		io.FontDefault = loadFamily("NotoSans-Medium.ttf");
+		loadFamily("NotoSans-SemiBold.ttf");
 	}
 
 	void EditorRenderer::DefaultStyle()
