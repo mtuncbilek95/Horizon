@@ -18,6 +18,8 @@ namespace Horizon::Engine
 		void OnExecute(const EngineFrame& ctx, Scene& currentScene) final;
 		void OnFinalize() final;
 
+		SystemGroup GetWorkingGroup() const final { return SystemGroup::General; }
+
 	private:
 		void ClearResidency(MeshComponent& mesh);
 		void BuildDrawRanges(MeshComponent& mesh, const MeshAsset* pAsset);

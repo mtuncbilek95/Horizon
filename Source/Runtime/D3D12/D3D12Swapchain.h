@@ -22,6 +22,7 @@ namespace Horizon::RHI
 		void Resize(u32 width, u32 height) final;
 
 		GfxTexture* GetImage(u32 index) const final;
+		void SetDebugName(const char* pName) final;
 
 		IDXGISwapChain4* Handle() const { return m_swapchain; }
 

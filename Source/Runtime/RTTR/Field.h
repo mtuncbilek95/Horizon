@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Runtime/Containers/List.h>
+#include <Runtime/Containers/ReadOnlyList.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/RTTR/Attribute.h>
@@ -8,7 +9,6 @@
 #include <Runtime/RTTR/TypeMode.h>
 
 #include <string>
-#include <span>
 
 namespace Horizon::Reflect
 {
@@ -44,7 +44,7 @@ namespace Horizon::Reflect
 		TypeHandle GetTypeId() const { return m_typeId; }
 		TypeKind GetUnderlyingKind() const { return m_underlyingKind; }
 
-		std::span<Attribute* const> GetAttributes() const { return { m_attributes.GetData(), m_attributes.GetCount() }; }
+		ReadOnlyList<Attribute* const> GetAttributes() const { return m_attributes; }
 
 		template<typename TAttr>
 		TAttr* GetCustomAttribute() const

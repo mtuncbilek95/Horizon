@@ -17,6 +17,8 @@ namespace Horizon::RHI
 	public:
 		~D3D12Texture() final;
 
+		void SetDebugName(const char* pName) final;
+
 		ID3D12Resource* Handle() const { return m_resource; }
 		DXGI_FORMAT Format() const { return m_format; }
 

@@ -11,6 +11,7 @@
 #include <Engine/World/ECS/Scene.h>
 #include <Engine/World/Systems/RenderSystem.h>
 #include <Engine/World/WorldService.h>
+#include <Engine/World/SystemGroup.h>
 
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
@@ -40,6 +41,7 @@ namespace Horizon::Editor
 	void SceneView::OnInvoke()
 	{
 		m_world = GetContext()->pEngine->RequestService<Engine::WorldService>();
+		m_world->SetRunningSystems(Engine::SceneGroups::Edit);
 
 		if (m_world == nullptr)
 		{
@@ -137,7 +139,8 @@ namespace Horizon::Editor
 		std::string fpsCounter = std::format("FPS: {:.2f}", m_fps);
 		ImGui::TextColored(ImVec4(0.1, 0.8, 0.2, 1), fpsCounter.c_str());
 
-		RenderGizmo({ imageMin.x, imageMin.y }, { area.x, area.y }, *pCamera);
+		if(m_world->GetRunningSystems() == Engine::SceneGroups::Edit)
+			RenderGizmo({ imageMin.x, imageMin.y }, { area.x, area.y }, *pCamera);
 	}
 
 	Engine::CameraComponent* SceneView::EnsureEditorCamera(Engine::Scene* pScene)

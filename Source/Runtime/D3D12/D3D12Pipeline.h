@@ -13,6 +13,8 @@ namespace Horizon::RHI
 	public:
 		~D3D12Pipeline() final;
 
+		void SetDebugName(const char* pName) final;
+
 		ID3D12PipelineState* GetPipeline() const { return m_pipeline; }
 		D3D_PRIMITIVE_TOPOLOGY GetTopology() const { return m_topology; }
 		b8 UsesMeshShading() const { return m_usesMeshShading; }

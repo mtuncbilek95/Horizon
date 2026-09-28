@@ -17,6 +17,7 @@ namespace Horizon::Editor
 	class EditorContext;
 	class ViewRegistry;
 	class MenuRegistry;
+	class ToolBarRegistry;
 
 	class H_EXPORT EditorService final : public Engine::Service
 	{
@@ -36,8 +37,9 @@ namespace Horizon::Editor
 		PAL::Window* m_engineWindow = nullptr;
 		EditorRenderer* m_editorRenderer = nullptr;
 
-		ViewRegistry* m_viewRegistry = nullptr;
 		MenuRegistry* m_menuRegistry = nullptr;
+		ToolBarRegistry* m_toolRegistry = nullptr;
+		ViewRegistry* m_viewRegistry = nullptr;
 
 		RHI::GfxFence* m_fence = nullptr;
 		RHI::GfxQueue* m_queue = nullptr;

@@ -74,4 +74,9 @@ namespace Horizon::RHI
 		m_block->Clear();
 		m_usedBytes = 0;
 	}
+
+	void D3D12BufferArena::SetDebugName(const char* pName)
+	{
+		m_buffer->SetDebugName(pName);
+	}
 }

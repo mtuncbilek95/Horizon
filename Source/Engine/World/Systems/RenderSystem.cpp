@@ -46,7 +46,7 @@ namespace Horizon::Engine
 
 	u32 sFunVertexSrv = kInvalid32;
 
-	static RHI::GfxShader* CreateFunShader(RHI::GfxDevice* pDevice, const std::string& filePath, RHI::GfxShaderStage stage, const std::string& entryPoint)
+	static RHI::GfxShader* CreateFunShader(RHI::GfxDevice* pDevice, const std::string& filePath, RHI::GfxShaderStage stage, const std::string& entryPoint, const std::string& debugName)
 	{
 		List<u8> byteCode = RHI::GfxShaderCompiler::Compile(filePath, stage, entryPoint);
 
@@ -62,9 +62,13 @@ namespace Horizon::Engine
 		shaderDesc.byteCodeSize = byteCode.GetCount();
 
 		RHI::GfxShader* pShader = pDevice->CreateShader(shaderDesc);
-
 		if (pShader == nullptr)
+		{
 			Terminal::Error("RenderSystem", "{} could not be turned into a shader object", filePath);
+			return nullptr;
+		}
+
+		pShader->SetDebugName(debugName.data());
 
 		return pShader;
 	}
@@ -73,12 +77,12 @@ namespace Horizon::Engine
 	{
 		const std::string shaderRoot = std::string(HORIZON_RESOURCE_DIR) + "/Shaders/Testers/";
 
-		RHI::GfxShader* pVertexShader = CreateFunShader(pDevice, shaderRoot + "BasicMesh.vert.hlsl", RHI::GfxShaderStage::Vertex, "VSMain");
+		RHI::GfxShader* pVertexShader = CreateFunShader(pDevice, shaderRoot + "BasicMesh.vert.hlsl", RHI::GfxShaderStage::Vertex, "VSMain", "BasicForward_Vertex");
 
 		if (pVertexShader == nullptr)
 			return nullptr;
 
-		RHI::GfxShader* pPixelShader = CreateFunShader(pDevice, shaderRoot + "BasicMesh.frag.hlsl", RHI::GfxShaderStage::Pixel, "PSMain");
+		RHI::GfxShader* pPixelShader = CreateFunShader(pDevice, shaderRoot + "BasicMesh.frag.hlsl", RHI::GfxShaderStage::Pixel, "PSMain", "BasicForward_Fragment");
 
 		if (pPixelShader == nullptr)
 		{
@@ -102,7 +106,6 @@ namespace Horizon::Engine
 		pipelineDesc.depthStencil.depthCompare = RHI::GfxCompareOp::Less;
 
 		RHI::GfxPipeline* pPipeline = pDevice->CreatePipeline(pipelineDesc);
-
 		Memory::Allocator::Delete(pVertexShader);
 		Memory::Allocator::Delete(pPixelShader);
 
@@ -112,7 +115,7 @@ namespace Horizon::Engine
 			return nullptr;
 		}
 
-		pPipeline->SetDebugName("BasicMesh - Pipeline");
+		pPipeline->SetDebugName("BasicForward_SolidPipeline");
 
 		return pPipeline;
 	}
@@ -124,7 +127,6 @@ namespace Horizon::Engine
 		heapDesc.capacity = capacity;
 
 		RHI::GfxDescriptorHeap* pHeap = pDevice->CreateDescriptorHeap(heapDesc);
-
 		if (pHeap == nullptr)
 			Terminal::Error("RenderSystem", "Descriptor heap type {} with capacity {} could not be created", u32(type), capacity);
 
@@ -161,7 +163,7 @@ namespace Horizon::Engine
 			return false;
 		}
 
-		pTexture->SetDebugName("Scene - DepthTarget");
+		pTexture->SetDebugName(std::string("Render_DepthTex" + std::to_string(imageIndex)).data());
 
 		sFunDepthViews[imageIndex] = sFunDepthHeap->CreateDepthStencilView(pTexture);
 		sFunDepthTextures[imageIndex] = pTexture;

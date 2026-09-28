@@ -98,4 +98,10 @@ namespace Horizon::RHI
 
 		m_markers.PushBack(marker);
 	}
+
+	void D3D12UploadRing::SetDebugName(const char* pName)
+	{
+		if (m_buffer)
+			m_buffer->SetDebugName(pName);
+	}
 }

@@ -16,6 +16,7 @@ namespace Horizon::RHI
 		GfxBufferRange Allocate(usize size, usize alignment) final;
 		void Free(const GfxBufferRange& range) final;
 		void Reset() final;
+		void SetDebugName(const char* pName) final;
 
 	private:
 		D3D12MA::VirtualBlock* m_block = nullptr;

@@ -8,14 +8,6 @@
 #include <Engine/World/SystemOrderAttribute.h>
 #include <Engine/World/ECS/Scene.h>
 
-#include <Engine/World/Components/NameComponent.h>
-#include <Engine/World/Components/CameraComponent.h>
-#include <Engine/World/Components/TransformComponent.h>
-#include <Engine/World/Components/MeshComponent.h>
-
-#include <Engine/World/Components/TransformComponent.h>
-#include <Engine/World/Components/CameraComponent.h>
-
 namespace Horizon::Engine
 {
 	ModuleReport WorldService::OnInitialize()
@@ -71,7 +63,10 @@ namespace Horizon::Engine
 			return;
 
 		for (auto* pSystem : m_systems)
-			pSystem->OnExecute(ctx, *m_activeWorld);
+		{
+			if(HasFlag(pSystem->GetWorkingGroup(), m_runningSystems))
+				pSystem->OnExecute(ctx, *m_activeWorld);
+		}
 	}
 
 	void WorldService::OnFinalize()

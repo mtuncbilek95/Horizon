@@ -49,4 +49,9 @@ namespace Horizon::RHI
 		m_resource->Unmap(0, &writeRange);
 		m_mapped = nullptr;
 	}
+
+	void D3D12Buffer::SetDebugName(const char* pName)
+	{
+		Helpers::SetObjectName(m_resource, pName);
+	}
 }

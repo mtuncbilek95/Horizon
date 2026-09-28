@@ -12,8 +12,13 @@ namespace Horizon::RHI
 	public:
 		GfxShaderStage GetStage() const { return m_stage; }
 		usize GetByteCodeSize() const { return m_byteCodeSize; }
+		const c8* GetDebugName() const { return m_debugName; }
+
+		void SetDebugName(const char* pName) final;
+
 	protected:
 		GfxShaderStage m_stage = GfxShaderStage::None;
 		usize m_byteCodeSize = 0;
+		c8 m_debugName[MaxTypeBufferLength] = {};
 	};
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Core/Service.h>
+#include <Engine/World/SystemGroup.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/RTTR/Reflection.h>
 
@@ -37,11 +38,15 @@ namespace Horizon::Engine
 		Scene* GetCurrentWorld() const { return m_activeWorld; }
 		void SetCurrentWorld(Scene* pNewWorld) { m_activeWorld = pNewWorld; }
 
+		SystemGroup GetRunningSystems() const { return m_runningSystems; }
+		void SetRunningSystems(SystemGroup groups) { m_runningSystems = groups; }
+
 	private:
 		ReflectionSystem* m_reflection;
 		List<System*> m_systems;
 		std::unordered_map<Reflect::TypeHandle, usize> m_systemLookup;
 
 		Scene* m_activeWorld = nullptr;
+		SystemGroup m_runningSystems = SystemGroup::None;
 	};
 }

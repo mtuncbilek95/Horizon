@@ -274,4 +274,9 @@ namespace Horizon::RHI
 
 		return pPipe;
 	}
+
+	void D3D12Pipeline::SetDebugName(const char* pName)
+	{
+		Helpers::SetObjectName(m_pipeline, pName);
+	}
 }

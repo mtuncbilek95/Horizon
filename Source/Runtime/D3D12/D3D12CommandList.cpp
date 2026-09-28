@@ -457,4 +457,10 @@ namespace Horizon::RHI
 
 		m_list->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
 	}
+
+	void D3D12CommandList::SetDebugName(const char* pName)
+	{
+		Helpers::SetObjectName(m_list, pName);
+		Helpers::SetObjectName(m_allocator, pName);
+	}
 }

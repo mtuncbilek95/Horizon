@@ -44,6 +44,95 @@ namespace Horizon::PAL
 		handle.m_handle = {};
 	}
 
+	FileView File::OpenMap(FileAccessRequest fileAccess, usize offset, usize size)
+	{
+		if (!fileAccess.m_handle.IsValid())
+		{
+			Terminal::Error("File::OpenMap", "Invalid file access handle");
+			return FileView();
+		}
+
+		if (((u8)fileAccess.GetAccessPolicy() & (u8)FileOperationAccessPolicy::Read) == 0)
+		{
+			Terminal::Error("File::OpenMap", "File was not opened with Read access");
+			return FileView();
+		}
+
+		HANDLE fileHandle = (HANDLE)fileAccess.m_handle.index;
+
+		LARGE_INTEGER fileSize = {};
+		if (!GetFileSizeEx(fileHandle, &fileSize))
+		{
+			Terminal::Error("File::OpenMap", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+			return FileView();
+		}
+
+		usize fileEnd = (usize)fileSize.QuadPart;
+		usize mapEnd = (size == 0) ? fileEnd : offset + size;
+
+		if (offset > mapEnd || mapEnd > fileEnd)
+		{
+			Terminal::Error("File::OpenMap", "Range [{}, {}) out of bounds, file size is {}",
+				offset, mapEnd, fileEnd);
+			return FileView();
+		}
+
+		usize mapSize = mapEnd - offset;
+		if (mapSize == 0)
+		{
+			Terminal::Error("File::OpenMap", "Cannot map an empty range at {}", offset);
+			return FileView();
+		}
+
+		SYSTEM_INFO sysInfo = {};
+		GetSystemInfo(&sysInfo);
+
+		usize granularity = (usize)sysInfo.dwAllocationGranularity;
+		usize baseOffset = offset - (offset % granularity);
+		usize delta = offset - baseOffset;
+		usize viewSize = mapSize + delta;
+
+		HANDLE mapping = CreateFileMappingA(fileHandle, NULL, PAGE_READONLY, 0, 0, NULL);
+		if (mapping == NULL)
+		{
+			Terminal::Error("File::OpenMap", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+			return FileView();
+		}
+
+		ULARGE_INTEGER pos = {};
+		pos.QuadPart = (ULONGLONG)baseOffset;
+
+		void* pBase = MapViewOfFile(mapping, FILE_MAP_READ, pos.HighPart, pos.LowPart, viewSize);
+		DWORD mapError = GetLastError();
+
+		if (!CloseHandle(mapping))
+			Terminal::Error("File::OpenMap", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+
+		if (pBase == NULL)
+		{
+			Terminal::Error("File::OpenMap", "{}", Win32ErrorHelpers::GetLastErrorString(mapError));
+			return FileView();
+		}
+
+		return FileView(pBase, (const u8*)pBase + delta, mapSize);
+	}
+
+	b8 File::CloseMap(FileView& view)
+	{
+		if (!view.IsValid())
+		{
+			Terminal::Error("File::CloseMap", "Invalid view passed to CloseMap");
+			return false;
+		}
+
+		b8 result = UnmapViewOfFile(view.m_pBase);
+		if (!result)
+			Terminal::Error("File::CloseMap", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+
+		view.Release();
+		return result;
+	}
+
 	b8 File::Create(const std::string& newPath)
 	{
 		HANDLE fileHandle = CreateFileA(newPath.data(), GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);

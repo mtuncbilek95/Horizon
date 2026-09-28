@@ -19,6 +19,7 @@ namespace Horizon::RHI
 
 		void* Map() final;
 		void Unmap() final;
+		void SetDebugName(const char* pName) final;
 
 		ID3D12Resource* Handle() const { return m_resource; }
 

@@ -45,7 +45,7 @@ namespace Horizon::Editor
 		auto* pReflection = GetEngine()->GetReflectionSystem();
 		Reflect::Type* pFogModeType = pReflection->GetType(Reflect::TypeOf<Engine::FogMode>());
 		
-		std::span<Reflect::EnumValue const> enumValues = pFogModeType->GetEnumValues();
+		ReadOnlyList<Reflect::EnumValue const> enumValues = pFogModeType->GetEnumValues();
 
 		const i64 currentValue = static_cast<i64>(pFogComp->m_mode);
 		const c8* pPreview = "Unknown";

@@ -5,7 +5,6 @@ if(NOT DEFINED DXMA_URL)
     set(DXMA_URL https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator.git)
 endif()
 
-
 FetchContent_Declare(
     D3D12MemoryAllocator
     GIT_REPOSITORY ${DXMA_URL}

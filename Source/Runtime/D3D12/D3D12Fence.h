@@ -14,6 +14,7 @@ namespace Horizon::RHI
 
 		u64 GetCompletedValue() final { return m_fence->GetCompletedValue(); }
 		void WaitCPU(u64 value) final;
+		void SetDebugName(const char* pName) final;
 
 	private:
 		u64 Advance() { return ++m_value; }

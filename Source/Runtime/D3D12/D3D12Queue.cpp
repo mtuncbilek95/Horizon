@@ -48,4 +48,9 @@ namespace Horizon::RHI
 
 		m_queue->Wait(pD3DFence->Handle(), value);
 	}
+
+	void D3D12Queue::SetDebugName(const char* pName)
+	{
+		Helpers::SetObjectName(m_queue, pName);
+	}
 }

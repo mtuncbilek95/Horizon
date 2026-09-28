@@ -15,4 +15,9 @@ namespace Horizon::RHI
 
 		m_fence->SetEventOnCompletion(value, nullptr);
 	}
+
+	void D3D12Fence::SetDebugName(const char* pName)
+	{
+		Helpers::SetObjectName(m_fence, pName);
+	}
 }

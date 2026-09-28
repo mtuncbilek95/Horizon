@@ -36,6 +36,7 @@ namespace Horizon::Engine
 		vertArenaDesc.memory = RHI::GfxMemoryType::GpuUpload;
 		vertArenaDesc.usage = RHI::GfxBufferUsage::Storage;
 		m_vertexArena = m_device->CreateBufferArena(vertArenaDesc);
+		m_vertexArena->SetDebugName("MeshStreamer_VertexArena");
 		Terminal::Assert(m_vertexArena, StringOps::GetName(this), "Big fucked at some places");
 
 		m_vertexMap = (u8*)m_vertexArena->GetBuffer()->Map();
@@ -46,6 +47,7 @@ namespace Horizon::Engine
 		indexArenaDesc.memory = RHI::GfxMemoryType::GpuUpload;
 		indexArenaDesc.usage = RHI::GfxBufferUsage::Index;
 		m_indexArena = m_device->CreateBufferArena(indexArenaDesc);
+		m_indexArena->SetDebugName("MeshStreamer_IndexArena");
 		Terminal::Assert(m_indexArena, StringOps::GetName(this), "Big fucked at some places");
 
 		m_indexMap = (u8*)m_indexArena->GetBuffer()->Map();
@@ -111,10 +113,6 @@ namespace Horizon::Engine
 
 		pAsset->m_residency.Store(AssetResidency::Reading, PAL::MemoryOrder::Relaxed);
 
-		List<u8> propertyBytes;
-		List<u8> dataPayload;
-
-		// Read payload then put up your ass.
 		std::string cookPath = pAsset->m_ownerEntry.cookPath;
 		PAL::FileAccessRequest fileHandl = PAL::File::RequestAccess(cookPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
 		if (!fileHandl.IsValid())
@@ -122,33 +120,35 @@ namespace Horizon::Engine
 			FailedAssetLog(pAsset, "Access request to file has failed!");
 			return;
 		}
-		
-		if (!PAL::File::ReadMemory(fileHandl, propertyBytes, header.propertyOffset, header.propertyOffset + header.propertySize))
-		{
-			FailedAssetLog(pAsset, "Failed to read memory file for MeshProperties");
-			PAL::File::ReleaseAccess(fileHandl);
-			return;
-		}
 
-		if (!PAL::File::ReadMemory(fileHandl, dataPayload, header.payloadOffset, header.payloadOffset + header.payloadSize))
-		{
-			FailedAssetLog(pAsset, "Failed to read memory file for BinaryData");
-			PAL::File::ReleaseAccess(fileHandl);
-			return;
-		}
-
+		PAL::FileView view = PAL::File::OpenMap(fileHandl);
 		PAL::File::ReleaseAccess(fileHandl);
+
+		if (!view.IsValid())
+		{
+			FailedAssetLog(pAsset, "Failed to map the cook file");
+			return;
+		}
+
+		const usize propertyEnd = header.propertyOffset + header.propertySize;
+		const usize payloadEnd = header.payloadOffset + header.payloadSize;
+		if (propertyEnd > view.GetSize() || payloadEnd > view.GetSize())
+		{
+			FailedAssetLog(pAsset, "Header offsets point outside of the cook file");
+			PAL::File::CloseMap(view);
+			return;
+		}
 
 		// Check the status and validate some data
 		pAsset->m_residency.Store(AssetResidency::Decoding, PAL::MemoryOrder::Relaxed);
 
 		MeshProperties props;
-		std::memcpy(&props, propertyBytes.GetData(), sizeof(MeshProperties));
+		std::memcpy(&props, view.GetData() + header.propertyOffset, sizeof(MeshProperties));
 
-		// Check if the MeshProp is decent.
 		if (props.vertexStride != sizeof(MeshVertex) || props.indexStride != sizeof(u32))
 		{
 			FailedAssetLog(pAsset, "VertexStride or IndexStride is not properly sized");
+			PAL::File::CloseMap(view);
 			return;
 		}
 
@@ -157,8 +157,17 @@ namespace Horizon::Engine
 		usize vertBlock = props.vertexCount * props.vertexStride;
 		usize indexBlock = props.indexCount * props.indexStride;
 
+		if (subMeshTable + vertBlock + indexBlock != header.payloadSize)
+		{
+			FailedAssetLog(pAsset, "Payload size does not match MeshProperties");
+			PAL::File::CloseMap(view);
+			return;
+		}
+
+		const u8* pPayload = view.GetData() + header.payloadOffset;
+
 		List<MeshSubMesh> subMeshes(props.subMeshCount);
-		std::memcpy(subMeshes.GetData(), dataPayload.GetData(), subMeshTable);
+		std::memcpy(subMeshes.GetData(), pPayload, subMeshTable);
 
 		// Check if all those subs are there.
 		for (usize i = 0; i < subMeshes.GetCount(); ++i)
@@ -175,7 +184,7 @@ namespace Horizon::Engine
 			}
 		}
 
-		const u8* pVertexData = dataPayload.GetData() + subMeshTable;
+		const u8* pVertexData = pPayload + subMeshTable;
 		const u8* pIndexData = pVertexData + vertBlock;
 
 		// To the arena boys!
@@ -183,11 +192,12 @@ namespace Horizon::Engine
 
 		{
 			ScopedLock lockArena(m_arenaLock);
-			
+
 			RHI::GfxBufferRange vRange = m_vertexArena->Allocate(vertBlock, sizeof(MeshVertex));
 			if (!vRange.IsValid())
 			{
 				FailedAssetLog(pAsset, "VertexBufferArena is out of space");
+				PAL::File::CloseMap(view);
 				return;
 			}
 
@@ -196,15 +206,18 @@ namespace Horizon::Engine
 			{
 				FailedAssetLog(pAsset, "IndexBufferArena is out of space");
 				m_vertexArena->Free(vRange);
+				PAL::File::CloseMap(view);
 				return;
 			}
 
-			pAsset->m_vertexRange = std::move(vRange);
-			pAsset->m_indexRange = std::move(iRange);
+			pAsset->m_vertexRange = vRange;
+			pAsset->m_indexRange = iRange;
 		}
 
 		std::memcpy(m_vertexMap + pAsset->m_vertexRange.offset, pVertexData, vertBlock);
 		std::memcpy(m_indexMap + pAsset->m_indexRange.offset, pIndexData, indexBlock);
+
+		PAL::File::CloseMap(view);
 
 		pAsset->m_submeshes = subMeshes;
 		pAsset->m_properties = props;

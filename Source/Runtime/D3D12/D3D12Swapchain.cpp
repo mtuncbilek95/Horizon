@@ -11,6 +11,8 @@
 #include <Runtime/RHI/Fence/GfxFence.h>
 #include <Runtime/RHI/Queue/GfxQueue.h>
 
+#include <cstdio>
+
 namespace Horizon::RHI
 {
 	D3D12Swapchain::~D3D12Swapchain()
@@ -126,5 +128,19 @@ namespace Horizon::RHI
 		AcquireImages();
 
 		m_imageIndex = m_swapchain->GetCurrentBackBufferIndex();
+	}
+
+	void D3D12Swapchain::SetDebugName(const char* pName)
+	{
+		if (!pName)
+			return;
+
+		char buffer[128];
+
+		for (u32 i = 0; i < m_images.GetCount(); i++)
+		{
+			std::snprintf(buffer, sizeof(buffer), "%s[%u]", pName, i);
+			m_images[i]->SetDebugName(buffer);
+		}
 	}
 }

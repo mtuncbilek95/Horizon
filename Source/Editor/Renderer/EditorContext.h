@@ -12,6 +12,7 @@ namespace Horizon::Editor
 {
 	class MenuRegistry;
 	class ViewRegistry;
+	class ToolBarRegistry;
 
 	struct H_EXPORT EditorContext final
 	{
@@ -21,5 +22,6 @@ namespace Horizon::Editor
 
 		ViewRegistry* pViews = nullptr;
 		MenuRegistry* pMenus = nullptr;
+		ToolBarRegistry* pTools = nullptr;
 	};
 }

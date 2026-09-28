@@ -10,7 +10,9 @@ namespace Horizon::Engine
 
 	SceneAsset::~SceneAsset()
 	{
-
+		// TODO: Temporary
+		if(m_scene)
+			Memory::Allocator::Delete(m_scene);
 	}
 
 	void SceneAsset::LoadAsync()

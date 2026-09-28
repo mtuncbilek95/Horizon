@@ -19,6 +19,8 @@ namespace Horizon::Engine
 		void OnExecute(const EngineFrame& ctx, Scene& currentScene) final;
 		void OnFinalize() final;
 
+		SystemGroup GetWorkingGroup() const final { return SystemGroup::Render; }
+
 		u64 GetSceneView() const;
 
 		const Math::Vec2u& GetImageSize() const { return m_targetSize; }

@@ -9,9 +9,9 @@
 #include <Runtime/RTTR/TypeMode.h>
 
 #include <Runtime/Containers/List.h>
+#include <Runtime/Containers/ReadOnlyList.h>
 
 #include <string>
-#include <span>
 
 namespace Horizon::Reflect
 {
@@ -114,9 +114,9 @@ namespace Horizon::Reflect
 			Memory::Allocator::FreeRaw(pInstance);
 		}
 
-		std::span<Attribute* const> GetAttributes() const { return { m_attributes.GetData(), m_attributes.GetCount() }; }
-		std::span<const EnumValue> GetEnumValues() const { return { m_enumValues.GetData(), m_enumValues.GetCount() }; }
-		std::span<const Field> GetFields() const { return { m_fields.GetData(), m_fields.GetCount() }; }
+		ReadOnlyList<Attribute* const> GetAttributes() const { return m_attributes; }
+		ReadOnlyList<const EnumValue> GetEnumValues() const { return m_enumValues; }
+		ReadOnlyList<const Field> GetFields() const { return m_fields; }
 
 		template<typename TAttr>
 		TAttr* GetCustomAttribute()

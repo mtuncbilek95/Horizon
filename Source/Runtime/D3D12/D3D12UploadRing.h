@@ -17,6 +17,7 @@ namespace Horizon::RHI
 
 		GfxUploadRange Allocate(usize size, usize alignment) final;
 		void MarkFrame(GfxFence* pFence, u64 fenceValue) final;
+		void SetDebugName(const char* pName) final;
 
 	private:
 		struct Marker

@@ -2,20 +2,19 @@
 
 #include <Engine/World/System.h>
 #include <Engine/World/SystemOrderAttribute.h>
-#include <Runtime/Math/Vec2u.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Engine
 {
-	HCLASS(SystemOrder[200]);
-	class H_EXPORT CameraSystem : public System
+	HCLASS(SystemOrder[0]);
+	class H_EXPORT SpinTestSystem : public System
 	{
-		HORIZON_TYPE_REFLECT(CameraSystem);
+		HORIZON_TYPE_REFLECT(SpinTestSystem);
 	public:
 		b8 OnInitialize() final;
 		void OnExecute(const EngineFrame& ctx, Scene& currentScene) final;
 		void OnFinalize() final;
 
-		SystemGroup GetWorkingGroup() const final { return SystemGroup::General; }
+		SystemGroup GetWorkingGroup() const final { return SystemGroup::Script; }
 	};
 }

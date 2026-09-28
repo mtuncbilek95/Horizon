@@ -1,5 +1,3 @@
-// Window.h
-
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
@@ -10,6 +8,7 @@
 #include <Runtime/PAL/Window/CursorType.h>
 
 #include <Runtime/Containers/List.h>
+#include <Runtime/Containers/ReadOnlyList.h>
 
 #include <string>
 #include <span>
@@ -45,7 +44,7 @@ namespace Horizon::PAL
 		Window& operator=(const Window&) = delete;
 		Window& operator=(Window&&) = delete;
 
-		std::span<const InputMessage> GetMessages() const { return { m_messages.GetData(), m_messages.GetCount() }; }
+		ReadOnlyList<const InputMessage> GetMessages() const { return m_messages; }
 		void SubmitMessage(const InputMessage& msg);
 
 		WindowRect GetRect() const { return { m_desc.width, m_desc.height, m_posX, m_posY }; }

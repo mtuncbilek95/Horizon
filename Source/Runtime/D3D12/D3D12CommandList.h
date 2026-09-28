@@ -16,6 +16,7 @@ namespace Horizon::RHI
 		void BeginEvent(const c8* pName) final;
 		void EndEvent() final;
 		void SetMarker(const c8* pName) final;
+		void SetDebugName(const char* pName) final;
 
 		void Begin() final;
 		void End() final;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Core/Engine.h>
+#include <Engine/World/SystemGroup.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Engine/World/WorldService.h>
 #include <Runtime/RTTR/Reflection.h>
@@ -15,6 +16,8 @@ namespace Horizon::Engine
 		virtual b8 OnInitialize() = 0;
 		virtual void OnExecute(const EngineFrame& ctx, Scene& currentScene) = 0;
 		virtual void OnFinalize() = 0;
+
+		virtual SystemGroup GetWorkingGroup() const = 0;
 
 		Engine* GetEngine() const { return m_engine; }
 		WorldService* GetWorldService() const { return m_ownerService; }

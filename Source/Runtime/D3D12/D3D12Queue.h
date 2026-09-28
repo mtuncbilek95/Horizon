@@ -14,6 +14,7 @@ namespace Horizon::RHI
 		void Submit(GfxCommandList* const* ppLists, u32 count) final;
 		u64 Signal(GfxFence* pFence) final;
 		void Wait(GfxFence* pFence, u64 value) final;
+		void SetDebugName(const char* pName) final;
 
 		ID3D12CommandQueue* Handle() const { return m_queue; }
 

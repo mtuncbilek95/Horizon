@@ -5,6 +5,7 @@
 #include <Editor/Renderer/EditorRenderer.h>
 #include <Editor/Views/ViewRegistry.h>
 #include <Editor/MainMenu/MenuRegistry.h>
+#include <Editor/Toolbar/ToolBarRegistry.h>
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowService.h>
@@ -55,6 +56,11 @@ namespace Horizon::Editor
 
 		m_editorContext.pMenus = m_menuRegistry;
 		m_menuRegistry->BootstrapMenus(m_editorContext);
+
+		m_toolRegistry = Memory::Allocator::Create<ToolBarRegistry>(Memory::CurrLoc());
+
+		m_editorContext.pTools = m_toolRegistry;
+		m_toolRegistry->BootstrapItems(m_editorContext);
 
 		return Engine::ModuleReport();
 	}
@@ -135,6 +141,7 @@ namespace Horizon::Editor
 		m_editorRenderer->BeginRender(ctx.DeltaTime());
 
 		m_menuRegistry->RenderGUI();
+		m_toolRegistry->RenderGUI();
 		m_viewRegistry->RenderGUI(ctx);
 
 		const b8 dragging = m_editorRenderer->CheckMouseDragging();
@@ -155,6 +162,7 @@ namespace Horizon::Editor
 		Memory::Allocator::Delete(m_fence);
 
 		Memory::Allocator::Delete(m_menuRegistry);
+		Memory::Allocator::Delete(m_toolRegistry);
 		Memory::Allocator::Delete(m_viewRegistry);
 		Memory::Allocator::Delete(m_editorRenderer);
 

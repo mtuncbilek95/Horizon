@@ -10,4 +10,9 @@ namespace Horizon::RHI
 		if (m_allocation)
 			m_allocation->Release();
 	}
+
+	void D3D12Texture::SetDebugName(const char* pName)
+	{
+		Helpers::SetObjectName(m_resource, pName);
+	}
 }

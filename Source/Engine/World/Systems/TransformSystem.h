@@ -14,5 +14,7 @@ namespace Horizon::Engine
 		b8 OnInitialize() final;
 		void OnExecute(const EngineFrame& ctx, Scene& currentScene) final;
 		void OnFinalize() final;
+
+		SystemGroup GetWorkingGroup() const final { return SystemGroup::General; }
 	};
 }
