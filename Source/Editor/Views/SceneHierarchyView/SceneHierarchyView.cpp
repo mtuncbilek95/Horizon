@@ -39,7 +39,13 @@ namespace Horizon::Editor
 			auto* pWorldService = GetContext()->pEngine->RequestService<Engine::WorldService>();
 
 			if (m_currentScene != pWorldService->GetCurrentWorld())
+			{
+				GetContext()->pSelection->Clear();
+				m_selection.Clear();
+				m_renamePath.clear();
+				m_renameHandl = Engine::EntityHandle();
 				m_currentScene = pWorldService->GetCurrentWorld();
+			}
 		}
 
 		m_entities.Clear();

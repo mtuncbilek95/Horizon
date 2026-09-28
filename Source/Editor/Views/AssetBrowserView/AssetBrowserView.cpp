@@ -182,7 +182,7 @@ namespace Horizon::Editor
 		const usize columnCount = static_cast<usize>(ImMax(1, static_cast<i32>(ImGui::GetContentRegionAvail().x / step)));
 		const ImVec2 startPos = ImGui::GetCursorScreenPos();
 
-		ImGuiMultiSelectFlags msFlags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_NavWrapX;
+		ImGuiMultiSelectFlags msFlags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_SelectOnClickRelease;
 
 		if (!ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
 			msFlags |= ImGuiMultiSelectFlags_BoxSelect2d | ImGuiMultiSelectFlags_ClearOnClickVoid;
@@ -245,7 +245,6 @@ namespace Horizon::Editor
 		if (pEnterFolder != nullptr)
 			Navigate(pEnterFolder);
 
-		// TODO: Open file
 		if (pOpenFile != nullptr)
 		{
 			auto it = m_actionNameLookup.find(pOpenFile->GetMeta().assetTypeName);
@@ -256,8 +255,7 @@ namespace Horizon::Editor
 			}
 
 			m_openActions[it->second]->OnTrigger(GetContext(), pOpenFile);
-		}
-			
+		}	
 	}
 
 	void AssetBrowserView::DrawCell(ImDrawList* pDrawList, const BrowserEntry& entry, const ImVec2& cellMin, f32 cell)
