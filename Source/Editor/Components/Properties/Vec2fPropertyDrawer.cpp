@@ -1,6 +1,6 @@
 #include "Vec2fPropertyDrawer.h"
 
-#include <Editor/Components/Properties/FloatWidget.h>
+#include <Editor/Components/Helpers/FloatWidget.h>
 #include <Runtime/Math/Vec2f.h>
 
 namespace Horizon::Editor

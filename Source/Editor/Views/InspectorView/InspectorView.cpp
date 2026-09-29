@@ -2,7 +2,6 @@
 
 #include <Editor/Renderer/EditorContext.h>
 #include <Editor/Models/SelectionModel.h>
-
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/World/ECS/Scene.h>

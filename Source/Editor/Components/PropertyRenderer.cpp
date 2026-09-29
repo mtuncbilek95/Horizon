@@ -7,6 +7,7 @@
 #include <Runtime/RTTR/Attributes/HeaderAttribute.h>
 #include <Runtime/RTTR/Attributes/HideInInspectorAttribute.h>
 #include <Runtime/RTTR/Attributes/TooltipAttribute.h>
+#include <Runtime/RTTR/Attributes/ReadOnlyAttribute.h>
 
 #include <imgui.h>
 
@@ -116,6 +117,11 @@ namespace Horizon::Editor
 		ImGui::TableNextColumn();
 		ImGui::PushID(field.GetName().c_str());
 
+		const b8 readOnly = field.GetCustomAttribute<Reflect::ReadOnlyAttribute>() != nullptr;
+
+		if (readOnly)
+			ImGui::BeginDisabled();
+
 		if (pDrawer)
 			pDrawer->OnDraw(field, pValue, m_context);
 		else if (field.GetMode() == Reflect::TypeMode::Array)
@@ -124,6 +130,9 @@ namespace Horizon::Editor
 			ImGui::TextDisabled("pointer");
 		else
 			ImGui::TextDisabled("no drawer");
+
+		if (readOnly)
+			ImGui::EndDisabled();
 
 		ImGui::PopID();
 	}

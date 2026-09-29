@@ -1,6 +1,6 @@
 #include "FloatPropertyDrawer.h"
 
-#include <Editor/Components/Properties/FloatWidget.h>
+#include <Editor/Components/Helpers/FloatWidget.h>
 
 namespace Horizon::Editor
 {

@@ -6,6 +6,7 @@
 #include <Runtime/RTTR/Attributes/DegreesAttribute.h>
 #include <Runtime/RTTR/Attributes/TooltipAttribute.h>
 #include <Runtime/RTTR/Attributes/HideInInspectorAttribute.h>
+#include <Runtime/RTTR/Attributes/ReadOnlyAttribute.h>
 #include <Runtime/Math/Scalar.h>
 #include <Runtime/Math/Vec2f.h>
 #include <Runtime/Math/Vec3f.h>
@@ -30,7 +31,7 @@ namespace Horizon::Engine
 		HFIELD();
 		f32 m_farPlane = 1000.f;
 
-		HFIELD(HideInInspector);
+		HFIELD(ReadOnly);
 		Math::Vec2f m_targetScreen = { 0.f, 0.f };
 
 		Math::Mat4f m_viewProjection;

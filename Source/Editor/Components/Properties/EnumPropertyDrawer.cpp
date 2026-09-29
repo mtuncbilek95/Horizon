@@ -1,7 +1,12 @@
 #include "EnumPropertyDrawer.h"
 
+#include <Editor/Components/Helpers/FloatWidget.h>
 #include <Engine/Reflection/ReflectionSystem.h>
+#include <Runtime/RTTR/Attributes/StepAttribute.h>
+
 #include <imgui.h>
+
+#include <string>
 
 namespace Horizon::Editor
 {
@@ -15,31 +20,77 @@ namespace Horizon::Editor
 			return false;
 		}
 
-		i64 current = ReadUnderlying(pValue, field.GetUnderlyingKind());
-		const c8* pPreview = "Unknown";
+		ReadOnlyList<const Reflect::EnumValue> values = pEnumType->GetEnumValues();
 
-		for (const Reflect::EnumValue& value : pEnumType->GetEnumValues())
+		if (values.GetCount() == 0)
 		{
-			if (value.value == current)
+			ImGui::TextDisabled("empty enum");
+			return false;
+		}
+
+		const i64 current = ReadUnderlying(pValue, field.GetUnderlyingKind());
+
+		i32 currentIndex = -1;
+
+		for (usize i = 0; i < values.GetCount(); i++)
+		{
+			if (values[i].value == current)
 			{
-				pPreview = value.name.c_str();
+				currentIndex = static_cast<i32>(i);
 				break;
 			}
 		}
 
-		b8 changed = false;
 		ImGui::SetNextItemWidth(-FLT_MIN);
+
+		if (field.GetCustomAttribute<Reflect::StepAttribute>())
+			return DrawSlider(field, pValue, values, currentIndex);
+
+		return DrawCombo(field, pValue, values, currentIndex);
+	}
+
+	b8 EnumPropertyDrawer::DrawSlider(const Reflect::Field& field, void* pValue, ReadOnlyList<const Reflect::EnumValue> values, i32 currentIndex)
+	{
+		i32 index = currentIndex < 0 ? 0 : currentIndex;
+		const i32 last = static_cast<i32>(values.GetCount()) - 1;
+
+		std::string format;
+
+		for (const c8 ch : values[index].name)
+		{
+			if (ch == '%')
+				format.push_back('%');
+
+			format.push_back(ch);
+		}
+
+		const b8 changed = ImGui::SliderInt("##value", &index, 0, last, format.c_str(), ImGuiSliderFlags_AlwaysClamp | ImGuiSliderFlags_NoInput);
+
+		FloatWidget::DrawTicks(1, 0.f, static_cast<f32>(last), 1.f);
+
+		if (!changed && currentIndex >= 0)
+			return false;
+
+		WriteUnderlying(pValue, field.GetUnderlyingKind(), values[index].value);
+		return true;
+	}
+
+	b8 EnumPropertyDrawer::DrawCombo(const Reflect::Field& field, void* pValue, ReadOnlyList<const Reflect::EnumValue> values, i32 currentIndex)
+	{
+		const c8* pPreview = currentIndex < 0 ? "Unknown" : values[currentIndex].name.c_str();
 
 		if (!ImGui::BeginCombo("##value", pPreview))
 			return false;
 
-		for (const Reflect::EnumValue& value : pEnumType->GetEnumValues())
-		{
-			const b8 selected = value.value == current;
+		b8 changed = false;
 
-			if (ImGui::Selectable(value.name.c_str(), selected))
+		for (usize i = 0; i < values.GetCount(); i++)
+		{
+			const b8 selected = static_cast<i32>(i) == currentIndex;
+
+			if (ImGui::Selectable(values[i].name.c_str(), selected))
 			{
-				WriteUnderlying(pValue, field.GetUnderlyingKind(), value.value);
+				WriteUnderlying(pValue, field.GetUnderlyingKind(), values[i].value);
 				changed = true;
 			}
 

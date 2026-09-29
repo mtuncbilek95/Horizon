@@ -119,6 +119,18 @@ namespace Horizon::Reflect
 		ReadOnlyList<const Field> GetFields() const { return m_fields; }
 
 		template<typename TAttr>
+		b8 HasCustomAttribute()
+		{
+			for (Attribute* attr : m_attributes)
+			{
+				if (attr->GetTypeId() == TypeOf<TAttr>())
+					return true;
+			}
+
+			return false;
+		}
+
+		template<typename TAttr>
 		TAttr* GetCustomAttribute()
 		{
 			for (Attribute* attr : m_attributes)
