@@ -3,6 +3,8 @@
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Runtime/RTTR/Reflection.h>
+#include <Runtime/RTTR/Attributes/DegreesAttribute.h>
+#include <Runtime/RTTR/Attributes/TooltipAttribute.h>
 #include <Runtime/Math/Vec3f.h>
 #include <Runtime/Math/Mat4f.h>
 #include <Runtime/Math/Quat.h>
@@ -20,7 +22,7 @@ namespace Horizon::Engine
 		HFIELD();
 		Math::Vec3f m_position;
 
-		HFIELD();
+		HFIELD(Degrees, Tooltip["Represents as degrees"]);
 		Math::Vec3f m_rotation;
 
 		HFIELD();

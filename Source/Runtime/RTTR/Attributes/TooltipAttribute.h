@@ -5,7 +5,7 @@
 #include <string>
 #include <string_view>
 
-namespace Horizon::Editor
+namespace Horizon::Reflect
 {
 	class H_EXPORT TooltipAttribute : public Reflect::Attribute
 	{

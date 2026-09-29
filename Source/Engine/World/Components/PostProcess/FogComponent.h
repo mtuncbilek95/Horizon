@@ -4,6 +4,8 @@
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
+#include <Runtime/RTTR/Attributes/RangeAttribute.h>
+#include <Runtime/RTTR/Attributes/SliderAttribute.h>
 #include <Runtime/Math/Color4f.h>
 
 namespace Horizon::Engine
@@ -25,13 +27,13 @@ namespace Horizon::Engine
 		HFIELD();
 		f32 m_density = 0.f;
 
-		HFIELD();
+		HFIELD(Range[0, f32_max]);
 		f32 m_startDistance = 0.f;
 
-		HFIELD();
+		HFIELD(Range[0, f32_max]);
 		f32 m_endDistance = 0.f;
 
-		HFIELD();
+		HFIELD(Slider, Range[0, 1]);
 		f32 m_maxOpacity = 1.0f;
 	};
 }

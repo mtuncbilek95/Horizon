@@ -4,8 +4,9 @@
 #include <Editor/Views/ViewObject.h>
 #include <Editor/Font/IconsFontAwesome6.h>
 #include <Editor/ContextMenu/ContextMenuRegistry.h>
-#include <Editor/Components/ComponentDrawer.h>
-#include <Runtime/Math/Vec2f.h>
+#include <Editor/Components/PropertyRenderer.h>
+
+#include <string>
 
 namespace Horizon::Engine
 {
@@ -20,17 +21,16 @@ namespace Horizon::Editor
 	{
 		HORIZON_TYPE_REFLECT(InspectorView);
 	public:
-		~InspectorView();
+		~InspectorView() = default;
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
 
 	private:
-		Engine::ReflectionSystem* m_reflSys;
-		Engine::WorldService* m_worldService;
+		Engine::ReflectionSystem* m_reflSys = nullptr;
+		Engine::WorldService* m_worldService = nullptr;
 
-		List<ComponentDrawer*> m_drawerList;
-		std::unordered_map<Engine::ComponentTypeId, usize> m_drawerLookups;
+		PropertyRenderer m_properties;
 
 		std::string m_searchBuffer;
 	};

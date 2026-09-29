@@ -6,9 +6,10 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/World/ECS/Scene.h>
+#include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/WorldService.h>
-#include <Engine/World/Components/Physics/TransformComponent.h>
 #include <Engine/World/Components/Tag/NameComponent.h>
+#include <Engine/World/Components/EditorOnlyComponent.h>
 
 #include <misc/cpp/imgui_stdlib.h>
 
@@ -20,24 +21,12 @@ namespace Horizon::Editor
 		static constexpr std::string_view sPopupName = "UsableComponents";
 	}
 
-	InspectorView::~InspectorView()
-	{
-		for (auto* pDrawer : m_drawerList)
-			Memory::Allocator::Delete(pDrawer);
-	}
-
 	void InspectorView::OnInvoke()
 	{
 		m_worldService = GetContext()->pEngine->RequestService<Engine::WorldService>();
 		m_reflSys = GetContext()->pEngine->GetReflectionSystem();
 
-		List<Reflect::Type*> drawerTypes = m_reflSys->GetTypeByBase(Reflect::TypeOf<ComponentDrawer>());
-		for (auto* pType : drawerTypes)
-		{
-			auto* pDrawer = (ComponentDrawer*)pType->Create();
-			m_drawerLookups[pDrawer->GetComponentId()] = m_drawerList.GetCount();
-			m_drawerList.PushBack(pDrawer);
-		}
+		m_properties.Initialize(GetContext()->pEngine);
 	}
 
 	void InspectorView::OnRender(const Engine::EngineFrame& context)
@@ -61,24 +50,37 @@ namespace Horizon::Editor
 
 			Engine::ComponentTypeId typeId = pStorage->GetComponentTypeId();
 
-			auto it = m_drawerLookups.find(typeId);
-			if (it == m_drawerLookups.end())
+			if (typeId == Reflect::TypeOf<Engine::NameComponent>())
 				continue;
-
-			ComponentDrawer* pDrawer = m_drawerList[it->second];
-			pDrawer->m_engine = GetContext()->pEngine;
-			pDrawer->m_component = (Engine::ComponentObject*)pStorage->Find(entity);
 
 			Reflect::Type* pType = m_reflSys->GetType(typeId);
 
-			ImGui::PushID((int)i);
+			if (!pType)
+			{
+				Terminal::Error(StringOps::GetName(this), "Component storage has an unregistered type");
+				continue;
+			}
+
+			const auto* pId = pType->GetCustomAttribute<Engine::ComponentIdAttribute>();
+			const std::string& header = pId ? pId->GetDisplayName() : pType->GetName();
+
+			ImGui::PushID((i32)i);
+
+			b8 keepComponent = true;
 
 			ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[1]);
-			b8 collapsingHead = ImGui::CollapsingHeader(pType->GetName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+			b8 collapsingHead = ImGui::CollapsingHeader(header.c_str(), &keepComponent, ImGuiTreeNodeFlags_DefaultOpen);
 			ImGui::PopFont();
 
+			if (!keepComponent)
+			{
+				currScene->RemoveComponent(entity, typeId);
+				ImGui::PopID();
+				break;
+			}
+
 			if (collapsingHead)
-				pDrawer->OnRender();
+				m_properties.DrawObject(*pType, pStorage->Find(entity));
 
 			ImGui::PopID();
 		}
@@ -108,23 +110,31 @@ namespace Horizon::Editor
 		List<Reflect::Type*> compTypes = m_reflSys->GetTypeByBase(Reflect::TypeOf<Engine::ComponentObject>());
 		for (usize i = 0; i < compTypes.GetCount(); i++)
 		{
-			const Reflect::Type* pCompType = compTypes[i];
+			Reflect::Type* pCompType = compTypes[i];
+
+			if (pCompType->GetIsAbstract())
+				continue;
 
 			if (pCompType->GetTypeId() == Reflect::TypeOf<Engine::NameComponent>())
 				continue;
 
-			auto it = m_drawerLookups.find(pCompType->GetTypeId());
-			if (it == m_drawerLookups.end())
+			if (pCompType->GetTypeId() == Reflect::TypeOf<Engine::EditorOnlyComponent>())
+				continue;
+
+			const auto* pId = pCompType->GetCustomAttribute<Engine::ComponentIdAttribute>();
+			const std::string& label = pId ? pId->GetDisplayName() : pCompType->GetName();
+
+			if (!m_searchBuffer.empty() && label.find(m_searchBuffer) == std::string::npos)
 				continue;
 
 			b8 ownedByEntt = currScene->HasComponent(entity, pCompType->GetTypeId());
 
-			if (ImGui::Selectable(pCompType->GetName().data(), false, ownedByEntt ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None))
+			if (ImGui::Selectable(label.c_str(), false, ownedByEntt ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None))
 			{
-				auto* _ = currScene->AddComponent(entity, pCompType->GetTypeId());
+				currScene->AddComponent(entity, pCompType->GetTypeId());
 
 				auto* pNameComp = currScene->FindComponent<Engine::NameComponent>(entity);
-				Terminal::Info(StringOps::GetName(this), "{} has been added to {}", pCompType->GetName(), pNameComp->m_name);
+				Terminal::Info(StringOps::GetName(this), "{} has been added to {}", label, pNameComp->m_name);
 				ImGui::CloseCurrentPopup();
 			}
 		}

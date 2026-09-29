@@ -43,6 +43,9 @@ namespace Horizon
 	inline constexpr i16 i16_min = std::numeric_limits<i16>::min();
 	inline constexpr i8 i8_min = std::numeric_limits<i8>::min();
 
+	inline constexpr f32 f32_max = std::numeric_limits<f32>::max();
+	inline constexpr f32 f32_min = std::numeric_limits<f32>::min();
+
 	inline constexpr u8 kInvalid8 = u8(~0u);
 	inline constexpr u16 kInvalid16 = u16(~0u);
 	inline constexpr u32 kInvalid32 = ~0u;

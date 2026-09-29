@@ -1,10 +1,11 @@
 #pragma once
 
+#include <Runtime/RTTR/Attribute.h>
 #include <Runtime/RTTR/Reflection.h>
 
-namespace Horizon::Editor
+namespace Horizon::Reflect
 {
-	class H_EXPORT RangeAttribute : public Reflect::Attribute
+	class H_EXPORT RangeAttribute final : public Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(RangeAttribute);
 	public:

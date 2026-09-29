@@ -223,7 +223,7 @@ namespace Horizon::Engine
 
 		currentScene.ForEach<CameraComponent>([&](EntityHandle handl, CameraComponent& camera)
 			{
-				if (hasView)
+				if (hasView || !camera.m_inUse)
 					return;
 
 				if (camera.m_targetScreen.X() < 1.0f || camera.m_targetScreen.Y() < 1.0f)
@@ -298,6 +298,9 @@ namespace Horizon::Engine
 
 		currentScene.ForEach<MeshComponent, TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
 			{
+				if (mesh.m_hideInRender)
+					return;
+
 				if (!mesh.m_resident)
 					return;
 

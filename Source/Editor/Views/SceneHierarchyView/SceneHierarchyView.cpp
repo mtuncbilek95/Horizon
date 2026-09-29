@@ -134,7 +134,6 @@ namespace Horizon::Editor
 		if (!m_renamePath.empty())
 			return;
 
-		// TODO: CurrScene will be gone later?
 		if (!m_currentScene)
 			return;
 
@@ -184,10 +183,13 @@ namespace Horizon::Editor
 				JsonArchiveWriter writer;
 				Engine::SceneSerializer::Serialize(*m_currentScene, pReflection, writer);
 
+				const std::string text = writer.ToString();
+
 				PAL::FileAccessRequest handle = PAL::File::RequestAccess(GetConnectedFile()->GetSourcePath(),
 					PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::SharedWrite);
 
-				PAL::File::WriteString(handle, writer.ToString());
+				PAL::File::WriteString(handle, text);
+				PAL::File::Truncate(handle, text.size());
 
 				PAL::File::ReleaseAccess(handle);
 			}));

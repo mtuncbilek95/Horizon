@@ -6,6 +6,7 @@
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Engine/Rendering/MeshDrawRange.h>
 #include <Runtime/RTTR/Reflection.h>
+#include <Runtime/RTTR/Attributes/AssetRefAttribute.h>
 
 namespace Horizon::Engine
 {
@@ -17,8 +18,11 @@ namespace Horizon::Engine
 		MeshComponent() = default;
 		~MeshComponent() = default;
 
-		HFIELD();
+		HFIELD(AssetRef[Reflect::TypeOf<MeshAsset>()]);
 		AssetHandle<MeshAsset> m_meshHandle;
+
+		HFIELD();
+		b8 m_hideInRender = false;
 
 		List<MeshDrawRange> m_drawRanges;
 		Guid m_resolvedId;

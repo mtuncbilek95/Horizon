@@ -22,8 +22,7 @@
 
 #include <imgui.h>
 #include <ImGuizmo.h>
-
-#include <cmath>
+#include <string_view>
 
 namespace Horizon::Editor
 {
@@ -36,6 +35,8 @@ namespace Horizon::Editor
 		constexpr f32 BoostMultiplier = 3.0f;
 		constexpr f32 MinFlySpeed = 0.1f;
 		constexpr f32 MaxFlySpeed = 500.0f;
+
+		constexpr std::string_view kErrorMessage = "Cannot render without a camera";
 	}
 
 	void SceneView::OnInvoke()
@@ -84,13 +85,51 @@ namespace Horizon::Editor
 		if (area.x < 1.0f || area.y < 1.0f)
 			return;
 
-		Engine::CameraComponent* pCamera = EnsureEditorCamera(pScene);
-		if (pCamera == nullptr)
-			return;
+		Engine::TransformComponent* pCameraPos = nullptr;
+		Engine::CameraComponent* pCamera = nullptr;
 
-		auto* pCamTransform = pScene->FindComponent<Engine::TransformComponent>(m_editorCamera);
-		if (pCamTransform == nullptr)
+		// Choose camera according to SceneGroup
+		// TODO: This may change due to ejecting camera during gameplay to test out things.
+		if (m_world->GetRunningSystems() != Engine::SceneGroups::Play)
+		{
+			pCamera = EnsureEditorCamera(pScene);
+			pCamera->m_inUse = true; // Make sure that its in use
+
+			pCameraPos = pScene->FindComponent<Engine::TransformComponent>(m_editorCamera);
+		}
+		else
+		{
+			pCamera = EnsureEditorCamera(pScene);
+			pCamera->m_inUse = false; // Make sure that its not in use
+			pCamera = nullptr;
+
+			b8 hasCam = false;
+			pScene->ForEach<Engine::CameraComponent>([&](Engine::EntityHandle handl, Engine::CameraComponent& camComp)
+				{
+					if (hasCam)
+						return;
+
+					if (pScene->HasComponent<Engine::EditorOnlyComponent>(handl))
+						return;
+
+					pCamera = &camComp;
+					hasCam = true;
+					pCamera->m_inUse = true;
+				});
+		}
+
+		if (pCamera == nullptr)
+		{
+			ImVec2 avail = ImGui::GetContentRegionAvail();
+			ImVec2 textSize = ImGui::CalcTextSize(kErrorMessage.data());
+			ImVec2 start = ImGui::GetCursorPos();
+
+			ImGui::SetCursorPos(ImVec2(
+				start.x + (avail.x - textSize.x) * 0.5f,
+				start.y + (avail.y - textSize.y) * 0.5f));
+			ImGui::TextUnformatted(kErrorMessage.data());
 			return;
+		}
 
 		const Math::Vec2f requested = { area.x, area.y };
 
@@ -121,8 +160,9 @@ namespace Horizon::Editor
 
 		ImGui::GetWindowDrawList()->AddImage(ImTextureID(handle), imageMin, imageMax);
 
-		if (m_flying)
-			UpdateFreeRoam(context, *pCamTransform);
+		// If flying is true AND pCamPos is valid, then Update this shit.
+		if (m_flying && pCameraPos)
+			UpdateFreeRoam(context, *pCameraPos);
 
 		ImGui::SetCursorScreenPos(ImVec2(imageMin.x + 24, imageMin.y + 24));
 
@@ -139,7 +179,7 @@ namespace Horizon::Editor
 		std::string fpsCounter = std::format("FPS: {:.2f}", m_fps);
 		ImGui::TextColored(ImVec4(0.1, 0.8, 0.2, 1), fpsCounter.c_str());
 
-		if(m_world->GetRunningSystems() == Engine::SceneGroups::Edit)
+		if (m_world->GetRunningSystems() == Engine::SceneGroups::Edit)
 			RenderGizmo({ imageMin.x, imageMin.y }, { area.x, area.y }, *pCamera);
 	}
 
@@ -217,7 +257,7 @@ namespace Horizon::Editor
 
 		Engine::Scene* pScene = m_world->GetCurrentWorld();
 		const Engine::EntityHandle entity = GetContext()->pSelection->Get<Engine::EntityTag>();
-		
+
 		auto* pTransform = pScene->FindComponent<Engine::TransformComponent>(entity);
 
 		if (pTransform == nullptr)

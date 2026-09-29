@@ -224,6 +224,40 @@ namespace Horizon::PAL
 		return true;
 	}
 
+	b8 File::Truncate(FileAccessRequest fileAccess, usize size)
+	{
+		if (!fileAccess.m_handle.IsValid())
+		{
+			Terminal::Error("File::Truncate", "Invalid file access handle");
+			return false;
+		}
+
+		if (((u8)fileAccess.GetAccessPolicy() & (u8)FileOperationAccessPolicy::Write) == 0)
+		{
+			Terminal::Error("File::Truncate", "File was not opened with Write access");
+			return false;
+		}
+
+		HANDLE fileHandle = (HANDLE)fileAccess.m_handle.index;
+
+		LARGE_INTEGER pos = {};
+		pos.QuadPart = (LONGLONG)size;
+
+		if (!SetFilePointerEx(fileHandle, pos, NULL, FILE_BEGIN))
+		{
+			Terminal::Error("File::Truncate", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+			return false;
+		}
+
+		if (!SetEndOfFile(fileHandle))
+		{
+			Terminal::Error("File::Truncate", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
+			return false;
+		}
+
+		return true;
+	}
+
 	b8 File::ReadMemory(FileAccessRequest fileAccess, List<u8>& memory, usize startPoint, usize endPoint)
 	{
 		if (!fileAccess.m_handle.IsValid())

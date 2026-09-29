@@ -2,7 +2,7 @@
 
 #include <Runtime/RTTR/Reflection.h>
 
-namespace Horizon::Editor
+namespace Horizon::Reflect
 {
 	class H_EXPORT HideInInspectorAttribute : public Reflect::Attribute
 	{
