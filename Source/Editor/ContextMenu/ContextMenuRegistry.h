@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Editor/Attributes/ContextMenuItemAttribute.h>
+#include <Editor/ContextMenu/ContextMenuItemAttribute.h>
 #include <Editor/ContextMenu/ContextMenuItem.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>

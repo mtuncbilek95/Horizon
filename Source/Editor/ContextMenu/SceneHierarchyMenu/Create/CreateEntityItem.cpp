@@ -1,6 +1,6 @@
 #include "CreateEntityItem.h"
 
-#include <Engine/World/Components/NameComponent.h>
+#include <Engine/World/Components/Tag/NameComponent.h>
 
 namespace Horizon::Editor
 {

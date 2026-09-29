@@ -1,6 +1,6 @@
 #include "ViewRegistry.h"
 
-#include <Editor/Attributes/EditorViewAttribute.h>
+#include <Editor/Views/EditorViewAttribute.h>
 #include <Editor/Views/ViewCommandBinding.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
@@ -42,6 +42,8 @@ namespace Horizon::Editor
 		auto* pReflect = ctx.pEngine->GetReflectionSystem();
 
 		List<Reflect::Type*> types = pReflect->GetTypeByAttribute(Reflect::TypeOf<EditorViewAttribute>());
+
+		Reflect::TypeHandle hndl = Reflect::TypeOf<EditorViewAttribute>();
 
 		for (auto* type : types)
 		{

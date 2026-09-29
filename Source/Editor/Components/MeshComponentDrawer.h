@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Editor/Components/ComponentDrawer.h>
-#include <Engine/World/Components/MeshComponent.h>
+#include <Engine/World/Components/Rendering/MeshComponent.h>
 
 namespace Horizon::Editor
 {

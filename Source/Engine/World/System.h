@@ -17,6 +17,7 @@ namespace Horizon::Engine
 		virtual void OnExecute(const EngineFrame& ctx, Scene& currentScene) = 0;
 		virtual void OnFinalize() = 0;
 
+		virtual void OnGroupsChanged(SystemGroup previous, SystemGroup current) = 0;
 		virtual SystemGroup GetWorkingGroup() const = 0;
 
 		Engine* GetEngine() const { return m_engine; }

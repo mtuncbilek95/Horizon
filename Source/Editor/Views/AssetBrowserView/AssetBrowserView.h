@@ -2,7 +2,7 @@
 
 #include <Editor/AssetAction/AssetAction.h>
 #include <Editor/Views/ViewObject.h>
-#include <Editor/Attributes/EditorViewAttribute.h>
+#include <Editor/Views/EditorViewAttribute.h>
 #include <Editor/Font/IconsFontAwesome6.h>
 #include <Editor/Domain/DomainFolder.h>
 #include <Editor/Domain/DomainFile.h>

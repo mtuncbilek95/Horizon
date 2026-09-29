@@ -5,11 +5,11 @@
 #include <Editor/Models/SelectionModel.h>
 
 #include <Engine/Core/Engine.h>
-#include <Engine/World/Components/CameraComponent.h>
+#include <Engine/World/Components/Rendering/CameraComponent.h>
 #include <Engine/World/Components/EditorOnlyComponent.h>
-#include <Engine/World/Components/TransformComponent.h>
+#include <Engine/World/Components/Physics/TransformComponent.h>
 #include <Engine/World/ECS/Scene.h>
-#include <Engine/World/Systems/RenderSystem.h>
+#include <Engine/World/Systems/Rendering/RenderSystem.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/World/SystemGroup.h>
 

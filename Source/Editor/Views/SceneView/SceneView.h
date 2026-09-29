@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Editor/Attributes/EditorViewAttribute.h>
+#include <Editor/Views/EditorViewAttribute.h>
 #include <Editor/Views/ViewObject.h>
 #include <Editor/Font/IconsFontAwesome6.h>
 #include <Engine/World/ECS/Definitions.h>

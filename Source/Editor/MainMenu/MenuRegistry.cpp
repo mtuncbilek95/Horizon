@@ -1,7 +1,7 @@
 #include "MenuRegistry.h"
 
-#include <Editor/Attributes/MainMenuItemAttribute.h>
-#include <Editor/Attributes/MenuItemAttribute.h>
+#include <Editor/MainMenu/MainMenuItemAttribute.h>
+#include <Editor/MainMenu/MenuItemAttribute.h>
 #include <Editor/Font/IconsFontAwesome6.h>
 #include <Editor/MainMenu/MenuItem.h>
 #include <Editor/Renderer/Utils/ImGuiUtils.h>

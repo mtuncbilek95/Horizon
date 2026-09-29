@@ -2,7 +2,7 @@
 
 #include <Engine/Asset/Mesh/MeshAsset.h>
 #include <Engine/Asset/Mesh/MeshSubMesh.h>
-#include <Engine/World/Components/MeshComponent.h>
+#include <Engine/World/Components/Rendering/MeshComponent.h>
 
 namespace Horizon::Engine
 {
@@ -66,6 +66,10 @@ namespace Horizon::Engine
 	}
 
 	void MeshSystem::OnFinalize()
+	{
+	}
+
+	void MeshSystem::OnGroupsChanged(SystemGroup previous, SystemGroup current)
 	{
 	}
 

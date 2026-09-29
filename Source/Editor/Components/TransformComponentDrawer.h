@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Editor/Components/ComponentDrawer.h>
-#include <Engine/World/Components/TransformComponent.h>
+#include <Engine/World/Components/Physics/TransformComponent.h>
 
 namespace Horizon::Editor
 {

@@ -55,6 +55,7 @@ namespace Horizon::Engine
 		SubmitTicket SubmitJob(SubmitRequest&& request);
 		SubmitTicket SubmitJob(JobLane lane, Job&& job);
 		SubmitTicket SubmitGraph(CompiledGraph&& compiledGraph);
+		void SubmitDetached(JobLane lane, Job&& job);
 
 		CompletionState GetTicketState(SubmitTicket ticket) const;
 		b8 WaitTicket(SubmitTicket ticket, u64 timeoutInMs = u64_max);

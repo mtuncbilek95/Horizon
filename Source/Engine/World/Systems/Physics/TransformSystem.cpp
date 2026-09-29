@@ -1,6 +1,6 @@
 #include "TransformSystem.h"
 
-#include <Engine/World/Components/TransformComponent.h>
+#include <Engine/World/Components/Physics/TransformComponent.h>
 #include <Runtime/Math/Mat4f.h>
 #include <Runtime/Math/Quat.h>
 #include <Runtime/Math/Scalar.h>
@@ -34,6 +34,10 @@ namespace Horizon::Engine
 	}
 
 	void TransformSystem::OnFinalize()
+	{
+	}
+
+	void TransformSystem::OnGroupsChanged(SystemGroup previous, SystemGroup current)
 	{
 	}
 }

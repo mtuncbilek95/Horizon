@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Editor/Attributes/MenuItemAttribute.h>
+#include <Editor/MainMenu/MenuItemAttribute.h>
 #include <Editor/MainMenu/MenuItem.h>
 #include <Runtime/RTTR/Reflection.h>
 

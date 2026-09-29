@@ -1,6 +1,6 @@
 #include "ToolBarRegistry.h"
 
-#include <Editor/Attributes/ToolBarItemAttribute.h>
+#include <Editor/Toolbar/ToolBarItemAttribute.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 

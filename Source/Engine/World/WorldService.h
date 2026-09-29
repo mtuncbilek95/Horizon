@@ -39,7 +39,7 @@ namespace Horizon::Engine
 		void SetCurrentWorld(Scene* pNewWorld) { m_activeWorld = pNewWorld; }
 
 		SystemGroup GetRunningSystems() const { return m_runningSystems; }
-		void SetRunningSystems(SystemGroup groups) { m_runningSystems = groups; }
+		void SetRunningSystems(SystemGroup groups);
 
 	private:
 		ReflectionSystem* m_reflection;

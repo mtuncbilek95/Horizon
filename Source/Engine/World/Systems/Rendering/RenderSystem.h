@@ -3,7 +3,7 @@
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/World/SystemOrderAttribute.h>
 #include <Engine/World/System.h>
-#include <Engine/World/Systems/RenderSlot.h>
+#include <Engine/World/Systems/Rendering/RenderSlot.h>
 
 #include <Runtime/RHI/Descriptor/GfxDescriptorHeap.h>
 #include <Runtime/Math/Vec2u.h>
@@ -18,6 +18,7 @@ namespace Horizon::Engine
 		b8 OnInitialize() final;
 		void OnExecute(const EngineFrame& ctx, Scene& currentScene) final;
 		void OnFinalize() final;
+		void OnGroupsChanged(SystemGroup previous, SystemGroup current) final;
 
 		SystemGroup GetWorkingGroup() const final { return SystemGroup::Render; }
 

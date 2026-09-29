@@ -7,6 +7,7 @@
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Asset/AssetService.h>
 #include <Engine/World/WorldService.h>
+#include <Engine/Physics/PhysicsService.h>
 
 #include "TypeManifestation.h"
 
@@ -26,6 +27,7 @@ int main(int argC, char** argV)
 	engine.RegisterModule<Engine::AssetService>();
 	engine.RegisterModule<Engine::WorldService>();
 	engine.RegisterModule<Editor::EditorService>();
+	engine.RegisterModule<Engine::PhysicsService>();
 
 	engine.Run();
 }

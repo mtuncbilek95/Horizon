@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Editor/Attributes/ImportTypeAttribute.h>
+#include <Editor/Importer/ImportTypeAttribute.h>
 #include <Editor/Importer/AssetImporter.h>
 
 namespace Horizon::Editor

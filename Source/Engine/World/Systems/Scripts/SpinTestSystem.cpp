@@ -1,6 +1,6 @@
 #include "SpinTestSystem.h"
 
-#include <Engine/World/Components/TransformComponent.h>
+#include <Engine/World/Components/Physics/TransformComponent.h>
 #include <Engine/World/Components/Scripts/SpinTestComponent.h>
 #include <Runtime/Math/Mat4f.h>
 #include <Runtime/Math/Quat.h>
@@ -35,4 +35,10 @@ namespace Horizon::Engine
 	void SpinTestSystem::OnFinalize()
 	{
 	}
+
+	void SpinTestSystem::OnGroupsChanged(SystemGroup previous, SystemGroup current)
+	{
+
+	}
+
 }

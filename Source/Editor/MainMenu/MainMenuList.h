@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Editor/Attributes/MainMenuItemAttribute.h>
+#include <Editor/MainMenu/MainMenuItemAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor

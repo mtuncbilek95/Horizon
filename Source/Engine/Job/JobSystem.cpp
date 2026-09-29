@@ -180,6 +180,20 @@ namespace Horizon::Engine
 		return ticket;
 	}
 
+	void JobSystem::SubmitDetached(JobLane lane, Job&& job)
+	{
+		if (!job.IsValid())
+		{
+			Terminal::Error(StringOps::GetName(this), "Rejected empty detached job on {} lane", LaneName(lane));
+			return;
+		}
+
+		Lane& target = GetLane(lane);
+
+		usize index = target.next.FetchAdd(1) % target.laneWorkers.GetCount();
+		target.laneWorkers[index]->AddJob(std::move(job));
+	}
+
 	CompletionState JobSystem::GetTicketState(SubmitTicket ticket) const
 	{
 		const TicketSlot* slot = ResolveSlot(ticket);

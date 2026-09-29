@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Editor/Components/ComponentDrawer.h>
-#include <Engine/World/Components/FogComponent.h>
+#include <Engine/World/Components/PostProcess/FogComponent.h>
 
 namespace Horizon::Editor
 {

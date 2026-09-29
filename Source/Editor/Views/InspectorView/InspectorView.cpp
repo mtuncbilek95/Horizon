@@ -2,16 +2,13 @@
 
 #include <Editor/Renderer/EditorContext.h>
 #include <Editor/Models/SelectionModel.h>
-#include <Editor/Attributes/HideInInspectorAttribute.h>
-#include <Editor/Attributes/RangeAttribute.h>
-#include <Editor/Attributes/TooltipAttribute.h>
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Engine/World/WorldService.h>
-#include <Engine/World/Components/TransformComponent.h>
-#include <Engine/World/Components/NameComponent.h>
+#include <Engine/World/Components/Physics/TransformComponent.h>
+#include <Engine/World/Components/Tag/NameComponent.h>
 
 #include <misc/cpp/imgui_stdlib.h>
 

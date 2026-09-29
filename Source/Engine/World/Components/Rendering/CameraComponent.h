@@ -2,7 +2,6 @@
 
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
-#include <Runtime/RTTR/Attributes/AliasAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/Math/Vec2f.h>
 #include <Runtime/Math/Vec3f.h>
@@ -10,7 +9,7 @@
 
 namespace Horizon::Engine
 {
-	HCLASS(ComponentId["CameraComponent", "Location"]);
+	HCLASS(ComponentId["CameraComponent", "Rendering"]);
 	class H_EXPORT CameraComponent final : public ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(CameraComponent);

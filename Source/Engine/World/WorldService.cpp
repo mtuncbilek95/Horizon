@@ -93,4 +93,16 @@ namespace Horizon::Engine
 
 		return m_systems[it->second];
 	}
+
+	void WorldService::SetRunningSystems(SystemGroup groups)
+	{
+		if (groups == m_runningSystems)
+			return;
+
+		const SystemGroup previous = m_runningSystems;
+		m_runningSystems = groups;
+
+		for (auto* pSystem : m_systems)
+			pSystem->OnGroupsChanged(previous, groups);
+	}
 }

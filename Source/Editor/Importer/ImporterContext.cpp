@@ -1,6 +1,6 @@
 #include "ImporterContext.h"
 
-#include <Editor/Attributes/ImportTypeAttribute.h>
+#include <Editor/Importer/ImportTypeAttribute.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 
 namespace Horizon::Editor

@@ -1,9 +1,9 @@
 #include "RenderSystem.h"
 
-#include <Engine/World/Components/TransformComponent.h>
-#include <Engine/World/Components/CameraComponent.h>
-#include <Engine/World/Components/MeshComponent.h>
-#include <Engine/World/Components/FogComponent.h>
+#include <Engine/World/Components/Physics/TransformComponent.h>
+#include <Engine/World/Components/Rendering/CameraComponent.h>
+#include <Engine/World/Components/Rendering/MeshComponent.h>
+#include <Engine/World/Components/PostProcess/FogComponent.h>
 #include <Engine/Asset/AssetService.h>
 #include <Engine/Asset/Mesh/MeshAssetStreamer.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
@@ -377,6 +377,10 @@ namespace Horizon::Engine
 			Memory::Allocator::Delete(sFunDepthHeap);
 			sFunDepthHeap = nullptr;
 		}
+	}
+
+	void RenderSystem::OnGroupsChanged(SystemGroup previous, SystemGroup current)
+	{
 	}
 
 	u64 RenderSystem::GetSceneView() const

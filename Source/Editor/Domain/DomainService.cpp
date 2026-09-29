@@ -1,6 +1,6 @@
 #include "DomainService.h"
 
-#include <Editor/Attributes/ImportTypeAttribute.h>
+#include <Editor/Importer/ImportTypeAttribute.h>
 #include <Editor/Domain/DomainFolder.h>
 #include <Editor/Domain/DomainFile.h>
 #include <Editor/Domain/DomainMeta.h>

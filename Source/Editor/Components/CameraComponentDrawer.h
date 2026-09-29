@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Editor/Components/ComponentDrawer.h>
-#include <Engine/World/Components/CameraComponent.h>
+#include <Engine/World/Components/Rendering/CameraComponent.h>
 
 namespace Horizon::Editor
 {

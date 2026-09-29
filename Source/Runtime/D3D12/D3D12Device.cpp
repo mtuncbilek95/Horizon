@@ -27,8 +27,6 @@
 #include <imgui.h>
 #include <backends/imgui_impl_dx12.h>
 
-#include <bit>
-
 namespace Horizon::RHI
 {
 	namespace

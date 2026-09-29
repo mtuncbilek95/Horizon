@@ -6,7 +6,7 @@
 #include <Engine/Asset/Scene/SceneSerializer.h>
 #include <Engine/Job/JobSystem.h>
 #include <Engine/World/WorldService.h>
-#include <Engine/World/Components/NameComponent.h>
+#include <Engine/World/Components/Tag/NameComponent.h>
 #include <Engine/World/Components/EditorOnlyComponent.h>
 #include <Runtime/PAL/File/File.h>
 #include <Runtime/Containers/StringOps.h>

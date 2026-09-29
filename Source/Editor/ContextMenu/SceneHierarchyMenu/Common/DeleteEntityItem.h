@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Editor/Attributes/ContextMenuItemAttribute.h>
+#include <Editor/ContextMenu/ContextMenuItemAttribute.h>
 #include <Editor/ContextMenu/SceneHierarchyMenu/SceneHierarchyMenuItem.h>
 
 namespace Horizon::Editor

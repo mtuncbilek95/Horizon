@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Editor/Attributes/ToolBarItemAttribute.h>
+#include <Editor/Toolbar/ToolBarItemAttribute.h>
 #include <Editor/ToolBar/ToolBarItem.h>
 #include <Runtime/RTTR/Reflection.h>
 
