@@ -17,7 +17,7 @@ namespace Horizon::Editor
 			std::string displayName;
 			i32 order = 0;
 
-			ContextMenuItem<TContext>* item = nullptr;
+			ContextMenuItem<TContext>* pItem = nullptr;
 			List<ContextMenuNode> children;
 		};
 	public:
@@ -92,7 +92,7 @@ namespace Horizon::Editor
 					ContextMenuNode& leaf = pLevel->EmplaceBack();
 					leaf.displayName = std::move(segment);
 					leaf.order = order;
-					leaf.item = static_cast<ContextMenuItem<TContext>*>(pType->Create());
+					leaf.pItem = static_cast<ContextMenuItem<TContext>*>(pType->Create());
 					break;
 				}
 
@@ -110,22 +110,22 @@ namespace Horizon::Editor
 		{
 			for (auto& child : siblings)
 			{
-				if (child.item == nullptr && child.displayName == name)
+				if (child.pItem == nullptr && child.displayName == name)
 					return child;
 			}
 
 			ContextMenuNode& node = siblings.EmplaceBack();
 			node.displayName = name;
 			node.order = i32_max;
-			node.item = nullptr;
+			node.pItem = nullptr;
 
 			return node;
 		}
 
 		void ClearRecursive(ContextMenuNode& node)
 		{
-			Memory::Allocator::Delete(node.item);
-			node.item = nullptr;
+			Memory::Allocator::Delete(node.pItem);
+			node.pItem = nullptr;
 
 			for (auto& child : node.children)
 				ClearRecursive(child);
@@ -149,7 +149,7 @@ namespace Horizon::Editor
 
 		void RenderMenuNode(const ContextMenuNode& menu, TContext& context)
 		{
-			if (menu.item == nullptr)
+			if (menu.pItem == nullptr)
 			{
 				if (ImGui::BeginMenu(menu.displayName.c_str(), !menu.children.IsEmpty()))
 				{
@@ -162,10 +162,10 @@ namespace Horizon::Editor
 				return;
 			}
 
-			b8 enabled = menu.item->IsEnabled(context);
+			b8 enabled = menu.pItem->IsEnabled(context);
 
 			if (ImGui::MenuItem(menu.displayName.c_str(), nullptr, false, enabled))
-				menu.item->OnExecute(context);
+				menu.pItem->OnExecute(context);
 		}
 
 	private:

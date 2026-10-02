@@ -7,15 +7,15 @@ namespace Horizon::Editor
 {
 	void DeleteObjectItem::OnExecute(AssetBrowserContext& context)
 	{
-		for (auto* file : context.selectedFiles)
+		for (auto* pFile : context.selectedFiles)
 		{
 			// TODO: This can work for now
-			PAL::File::Delete(file->GetSourcePath());
-			PAL::File::Delete(file->GetMetaPath());
+			PAL::File::Delete(pFile->GetSourcePath());
+			PAL::File::Delete(pFile->GetMetaPath());
 		}
 
-		for (auto* folder : context.selectedFolders)
-			PAL::Directory::Delete(folder->GetAbsolutePath());
+		for (auto* pFolder : context.selectedFolders)
+			PAL::Directory::Delete(pFolder->GetAbsolutePath());
 	}
 
 	b8 DeleteObjectItem::IsEnabled(const AssetBrowserContext& context)

@@ -13,7 +13,7 @@ namespace Horizon::Editor
 		i32 order;
 		b8 isCheckbox;
 
-		MenuItem* menu;
+		MenuItem* pMenu;
 
 		List<MenuItemInstance> subMenus;
 	};

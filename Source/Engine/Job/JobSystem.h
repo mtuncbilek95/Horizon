@@ -31,20 +31,20 @@ namespace Horizon::Engine
 
 		struct Envelope
 		{
-			JobSystem* system;
+			JobSystem* pSystem;
 			Job job;
-			TicketSlot* slot;
-			GraphInstance* graph;
+			TicketSlot* pSlot;
+			GraphInstance* pGraph;
 			GraphNodeId node;
 
-			Envelope(JobSystem* owner, Job&& work, TicketSlot* ticket, GraphInstance* instance, GraphNodeId nodeId)
-				: system(owner), job(std::move(work)), slot(ticket), graph(instance), node(nodeId)
+			Envelope(JobSystem* pOwner, Job&& work, TicketSlot* pTicket, GraphInstance* pInstance, GraphNodeId nodeId)
+				: pSystem(pOwner), job(std::move(work)), pSlot(pTicket), pGraph(pInstance), node(nodeId)
 			{
 			}
 		};
 
-		static void ExecuteEnvelope(void* userData);
-		static void DiscardEnvelope(void* userData);
+		static void ExecuteEnvelope(void* pUserData);
+		static void DiscardEnvelope(void* pUserData);
 
 	public:
 		static constexpr usize MaxLiveTickets = 4096;
@@ -70,13 +70,13 @@ namespace Horizon::Engine
 
 		TicketSlot* AcquireSlot(JobLane helpLane, u32 jobCount, SubmitTicket& outTicket);
 		const TicketSlot* ResolveSlot(SubmitTicket ticket) const;
-		b8 CompleteOne(TicketSlot* slot);
+		b8 CompleteOne(TicketSlot* pSlot);
 
-		void Enqueue(JobLane lane, Envelope* envelope);
-		void DispatchNode(GraphInstance* graph, GraphNodeId node);
-		void OnNodeFinished(GraphInstance* graph, GraphNodeId node);
+		void Enqueue(JobLane lane, Envelope* pEnvelope);
+		void DispatchNode(GraphInstance* pGraph, GraphNodeId node);
+		void OnNodeFinished(GraphInstance* pGraph, GraphNodeId node);
 
-		JobWorker* GetRandomVictim(JobWorker* avoidWorker);
+		JobWorker* GetRandomVictim(JobWorker* pAvoidWorker);
 		b8 TryRunOneJob(JobLane lane);
 
 	private:

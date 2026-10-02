@@ -23,7 +23,7 @@ namespace Horizon::Editor
 	{
 		std::string newFolderName = "NewFolder";
 
-		if (HasFolderNamed(context.currentFolder, newFolderName))
+		if (HasFolderNamed(context.pCurrentFolder, newFolderName))
 		{
 			i32 index = 1;
 			std::string candidate;
@@ -32,12 +32,12 @@ namespace Horizon::Editor
 			{
 				candidate = std::format("NewFolder({})", index);
 				index++;
-			} while (HasFolderNamed(context.currentFolder, candidate));
+			} while (HasFolderNamed(context.pCurrentFolder, candidate));
 
 			newFolderName = candidate;
 		}
 
-		const std::string newFolderPath = context.currentFolder->GetAbsolutePath() + "/" + newFolderName;
+		const std::string newFolderPath = context.pCurrentFolder->GetAbsolutePath() + "/" + newFolderName;
 
 		if (!PAL::Directory::Create(newFolderPath))
 			Terminal::Error(StringOps::GetName(this), "Cannot create folder: {}", newFolderPath);

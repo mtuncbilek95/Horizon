@@ -131,7 +131,7 @@ namespace Horizon::RHI
 		if (!object)
 			return List<u8>();
 
-		const u8* begin = static_cast<const u8*>(object->GetBufferPointer());
-		return List<u8>(begin, begin + object->GetBufferSize());
+		const u8* pBegin = static_cast<const u8*>(object->GetBufferPointer());
+		return List<u8>(pBegin, pBegin + object->GetBufferSize());
 	}
 }

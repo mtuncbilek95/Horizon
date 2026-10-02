@@ -2,9 +2,9 @@
 
 namespace Horizon::Engine
 {
-	void JoltThreadBridge::RunJolt(void* userData)
+	void JoltThreadBridge::RunJolt(void* pUserData)
 	{
-		JoltJob* pJob = (JoltJob*)userData;
+		JoltJob* pJob = (JoltJob*)pUserData;
 
 		pJob->Execute();
 		pJob->Release();

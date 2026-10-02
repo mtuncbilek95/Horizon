@@ -167,8 +167,8 @@ namespace Horizon::Math
 
 	Vec4f Mat4f::Column(i32 index) const
 	{
-		const f32* column = m_data + index * 4;
-		return Vec4f(column[0], column[1], column[2], column[3]);
+		const f32* pColumn = m_data + index * 4;
+		return Vec4f(pColumn[0], pColumn[1], pColumn[2], pColumn[3]);
 	}
 
 	Vec4f Mat4f::Row(i32 index) const

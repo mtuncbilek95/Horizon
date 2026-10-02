@@ -26,8 +26,8 @@ namespace Horizon::Reflect
 		}
 		~Field()
 		{
-			for (Attribute* attr : m_attributes)
-				Memory::Allocator::Delete(attr);
+			for (Attribute* pAttr : m_attributes)
+				Memory::Allocator::Delete(pAttr);
 		}
 
 		Field(const Field&) = delete;
@@ -49,10 +49,10 @@ namespace Horizon::Reflect
 		template<typename TAttr>
 		TAttr* GetCustomAttribute() const
 		{
-			for (Attribute* attr : m_attributes)
+			for (Attribute* pAttr : m_attributes)
 			{
-				if (attr->GetTypeId() == TypeOf<TAttr>())
-					return static_cast<TAttr*>(attr);
+				if (pAttr->GetTypeId() == TypeOf<TAttr>())
+					return static_cast<TAttr*>(pAttr);
 			}
 
 			return nullptr;
@@ -62,41 +62,41 @@ namespace Horizon::Reflect
 		List<TAttr*> GetCustomAttributes() const
 		{
 			List<TAttr*> out;
-			for (Attribute* attr : m_attributes)
+			for (Attribute* pAttr : m_attributes)
 			{
-				if (attr->GetTypeId() == TypeOf<TAttr>())
-					out.PushBack(static_cast<TAttr*>(attr));
+				if (pAttr->GetTypeId() == TypeOf<TAttr>())
+					out.PushBack(static_cast<TAttr*>(pAttr));
 			}
 
 			return out;
 		}
 
-		void* GetValue(void* instance) const
+		void* GetValue(void* pInstance) const
 		{
-			return static_cast<c8*>(instance) + m_offset;
+			return static_cast<c8*>(pInstance) + m_offset;
 		}
 
-		const void* GetValue(const void* instance) const
+		const void* GetValue(const void* pInstance) const
 		{
-			return static_cast<const c8*>(instance) + m_offset;
-		}
-
-		template<typename T>
-		T& GetValueAs(void* instance) const
-		{
-			return *reinterpret_cast<T*>(static_cast<c8*>(instance) + m_offset);
+			return static_cast<const c8*>(pInstance) + m_offset;
 		}
 
 		template<typename T>
-		const T& GetValueAs(const void* instance) const
+		T& GetValueAs(void* pInstance) const
 		{
-			return *reinterpret_cast<const T*>(static_cast<const c8*>(instance) + m_offset);
+			return *reinterpret_cast<T*>(static_cast<c8*>(pInstance) + m_offset);
 		}
 
 		template<typename T>
-		void SetValue(void* instance, const T& value) const
+		const T& GetValueAs(const void* pInstance) const
 		{
-			*reinterpret_cast<T*>(static_cast<c8*>(instance) + m_offset) = value;
+			return *reinterpret_cast<const T*>(static_cast<const c8*>(pInstance) + m_offset);
+		}
+
+		template<typename T>
+		void SetValue(void* pInstance, const T& value) const
+		{
+			*reinterpret_cast<T*>(static_cast<c8*>(pInstance) + m_offset) = value;
 		}
 
 	private:

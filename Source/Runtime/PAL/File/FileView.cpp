@@ -2,18 +2,18 @@
 
 namespace Horizon::PAL
 {
-	FileView::FileView() : m_pBase(nullptr), m_pData(nullptr), m_size(0)
+	FileView::FileView() : m_base(nullptr), m_data(nullptr), m_size(0)
 	{
 	}
 
-	FileView::FileView(void* pBase, const u8* pData, usize size) : m_pBase(pBase), m_pData(pData), m_size(size)
+	FileView::FileView(void* pBase, const u8* pData, usize size) : m_base(pBase), m_data(pData), m_size(size)
 	{
 	}
 
 	void FileView::Release()
 	{
-		m_pBase = nullptr;
-		m_pData = nullptr;
+		m_base = nullptr;
+		m_data = nullptr;
 		m_size = 0;
 	}
 }

@@ -8,13 +8,13 @@
 
 namespace Horizon::Engine
 {
-	using JobFunction = void(*)(void* userData);
+	using JobFunction = void(*)(void* pUserData);
 
 	class H_EXPORT Job
 	{
-		JobFunction execute = nullptr;
-		JobFunction discard = nullptr;
-		void* userData = nullptr;
+		JobFunction m_execute = nullptr;
+		JobFunction m_discard = nullptr;
+		void* m_userData = nullptr;
 
 	public:
 		Job() = default;
@@ -33,7 +33,7 @@ namespace Horizon::Engine
 
 		~Job();
 
-		b8 IsValid() const { return execute != nullptr; }
+		b8 IsValid() const { return m_execute != nullptr; }
 
 		void Execute();
 		void Discard();
@@ -43,18 +43,18 @@ namespace Horizon::Engine
 		{
 			using Stored = std::decay_t<TCallable>;
 
-			Stored* stored = Memory::Allocator::Create<Stored>(Memory::CurrLoc(), std::forward<TCallable>(callable));
+			Stored* pStored = Memory::Allocator::Create<Stored>(Memory::CurrLoc(), std::forward<TCallable>(callable));
 
 			Job job;
-			job.userData = stored;
-			job.execute = [](void* pData)
+			job.m_userData = pStored;
+			job.m_execute = [](void* pData)
 				{
 					Stored* pTarget = (Stored*)pData;
 					(*pTarget)();
 					Memory::Allocator::Delete(pTarget);
 				};
 
-			job.discard = [](void* pData)
+			job.m_discard = [](void* pData)
 				{
 					Memory::Allocator::Delete((Stored*)pData);
 				};

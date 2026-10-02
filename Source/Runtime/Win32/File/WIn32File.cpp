@@ -125,7 +125,7 @@ namespace Horizon::PAL
 			return false;
 		}
 
-		b8 result = UnmapViewOfFile(view.m_pBase);
+		b8 result = UnmapViewOfFile(view.m_base);
 		if (!result)
 			Terminal::Error("File::CloseMap", "{}", Win32ErrorHelpers::GetLastErrorString(GetLastError()));
 

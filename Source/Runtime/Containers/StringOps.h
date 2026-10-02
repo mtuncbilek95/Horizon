@@ -25,9 +25,9 @@ namespace Horizon
 		static std::string_view GetNameString(std::string_view name);
 
 		template<typename T>
-		static std::string_view GetName(T* obj)
+		static std::string_view GetName(T* pObject)
 		{
-			return ParseName(typeid(*obj).name());
+			return ParseName(typeid(*pObject).name());
 		}
 
 	private:

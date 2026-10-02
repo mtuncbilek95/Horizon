@@ -30,14 +30,14 @@ namespace Horizon::Reflect
 
 			if constexpr (!std::is_abstract_v<TType>)
 			{
-				builder.m_type.DestructFunc = [](void* pMemory)
+				builder.m_type.m_destructFunc = [](void* pMemory)
 					{
 						static_cast<TType*>(pMemory)->~TType();
 					};
 
 				if constexpr (std::is_default_constructible_v<TType>)
 				{
-					builder.m_type.ConstructFunc = [](void* pMemory)
+					builder.m_type.m_constructFunc = [](void* pMemory)
 						{
 							::new (pMemory) TType();
 						};
@@ -45,7 +45,7 @@ namespace Horizon::Reflect
 
 				if constexpr (std::is_move_constructible_v<TType>)
 				{
-					builder.m_type.MoveFunc = [](void* pDestination, void* pSource)
+					builder.m_type.m_moveFunc = [](void* pDestination, void* pSource)
 						{
 							::new (pDestination) TType(std::move(*static_cast<TType*>(pSource)));
 						};
@@ -53,7 +53,7 @@ namespace Horizon::Reflect
 
 				if constexpr (std::is_copy_constructible_v<TType>)
 				{
-					builder.m_type.CopyFunc = [](void* pDestination, const void* pSource)
+					builder.m_type.m_copyFunc = [](void* pDestination, const void* pSource)
 						{
 							::new (pDestination) TType(*static_cast<const TType*>(pSource));
 						};

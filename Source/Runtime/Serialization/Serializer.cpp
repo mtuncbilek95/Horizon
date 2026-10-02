@@ -13,46 +13,46 @@ namespace Horizon
 {
 	namespace
 	{
-		void WriteScalar(const void* valuePtr, Reflect::TypeKind kind, IArchiveWriter& writer)
+		void WriteScalar(const void* pValue, Reflect::TypeKind kind, IArchiveWriter& writer)
 		{
 			switch (kind)
 			{
-			case Reflect::TypeKind::Boolean:    writer.WriteBool(*static_cast<const b8*>(valuePtr)); break;
-			case Reflect::TypeKind::Char:       writer.WriteI64(*static_cast<const c8*>(valuePtr)); break;
-			case Reflect::TypeKind::Signed8:    writer.WriteI64(*static_cast<const i8*>(valuePtr)); break;
-			case Reflect::TypeKind::Signed16:   writer.WriteI64(*static_cast<const i16*>(valuePtr)); break;
-			case Reflect::TypeKind::Signed32:   writer.WriteI64(*static_cast<const i32*>(valuePtr)); break;
-			case Reflect::TypeKind::Signed64:   writer.WriteI64(*static_cast<const i64*>(valuePtr)); break;
-			case Reflect::TypeKind::Unsigned8:  writer.WriteU64(*static_cast<const u8*>(valuePtr)); break;
-			case Reflect::TypeKind::Unsigned16: writer.WriteU64(*static_cast<const u16*>(valuePtr)); break;
-			case Reflect::TypeKind::Unsigned32: writer.WriteU64(*static_cast<const u32*>(valuePtr)); break;
-			case Reflect::TypeKind::Unsigned64: writer.WriteU64(*static_cast<const u64*>(valuePtr)); break;
-			case Reflect::TypeKind::Float32:    writer.WriteF64(*static_cast<const f32*>(valuePtr)); break;
-			case Reflect::TypeKind::Float64:    writer.WriteF64(*static_cast<const f64*>(valuePtr)); break;
-			case Reflect::TypeKind::String:     writer.WriteString(*static_cast<const std::string*>(valuePtr)); break;
+			case Reflect::TypeKind::Boolean:    writer.WriteBool(*static_cast<const b8*>(pValue)); break;
+			case Reflect::TypeKind::Char:       writer.WriteI64(*static_cast<const c8*>(pValue)); break;
+			case Reflect::TypeKind::Signed8:    writer.WriteI64(*static_cast<const i8*>(pValue)); break;
+			case Reflect::TypeKind::Signed16:   writer.WriteI64(*static_cast<const i16*>(pValue)); break;
+			case Reflect::TypeKind::Signed32:   writer.WriteI64(*static_cast<const i32*>(pValue)); break;
+			case Reflect::TypeKind::Signed64:   writer.WriteI64(*static_cast<const i64*>(pValue)); break;
+			case Reflect::TypeKind::Unsigned8:  writer.WriteU64(*static_cast<const u8*>(pValue)); break;
+			case Reflect::TypeKind::Unsigned16: writer.WriteU64(*static_cast<const u16*>(pValue)); break;
+			case Reflect::TypeKind::Unsigned32: writer.WriteU64(*static_cast<const u32*>(pValue)); break;
+			case Reflect::TypeKind::Unsigned64: writer.WriteU64(*static_cast<const u64*>(pValue)); break;
+			case Reflect::TypeKind::Float32:    writer.WriteF64(*static_cast<const f32*>(pValue)); break;
+			case Reflect::TypeKind::Float64:    writer.WriteF64(*static_cast<const f64*>(pValue)); break;
+			case Reflect::TypeKind::String:     writer.WriteString(*static_cast<const std::string*>(pValue)); break;
 			default:
 				Terminal::Error("Serializer", "Kind is not a scalar, nothing written");
 				break;
 			}
 		}
 
-		void ReadScalar(void* valuePtr, Reflect::TypeKind kind, IArchiveReader& reader)
+		void ReadScalar(void* pValue, Reflect::TypeKind kind, IArchiveReader& reader)
 		{
 			switch (kind)
 			{
-			case Reflect::TypeKind::Boolean:    *static_cast<b8*>(valuePtr) = reader.ReadBool(); break;
-			case Reflect::TypeKind::Char:       *static_cast<c8*>(valuePtr) = static_cast<c8>(reader.ReadI64()); break;
-			case Reflect::TypeKind::Signed8:    *static_cast<i8*>(valuePtr) = static_cast<i8>(reader.ReadI64()); break;
-			case Reflect::TypeKind::Signed16:   *static_cast<i16*>(valuePtr) = static_cast<i16>(reader.ReadI64()); break;
-			case Reflect::TypeKind::Signed32:   *static_cast<i32*>(valuePtr) = static_cast<i32>(reader.ReadI64()); break;
-			case Reflect::TypeKind::Signed64:   *static_cast<i64*>(valuePtr) = reader.ReadI64(); break;
-			case Reflect::TypeKind::Unsigned8:  *static_cast<u8*>(valuePtr) = static_cast<u8>(reader.ReadU64()); break;
-			case Reflect::TypeKind::Unsigned16: *static_cast<u16*>(valuePtr) = static_cast<u16>(reader.ReadU64()); break;
-			case Reflect::TypeKind::Unsigned32: *static_cast<u32*>(valuePtr) = static_cast<u32>(reader.ReadU64()); break;
-			case Reflect::TypeKind::Unsigned64: *static_cast<u64*>(valuePtr) = reader.ReadU64(); break;
-			case Reflect::TypeKind::Float32:    *static_cast<f32*>(valuePtr) = static_cast<f32>(reader.ReadF64()); break;
-			case Reflect::TypeKind::Float64:    *static_cast<f64*>(valuePtr) = reader.ReadF64(); break;
-			case Reflect::TypeKind::String:     *static_cast<std::string*>(valuePtr) = reader.ReadString(); break;
+			case Reflect::TypeKind::Boolean:    *static_cast<b8*>(pValue) = reader.ReadBool(); break;
+			case Reflect::TypeKind::Char:       *static_cast<c8*>(pValue) = static_cast<c8>(reader.ReadI64()); break;
+			case Reflect::TypeKind::Signed8:    *static_cast<i8*>(pValue) = static_cast<i8>(reader.ReadI64()); break;
+			case Reflect::TypeKind::Signed16:   *static_cast<i16*>(pValue) = static_cast<i16>(reader.ReadI64()); break;
+			case Reflect::TypeKind::Signed32:   *static_cast<i32*>(pValue) = static_cast<i32>(reader.ReadI64()); break;
+			case Reflect::TypeKind::Signed64:   *static_cast<i64*>(pValue) = reader.ReadI64(); break;
+			case Reflect::TypeKind::Unsigned8:  *static_cast<u8*>(pValue) = static_cast<u8>(reader.ReadU64()); break;
+			case Reflect::TypeKind::Unsigned16: *static_cast<u16*>(pValue) = static_cast<u16>(reader.ReadU64()); break;
+			case Reflect::TypeKind::Unsigned32: *static_cast<u32*>(pValue) = static_cast<u32>(reader.ReadU64()); break;
+			case Reflect::TypeKind::Unsigned64: *static_cast<u64*>(pValue) = reader.ReadU64(); break;
+			case Reflect::TypeKind::Float32:    *static_cast<f32*>(pValue) = static_cast<f32>(reader.ReadF64()); break;
+			case Reflect::TypeKind::Float64:    *static_cast<f64*>(pValue) = reader.ReadF64(); break;
+			case Reflect::TypeKind::String:     *static_cast<std::string*>(pValue) = reader.ReadString(); break;
 			default:
 				Terminal::Error("Serializer", "Kind is not a scalar, nothing read");
 				break;
@@ -65,7 +65,7 @@ namespace Horizon
 		WriteObject(pObject, type, writer);
 	}
 
-	void Serializer::WriteObject(const void* obj, const Reflect::Type& type, IArchiveWriter& writer)
+	void Serializer::WriteObject(const void* pObject, const Reflect::Type& type, IArchiveWriter& writer)
 	{
 		writer.BeginObject();
 
@@ -75,23 +75,23 @@ namespace Horizon
 				continue;
 
 			writer.Key(field.GetName());
-			WriteField(field.GetValue(obj), field, writer);
+			WriteField(field.GetValue(pObject), field, writer);
 		}
 
 		writer.EndObject();
 	}
 
-	void Serializer::WriteField(const void* valuePtr, const Reflect::Field& field, IArchiveWriter& writer)
+	void Serializer::WriteField(const void* pValue, const Reflect::Field& field, IArchiveWriter& writer)
 	{
 		if (field.GetMode() == Reflect::TypeMode::Pointer)
 		{
-			WritePointer(valuePtr, field, writer);
+			WritePointer(pValue, field, writer);
 			return;
 		}
 
 		if (field.GetMode() == Reflect::TypeMode::Array)
 		{
-			const ListBase* pList = static_cast<const ListBase*>(valuePtr);
+			const ListBase* pList = static_cast<const ListBase*>(pValue);
 			const usize count = pList->GetCount();
 
 			writer.BeginArray(count);
@@ -103,12 +103,12 @@ namespace Horizon
 			return;
 		}
 
-		WriteValue(valuePtr, field, writer);
+		WriteValue(pValue, field, writer);
 	}
 
-	void Serializer::WritePointer(const void* pointerSlot, const Reflect::Field& field, IArchiveWriter& writer)
+	void Serializer::WritePointer(const void* pPointerSlot, const Reflect::Field& field, IArchiveWriter& writer)
 	{
-		const Reflect::Base* pTarget = *static_cast<const Reflect::Base* const*>(pointerSlot);
+		const Reflect::Base* pTarget = *static_cast<const Reflect::Base* const*>(pPointerSlot);
 
 		writer.BeginObject();
 
@@ -132,36 +132,36 @@ namespace Horizon
 		writer.EndObject();
 	}
 
-	void Serializer::WriteValue(const void* valuePtr, const Reflect::Field& field, IArchiveWriter& writer)
+	void Serializer::WriteValue(const void* pValue, const Reflect::Field& field, IArchiveWriter& writer)
 	{
 		const Reflect::TypeKind kind = field.GetKind();
 
 		if (kind == Reflect::TypeKind::Enum)
 		{
-			WriteScalar(valuePtr, field.GetUnderlyingKind(), writer);
+			WriteScalar(pValue, field.GetUnderlyingKind(), writer);
 			return;
 		}
 
 		if (kind != Reflect::TypeKind::Object)
 		{
-			WriteScalar(valuePtr, kind, writer);
+			WriteScalar(pValue, kind, writer);
 			return;
 		}
 
 		if (field.GetTypeId() == Reflect::TypeOf<Guid>())
 		{
-			writer.WriteString(static_cast<const Guid*>(valuePtr)->ToString());
+			writer.WriteString(static_cast<const Guid*>(pValue)->ToString());
 			return;
 		}
 
 		if (field.GetTypeId() == Reflect::TypeOf<PAL::DateTime>())
 		{
-			writer.WriteString(static_cast<const PAL::DateTime*>(valuePtr)->ToString());
+			writer.WriteString(static_cast<const PAL::DateTime*>(pValue)->ToString());
 			return;
 		}
 
-		const Reflect::Type* nested = Resolve(field.GetTypeId());
-		if (!nested)
+		const Reflect::Type* pNested = Resolve(field.GetTypeId());
+		if (!pNested)
 		{
 			Terminal::Warn("Serializer", "Cannot resolve nested type for field '{}'", field.GetName());
 			writer.BeginObject();
@@ -169,7 +169,7 @@ namespace Horizon
 			return;
 		}
 
-		WriteObject(valuePtr, *nested, writer);
+		WriteObject(pValue, *pNested, writer);
 	}
 
 	void Serializer::Deserialize(void* pObject, const Reflect::Type& type, IArchiveReader& reader)
@@ -177,7 +177,7 @@ namespace Horizon
 		ReadObject(pObject, type, reader);
 	}
 
-	void Serializer::ReadObject(void* obj, const Reflect::Type& type, IArchiveReader& reader)
+	void Serializer::ReadObject(void* pObject, const Reflect::Type& type, IArchiveReader& reader)
 	{
 		reader.BeginObject();
 
@@ -187,23 +187,23 @@ namespace Horizon
 				continue;
 
 			if (SeekField(field, reader))
-				ReadField(field.GetValue(obj), field, reader);
+				ReadField(field.GetValue(pObject), field, reader);
 		}
 
 		reader.EndObject();
 	}
 
-	void Serializer::ReadField(void* valuePtr, const Reflect::Field& field, IArchiveReader& reader)
+	void Serializer::ReadField(void* pValue, const Reflect::Field& field, IArchiveReader& reader)
 	{
 		if (field.GetMode() == Reflect::TypeMode::Pointer)
 		{
-			ReadPointer(valuePtr, field, reader);
+			ReadPointer(pValue, field, reader);
 			return;
 		}
 
 		if (field.GetMode() == Reflect::TypeMode::Array)
 		{
-			ListBase* pList = static_cast<ListBase*>(valuePtr);
+			ListBase* pList = static_cast<ListBase*>(pValue);
 			const usize count = reader.BeginArray();
 
 			pList->Resize(count);
@@ -215,12 +215,12 @@ namespace Horizon
 			return;
 		}
 
-		ReadValue(valuePtr, field, reader);
+		ReadValue(pValue, field, reader);
 	}
 
-	void Serializer::ReadPointer(void* pointerSlot, const Reflect::Field& field, IArchiveReader& reader)
+	void Serializer::ReadPointer(void* pPointerSlot, const Reflect::Field& field, IArchiveReader& reader)
 	{
-		Reflect::Base* pTarget = *static_cast<Reflect::Base**>(pointerSlot);
+		Reflect::Base* pTarget = *static_cast<Reflect::Base**>(pPointerSlot);
 
 		reader.BeginObject();
 
@@ -238,7 +238,7 @@ namespace Horizon
 				if (pType && pType->CanConstruct())
 				{
 					pTarget = static_cast<Reflect::Base*>(pType->Create());
-					*static_cast<Reflect::Base**>(pointerSlot) = pTarget;
+					*static_cast<Reflect::Base**>(pPointerSlot) = pTarget;
 				}
 			}
 
@@ -269,41 +269,41 @@ namespace Horizon
 		return false;
 	}
 
-	void Serializer::ReadValue(void* valuePtr, const Reflect::Field& field, IArchiveReader& reader)
+	void Serializer::ReadValue(void* pValue, const Reflect::Field& field, IArchiveReader& reader)
 	{
 		const Reflect::TypeKind kind = field.GetKind();
 
 		if (kind == Reflect::TypeKind::Enum)
 		{
-			ReadScalar(valuePtr, field.GetUnderlyingKind(), reader);
+			ReadScalar(pValue, field.GetUnderlyingKind(), reader);
 			return;
 		}
 
 		if (kind != Reflect::TypeKind::Object)
 		{
-			ReadScalar(valuePtr, kind, reader);
+			ReadScalar(pValue, kind, reader);
 			return;
 		}
 
 		if (field.GetTypeId() == Reflect::TypeOf<Guid>())
 		{
-			*static_cast<Guid*>(valuePtr) = Guid(reader.ReadString());
+			*static_cast<Guid*>(pValue) = Guid(reader.ReadString());
 			return;
 		}
 
 		if (field.GetTypeId() == Reflect::TypeOf<PAL::DateTime>())
 		{
-			*static_cast<PAL::DateTime*>(valuePtr) = PAL::DateTime::FromStringToDateTime(reader.ReadString());
+			*static_cast<PAL::DateTime*>(pValue) = PAL::DateTime::FromStringToDateTime(reader.ReadString());
 			return;
 		}
 
-		const Reflect::Type* nested = Resolve(field.GetTypeId());
-		if (!nested)
+		const Reflect::Type* pNested = Resolve(field.GetTypeId());
+		if (!pNested)
 		{
 			Terminal::Error("Serializer", "Previous error was related with {}.", field.GetName());
 			return;
 		}
 
-		ReadObject(valuePtr, *nested, reader);
+		ReadObject(pValue, *pNested, reader);
 	}
 }

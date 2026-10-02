@@ -78,10 +78,10 @@ namespace Horizon::Editor
 				continue;
 
 			u32 id = u32(entt.Index());
-			Engine::NameComponent* nameComp = m_currentScene->FindComponent<Engine::NameComponent>(entt);
+			Engine::NameComponent* pNameComp = m_currentScene->FindComponent<Engine::NameComponent>(entt);
 
 			std::string name = ICON_FA_CUBE " ";
-			name += nameComp->m_name;
+			name += pNameComp->m_name;
 
 			ImGui::PushID(i32(id));
 			ImGui::SetNextItemSelectionUserData(u64(i));

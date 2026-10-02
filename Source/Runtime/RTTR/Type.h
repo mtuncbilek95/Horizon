@@ -25,8 +25,8 @@ namespace Horizon::Reflect
 		Type() = default;
 		~Type()
 		{
-			for (Attribute* attr : m_attributes)
-				Memory::Allocator::Delete(attr);
+			for (Attribute* pAttr : m_attributes)
+				Memory::Allocator::Delete(pAttr);
 		}
 
 		Type(const Type&) = delete;
@@ -46,61 +46,61 @@ namespace Horizon::Reflect
 		b8 GetIsAbstract() const { return m_abstractClass; }
 		b8 IsTriviallyCopyable() const { return m_triviallyCopyable; }
 
-		b8 CanConstruct() const { return ConstructFunc != nullptr; }
-		b8 CanMove() const { return MoveFunc != nullptr; }
-		b8 CanCopy() const { return CopyFunc != nullptr; }
+		b8 CanConstruct() const { return m_constructFunc != nullptr; }
+		b8 CanMove() const { return m_moveFunc != nullptr; }
+		b8 CanCopy() const { return m_copyFunc != nullptr; }
 
 		void ConstructAt(void* pMemory) const
 		{
-			if (!ConstructFunc)
+			if (!m_constructFunc)
 			{
 				Terminal::Error("Type", "'{}' is not default constructible", m_name);
 				return;
 			}
 
-			ConstructFunc(pMemory);
+			m_constructFunc(pMemory);
 		}
 
 		void DestructAt(void* pMemory) const
 		{
-			if (!DestructFunc)
+			if (!m_destructFunc)
 				return;
 
-			DestructFunc(pMemory);
+			m_destructFunc(pMemory);
 		}
 
 		void MoveAt(void* pDestination, void* pSource) const
 		{
-			if (!MoveFunc)
+			if (!m_moveFunc)
 			{
 				Terminal::Error("Type", "'{}' is not move constructible", m_name);
 				return;
 			}
 
-			MoveFunc(pDestination, pSource);
+			m_moveFunc(pDestination, pSource);
 		}
 
 		void CopyAt(void* pDestination, const void* pSource) const
 		{
-			if (!CopyFunc)
+			if (!m_copyFunc)
 			{
 				Terminal::Error("Type", "'{}' is not copy constructible", m_name);
 				return;
 			}
 
-			CopyFunc(pDestination, pSource);
+			m_copyFunc(pDestination, pSource);
 		}
 
 		VoidObject Create(Memory::SourceLocation loc = Memory::CurrLoc()) const
 		{
-			if (!ConstructFunc)
+			if (!m_constructFunc)
 			{
 				Terminal::Error("Type", "'{}' cannot be created", m_name);
 				return nullptr;
 			}
 
 			void* pMemory = Memory::Allocator::AllocateRaw(m_size, m_align, loc);
-			ConstructFunc(pMemory);
+			m_constructFunc(pMemory);
 
 			return pMemory;
 		}
@@ -121,9 +121,9 @@ namespace Horizon::Reflect
 		template<typename TAttr>
 		b8 HasCustomAttribute()
 		{
-			for (Attribute* attr : m_attributes)
+			for (Attribute* pAttr : m_attributes)
 			{
-				if (attr->GetTypeId() == TypeOf<TAttr>())
+				if (pAttr->GetTypeId() == TypeOf<TAttr>())
 					return true;
 			}
 
@@ -133,10 +133,10 @@ namespace Horizon::Reflect
 		template<typename TAttr>
 		TAttr* GetCustomAttribute()
 		{
-			for (Attribute* attr : m_attributes)
+			for (Attribute* pAttr : m_attributes)
 			{
-				if (attr->GetTypeId() == TypeOf<TAttr>())
-					return static_cast<TAttr*>(attr);
+				if (pAttr->GetTypeId() == TypeOf<TAttr>())
+					return static_cast<TAttr*>(pAttr);
 			}
 
 			return nullptr;
@@ -146,10 +146,10 @@ namespace Horizon::Reflect
 		List<TAttr*> GetCustomAttributes()
 		{
 			List<TAttr*> out;
-			for (Attribute* attr : m_attributes)
+			for (Attribute* pAttr : m_attributes)
 			{
-				if (attr->GetTypeId() == TypeOf<TAttr>())
-					out.PushBack(static_cast<TAttr*>(attr));
+				if (pAttr->GetTypeId() == TypeOf<TAttr>())
+					out.PushBack(static_cast<TAttr*>(pAttr));
 			}
 
 			return out;
@@ -161,10 +161,10 @@ namespace Horizon::Reflect
 		using MoveFn = void(*)(void*, void*);
 		using CopyFn = void(*)(void*, const void*);
 
-		ConstructFn ConstructFunc = nullptr;
-		DestructFn DestructFunc = nullptr;
-		MoveFn MoveFunc = nullptr;
-		CopyFn CopyFunc = nullptr;
+		ConstructFn m_constructFunc = nullptr;
+		DestructFn m_destructFunc = nullptr;
+		MoveFn m_moveFunc = nullptr;
+		CopyFn m_copyFunc = nullptr;
 
 		TypeHandle m_typeId;
 		TypeHandle m_baseId;

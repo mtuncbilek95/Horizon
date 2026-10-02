@@ -16,8 +16,8 @@ namespace Horizon::Editor
 
 	ViewRegistry::~ViewRegistry()
 	{
-		for (auto* view : m_createdViews)
-			Memory::Allocator::Delete(view);
+		for (auto* pView : m_createdViews)
+			Memory::Allocator::Delete(pView);
 
 		m_createdViews.Clear();
 		m_registeredViews.Clear();
@@ -33,8 +33,8 @@ namespace Horizon::Editor
 			return;
 		}
 
-		for (auto* view : m_createdViews)
-			Memory::Allocator::Delete(view);
+		for (auto* pView : m_createdViews)
+			Memory::Allocator::Delete(pView);
 
 		m_createdViews.Clear();
 		m_registeredViews.Clear();
@@ -45,15 +45,15 @@ namespace Horizon::Editor
 
 		Reflect::TypeHandle hndl = Reflect::TypeOf<EditorViewAttribute>();
 
-		for (auto* type : types)
+		for (auto* pType : types)
 		{
-			if (type->GetBaseId() != Reflect::TypeOf<ViewObject>())
+			if (pType->GetBaseId() != Reflect::TypeOf<ViewObject>())
 			{
-				Terminal::Error(StringOps::GetName(this), "{} has not inherited from ViewObject. Please inherit then restart engine!", type->GetName());
+				Terminal::Error(StringOps::GetName(this), "{} has not inherited from ViewObject. Please inherit then restart engine!", pType->GetName());
 				continue;
 			}
 
-			auto* pAttr = type->GetCustomAttribute<EditorViewAttribute>();
+			auto* pAttr = pType->GetCustomAttribute<EditorViewAttribute>();
 
 			m_registeredViews.PushBack(ViewDescriptor
 				{
@@ -61,7 +61,7 @@ namespace Horizon::Editor
 					.multiInstance = pAttr->GetMultiInstance(),
 					.openOnStart = pAttr->GetOpenOnStart(),
 					.dockZone = pAttr->GetDock(),
-					.pCoreType = type
+					.pCoreType = pType
 				});
 		}
 
@@ -69,14 +69,14 @@ namespace Horizon::Editor
 		{
 			if (view.openOnStart)
 			{
-				auto* viewObj = (ViewObject*)view.pCoreType->Create();
-				viewObj->m_context = &m_context;
-				viewObj->m_displayName = view.displayName;
-				viewObj->m_holder = this;
+				auto* pViewObj = (ViewObject*)view.pCoreType->Create();
+				pViewObj->m_context = &m_context;
+				pViewObj->m_displayName = view.displayName;
+				pViewObj->m_holder = this;
 
-				viewObj->OnInvoke();
+				pViewObj->OnInvoke();
 
-				m_createdViews.PushBack(viewObj);
+				m_createdViews.PushBack(pViewObj);
 			}
 		}
 	}
@@ -102,30 +102,30 @@ namespace Horizon::Editor
 			if (!ImGui::Shortcut(binding.broadcastChord, ImGuiInputFlags_RouteGlobal))
 				continue;
 
-			for (auto* view : m_createdViews)
-				view->OnCommand(binding.command);
+			for (auto* pView : m_createdViews)
+				pView->OnCommand(binding.command);
 		}
 
-		for (auto* view : m_createdViews)
+		for (auto* pView : m_createdViews)
 		{
-			if (view->IsFullBleed())
+			if (pView->IsFullBleed())
 			{
 				ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 				ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 			}
 
-			ImGui::Begin(view->m_displayName.c_str());
+			ImGui::Begin(pView->m_displayName.c_str());
 
-			if (view->IsFullBleed())
+			if (pView->IsFullBleed())
 				ImGui::PopStyleVar(2);
 
 			for (const ViewCommandBinding& binding : ViewCommandBindings)
 			{
 				if (ImGui::Shortcut(binding.focusedChord))
-					view->OnCommand(binding.command);
+					pView->OnCommand(binding.command);
 			}
 
-			view->OnRender(context);
+			pView->OnRender(context);
 			ImGui::End();
 		}
 	}
@@ -168,10 +168,10 @@ namespace Horizon::Editor
 
 	ViewObject* ViewRegistry::GetViewObject(Reflect::TypeHandle handl)
 	{
-		for (auto* view : m_createdViews)
+		for (auto* pView : m_createdViews)
 		{
-			if (view->GetTypeId() == handl)
-				return view;
+			if (pView->GetTypeId() == handl)
+				return pView;
 		}
 
 		auto* pReflect = m_context.pEngine->GetReflectionSystem();

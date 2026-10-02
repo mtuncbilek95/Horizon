@@ -52,7 +52,7 @@ namespace Horizon::Editor
 		void OnWindowFocus(b8 focused);
 
 		b8 BeginRender(f32 dt);
-		b8 EndRender(RHI::GfxTexture* backbuffer);
+		b8 EndRender(RHI::GfxTexture* pBackbuffer);
 		b8 CheckMouseDragging();
 
 		PAL::CursorType GetMouseCursor() const;

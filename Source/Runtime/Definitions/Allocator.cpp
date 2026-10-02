@@ -134,24 +134,24 @@ namespace Horizon::Memory
 		const usize eff = align < alignof(std::max_align_t) ? alignof(std::max_align_t) : align;
 		const usize headerSize = AlignUp(sizeof(AllocHeader), eff);
 
-		void* base = ::operator new(headerSize + size, std::align_val_t{ eff }, std::nothrow);
+		void* pBase = ::operator new(headerSize + size, std::align_val_t{ eff }, std::nothrow);
 
-		if (!base)
+		if (!pBase)
 		{
 			Terminal::Fatal("Allocator", "Out of memory requesting {} bytes", size);
 			return nullptr;
 		}
 
-		void* user = static_cast<c8*>(base) + headerSize;
+		void* pUser = static_cast<c8*>(pBase) + headerSize;
 
-		AllocHeader* pHeader = reinterpret_cast<AllocHeader*>(static_cast<c8*>(user) - sizeof(AllocHeader));
+		AllocHeader* pHeader = reinterpret_cast<AllocHeader*>(static_cast<c8*>(pUser) - sizeof(AllocHeader));
 		pHeader->size = size;
 		pHeader->align = eff;
 
 #if defined(HORIZON_MEMORY_TRACKING)
-		Tracker().OnAllocation(user, size, eff, loc);
+		Tracker().OnAllocation(pUser, size, eff, loc);
 #endif
-		return user;
+		return pUser;
 	}
 
 	void* Allocator::ReallocateRaw(void* pAddress, usize newSize, usize align, SourceLocation loc)
@@ -187,11 +187,11 @@ namespace Horizon::Memory
 		AllocHeader* pHeader = reinterpret_cast<AllocHeader*>(static_cast<c8*>(pAddress) - sizeof(AllocHeader));
 		const usize eff = pHeader->align;
 		const usize headerSize = AlignUp(sizeof(AllocHeader), eff);
-		void* base = static_cast<c8*>(pAddress) - headerSize;
+		void* pBase = static_cast<c8*>(pAddress) - headerSize;
 
 #if defined(HORIZON_MEMORY_TRACKING)
 		Tracker().OnFree(pAddress);
 #endif
-		::operator delete(base, std::align_val_t{ eff });
+		::operator delete(pBase, std::align_val_t{ eff });
 	}
 }

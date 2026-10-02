@@ -7,14 +7,14 @@ namespace Horizon
 		if (m_stack.IsEmpty())
 			return m_root;
 
-		nlohmann::json* current = m_stack.Back();
-		if (current->is_array())
+		nlohmann::json* pCurrent = m_stack.Back();
+		if (pCurrent->is_array())
 		{
-			current->push_back(nlohmann::json{});
-			return current->back();
+			pCurrent->push_back(nlohmann::json{});
+			return pCurrent->back();
 		}
 
-		nlohmann::json& slot = (*current)[m_pendingKey];
+		nlohmann::json& slot = (*pCurrent)[m_pendingKey];
 		m_pendingKey.clear();
 		return slot;
 	}
@@ -86,15 +86,15 @@ namespace Horizon
 		if (!m_stack.IsEmpty())
 		{
 			Frame& frame = m_stack.Back();
-			if (frame.node && frame.node->is_array())
+			if (frame.pNode && frame.pNode->is_array())
 			{
-				if (frame.readIndex >= frame.node->size())
+				if (frame.readIndex >= frame.pNode->size())
 				{
 					m_hasError = true;
 					return nullptr;
 				}
 
-				return &frame.node->at(frame.readIndex++);
+				return &frame.pNode->at(frame.readIndex++);
 			}
 		}
 
@@ -116,12 +116,12 @@ namespace Horizon
 		if (m_stack.IsEmpty())
 			return false;
 
-		const nlohmann::json* obj = m_stack.Back().node;
-		if (!obj || !obj->is_object())
+		const nlohmann::json* pObject = m_stack.Back().pNode;
+		if (!pObject || !pObject->is_object())
 			return false;
 
-		auto it = obj->find(std::string(name));
-		if (it == obj->end())
+		auto it = pObject->find(std::string(name));
+		if (it == pObject->end())
 		{
 			m_current = nullptr;
 			return false;
@@ -133,16 +133,16 @@ namespace Horizon
 
 	usize JsonArchiveReader::BeginArray()
 	{
-		const nlohmann::json* node = Target();
-		if (!node || !node->is_array())
+		const nlohmann::json* pNode = Target();
+		if (!pNode || !pNode->is_array())
 		{
 			m_hasError = true;
 			m_stack.PushBack({ nullptr, 0 });
 			return 0;
 		}
 
-		usize count = node->size();
-		m_stack.PushBack({ node, 0 });
+		usize count = pNode->size();
+		m_stack.PushBack({ pNode, 0 });
 		return count;
 	}
 
@@ -153,61 +153,61 @@ namespace Horizon
 
 	b8 JsonArchiveReader::ReadBool()
 	{
-		const nlohmann::json* value = Target();
-		if (!value || !value->is_boolean())
+		const nlohmann::json* pValue = Target();
+		if (!pValue || !pValue->is_boolean())
 		{
 			m_hasError = true;
 			return false;
 		}
 
-		return value->get<b8>();
+		return pValue->get<b8>();
 	}
 
 	i64 JsonArchiveReader::ReadI64()
 	{
-		const nlohmann::json* value = Target();
-		if (!value || !value->is_number())
+		const nlohmann::json* pValue = Target();
+		if (!pValue || !pValue->is_number())
 		{
 			m_hasError = true;
 			return 0;
 		}
 
-		return value->get<i64>();
+		return pValue->get<i64>();
 	}
 
 	u64 JsonArchiveReader::ReadU64()
 	{
-		const nlohmann::json* value = Target();
-		if (!value || !value->is_number())
+		const nlohmann::json* pValue = Target();
+		if (!pValue || !pValue->is_number())
 		{
 			m_hasError = true;
 			return 0;
 		}
 
-		return value->get<u64>();
+		return pValue->get<u64>();
 	}
 
 	f64 JsonArchiveReader::ReadF64()
 	{
-		const nlohmann::json* value = Target();
-		if (!value || !value->is_number())
+		const nlohmann::json* pValue = Target();
+		if (!pValue || !pValue->is_number())
 		{
 			m_hasError = true;
 			return 0.0;
 		}
 
-		return value->get<f64>();
+		return pValue->get<f64>();
 	}
 
 	std::string JsonArchiveReader::ReadString()
 	{
-		const nlohmann::json* value = Target();
-		if (!value || !value->is_string())
+		const nlohmann::json* pValue = Target();
+		if (!pValue || !pValue->is_string())
 		{
 			m_hasError = true;
 			return {};
 		}
 
-		return value->get<std::string>();
+		return pValue->get<std::string>();
 	}
 }

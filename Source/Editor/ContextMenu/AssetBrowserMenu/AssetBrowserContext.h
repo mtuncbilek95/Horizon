@@ -9,7 +9,7 @@ namespace Horizon::Editor
 	struct H_EXPORT AssetBrowserContext
 	{
 		Engine::Engine* pEngine;
-		DomainFolder* currentFolder = nullptr;
+		DomainFolder* pCurrentFolder = nullptr;
 
 		List<DomainFolder*> selectedFolders;
 		List<DomainFile*> selectedFiles;

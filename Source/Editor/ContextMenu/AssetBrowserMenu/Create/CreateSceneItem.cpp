@@ -53,7 +53,7 @@ namespace Horizon::Editor
 
 		Engine::SceneSerializer::Serialize(scene, pReflection, writer);
 
-		const std::string path = context.currentFolder->GetAbsolutePath() + "/" + ResolveUniqueName(context.currentFolder);
+		const std::string path = context.pCurrentFolder->GetAbsolutePath() + "/" + ResolveUniqueName(context.pCurrentFolder);
 
 		if (!PAL::File::Create(path))
 		{

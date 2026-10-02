@@ -35,28 +35,28 @@ namespace Horizon::Editor
 
 		List<Reflect::Type*> mainList = pReflect->GetTypeByAttribute(Reflect::TypeOf<MainMenuItemAttribute>());
 
-		for (auto* type : mainList)
+		for (auto* pType : mainList)
 		{
-			auto* attr = type->GetCustomAttribute<MainMenuItemAttribute>();
+			auto* pAttr = pType->GetCustomAttribute<MainMenuItemAttribute>();
 
 			MenuItemInstance inst;
-			inst.displayName = attr->GetPath();
+			inst.displayName = pAttr->GetPath();
 			inst.isCheckbox = false;
-			inst.order = attr->GetOrder();
-			inst.menu = nullptr;
+			inst.order = pAttr->GetOrder();
+			inst.pMenu = nullptr;
 
 			m_menus.PushBack(std::move(inst));
 		}
 
 		List<Reflect::Type*> leafList = pReflect->GetTypeByAttribute(Reflect::TypeOf<MenuItemAttribute>());
 
-		for (auto* type : leafList)
+		for (auto* pType : leafList)
 		{
-			auto* attr = type->GetCustomAttribute<MenuItemAttribute>();
-			const std::string& path = attr->GetPath();
-			i32 order = attr->GetOrder();
+			auto* pAttr = pType->GetCustomAttribute<MenuItemAttribute>();
+			const std::string& path = pAttr->GetPath();
+			i32 order = pAttr->GetOrder();
 
-			List<MenuItemInstance>* level = &m_menus;
+			List<MenuItemInstance>* pLevel = &m_menus;
 			usize start = 0;
 			b8 rootSegment = true;
 
@@ -68,25 +68,25 @@ namespace Horizon::Editor
 
 				if (isLeaf)
 				{
-					auto* menuObj = static_cast<MenuItem*>(type->Create());
-					menuObj->m_engine = ctx.pEngine;
+					auto* pMenuObj = static_cast<MenuItem*>(pType->Create());
+					pMenuObj->m_engine = ctx.pEngine;
 
 					MenuItemInstance leaf;
 					leaf.displayName = std::move(segment);
-					leaf.isCheckbox = attr->GetIsCheckbox();
+					leaf.isCheckbox = pAttr->GetIsCheckbox();
 					leaf.order = order;
-					leaf.menu = menuObj;
+					leaf.pMenu = pMenuObj;
 
-					level->PushBack(std::move(leaf));
+					pLevel->PushBack(std::move(leaf));
 					break;
 				}
 
-				MenuItemInstance& container = FindOrCreateContainer(*level, segment);
+				MenuItemInstance& container = FindOrCreateContainer(*pLevel, segment);
 
 				if (!rootSegment && order < container.order)
 					container.order = order;
 
-				level = &container.subMenus;
+				pLevel = &container.subMenus;
 				start = slash + 1;
 				rootSegment = false;
 			}
@@ -151,11 +151,11 @@ namespace Horizon::Editor
 
 			ImGui::SetCursorPosX(buttonsStart);
 
-			const c8* maximizeIcon = m_window->GetMaximized() ? ICON_FA_WINDOW_RESTORE : ICON_FA_WINDOW_MAXIMIZE;
+			const c8* pMaximizeIcon = m_window->GetMaximized() ? ICON_FA_WINDOW_RESTORE : ICON_FA_WINDOW_MAXIMIZE;
 
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
 			chrome.minimizeButton = RenderChromeButton(ICON_FA_WINDOW_MINIMIZE "##Minimize", false);
-			chrome.maximizeButton = RenderChromeButton(maximizeIcon, false);
+			chrome.maximizeButton = RenderChromeButton(pMaximizeIcon, false);
 			chrome.closeButton = RenderChromeButton(ICON_FA_XMARK "##Close", true);
 			ImGui::PopStyleVar();
 
@@ -179,7 +179,7 @@ namespace Horizon::Editor
 
 	void MenuRegistry::RenderNode(MenuItemInstance& inst)
 	{
-		if (inst.menu == nullptr)
+		if (inst.pMenu == nullptr)
 		{
 			if (ImGui::BeginMenu(inst.displayName.c_str(), !inst.subMenus.IsEmpty()))
 			{
@@ -195,18 +195,18 @@ namespace Horizon::Editor
 		if (inst.isCheckbox)
 		{
 			if (ImGui::MenuItem(inst.displayName.c_str(), nullptr))
-				inst.menu->OnExecute();
+				inst.pMenu->OnExecute();
 		}
 		else
 		{
 			if (ImGui::MenuItem(inst.displayName.c_str()))
-				inst.menu->OnExecute();
+				inst.pMenu->OnExecute();
 		}
 	}
 
 	void MenuRegistry::ClearRecursive(MenuItemInstance& inst)
 	{
-		Memory::Allocator::Delete(inst.menu);
+		Memory::Allocator::Delete(inst.pMenu);
 
 		for (auto& newInst : inst.subMenus)
 			ClearRecursive(newInst);
@@ -237,12 +237,12 @@ namespace Horizon::Editor
 		MenuItemInstance inst;
 		inst.displayName = name;
 		inst.order = 0x7FFFFFFF;
-		inst.menu = nullptr;
+		inst.pMenu = nullptr;
 
 		return siblings.EmplaceBack(std::move(inst));
 	}
 
-	PAL::ChromeRect MenuRegistry::RenderChromeButton(const c8* label, b8 danger)
+	PAL::ChromeRect MenuRegistry::RenderChromeButton(const c8* pLabel, b8 danger)
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
@@ -250,7 +250,7 @@ namespace Horizon::Editor
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, danger ? ImGuiUtils::Hex("#C42B1C") : ImGuiUtils::Hex("#3C3C3C"));
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, danger ? ImGuiUtils::Hex("#E81123") : ImGuiUtils::Hex("#4A4A4A"));
 
-		ImGui::Button(label, ImVec2(kButtonWidth, kHeight));
+		ImGui::Button(pLabel, ImVec2(kButtonWidth, kHeight));
 
 		ImGui::PopStyleColor(3);
 		ImGui::PopStyleVar(2);

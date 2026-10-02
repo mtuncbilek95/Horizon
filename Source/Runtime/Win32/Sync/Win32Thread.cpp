@@ -46,10 +46,10 @@ namespace Horizon::PAL
 			pSetThreadDescription(::GetCurrentThread(), wname.c_str());
 		}
 
-		u32 __stdcall ThreadTrampoline(void* arg)
+		u32 __stdcall ThreadTrampoline(void* pArg)
 		{
-			ThreadStartContext local = std::move(*(ThreadStartContext*)(arg));
-			Memory::Allocator::Delete((ThreadStartContext*)(arg));
+			ThreadStartContext local = std::move(*(ThreadStartContext*)(pArg));
+			Memory::Allocator::Delete((ThreadStartContext*)(pArg));
 
 			SetCurrentThreadName(local.name);
 
@@ -62,12 +62,12 @@ namespace Horizon::PAL
 
 	Thread::Thread(ThreadEntry entry, CustomUserData userData, std::string_view name)
 	{
-		ThreadStartContext* ctx = Memory::Allocator::Create<ThreadStartContext>(Memory::CurrLoc(), entry, userData, std::string(name));
+		ThreadStartContext* pContext = Memory::Allocator::Create<ThreadStartContext>(Memory::CurrLoc(), entry, userData, std::string(name));
 
-		uintptr_t h = ::_beginthreadex(nullptr, 0, &ThreadTrampoline, ctx, 0, nullptr);
+		uintptr_t h = ::_beginthreadex(nullptr, 0, &ThreadTrampoline, pContext, 0, nullptr);
 		if (h == 0)
 		{
-			delete ctx;
+			Memory::Allocator::Delete(pContext);
 			m_handle = nullptr;
 			m_id = 0;
 			return;

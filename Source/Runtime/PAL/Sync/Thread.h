@@ -8,7 +8,7 @@
 
 namespace Horizon::PAL
 {
-	using ThreadEntry = void(*)(void* userData);
+	using ThreadEntry = void(*)(void* pUserData);
 	using ThreadHandle = void*;
 	using CustomUserData = void*;
 

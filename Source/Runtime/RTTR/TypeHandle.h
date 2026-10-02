@@ -10,12 +10,12 @@ namespace Horizon::Reflect
 
 	namespace Detail
 	{
-		constexpr u64 Fnv1a(const char* signature)
+		constexpr u64 Fnv1a(const char* pSignature)
 		{
 			u64 hash = 14695981039346656037ull;
-			while (*signature)
+			while (*pSignature)
 			{
-				hash ^= (u64)(u8)(*signature++);
+				hash ^= (u64)(u8)(*pSignature++);
 				hash *= 1099511628211ull;
 			}
 			return hash;

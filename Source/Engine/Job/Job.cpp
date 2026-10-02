@@ -2,15 +2,15 @@
 
 namespace Horizon::Engine
 {
-	Job::Job(JobFunction function, void* pData) : execute(function), userData(pData)
+	Job::Job(JobFunction function, void* pData) : m_execute(function), m_userData(pData)
 	{
 	}
 
-	Job::Job(JobFunction function, JobFunction release, void* pData) : execute(function), discard(release), userData(pData)
+	Job::Job(JobFunction function, JobFunction release, void* pData) : m_execute(function), m_discard(release), m_userData(pData)
 	{
 	}
 
-	Job::Job(Job&& other) noexcept : execute(other.execute), discard(other.discard), userData(other.userData)
+	Job::Job(Job&& other) noexcept : m_execute(other.m_execute), m_discard(other.m_discard), m_userData(other.m_userData)
 	{
 		other.Release();
 	}
@@ -22,9 +22,9 @@ namespace Horizon::Engine
 
 		Discard();
 
-		execute = other.execute;
-		discard = other.discard;
-		userData = other.userData;
+		m_execute = other.m_execute;
+		m_discard = other.m_discard;
+		m_userData = other.m_userData;
 		other.Release();
 
 		return *this;
@@ -37,25 +37,25 @@ namespace Horizon::Engine
 
 	void Job::Execute()
 	{
-		JobFunction function = execute;
-		void* data = userData;
+		JobFunction function = m_execute;
+		void* pData = m_userData;
 
 		Release();
-		function(data);
+		function(pData);
 	}
 
 	void Job::Discard()
 	{
-		if (discard)
-			discard(userData);
+		if (m_discard)
+			m_discard(m_userData);
 
 		Release();
 	}
 
 	void Job::Release()
 	{
-		execute = nullptr;
-		discard = nullptr;
-		userData = nullptr;
+		m_execute = nullptr;
+		m_discard = nullptr;
+		m_userData = nullptr;
 	}
 }

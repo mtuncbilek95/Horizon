@@ -7,9 +7,9 @@
 
 namespace Horizon::Engine
 {
-	void JobWorker::ThreadEntryPoint(void* userData)
+	void JobWorker::ThreadEntryPoint(void* pUserData)
 	{
-		((JobWorker*)userData)->Run();
+		((JobWorker*)pUserData)->Run();
 	}
 
 	JobWorker::JobWorker(JobSystem* pContext, JobLane lane, usize index) : m_owner(pContext), m_lane(lane), m_index(index),
@@ -19,15 +19,15 @@ namespace Horizon::Engine
 
 	JobWorker::~JobWorker()
 	{
-		JobNode* node = nullptr;
-		while (m_deque.PopBottom(node))
-			Memory::Allocator::Delete(node);
+		JobNode* pNode = nullptr;
+		while (m_deque.PopBottom(pNode))
+			Memory::Allocator::Delete(pNode);
 
-		for (JobNode* nod = m_inbox.Exchange(nullptr); nod;)
+		for (JobNode* pCurrent = m_inbox.Exchange(nullptr); pCurrent;)
 		{
-			JobNode* next = nod->next;
-			Memory::Allocator::Delete(nod);
-			nod = next;
+			JobNode* pNext = pCurrent->pNext;
+			Memory::Allocator::Delete(pCurrent);
+			pCurrent = pNext;
 		}
 	}
 
@@ -91,19 +91,19 @@ namespace Horizon::Engine
 
 	void JobWorker::AddJob(Job&& job)
 	{
-		JobNode* node = Memory::Allocator::Create<JobNode>(Memory::CurrLoc(), std::move(job));
+		JobNode* pNode = Memory::Allocator::Create<JobNode>(Memory::CurrLoc(), std::move(job));
 
-		JobNode* head = m_inbox.Load();
+		JobNode* pHead = m_inbox.Load();
 
 		while (true)
 		{
-			node->next = head;
-			JobNode* prev = m_inbox.CompareExchange(head, node);
+			pNode->pNext = pHead;
+			JobNode* pPrev = m_inbox.CompareExchange(pHead, pNode);
 
-			if (prev == head)
+			if (pPrev == pHead)
 				break;
 
-			head = prev;
+			pHead = pPrev;
 		}
 
 		m_signal.FetchAdd(1);
@@ -112,13 +112,13 @@ namespace Horizon::Engine
 
 	b8 JobWorker::TryStealFromThis(Job& out)
 	{
-		JobNode* node = nullptr;
+		JobNode* pNode = nullptr;
 
-		if (!m_deque.Steal(node))
+		if (!m_deque.Steal(pNode))
 			return false;
 
-		out = std::move(node->job);
-		Memory::Allocator::Delete(node);
+		out = std::move(pNode->job);
+		Memory::Allocator::Delete(pNode);
 		return true;
 	}
 
@@ -129,37 +129,37 @@ namespace Horizon::Engine
 
 	void JobWorker::DrainInbox()
 	{
-		JobNode* head = m_inbox.Exchange(nullptr);
-		if (!head)
+		JobNode* pHead = m_inbox.Exchange(nullptr);
+		if (!pHead)
 			return;
 
-		JobNode* ordered = nullptr;
-		while (head)
+		JobNode* pOrdered = nullptr;
+		while (pHead)
 		{
-			JobNode* next = head->next;
-			head->next = ordered;
-			ordered = head;
-			head = next;
+			JobNode* pNext = pHead->pNext;
+			pHead->pNext = pOrdered;
+			pOrdered = pHead;
+			pHead = pNext;
 		}
 
-		for (JobNode* n = ordered; n; )
+		for (JobNode* pCurrent = pOrdered; pCurrent; )
 		{
-			JobNode* next = n->next;
-			n->next = nullptr;
-			m_deque.PushBottom(n);
-			n = next;
+			JobNode* pNext = pCurrent->pNext;
+			pCurrent->pNext = nullptr;
+			m_deque.PushBottom(pCurrent);
+			pCurrent = pNext;
 		}
 	}
 
 	b8 JobWorker::TryPopJob(Job& out)
 	{
-		JobNode* node = nullptr;
+		JobNode* pNode = nullptr;
 
-		if (!m_deque.PopBottom(node))
+		if (!m_deque.PopBottom(pNode))
 			return false;
 
-		out = std::move(node->job);
-		Memory::Allocator::Delete(node);
+		out = std::move(pNode->job);
+		Memory::Allocator::Delete(pNode);
 		return true;
 	}
 }

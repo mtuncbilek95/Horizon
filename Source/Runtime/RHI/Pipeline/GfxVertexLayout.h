@@ -26,12 +26,12 @@ namespace Horizon::RHI
 			return *this;
 		}
 
-		GfxVertexLayout& AddAttribute(const c8* semantic, u32 semanticIndex, GfxTextureFormat format, u32 binding, u32 offset)
+		GfxVertexLayout& AddAttribute(const c8* pSemantic, u32 semanticIndex, GfxTextureFormat format, u32 binding, u32 offset)
 		{
 			if (attributeCount >= MaxAttributes)
 				return *this;
 
-			attributes[attributeCount++] = { semantic, semanticIndex, format, binding, offset };
+			attributes[attributeCount++] = { pSemantic, semanticIndex, format, binding, offset };
 			return *this;
 		}
 

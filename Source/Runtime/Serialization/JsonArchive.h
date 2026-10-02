@@ -57,7 +57,7 @@ namespace Horizon
 	private:
 		struct Frame
 		{
-			const nlohmann::json* node = nullptr;
+			const nlohmann::json* pNode = nullptr;
 			usize readIndex = 0;
 		};
 

@@ -57,11 +57,11 @@ namespace Horizon
 
 		auto parseHex = [&](usize offset, usize length, auto& out) -> b8
 			{
-				const c8* begin = str.data() + offset;
-				const c8* end = begin + length;
+				const c8* pBegin = str.data() + offset;
+				const c8* pEnd = pBegin + length;
 
-				const auto result = std::from_chars(begin, end, out, 16);
-				return result.ec == std::errc{} && result.ptr == end;
+				const auto result = std::from_chars(pBegin, pEnd, out, 16);
+				return result.ec == std::errc{} && result.ptr == pEnd;
 			};
 
 		u32 a = 0;

@@ -264,9 +264,15 @@ namespace Horizon::Editor
 	{
 		auto nib = [](char c) -> u32
 			{
-				if (c >= '0' && c <= '9') return u32(c - '0');
-				if (c >= 'a' && c <= 'f') return u32(c - 'a' + 10);
-				if (c >= 'A' && c <= 'F') return u32(c - 'A' + 10);
+				if (c >= '0' && c <= '9')
+					return u32(c - '0');
+
+				if (c >= 'a' && c <= 'f')
+					return u32(c - 'a' + 10);
+
+				if (c >= 'A' && c <= 'F')
+					return u32(c - 'A' + 10);
+
 				return 0u;
 			};
 

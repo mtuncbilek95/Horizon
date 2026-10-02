@@ -13,7 +13,7 @@ namespace Horizon::Engine
 		using JoltFunction = JPH::JobSystem::JobFunction;
 		using JoltHandle = JPH::JobSystem::JobHandle;
 
-		static void RunJolt(void* userData);
+		static void RunJolt(void* pUserData);
 	public:
 		JoltThreadBridge(Horizon::Engine::JobSystem* pOwner, u32 maxBarriers);
 		~JoltThreadBridge() final = default;

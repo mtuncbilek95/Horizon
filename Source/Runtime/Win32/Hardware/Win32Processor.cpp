@@ -33,12 +33,12 @@ namespace Horizon::PAL
 				DWORD offset = 0;
 				while (offset < len)
 				{
-					auto* rec = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.GetData() + offset);
+					auto* pRec = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(buffer.GetData() + offset);
 
-					if (rec->Relationship == RelationProcessorCore)
-						fn(*rec);
+					if (pRec->Relationship == RelationProcessorCore)
+						fn(*pRec);
 
-					offset += rec->Size;
+					offset += pRec->Size;
 				}
 			};
 

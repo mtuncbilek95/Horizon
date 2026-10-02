@@ -19,49 +19,49 @@ namespace Horizon::Engine
 	{
 		CompiledGraph graph;
 		List<i64> pending;
-		TicketSlot* slot;
+		TicketSlot* pSlot;
 
-		GraphInstance(CompiledGraph&& compiled, TicketSlot* ticket) : graph(std::move(compiled)), pending(graph.nodes.GetCount()), slot(ticket)
+		GraphInstance(CompiledGraph&& compiled, TicketSlot* pTicket) : graph(std::move(compiled)), pending(graph.nodes.GetCount()), pSlot(pTicket)
 		{
 			for (usize i = 0; i < graph.nodes.GetCount(); i++)
 				pending[i] = graph.nodes[i].dependencyCount;
 		}
 	};
 
-	void JobSystem::ExecuteEnvelope(void* userData)
+	void JobSystem::ExecuteEnvelope(void* pUserData)
 	{
-		Envelope* envelope = (Envelope*)userData;
+		Envelope* pEnvelope = (Envelope*)pUserData;
 
-		JobSystem* system = envelope->system;
-		TicketSlot* slot = envelope->slot;
-		GraphInstance* graph = envelope->graph;
-		GraphNodeId node = envelope->node;
+		JobSystem* pSystem = pEnvelope->pSystem;
+		TicketSlot* pSlot = pEnvelope->pSlot;
+		GraphInstance* pGraph = pEnvelope->pGraph;
+		GraphNodeId node = pEnvelope->node;
 
-		slot->running.FetchAdd(1);
-		envelope->job.Execute();
-		slot->running.FetchSubtract(1);
+		pSlot->running.FetchAdd(1);
+		pEnvelope->job.Execute();
+		pSlot->running.FetchSubtract(1);
 
-		Memory::Allocator::Delete(envelope);
+		Memory::Allocator::Delete(pEnvelope);
 
-		if (graph)
-			system->OnNodeFinished(graph, node);
+		if (pGraph)
+			pSystem->OnNodeFinished(pGraph, node);
 
-		if (system->CompleteOne(slot) && graph)
-			Memory::Allocator::Delete(graph);
+		if (pSystem->CompleteOne(pSlot) && pGraph)
+			Memory::Allocator::Delete(pGraph);
 	}
 
-	void JobSystem::DiscardEnvelope(void* userData)
+	void JobSystem::DiscardEnvelope(void* pUserData)
 	{
-		Envelope* envelope = (Envelope*)userData;
+		Envelope* pEnvelope = (Envelope*)pUserData;
 
-		JobSystem* system = envelope->system;
-		TicketSlot* slot = envelope->slot;
-		GraphInstance* graph = envelope->graph;
+		JobSystem* pSystem = pEnvelope->pSystem;
+		TicketSlot* pSlot = pEnvelope->pSlot;
+		GraphInstance* pGraph = pEnvelope->pGraph;
 
-		Memory::Allocator::Delete(envelope);
+		Memory::Allocator::Delete(pEnvelope);
 
-		if (system->CompleteOne(slot) && graph)
-			Memory::Allocator::Delete(graph);
+		if (pSystem->CompleteOne(pSlot) && pGraph)
+			Memory::Allocator::Delete(pGraph);
 	}
 
 	JobSystem::JobSystem()
@@ -117,11 +117,11 @@ namespace Horizon::Engine
 	{
 		for (Lane& lane : m_lanes)
 		{
-			for (JobWorker* worker : lane.laneWorkers)
-				worker->Stop();
+			for (JobWorker* pWorker : lane.laneWorkers)
+				pWorker->Stop();
 
-			for (JobWorker* worker : lane.laneWorkers)
-				Memory::Allocator::Delete(worker);
+			for (JobWorker* pWorker : lane.laneWorkers)
+				Memory::Allocator::Delete(pWorker);
 		}
 	}
 
@@ -139,13 +139,13 @@ namespace Horizon::Engine
 		}
 
 		SubmitTicket ticket = InvalidSubmitTicket;
-		TicketSlot* slot = AcquireSlot(lane, 1, ticket);
+		TicketSlot* pSlot = AcquireSlot(lane, 1, ticket);
 
-		if (!slot)
+		if (!pSlot)
 			return InvalidSubmitTicket;
 
-		Envelope* envelope = Memory::Allocator::Create<Envelope>(Memory::CurrLoc(), this, std::move(job), slot, nullptr, InvalidGraphNode);
-		Enqueue(lane, envelope);
+		Envelope* pEnvelope = Memory::Allocator::Create<Envelope>(Memory::CurrLoc(), this, std::move(job), pSlot, nullptr, InvalidGraphNode);
+		Enqueue(lane, pEnvelope);
 
 		return ticket;
 	}
@@ -159,23 +159,23 @@ namespace Horizon::Engine
 		}
 
 		SubmitTicket ticket = InvalidSubmitTicket;
-		TicketSlot* slot = AcquireSlot(JobLane::Critical, (u32)compiledGraph.nodes.GetCount(), ticket);
+		TicketSlot* pSlot = AcquireSlot(JobLane::Critical, (u32)compiledGraph.nodes.GetCount(), ticket);
 
-		if (!slot)
+		if (!pSlot)
 			return InvalidSubmitTicket;
 
-		GraphInstance* graph = Memory::Allocator::Create<GraphInstance>(Memory::CurrLoc(), std::move(compiledGraph), slot);
+		GraphInstance* pGraph = Memory::Allocator::Create<GraphInstance>(Memory::CurrLoc(), std::move(compiledGraph), pSlot);
 
 		List<GraphNodeId> roots;
 
-		for (usize i = 0; i < graph->graph.nodes.GetCount(); i++)
+		for (usize i = 0; i < pGraph->graph.nodes.GetCount(); i++)
 		{
-			if (graph->graph.nodes[i].dependencyCount == 0)
+			if (pGraph->graph.nodes[i].dependencyCount == 0)
 				roots.PushBack((GraphNodeId)i);
 		}
 
 		for (GraphNodeId root : roots)
-			DispatchNode(graph, root);
+			DispatchNode(pGraph, root);
 
 		return ticket;
 	}
@@ -196,33 +196,33 @@ namespace Horizon::Engine
 
 	CompletionState JobSystem::GetTicketState(SubmitTicket ticket) const
 	{
-		const TicketSlot* slot = ResolveSlot(ticket);
+		const TicketSlot* pSlot = ResolveSlot(ticket);
 
-		if (!slot)
+		if (!pSlot)
 			return CompletionState::Invalid;
 
 		u32 generation = (u32)(ticket >> 32);
 
-		if (slot->generation.Load() != generation)
+		if (pSlot->generation.Load() != generation)
 			return CompletionState::Completed;
 
-		if (slot->remaining.Load() == 0)
+		if (pSlot->remaining.Load() == 0)
 			return CompletionState::Completed;
 
-		return slot->running.Load() > 0 ? CompletionState::Running : CompletionState::Pending;
+		return pSlot->running.Load() > 0 ? CompletionState::Running : CompletionState::Pending;
 	}
 
 	b8 JobSystem::WaitTicket(SubmitTicket ticket, u64 timeoutInMs)
 	{
-		const TicketSlot* slot = ResolveSlot(ticket);
+		const TicketSlot* pSlot = ResolveSlot(ticket);
 
-		if (!slot)
+		if (!pSlot)
 		{
 			Terminal::Error(StringOps::GetName(this), "Cannot wait on invalid ticket {:#x}", ticket);
 			return false;
 		}
 
-		JobLane helpLane = slot->helpLane;
+		JobLane helpLane = pSlot->helpLane;
 
 		PAL::Timer timer;
 		timer.Start();
@@ -304,45 +304,45 @@ namespace Horizon::Engine
 		return &m_slots[index];
 	}
 
-	b8 JobSystem::CompleteOne(TicketSlot* slot)
+	b8 JobSystem::CompleteOne(TicketSlot* pSlot)
 	{
-		if (slot->remaining.FetchSubtract(1) != 1)
+		if (pSlot->remaining.FetchSubtract(1) != 1)
 			return false;
 
 		ScopedLock<PAL::CriticalSection> lock(m_slotLock);
-		m_freeSlots.PushBack((u32)(slot - m_slots));
+		m_freeSlots.PushBack((u32)(pSlot - m_slots));
 
 		return true;
 	}
 
-	void JobSystem::Enqueue(JobLane lane, Envelope* envelope)
+	void JobSystem::Enqueue(JobLane lane, Envelope* pEnvelope)
 	{
 		Lane& target = GetLane(lane);
 
 		usize index = target.next.FetchAdd(1) % target.laneWorkers.GetCount();
-		target.laneWorkers[index]->AddJob(Job(&JobSystem::ExecuteEnvelope, &JobSystem::DiscardEnvelope, envelope));
+		target.laneWorkers[index]->AddJob(Job(&JobSystem::ExecuteEnvelope, &JobSystem::DiscardEnvelope, pEnvelope));
 	}
 
-	void JobSystem::DispatchNode(GraphInstance* graph, GraphNodeId node)
+	void JobSystem::DispatchNode(GraphInstance* pGraph, GraphNodeId node)
 	{
-		CompiledGraphNode& target = graph->graph.nodes[node];
+		CompiledGraphNode& target = pGraph->graph.nodes[node];
 
-		Envelope* envelope = Memory::Allocator::Create<Envelope>(Memory::CurrLoc(), this, std::move(target.job), graph->slot, graph, node);
-		Enqueue(target.lane, envelope);
+		Envelope* pEnvelope = Memory::Allocator::Create<Envelope>(Memory::CurrLoc(), this, std::move(target.job), pGraph->pSlot, pGraph, node);
+		Enqueue(target.lane, pEnvelope);
 	}
 
-	void JobSystem::OnNodeFinished(GraphInstance* graph, GraphNodeId node)
+	void JobSystem::OnNodeFinished(GraphInstance* pGraph, GraphNodeId node)
 	{
-		for (GraphNodeId successor : graph->graph.nodes[node].successors)
+		for (GraphNodeId successor : pGraph->graph.nodes[node].successors)
 		{
-			if (PAL::AtomicOps::FetchSubtract(&graph->pending[successor], 1) == 1)
-				DispatchNode(graph, successor);
+			if (PAL::AtomicOps::FetchSubtract(&pGraph->pending[successor], 1) == 1)
+				DispatchNode(pGraph, successor);
 		}
 	}
 
-	JobWorker* JobSystem::GetRandomVictim(JobWorker* avoidWorker)
+	JobWorker* JobSystem::GetRandomVictim(JobWorker* pAvoidWorker)
 	{
-		Lane& lane = GetLane(avoidWorker->GetLane());
+		Lane& lane = GetLane(pAvoidWorker->GetLane());
 
 		if (lane.laneWorkers.GetCount() <= 1)
 			return nullptr;
@@ -351,7 +351,7 @@ namespace Horizon::Engine
 		std::uniform_int_distribution<usize> distribution(0, lane.laneWorkers.GetCount() - 2);
 		usize index = distribution(range);
 
-		if (index >= avoidWorker->GetWorkerIndex())
+		if (index >= pAvoidWorker->GetWorkerIndex())
 			++index;
 
 		return lane.laneWorkers[index];
@@ -359,10 +359,10 @@ namespace Horizon::Engine
 
 	b8 JobSystem::TryRunOneJob(JobLane lane)
 	{
-		for (JobWorker* worker : GetLane(lane).laneWorkers)
+		for (JobWorker* pWorker : GetLane(lane).laneWorkers)
 		{
 			Job job;
-			if (worker->TryStealFromThis(job))
+			if (pWorker->TryStealFromThis(job))
 			{
 				job.Execute();
 				return true;

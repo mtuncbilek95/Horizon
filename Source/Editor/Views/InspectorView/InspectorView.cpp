@@ -36,9 +36,9 @@ namespace Horizon::Editor
 		else
 			return;
 
-		auto* currScene = m_worldService->GetCurrentWorld();
+		auto* pCurrScene = m_worldService->GetCurrentWorld();
 
-		const List<Engine::ComponentStorage*>& storages = currScene->GetComponents().GetStorages();
+		const List<Engine::ComponentStorage*>& storages = pCurrScene->GetComponents().GetStorages();
 
 		for (usize i = 0; i < storages.GetCount(); i++)
 		{
@@ -73,7 +73,7 @@ namespace Horizon::Editor
 
 			if (!keepComponent)
 			{
-				currScene->RemoveComponent(entity, typeId);
+				pCurrScene->RemoveComponent(entity, typeId);
 				ImGui::PopID();
 				break;
 			}
@@ -126,13 +126,13 @@ namespace Horizon::Editor
 			if (!m_searchBuffer.empty() && label.find(m_searchBuffer) == std::string::npos)
 				continue;
 
-			b8 ownedByEntt = currScene->HasComponent(entity, pCompType->GetTypeId());
+			b8 ownedByEntt = pCurrScene->HasComponent(entity, pCompType->GetTypeId());
 
 			if (ImGui::Selectable(label.c_str(), false, ownedByEntt ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None))
 			{
-				currScene->AddComponent(entity, pCompType->GetTypeId());
+				pCurrScene->AddComponent(entity, pCompType->GetTypeId());
 
-				auto* pNameComp = currScene->FindComponent<Engine::NameComponent>(entity);
+				auto* pNameComp = pCurrScene->FindComponent<Engine::NameComponent>(entity);
 				Terminal::Info(StringOps::GetName(this), "{} has been added to {}", label, pNameComp->m_name);
 				ImGui::CloseCurrentPopup();
 			}

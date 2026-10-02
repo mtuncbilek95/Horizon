@@ -17,12 +17,12 @@ namespace Horizon::Memory
 		template<typename T, typename... Args>
 		static T* Create(SourceLocation loc, Args&&... args)
 		{
-			void* mem = AllocateRaw(sizeof(T), alignof(T), loc);
+			void* pMem = AllocateRaw(sizeof(T), alignof(T), loc);
 
-			if (!mem)
+			if (!pMem)
 				return nullptr;
 
-			return ::new (mem) T(std::forward<Args>(args)...);
+			return ::new (pMem) T(std::forward<Args>(args)...);
 		}
 
 		template<typename T>

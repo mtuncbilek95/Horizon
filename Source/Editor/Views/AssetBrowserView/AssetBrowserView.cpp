@@ -113,7 +113,7 @@ namespace Horizon::Editor
 
 		AssetBrowserContext browserContext = {};
 		browserContext.pEngine = GetContext()->pEngine;
-		browserContext.currentFolder = pFolder;
+		browserContext.pCurrentFolder = pFolder;
 
 		CollectSelected(browserContext);
 
@@ -333,8 +333,8 @@ namespace Horizon::Editor
 
 		if (ImGui::Button("OK") || accepted)
 		{
-			auto* entry = FindEntry(m_renamePath);
-			entry->IsFolder() ? entry->pFolder->Rename(m_renameBuffer) : entry->pFile->Rename(m_renameBuffer);
+			auto* pEntry = FindEntry(m_renamePath);
+			pEntry->IsFolder() ? pEntry->pFolder->Rename(m_renameBuffer) : pEntry->pFile->Rename(m_renameBuffer);
 			m_renamePath.clear();
 			ImGui::CloseCurrentPopup();
 		}

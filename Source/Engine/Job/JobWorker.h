@@ -14,14 +14,14 @@ namespace Horizon::Engine
 
 	class H_EXPORT JobWorker
 	{
-		static void ThreadEntryPoint(void* userData);
+		static void ThreadEntryPoint(void* pUserData);
 
 		struct JobNode
 		{
 			Job job;
-			JobNode* next;
+			JobNode* pNext;
 
-			JobNode(Job&& work) : job(std::move(work)), next(nullptr)
+			JobNode(Job&& work) : job(std::move(work)), pNext(nullptr)
 			{
 			}
 		};

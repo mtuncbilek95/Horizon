@@ -161,7 +161,7 @@ namespace Horizon::Editor
 		return true;
 	}
 
-	b8 EditorRenderer::EndRender(RHI::GfxTexture* backbuffer)
+	b8 EditorRenderer::EndRender(RHI::GfxTexture* pBackbuffer)
 	{
 		ImGui::Render();
 
@@ -172,13 +172,13 @@ namespace Horizon::Editor
 		context.pCmdList->Begin();
 		context.pCmdList->BindDescriptorHeaps(m_resourceHeap, nullptr);
 
-		RHI::GfxTextureBarrier toTarget = { backbuffer, RHI::GfxResourceState::Present, RHI::GfxResourceState::RenderTarget };
+		RHI::GfxTextureBarrier toTarget = { pBackbuffer, RHI::GfxResourceState::Present, RHI::GfxResourceState::RenderTarget };
 		context.pCmdList->Barrier(&toTarget, 1);
 
-		const RHI::GfxTextureDesc& bbDesc = backbuffer->GetDesc();
+		const RHI::GfxTextureDesc& bbDesc = pBackbuffer->GetDesc();
 		RHI::GfxRenderBeginDesc pass = {};
 
-		pass.AddColorTarget(backbuffer, RHI::GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
+		pass.AddColorTarget(pBackbuffer, RHI::GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
 			.SetSize(bbDesc.width, bbDesc.height);
 		context.pCmdList->BeginRendering(pass);
 
@@ -186,7 +186,7 @@ namespace Horizon::Editor
 
 		context.pCmdList->EndRendering();
 
-		RHI::GfxTextureBarrier toPresent = { backbuffer, RHI::GfxResourceState::RenderTarget, RHI::GfxResourceState::Present };
+		RHI::GfxTextureBarrier toPresent = { pBackbuffer, RHI::GfxResourceState::RenderTarget, RHI::GfxResourceState::Present };
 
 		context.pCmdList->Barrier(&toPresent, 1);
 
@@ -214,7 +214,7 @@ namespace Horizon::Editor
 		static const ImWchar faRange[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
 		static const ImWchar kiRange[] = { ICON_MIN_KI, ICON_MAX_KI, 0 };
 
-		const auto mergeIconFont = [&](const char* file, const ImWchar* range)
+		const auto mergeIconFont = [&](const char* pFile, const ImWchar* pRange)
 			{
 				ImFontConfig iconCfg = {};
 				iconCfg.MergeMode = true;
@@ -222,26 +222,26 @@ namespace Horizon::Editor
 				iconCfg.ExtraSizeScale = 0.85f;
 				iconCfg.GlyphMinAdvanceX = fontSize;
 
-				const std::string path = fontDir + file;
-				if (!io.Fonts->AddFontFromFileTTF(path.c_str(), fontSize, &iconCfg, range))
+				const std::string path = fontDir + pFile;
+				if (!io.Fonts->AddFontFromFileTTF(path.c_str(), fontSize, &iconCfg, pRange))
 					Terminal::Error(StringOps::GetName(this), "Failed to load icon font: {}", path);
 			};
 
-		const auto loadFamily = [&](const char* file) -> ImFont*
+		const auto loadFamily = [&](const char* pFile) -> ImFont*
 			{
-				const std::string path = fontDir + file;
-				ImFont* font = io.Fonts->AddFontFromFileTTF(path.c_str(), fontSize);
+				const std::string path = fontDir + pFile;
+				ImFont* pFont = io.Fonts->AddFontFromFileTTF(path.c_str(), fontSize);
 
-				if (font == nullptr)
+				if (pFont == nullptr)
 				{
 					Terminal::Error(StringOps::GetName(this), "Failed to load UI Font: {}", path);
-					font = io.Fonts->AddFontDefault();
+					pFont = io.Fonts->AddFontDefault();
 				}
 
 				mergeIconFont("fa-solid-900.ttf", faRange);
 				mergeIconFont("kenney-icon-font.ttf", kiRange);
 
-				return font;
+				return pFont;
 			};
 
 		io.FontDefault = loadFamily("NotoSans-Medium.ttf");
@@ -251,13 +251,13 @@ namespace Horizon::Editor
 	void EditorRenderer::DefaultStyle()
 	{
 		ImGuiStyle& style = ImGui::GetStyle();
-		ImVec4* colors = style.Colors;
+		ImVec4* pColors = style.Colors;
 
-		colors[ImGuiCol_Text] = ImGuiUtils::Hex("#FFFFFF");
-		colors[ImGuiCol_TextDisabled] = ImGuiUtils::Hex("#808080");
-		colors[ImGuiCol_TextSelectedBg] = ImGuiUtils::Hex("#0E79D0");
-		colors[ImGuiCol_Border] = ImGuiUtils::Hex("#383838");
-		colors[ImGuiCol_BorderShadow] = ImGuiUtils::Hex("#00000000");
+		pColors[ImGuiCol_Text] = ImGuiUtils::Hex("#FFFFFF");
+		pColors[ImGuiCol_TextDisabled] = ImGuiUtils::Hex("#808080");
+		pColors[ImGuiCol_TextSelectedBg] = ImGuiUtils::Hex("#0E79D0");
+		pColors[ImGuiCol_Border] = ImGuiUtils::Hex("#383838");
+		pColors[ImGuiCol_BorderShadow] = ImGuiUtils::Hex("#00000000");
 		style.ItemSpacing = { 6.0f, 3.0f };
 		style.ItemInnerSpacing = { 6.0f, 4.0f };
 		style.IndentSpacing = 16.0f;
@@ -272,88 +272,88 @@ namespace Horizon::Editor
 		style.WindowTitleAlign = { 0.0f, 0.5f };
 		style.WindowRounding = 0.0f;
 		style.WindowBorderSize = 1.0f;
-		colors[ImGuiCol_WindowBg] = ImGuiUtils::Hex("#242424");
-		colors[ImGuiCol_TitleBg] = ImGuiUtils::Hex("#161616");
-		colors[ImGuiCol_TitleBgCollapsed] = ImGuiUtils::Hex("#161616BF");
-		colors[ImGuiCol_TitleBgActive] = ImGuiUtils::Hex("#0E0E0E");
+		pColors[ImGuiCol_WindowBg] = ImGuiUtils::Hex("#242424");
+		pColors[ImGuiCol_TitleBg] = ImGuiUtils::Hex("#161616");
+		pColors[ImGuiCol_TitleBgCollapsed] = ImGuiUtils::Hex("#161616BF");
+		pColors[ImGuiCol_TitleBgActive] = ImGuiUtils::Hex("#0E0E0E");
 
 		style.ChildRounding = 0.0f;
 		style.ChildBorderSize = 1.0f;
-		colors[ImGuiCol_ChildBg] = ImGuiUtils::Hex("#00000000");
+		pColors[ImGuiCol_ChildBg] = ImGuiUtils::Hex("#00000000");
 
-		colors[ImGuiCol_MenuBarBg] = ImGuiUtils::Hex("#161616");
+		pColors[ImGuiCol_MenuBarBg] = ImGuiUtils::Hex("#161616");
 
 		style.PopupRounding = 2.0f;
 		style.PopupBorderSize = 1.0f;
-		colors[ImGuiCol_PopupBg] = ImGuiUtils::Hex("#1C1C1C");
+		pColors[ImGuiCol_PopupBg] = ImGuiUtils::Hex("#1C1C1C");
 
-		colors[ImGuiCol_Button] = ImGuiUtils::Hex("#3C3C3C");
-		colors[ImGuiCol_ButtonHovered] = ImGuiUtils::Hex("#4A4A4A");
-		colors[ImGuiCol_ButtonActive] = ImGuiUtils::Hex("#0E79D0");
+		pColors[ImGuiCol_Button] = ImGuiUtils::Hex("#3C3C3C");
+		pColors[ImGuiCol_ButtonHovered] = ImGuiUtils::Hex("#4A4A4A");
+		pColors[ImGuiCol_ButtonActive] = ImGuiUtils::Hex("#0E79D0");
 
 		style.FramePadding = { 4.0f, 3.0f };
 		style.FrameRounding = 2.0f;
 		style.FrameBorderSize = 1.0f;
-		colors[ImGuiCol_FrameBg] = ImGuiUtils::Hex("#151515");
-		colors[ImGuiCol_FrameBgHovered] = ImGuiUtils::Hex("#1F1F1F");
-		colors[ImGuiCol_FrameBgActive] = ImGuiUtils::Hex("#282828");
+		pColors[ImGuiCol_FrameBg] = ImGuiUtils::Hex("#151515");
+		pColors[ImGuiCol_FrameBgHovered] = ImGuiUtils::Hex("#1F1F1F");
+		pColors[ImGuiCol_FrameBgActive] = ImGuiUtils::Hex("#282828");
 
-		colors[ImGuiCol_Header] = ImGuiUtils::Hex("#2E2E2E");
-		colors[ImGuiCol_HeaderHovered] = ImGuiUtils::Hex("#3A3A3A");
-		colors[ImGuiCol_HeaderActive] = ImGuiUtils::Hex("#0E79D0");
+		pColors[ImGuiCol_Header] = ImGuiUtils::Hex("#2E2E2E");
+		pColors[ImGuiCol_HeaderHovered] = ImGuiUtils::Hex("#3A3A3A");
+		pColors[ImGuiCol_HeaderActive] = ImGuiUtils::Hex("#0E79D0");
 
 		style.ScrollbarSize = 12.0f;
 		style.ScrollbarRounding = 0.0f;
-		colors[ImGuiCol_ScrollbarBg] = ImGuiUtils::Hex("#1C1C1C");
-		colors[ImGuiCol_ScrollbarGrab] = ImGuiUtils::Hex("#5A5A5A");
-		colors[ImGuiCol_ScrollbarGrabHovered] = ImGuiUtils::Hex("#6E6E6E");
-		colors[ImGuiCol_ScrollbarGrabActive] = ImGuiUtils::Hex("#868686");
+		pColors[ImGuiCol_ScrollbarBg] = ImGuiUtils::Hex("#1C1C1C");
+		pColors[ImGuiCol_ScrollbarGrab] = ImGuiUtils::Hex("#5A5A5A");
+		pColors[ImGuiCol_ScrollbarGrabHovered] = ImGuiUtils::Hex("#6E6E6E");
+		pColors[ImGuiCol_ScrollbarGrabActive] = ImGuiUtils::Hex("#868686");
 
 		style.GrabMinSize = 8.0f;
 		style.GrabRounding = 2.0f;
-		colors[ImGuiCol_SliderGrab] = ImGuiUtils::Hex("#0E79D0");
-		colors[ImGuiCol_SliderGrabActive] = ImGuiUtils::Hex("#3D96E0");
+		pColors[ImGuiCol_SliderGrab] = ImGuiUtils::Hex("#0E79D0");
+		pColors[ImGuiCol_SliderGrabActive] = ImGuiUtils::Hex("#3D96E0");
 
-		colors[ImGuiCol_CheckMark] = ImGuiUtils::Hex("#0E79D0");
+		pColors[ImGuiCol_CheckMark] = ImGuiUtils::Hex("#0E79D0");
 
-		colors[ImGuiCol_ResizeGrip] = ImGuiUtils::Hex("#00000000");
-		colors[ImGuiCol_ResizeGripHovered] = ImGuiUtils::Hex("#4A4A4A");
-		colors[ImGuiCol_ResizeGripActive] = ImGuiUtils::Hex("#0E79D0");
+		pColors[ImGuiCol_ResizeGrip] = ImGuiUtils::Hex("#00000000");
+		pColors[ImGuiCol_ResizeGripHovered] = ImGuiUtils::Hex("#4A4A4A");
+		pColors[ImGuiCol_ResizeGripActive] = ImGuiUtils::Hex("#0E79D0");
 
 		style.TabRounding = 0.0f;
 		style.TabBorderSize = 0.0f;
 		style.TabBarBorderSize = 1.0f;
-		colors[ImGuiCol_Tab] = ImGuiUtils::Hex("#191919");
-		colors[ImGuiCol_TabHovered] = ImGuiUtils::Hex("#3C3C3C");
-		colors[ImGuiCol_TabSelected] = ImGuiUtils::Hex("#242424");
-		colors[ImGuiCol_TabDimmed] = ImGuiUtils::Hex("#141414");
-		colors[ImGuiCol_TabDimmedSelected] = ImGuiUtils::Hex("#282828");
+		pColors[ImGuiCol_Tab] = ImGuiUtils::Hex("#191919");
+		pColors[ImGuiCol_TabHovered] = ImGuiUtils::Hex("#3C3C3C");
+		pColors[ImGuiCol_TabSelected] = ImGuiUtils::Hex("#242424");
+		pColors[ImGuiCol_TabDimmed] = ImGuiUtils::Hex("#141414");
+		pColors[ImGuiCol_TabDimmedSelected] = ImGuiUtils::Hex("#282828");
 
-		colors[ImGuiCol_Separator] = ImGuiUtils::Hex("#383838");
-		colors[ImGuiCol_SeparatorHovered] = ImGuiUtils::Hex("#4A4A4A");
-		colors[ImGuiCol_SeparatorActive] = ImGuiUtils::Hex("#0E79D0");
+		pColors[ImGuiCol_Separator] = ImGuiUtils::Hex("#383838");
+		pColors[ImGuiCol_SeparatorHovered] = ImGuiUtils::Hex("#4A4A4A");
+		pColors[ImGuiCol_SeparatorActive] = ImGuiUtils::Hex("#0E79D0");
 
 		style.CellPadding = { 4.0f, 2.0f };
-		colors[ImGuiCol_TableHeaderBg] = ImGuiUtils::Hex("#2E2E2E");
-		colors[ImGuiCol_TableBorderStrong] = ImGuiUtils::Hex("#3C3C3C");
-		colors[ImGuiCol_TableBorderLight] = ImGuiUtils::Hex("#2A2A2A");
-		colors[ImGuiCol_TableRowBg] = ImGuiUtils::Hex("#00000000");
-		colors[ImGuiCol_TableRowBgAlt] = ImGuiUtils::Hex("#FFFFFF06");
+		pColors[ImGuiCol_TableHeaderBg] = ImGuiUtils::Hex("#2E2E2E");
+		pColors[ImGuiCol_TableBorderStrong] = ImGuiUtils::Hex("#3C3C3C");
+		pColors[ImGuiCol_TableBorderLight] = ImGuiUtils::Hex("#2A2A2A");
+		pColors[ImGuiCol_TableRowBg] = ImGuiUtils::Hex("#00000000");
+		pColors[ImGuiCol_TableRowBgAlt] = ImGuiUtils::Hex("#FFFFFF06");
 
-		colors[ImGuiCol_DockingPreview] = ImGuiUtils::Hex("#0E79D0B2");
-		colors[ImGuiCol_DockingEmptyBg] = ImGuiUtils::Hex("#161616");
+		pColors[ImGuiCol_DockingPreview] = ImGuiUtils::Hex("#0E79D0B2");
+		pColors[ImGuiCol_DockingEmptyBg] = ImGuiUtils::Hex("#161616");
 
-		colors[ImGuiCol_PlotLines] = ImGuiUtils::Hex("#FFFFFF");
-		colors[ImGuiCol_PlotLinesHovered] = ImGuiUtils::Hex("#3D96E0");
-		colors[ImGuiCol_PlotHistogram] = ImGuiUtils::Hex("#0E79D0");
-		colors[ImGuiCol_PlotHistogramHovered] = ImGuiUtils::Hex("#3D96E0");
+		pColors[ImGuiCol_PlotLines] = ImGuiUtils::Hex("#FFFFFF");
+		pColors[ImGuiCol_PlotLinesHovered] = ImGuiUtils::Hex("#3D96E0");
+		pColors[ImGuiCol_PlotHistogram] = ImGuiUtils::Hex("#0E79D0");
+		pColors[ImGuiCol_PlotHistogramHovered] = ImGuiUtils::Hex("#3D96E0");
 
-		colors[ImGuiCol_DragDropTarget] = ImGuiUtils::Hex("#0E79D0E5");
+		pColors[ImGuiCol_DragDropTarget] = ImGuiUtils::Hex("#0E79D0E5");
 
-		colors[ImGuiCol_NavCursor] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-		colors[ImGuiCol_NavWindowingHighlight] = ImGuiUtils::Hex("#FFFFFFB2");
-		colors[ImGuiCol_NavWindowingDimBg] = ImGuiUtils::Hex("#FFFFFF33");
-		colors[ImGuiCol_ModalWindowDimBg] = ImGuiUtils::Hex("#00000099");
+		pColors[ImGuiCol_NavCursor] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+		pColors[ImGuiCol_NavWindowingHighlight] = ImGuiUtils::Hex("#FFFFFFB2");
+		pColors[ImGuiCol_NavWindowingDimBg] = ImGuiUtils::Hex("#FFFFFF33");
+		pColors[ImGuiCol_ModalWindowDimBg] = ImGuiUtils::Hex("#00000099");
 
 		style.CircleTessellationMaxError = 0.3f;
 		style.CurveTessellationTol = 1.25f;
