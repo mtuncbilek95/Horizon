@@ -15,6 +15,7 @@ namespace Horizon
 		static c8 ToLowerAscii(c8 value);
 		static b8 StartsWithNoCase(const std::string& value, const std::string& prefix);
 		static b8 EqualsNoCase(std::string_view left, std::string_view right);
+		static std::string NormalizePath(const std::string& path);
 		static std::string ParentPathOf(const std::string& path);
 		static std::string NoExtension(const std::string& path);
 		static std::string OnlyExtension(const std::string& path);

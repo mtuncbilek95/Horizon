@@ -54,6 +54,25 @@ namespace Horizon
 		return true;
 	}
 
+	std::string StringOps::NormalizePath(const std::string& path)
+	{
+		std::string res;
+		res.reserve(path.size());
+
+		for (c8 value : path)
+		{
+			if (!IsSeparator(value))
+				res.push_back(value);
+			else if (res.empty() || res.back() != '/')
+				res.push_back('/');
+		}
+
+		if (res.size() > 1 && res.back() == '/')
+			res.pop_back();
+
+		return res;
+	}
+
 	std::string StringOps::ParentPathOf(const std::string& path)
 	{
 		usize end = path.size();

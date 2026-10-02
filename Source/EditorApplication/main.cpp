@@ -1,6 +1,7 @@
 #include <Editor/Domain/DomainService.h>
 #include <Editor/Renderer/EditorService.h>
 #include <Editor/Importer/ImporterContext.h>
+#include <Editor/Project/ProjectContext.h>
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowService.h>
@@ -15,11 +16,15 @@ using namespace Horizon;
 
 int main(int argC, char** argV)
 {
-	// TODO: This will change later. If you check this and judge me, FUCK YOU MOTHERFUCKER!
-	const std::string projectPath = "D:/Projects/Horizon/ExampleProject";
+	std::string projectPath;
+
+	if (argC < 2)
+		projectPath = std::string(HORIZON_EXAMPLE_DIR) + "/ExampleProject.hproject";
+	else
+		projectPath = argV[1];
 
 	Engine::Engine engine;
-
+	engine.RegisterModule<Editor::ProjectContext>(projectPath, HORIZON_RESOURCE_DIR);
 	engine.RegisterModule<Engine::WindowService>();
 	engine.RegisterModule<Engine::GraphicsContext>();
 	engine.RegisterModule<Editor::ImporterContext>();

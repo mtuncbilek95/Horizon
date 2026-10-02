@@ -5,6 +5,7 @@
 #include <Editor/Domain/DomainFile.h>
 #include <Editor/Domain/DomainMeta.h>
 #include <Editor/Importer/ImporterContext.h>
+#include <Editor/Project/ProjectContext.h>
 
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Asset/AssetService.h>
@@ -83,15 +84,13 @@ namespace Horizon::Editor
 		if (m_importerContext == nullptr)
 			return Engine::ModuleReport("Importer context cannot be reached");
 
-		m_projectPath = "D:/Projects/Horizon/ExampleProject";
-		m_assetPath = m_projectPath + "/Assets";
-		m_cookPath = m_projectPath + "/Cooked";
+		auto* pProjectCtx = GetEngine()->RequestContext<ProjectContext>();
+		if (pProjectCtx == nullptr)
+			return Engine::ModuleReport("Project context cannot be reached");
 
-		if (!PAL::Directory::Exists(m_assetPath) && !PAL::Directory::Create(m_assetPath))
-			return Engine::ModuleReport("Asset root cannot be created");
-
-		if (!PAL::Directory::Exists(m_cookPath) && !PAL::Directory::Create(m_cookPath))
-			return Engine::ModuleReport("Cook root cannot be created");
+		m_projectPath = pProjectCtx->GetProjectPath();
+		m_assetPath = pProjectCtx->GetAssetPath();
+		m_cookPath = pProjectCtx->GetCookPath();
 
 		m_root = Memory::Allocator::Create<DomainFolder>(Memory::CurrLoc(), nullptr, "Assets", m_assetPath, m_cookPath);
 		RebuildTree();
@@ -147,6 +146,7 @@ namespace Horizon::Editor
 	{
 		graph.Requires<Engine::AssetService>();
 		graph.Requires<ImporterContext>();
+		graph.Requires<ProjectContext>();
 	}
 
 	void DomainService::BindWatcher()
