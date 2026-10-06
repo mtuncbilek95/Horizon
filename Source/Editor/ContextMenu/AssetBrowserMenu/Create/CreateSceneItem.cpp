@@ -27,7 +27,7 @@ namespace Horizon::Editor
 
 		std::string ResolveUniqueName(const DomainFolder* pParent)
 		{
-			std::string fileName = "NewScene.pscene";
+			std::string fileName = "NewScene.hscene";
 
 			if (!HasFileNamed(pParent, fileName))
 				return fileName;
@@ -36,7 +36,7 @@ namespace Horizon::Editor
 
 			do
 			{
-				fileName = std::format("NewScene({}).pscene", index);
+				fileName = std::format("NewScene({}).hscene", index);
 				index++;
 			} while (HasFileNamed(pParent, fileName));
 

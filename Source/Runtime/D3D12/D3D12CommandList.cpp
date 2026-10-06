@@ -8,6 +8,7 @@
 #include <Runtime/D3D12/D3D12DescriptorHeap.h>
 #include <Runtime/D3D12/D3D12Device.h>
 #include <Runtime/D3D12/D3D12Pipeline.h>
+#include <Runtime/D3D12/D3D12QueryHeap.h>
 #include <Runtime/D3D12/D3D12Texture.h>
 
 namespace Horizon::RHI
@@ -456,6 +457,42 @@ namespace Horizon::RHI
 		destination.PlacedFootprint = footprint;
 
 		m_list->CopyTextureRegion(&destination, 0, 0, 0, &source, nullptr);
+	}
+
+	void D3D12CommandList::WriteTimestamp(GfxQueryHeap* pHeap, u32 index)
+	{
+		auto* pD3DHeap = static_cast<D3D12QueryHeap*>(pHeap);
+
+		if (index >= pD3DHeap->GetCount())
+		{
+			Terminal::Error(StringOps::GetName(this), "Timestamp index {} exceeds query heap count {}", index, pD3DHeap->GetCount());
+			return;
+		}
+
+		m_list->EndQuery(pD3DHeap->Handle(), D3D12_QUERY_TYPE_TIMESTAMP, index);
+	}
+
+	void D3D12CommandList::ResolveTimestamps(GfxQueryHeap* pHeap, u32 first, u32 count, GfxBuffer* pReadback, usize dstOff)
+	{
+		auto* pD3DHeap = static_cast<D3D12QueryHeap*>(pHeap);
+		auto* pD3DReadback = static_cast<D3D12Buffer*>(pReadback);
+
+		if (count == 0)
+			return;
+
+		if (first + count > pD3DHeap->GetCount())
+		{
+			Terminal::Error(StringOps::GetName(this), "Timestamp resolve range [{}, {}) exceeds query heap count {}", first, first + count, pD3DHeap->GetCount());
+			return;
+		}
+
+		if (dstOff + usize(count) * sizeof(u64) > pD3DReadback->GetDesc().size)
+		{
+			Terminal::Error(StringOps::GetName(this), "Timestamp resolve of {} queries at offset {} exceeds readback size {}", count, dstOff, pD3DReadback->GetDesc().size);
+			return;
+		}
+
+		m_list->ResolveQueryData(pD3DHeap->Handle(), D3D12_QUERY_TYPE_TIMESTAMP, first, count, pD3DReadback->Handle(), dstOff);
 	}
 
 	void D3D12CommandList::SetDebugName(const char* pName)

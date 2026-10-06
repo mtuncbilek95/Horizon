@@ -18,6 +18,7 @@ namespace Horizon::Math
 		static Mat4f Rotation(const Quat& rotation);
 		static Mat4f TRS(const Vec3f& translation, const Quat& rotation, const Vec3f& scale);
 		static Mat4f Perspective(f32 fovYRadians, f32 aspect, f32 nearZ, f32 farZ);
+		static Mat4f PerspectiveRZ(f32 fovYRadians, f32 aspect, f32 nearZ, f32 farZ);
 		static Mat4f Orthographic(f32 left, f32 right, f32 bottom, f32 top, f32 nearZ, f32 farZ);
 		static Mat4f LookAt(const Vec3f& eye, const Vec3f& target, const Vec3f& up);
 

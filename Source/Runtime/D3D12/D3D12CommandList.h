@@ -55,6 +55,9 @@ namespace Horizon::RHI
 		void CopyBufferToTexture(GfxBuffer* pSrc, usize srcOff, GfxTexture* pDst, u32 mipLevel, u32 arraySlice) final;
 		void CopyTextureToBuffer(GfxTexture* pSrc, u32 mipLevel, u32 arraySlice, GfxBuffer* pDst, usize dstOff) final;
 
+		void WriteTimestamp(GfxQueryHeap* pHeap, u32 index) final;
+		void ResolveTimestamps(GfxQueryHeap* pHeap, u32 first, u32 count, GfxBuffer* pReadback, usize dstOff) final;
+
 		ID3D12GraphicsCommandList6* Handle() const { return m_list; }
 
 	private:

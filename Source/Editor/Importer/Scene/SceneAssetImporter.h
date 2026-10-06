@@ -6,7 +6,7 @@
 
 namespace Horizon::Editor
 {
-	HCLASS(ImportTypeAttribute[Reflect::TypeOf<Engine::SceneAsset>(), { ".pscene" }]);
+	HCLASS(ImportTypeAttribute[Reflect::TypeOf<Engine::SceneAsset>(), { ".hscene" }]);
 	class H_EXPORT SceneAssetImporter : public AssetImporter
 	{
 		HORIZON_TYPE_REFLECT(SceneAssetImporter);

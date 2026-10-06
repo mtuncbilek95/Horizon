@@ -49,6 +49,19 @@ namespace Horizon::RHI
 		m_queue->Wait(pD3DFence->Handle(), value);
 	}
 
+	u64 D3D12Queue::GetTimestampFrequency()
+	{
+		u64 frequency = 0;
+
+		HRESULT hr = m_queue->GetTimestampFrequency(&frequency);
+		CHECK_REASON(hr, "ID3D12CommandQueue - GetTimestampFrequency");
+
+		if (FAILED(hr))
+			return 0;
+
+		return frequency;
+	}
+
 	void D3D12Queue::SetDebugName(const char* pName)
 	{
 		Helpers::SetObjectName(m_queue, pName);

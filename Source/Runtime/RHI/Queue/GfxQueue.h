@@ -14,6 +14,7 @@ namespace Horizon::RHI
 		virtual void Submit(GfxCommandList* const* ppLists, u32 count) = 0;
 		virtual u64 Signal(GfxFence* pFence) = 0;
 		virtual void Wait(GfxFence* pFence, u64 value) = 0;
+		virtual u64 GetTimestampFrequency() = 0;
 		GfxQueueType GetType() const { return m_type; }
 	protected:
 		GfxQueueType m_type = GfxQueueType::Graphics;

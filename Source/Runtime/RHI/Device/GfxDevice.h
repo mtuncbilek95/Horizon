@@ -31,6 +31,9 @@ namespace Horizon::RHI
 	struct GfxComputePipelineDesc;
 	class GfxPipeline;
 
+	struct GfxQueryHeapDesc;
+	class GfxQueryHeap;
+
 	class GfxCommandList;
 	class GfxQueue;
 	class GfxFence;
@@ -57,6 +60,7 @@ namespace Horizon::RHI
 		virtual GfxCommandList* CreateCommandList(GfxQueueType type) = 0;
 		virtual GfxQueue* CreateQueue(GfxQueueType type) = 0;
 		virtual GfxFence* CreateFence() = 0;
+		virtual GfxQueryHeap* CreateQueryHeap(const GfxQueryHeapDesc& desc) = 0;
 
 		virtual GfxTextureFootprint GetTextureFootprint(const GfxTextureDesc& desc, u32 mipLevel = 0, u32 arraySlice = 0) const = 0;
 

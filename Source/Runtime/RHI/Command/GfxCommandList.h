@@ -15,6 +15,7 @@ namespace Horizon::RHI
 {
 	class GfxDescriptorHeap;
 	class GfxPipeline;
+	class GfxQueryHeap;
 
 	class GfxCommandList : public GfxObject
 	{
@@ -49,6 +50,9 @@ namespace Horizon::RHI
 		virtual void CopyBuffer(GfxBuffer* pSrc, usize srcOff, GfxBuffer* pDst, usize dstOff, usize size) = 0;
 		virtual void CopyBufferToTexture(GfxBuffer* pSrc, usize srcOff, GfxTexture* pDst, u32 mipLevel = 0, u32 arraySlice = 0) = 0;
 		virtual void CopyTextureToBuffer(GfxTexture* pSrc, u32 mipLevel, u32 arraySlice, GfxBuffer* pDst, usize dstOff) = 0;
+
+		virtual void WriteTimestamp(GfxQueryHeap* pHeap, u32 index) = 0;
+		virtual void ResolveTimestamps(GfxQueryHeap* pHeap, u32 first, u32 count, GfxBuffer* pReadback, usize dstOff) = 0;
 
 		void SetViewport(const GfxViewport& viewport) { SetViewports(&viewport, 1); }
 		void SetScissor(const GfxScissor& scissor) { SetScissors(&scissor, 1); }

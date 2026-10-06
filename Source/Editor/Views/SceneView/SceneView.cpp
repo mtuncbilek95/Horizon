@@ -284,11 +284,13 @@ namespace Horizon::Editor
 		ImGuizmo::SetDrawlist();
 		ImGuizmo::SetRect(imageMin.X(), imageMin.Y(), imageSize.X(), imageSize.Y());
 
-		Math::Mat4f entityWorld = pTransform->m_worldMatrix;
-		Math::Mat4f viewMat = camera.m_view;
-		Math::Mat4f projMat = camera.m_projection;
+		const f32 aspect = camera.m_targetScreen.X() / camera.m_targetScreen.Y();
 
-		b8 changed = ImGuizmo::Manipulate(viewMat.Data(), projMat.Data(), GuizmoOperation, GuizmoMode, entityWorld.Data());
+		Math::Mat4f entityWorld = pTransform->m_worldMatrix;
+		Math::Mat4f viewMatrix = camera.m_view;
+		Math::Mat4f projectionMatrix = Math::Mat4f::Perspective(camera.m_fov, aspect, camera.m_nearPlane, camera.m_farPlane);
+
+		const b8 changed = ImGuizmo::Manipulate(viewMatrix.Data(), projectionMatrix.Data(), GuizmoOperation, GuizmoMode, entityWorld.Data());
 
 		if (!changed)
 			return;

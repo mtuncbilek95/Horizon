@@ -95,6 +95,20 @@ namespace Horizon::Math
 		return result;
 	}
 
+	Mat4f Mat4f::PerspectiveRZ(f32 fovYRadians, f32 aspect, f32 nearZ, f32 farZ)
+	{
+		const f32 focal = 1.f / std::tan(fovYRadians * 0.5f);
+		const f32 range = 1.f / (farZ - nearZ);
+
+		Mat4f result = Zero();
+		result.m_data[0] = focal / aspect;
+		result.m_data[5] = focal;
+		result.m_data[10] = 0;
+		result.m_data[11] = -1.f;
+		result.m_data[14] = nearZ;
+		return result;
+	}
+
 	Mat4f Mat4f::Orthographic(f32 left, f32 right, f32 bottom, f32 top, f32 nearZ, f32 farZ)
 	{
 		Mat4f result = Identity();

@@ -19,7 +19,7 @@ namespace Horizon::Engine
 			TransformComponent& worldMat)
 			{
 				const Math::Mat4f view = worldMat.m_worldMatrix.Inverse();
-				const Math::Mat4f proj = Math::Mat4f::Perspective(camera.m_fov, camera.m_targetScreen.X() / camera.m_targetScreen.Y(),
+				const Math::Mat4f proj = Math::Mat4f::PerspectiveRZ(camera.m_fov, camera.m_targetScreen.X() / camera.m_targetScreen.Y(),
 					camera.m_nearPlane, camera.m_farPlane);
 
 				camera.m_view = view;

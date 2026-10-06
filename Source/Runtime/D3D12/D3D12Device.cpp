@@ -6,6 +6,7 @@
 #include <Runtime/Log/Terminal.h>
 
 #include <Runtime/RHI/Buffer/GfxBufferArenaDesc.h>
+#include <Runtime/RHI/Query/GfxQueryHeapDesc.h>
 #include <Runtime/RHI/Sampler/GfxStaticSampler.h>
 #include <Runtime/RHI/Shader/GfxShaderDesc.h>
 #include <Runtime/RHI/Swapchain/GfxSwapchainDesc.h>
@@ -19,6 +20,7 @@
 #include <Runtime/D3D12/D3D12DescriptorHeap.h>
 #include <Runtime/D3D12/D3D12Fence.h>
 #include <Runtime/D3D12/D3D12Queue.h>
+#include <Runtime/D3D12/D3D12QueryHeap.h>
 #include <Runtime/D3D12/D3D12Shader.h>
 #include <Runtime/D3D12/D3D12Swapchain.h>
 #include <Runtime/D3D12/D3D12Texture.h>
@@ -535,6 +537,52 @@ namespace Horizon::RHI
 		CHECK_HR(hr, "ID3D12Fence - CreateFence");
 
 		return pFence;
+	}
+
+	GfxQueryHeap* D3D12Device::CreateQueryHeap(const GfxQueryHeapDesc& desc)
+	{
+		if (desc.count == 0)
+		{
+			Terminal::Error(StringOps::GetName(this), "Query heap count must be greater than zero");
+			return nullptr;
+		}
+
+		D3D12_QUERY_HEAP_DESC heapDesc = {};
+
+		heapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+		heapDesc.Count = desc.count;
+		heapDesc.NodeMask = 0;
+
+		if (desc.queue == GfxQueueType::Transfer)
+		{
+			D3D12_FEATURE_DATA_D3D12_OPTIONS3 options3 = {};
+
+			HRESULT featureHr = m_device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &options3, sizeof(options3));
+
+			if (FAILED(featureHr) || !options3.CopyQueueTimestampQueriesSupported)
+			{
+				Terminal::Error(StringOps::GetName(this), "Copy queue timestamp queries are not supported on this adapter");
+				return nullptr;
+			}
+
+			heapDesc.Type = D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP;
+		}
+
+		auto* pHeap = Memory::Allocator::Create<D3D12QueryHeap>(Memory::CurrLoc());
+
+		pHeap->m_ownerDevice = this;
+		pHeap->m_desc = desc;
+
+		HRESULT hr = m_device->CreateQueryHeap(&heapDesc, IID_PPV_ARGS(&pHeap->m_heap));
+		CHECK_REASON(hr, "ID3D12QueryHeap - CreateQueryHeap");
+
+		if (FAILED(hr))
+		{
+			Memory::Allocator::Delete(pHeap);
+			return nullptr;
+		}
+
+		return pHeap;
 	}
 
 	GfxTextureFootprint D3D12Device::GetTextureFootprint(const GfxTextureDesc& desc, u32 mipLevel, u32 arraySlice) const

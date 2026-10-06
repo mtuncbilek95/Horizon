@@ -59,6 +59,7 @@ namespace Horizon::RHI
 		GfxCommandList* CreateCommandList(GfxQueueType type) final;
 		GfxQueue* CreateQueue(GfxQueueType type) final;
 		GfxFence* CreateFence() final;
+		GfxQueryHeap* CreateQueryHeap(const GfxQueryHeapDesc& desc) final;
 
 		GfxTextureFootprint GetTextureFootprint(const GfxTextureDesc& desc, u32 mipLevel, u32 arraySlice) const final;
 

@@ -103,7 +103,7 @@ namespace Horizon::Engine
 
 		pipelineDesc.depthStencil.depthTest = true;
 		pipelineDesc.depthStencil.depthWrite = true;
-		pipelineDesc.depthStencil.depthCompare = RHI::GfxCompareOp::Less;
+		pipelineDesc.depthStencil.depthCompare = RHI::GfxCompareOp::Greater;
 
 		RHI::GfxPipeline* pPipeline = pDevice->CreatePipeline(pipelineDesc);
 		Memory::Allocator::Delete(pVertexShader);
@@ -263,7 +263,7 @@ namespace Horizon::Engine
 		}
 		RHI::GfxRenderBeginDesc renderDesc = RHI::GfxRenderBeginDesc()
 			.AddColorTarget(slot.pTargetTexture, RHI::GfxLoadOp::Clear, { 0.0f, 0.0f, 0.0f, 1.f })
-			.SetDepth(sFunDepthTextures[m_frameIndex], RHI::GfxLoadOp::Clear, 1.0f)
+			.SetDepth(sFunDepthTextures[m_frameIndex], RHI::GfxLoadOp::Clear, 0.0f)
 			.SetSize(slot.pTargetTexture->GetDesc().width, slot.pTargetTexture->GetDesc().height);
 
 		slot.pTargetCmd->BeginRendering(renderDesc);
