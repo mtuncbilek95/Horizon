@@ -16,6 +16,7 @@ namespace Horizon::Engine
 		~SceneAssetStreamer() = default;
 
 		void OnInitialize() final;
+		void OnSync(const EngineFrame& frameContext) final;
 		void OnFinalize() final;
 
 		void LoadAsync(AssetObject* pAsset) final;

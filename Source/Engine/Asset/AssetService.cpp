@@ -43,6 +43,8 @@ namespace Horizon::Engine
 
 	void AssetService::OnExecute(const EngineFrame& ctx)
 	{
+		for (auto* pStreamer : m_streamers)
+			pStreamer->OnSync(ctx);
 	}
 
 	void AssetService::OnFinalize()

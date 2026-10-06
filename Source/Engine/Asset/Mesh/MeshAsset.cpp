@@ -2,6 +2,9 @@
 
 #include <Engine/Asset/Mesh/MeshAssetStreamer.h>
 
+#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Log/Terminal.h>
+
 namespace Horizon::Engine
 {
 	void MeshAsset::LoadAsync()
@@ -12,7 +15,19 @@ namespace Horizon::Engine
 		m_streamer->LoadAsync(this);
 	}
 
-	void MeshAsset::UnloadAsync()
+	PermittedMeshData MeshAsset::BeginUse()
 	{
+		return GetStreamer<MeshAssetStreamer>()->BeginUse(this);
+	}
+
+	void MeshAsset::EndUse(const PermittedMeshData& permit)
+	{
+		if (permit.pAsset != this)
+		{
+			Terminal::Error(StringOps::GetName(this), "Permit belongs to another mesh, use count left untouched");
+			return;
+		}
+
+		GetStreamer<MeshAssetStreamer>()->EndUse(permit);
 	}
 }

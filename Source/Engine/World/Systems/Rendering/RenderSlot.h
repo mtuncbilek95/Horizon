@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Engine/Asset/Mesh/PermittedMeshData.h>
+#include <Runtime/Containers/List.h>
 #include <Runtime/Math/Vec2u.h>
 #include <Runtime/RHI/Texture/GfxTexture.h>
 #include <Runtime/RHI/Command/GfxCommandList.h>
@@ -18,5 +20,7 @@ namespace Horizon::Engine
 		Math::Vec2u currSize = { 0, 0 };
 
 		u32 fenceValue = 0;
+
+		List<PermittedMeshData> pendingReleases;
 	};
 }

@@ -247,6 +247,7 @@ namespace Horizon::Engine
 		}
 
 		m_fence->WaitCPU(slot.fenceValue);
+		ReleasePending(slot);
 
 		slot.pTargetCmd->Begin();
 		slot.pTargetCmd->BindDescriptorHeaps(m_resourceHeap, nullptr);
@@ -298,11 +299,33 @@ namespace Horizon::Engine
 
 		currentScene.ForEach<MeshComponent, TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
 			{
-				if (mesh.m_hideInRender)
+				MeshAsset* pAsset = mesh.m_meshHandle.GetAsset();
+				const b8 isResolved = pAsset != nullptr && pAsset->GetPhysicalEntry().assetId == mesh.m_meshHandle.GetId();
+				const b8 isWanted = isResolved && !mesh.m_hideInRender;
+
+				if (mesh.m_permit.IsValid() && (!isWanted || mesh.m_permit.pAsset != pAsset))
+				{
+					mesh.m_permit.pAsset->EndUse(mesh.m_permit);
+					mesh.m_permit = {};
+				}
+
+				if (!isWanted)
 					return;
 
-				if (!mesh.m_resident)
-					return;
+				if (!mesh.m_permit.IsValid())
+				{
+					mesh.m_permit = pAsset->BeginUse();
+
+					if (!mesh.m_permit.IsValid())
+					{
+						if (pAsset->GetResidencyState() == AssetResidency::Unloaded)
+							pAsset->LoadAsync();
+
+						return;
+					}
+				}
+
+				const PermittedMeshData& permit = mesh.m_permit;
 
 				constants.viewProj = viewProj;
 				constants.model = worldMat.m_worldMatrix;
@@ -310,12 +333,13 @@ namespace Horizon::Engine
 				constants.vertexBufferIndex = sFunVertexSrv;
 				slot.pTargetCmd->SetGraphicsConstants(&constants, sizeof(FunPushConstant) / sizeof(u32));
 
-				for (usize i = 0; i < mesh.m_drawRanges.GetCount(); ++i)
+				for (u32 i = 0; i < permit.subMeshCount; ++i)
 				{
-					const MeshDrawRange& range = mesh.m_drawRanges[i];
+					const MeshSubMesh& subMesh = permit.pSubMeshes[i];
+					const u32 firstVertex = permit.firstVertex + subMesh.vertexOffset;
 
-					slot.pTargetCmd->SetGraphicsConstants(&range.firstVertex, 1, offsetof(FunPushConstant, firstVertex) / sizeof(u32));
-					slot.pTargetCmd->DrawIndexed(range.indexCount, 1, range.firstIndex, 0);
+					slot.pTargetCmd->SetGraphicsConstants(&firstVertex, 1, offsetof(FunPushConstant, firstVertex) / sizeof(u32));
+					slot.pTargetCmd->DrawIndexed(subMesh.indexCount, 1, permit.firstIndex + subMesh.indexOffset, 0);
 				}
 			});
 
@@ -342,6 +366,9 @@ namespace Horizon::Engine
 	void RenderSystem::OnFinalize()
 	{
 		m_device->WaitIdle();
+
+		for (usize i = 0; i < m_slots.GetCount(); i++)
+			m_slots[i].pendingReleases.Clear();
 
 		if (sFunPipeline)
 		{
@@ -459,6 +486,7 @@ namespace Horizon::Engine
 	{
 		RenderSlot& slot = m_slots[imageIndex];
 
+		ReleasePending(slot);
 		ClearFunDepthTexture(imageIndex);
 
 		if (!slot.pTargetTexture)
@@ -475,5 +503,13 @@ namespace Horizon::Engine
 		slot.fenceValue = 0;
 
 		return true;
+	}
+
+	void RenderSystem::ReleasePending(RenderSlot& slot)
+	{
+		for (const PermittedMeshData& permit : slot.pendingReleases)
+			permit.pAsset->EndUse(permit);
+
+		slot.pendingReleases.Clear();
 	}
 }

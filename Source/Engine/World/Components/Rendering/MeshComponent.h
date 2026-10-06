@@ -2,9 +2,9 @@
 
 #include <Engine/Asset/AssetHandle.h>
 #include <Engine/Asset/Mesh/MeshAsset.h>
+#include <Engine/Asset/Mesh/PermittedMeshData.h>
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
-#include <Engine/Rendering/MeshDrawRange.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/RTTR/Attributes/AssetRefAttribute.h>
 
@@ -24,8 +24,7 @@ namespace Horizon::Engine
 		HFIELD();
 		b8 m_hideInRender = false;
 
-		List<MeshDrawRange> m_drawRanges;
 		Guid m_resolvedId;
-		b8 m_resident = false;
+		PermittedMeshData m_permit;
 	};
 }

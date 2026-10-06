@@ -4,7 +4,7 @@
 
 namespace Horizon::Engine
 {
-	enum class AssetResidency : u8 
+	enum class AssetResidency : u8
 	{
 		Unloaded,
 		Pending,
@@ -12,6 +12,7 @@ namespace Horizon::Engine
 		Decoding,
 		Uploading,
 		Resident,
+		Evicting,
 		Failed
 	};
 }

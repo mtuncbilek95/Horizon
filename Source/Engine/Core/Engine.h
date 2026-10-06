@@ -24,6 +24,7 @@ namespace Horizon::Engine
 	public:
 		Engine();
 		~Engine();
+
 		template<typename T, typename...Args>
 			requires std::is_base_of_v<Context, T> || std::is_base_of_v<Service, T>
 		void RegisterModule(Args&&... args)
@@ -43,6 +44,7 @@ namespace Horizon::Engine
 			pModule->m_engine = this;
 			m_registerPending.PushBack(pModule);
 		}
+
 		template<typename T>
 			requires std::is_base_of_v<Service, T>
 		T* RequestService()
@@ -55,6 +57,7 @@ namespace Horizon::Engine
 			}
 			return (T*)m_activeServices[it->second];
 		}
+
 		template<typename T>
 			requires std::is_base_of_v<Context, T>
 		T* RequestContext()
@@ -67,10 +70,14 @@ namespace Horizon::Engine
 			}
 			return (T*)m_activeContexts[it->second];
 		}
+
 		void Run();
 		void RequestExit(std::string_view reason);
+
 		ReflectionSystem* GetReflectionSystem() const noexcept { return m_reflectionSystem; }
 		JobSystem* GetJobSystem() const noexcept { return m_jobSystem; }
+		const EngineFrame& GetFrame() const { return m_frameContext; }
+
 	private:
 		b8 IsRegistered(std::type_index index) const;
 		void FlushPending();

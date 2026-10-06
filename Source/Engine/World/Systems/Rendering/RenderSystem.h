@@ -30,6 +30,8 @@ namespace Horizon::Engine
 	private:
 		b8 RecreateSlot(u32 imageIndex);
 		b8 ClearSlot(u32 imageIndex);
+		
+		void ReleasePending(RenderSlot& slot);
 
 	private:
 		GraphicsContext* m_context = nullptr;

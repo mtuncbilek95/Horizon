@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Engine/Asset/Mesh/MeshAsset.h>
 #include <Engine/Asset/AssetService.h>
 #include <Engine/World/System.h>
 #include <Engine/World/Components/Rendering/MeshComponent.h>
@@ -20,10 +19,6 @@ namespace Horizon::Engine
 		void OnGroupsChanged(SystemGroup previous, SystemGroup current) final;
 
 		SystemGroup GetWorkingGroup() const final { return SystemGroup::General; }
-
-	private:
-		void ClearResidency(MeshComponent& mesh);
-		void BuildDrawRanges(MeshComponent& mesh, const MeshAsset* pAsset);
 
 	private:
 		AssetService* m_assetService = nullptr;

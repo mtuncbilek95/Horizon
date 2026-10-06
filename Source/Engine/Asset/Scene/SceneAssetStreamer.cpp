@@ -16,6 +16,11 @@ namespace Horizon::Engine
 		m_jobSystem = GetEngine()->GetJobSystem();
 	}
 
+
+	void SceneAssetStreamer::OnSync(const EngineFrame& frameContext)
+	{
+	}
+
 	void SceneAssetStreamer::OnFinalize()
 	{
 	}

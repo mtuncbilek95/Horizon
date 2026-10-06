@@ -15,6 +15,7 @@ namespace Horizon::Engine
 		Engine* GetEngine() const { return m_engine; }
 
 		virtual void OnInitialize() = 0;
+		virtual void OnSync(const EngineFrame& frameContext) = 0;
 		virtual void OnFinalize() = 0;
 
 		virtual void LoadAsync(AssetObject* pAsset) = 0;
