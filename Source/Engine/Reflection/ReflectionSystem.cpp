@@ -77,7 +77,7 @@ namespace Horizon::Engine
 
 			IndexType(type);
 
-			Terminal::Debug(StringOps::GetName(this), "{} has been registered from {}", type.GetName(), pLibrary->GetName());
+			Terminal::Debug(StringOps::GetName(this), "{} has been registered from {}", type.GetName(), pLibrary->GetName().substr(pLibrary->GetName().rfind('/\\') + 1));
 		}
 
 		Terminal::Info(StringOps::GetName(this), "{} registered {} type manifests", pLibrary->GetName(), library.types.GetCount());

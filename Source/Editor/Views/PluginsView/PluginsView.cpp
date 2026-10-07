@@ -35,7 +35,7 @@ namespace Horizon::Editor
 		}
 
 		if (ImGui::Button(ICON_FA_ROTATE " Refresh"))
-			m_pluginService->Discover();
+			m_pluginService->DiscoverPlugins();
 
 		ImGui::SameLine();
 		ImGui::BeginDisabled();

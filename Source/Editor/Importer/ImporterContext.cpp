@@ -1,6 +1,7 @@
 #include "ImporterContext.h"
 
 #include <Editor/Importer/ImportTypeAttribute.h>
+#include <Engine/Plugin/PluginService.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 
 namespace Horizon::Editor
@@ -25,6 +26,7 @@ namespace Horizon::Editor
 
 	void ImporterContext::DeclareDependencies(Engine::ModuleGraph& graph)
 	{
+		graph.Requires<Engine::PluginService>();
 	}
 
 	void ImporterContext::OnLibraryRegistered(const Engine::ReflectionLibrary& library)

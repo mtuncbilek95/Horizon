@@ -43,8 +43,8 @@ namespace Horizon::Editor
 
 		pPlugins->SetRoots("", m_pluginPath);
 		pPlugins->SetEnabledPlugins(m_enabledPlugins);
-		pPlugins->Discover();
-		pPlugins->Load();
+		pPlugins->DiscoverPlugins();
+		pPlugins->LoadPlugins();
 
 		return Engine::ModuleReport();
 	}

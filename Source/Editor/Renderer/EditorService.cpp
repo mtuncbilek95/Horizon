@@ -11,6 +11,7 @@
 #include <Engine/Window/WindowService.h>
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/World/WorldService.h>
+#include <Engine/Plugin/PluginService.h>
 
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Swapchain/GfxSwapchain.h>
@@ -175,6 +176,7 @@ namespace Horizon::Editor
 		graph.Requires<Engine::GraphicsContext>();
 		graph.Requires<DomainService>();
 		graph.Requires<Engine::WorldService>();
+		graph.Requires<Engine::PluginService>();
 	}
 
 	void EditorService::OnLibraryRegistered(const Engine::ReflectionLibrary& library)

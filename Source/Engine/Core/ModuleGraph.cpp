@@ -72,8 +72,8 @@ namespace Horizon::Engine
 
 		while (!ready.IsEmpty())
 		{
-			std::type_index node = ready.Back();
-			ready.PopBack();
+			std::type_index node = ready.Front();
+			ready.PopFront();
 
 			outOrder.PushBack(node);
 

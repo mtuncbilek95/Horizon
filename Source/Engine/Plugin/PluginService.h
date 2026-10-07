@@ -10,6 +10,11 @@ namespace Horizon::Engine
 {
 	class ENGINE_API PluginService final : public Service
 	{
+		struct PendingRequest
+		{
+			std::string name;
+			b8 load;
+		};
 	public:
 		PluginService() = default;
 		~PluginService() = default;
@@ -31,20 +36,15 @@ namespace Horizon::Engine
 		void SetRoots(const std::string& engineRoot, const std::string& projectRoot);
 		void SetEnabledPlugins(const List<std::string>& enabled) { m_enabledPlugins = enabled; }
 
-		void Discover();
-		void Load();
-		b8 LoadPlugin(const std::string& name);
-		b8 UnloadPlugin(const std::string& name);
-
 		void RequestLoad(const std::string& name);
 		void RequestUnload(const std::string& name);
 
+		void DiscoverPlugins();
+		void LoadPlugins();
+
 	private:
-		struct PendingRequest
-		{
-			std::string name;
-			b8 load;
-		};
+		b8 LoadPlugin(const std::string& name);
+		b8 UnloadPlugin(const std::string& name);
 
 		void FlushRequests();
 		PluginEntry* FindEntry(const std::string& name);

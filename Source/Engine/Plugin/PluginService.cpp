@@ -86,7 +86,7 @@ namespace Horizon::Engine
 		m_projectRoot = projectRoot.empty() ? std::string() : StringOps::NormalizePath(projectRoot);
 	}
 
-	void PluginService::Discover()
+	void PluginService::DiscoverPlugins()
 	{
 		List<PluginEntry> discovered;
 
@@ -121,14 +121,6 @@ namespace Horizon::Engine
 		m_plugins = std::move(discovered);
 
 		Terminal::Info(StringOps::GetName(this), "Discovered {} plugins", m_plugins.GetCount());
-	}
-
-	void PluginService::Load()
-	{
-		for (const std::string& name : m_enabledPlugins)
-		{
-			LoadPlugin(name);
-		}
 	}
 
 	b8 PluginService::LoadPlugin(const std::string& name)
@@ -271,5 +263,14 @@ namespace Horizon::Engine
 		entry.state = PluginState::Available;
 
 		Terminal::Info(StringOps::GetName(this), "{} unloaded", entry.name);
+	}
+
+	void PluginService::LoadPlugins()
+	{
+		for (const std::string& name : m_enabledPlugins)
+		{
+			if (!LoadPlugin(name))
+				Terminal::Error(StringOps::GetName(this), "{} could not loaded", name);
+		}
 	}
 }
