@@ -548,13 +548,15 @@ def LayerAllowed(layerName, only, excluded):
 def Main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', default='Source')
+    parser.add_argument('--root', default=None)
     parser.add_argument('--out', default='Intermediate')
     parser.add_argument('--only', nargs='*', default=[])
     parser.add_argument('--exclude', nargs='*', default=[])
     parser.add_argument('--export', default='H_MANIFEST_EXPORT')
     arguments = parser.parse_args()
 
-    sourceRoot = Path(arguments.source).resolve()
+    scanRoot = Path(arguments.source).resolve()
+    includeRoot = Path(arguments.root).resolve() if arguments.root else scanRoot
     outRoot = Path(arguments.out).resolve()
     outRoot.mkdir(parents=True, exist_ok=True)
 
@@ -564,8 +566,8 @@ def Main():
     generated = []
     claimed = {}
 
-    for path in sourceRoot.rglob('*.h'):
-        if not LayerAllowed(path.relative_to(sourceRoot).parts[0], only, excluded):
+    for path in scanRoot.rglob('*.h'):
+        if not LayerAllowed(path.relative_to(includeRoot).parts[0], only, excluded):
             continue
 
         raw = path.read_text(encoding='utf-8', errors='ignore')
@@ -573,7 +575,7 @@ def Main():
         if 'HCLASS' not in raw and 'HENUM' not in raw:
             continue
 
-        for reflected in ParseFile(path, sourceRoot, raw):
+        for reflected in ParseFile(path, includeRoot, raw):
             outPath = outRoot / reflected.layerName / f'{reflected.typeName}.reflected.h'
             qualified = reflected.QualifiedName()
             owner = claimed.get(outPath)

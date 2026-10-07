@@ -1,7 +1,13 @@
 #pragma once
 
 #include <Runtime/Containers/List.h>
+
 #include <string>
+
+namespace Horizon::Reflect
+{
+	class Type;
+}
 
 namespace Horizon::Editor
 {
@@ -10,10 +16,11 @@ namespace Horizon::Editor
 	struct EDITOR_API MenuItemInstance
 	{
 		std::string displayName;
-		i32 order;
-		b8 isCheckbox;
+		i32 order = 0;
+		b8 isCheckbox = false;
 
-		MenuItem* pMenu;
+		MenuItem* pMenu = nullptr;
+		const Reflect::Type* pType = nullptr;
 
 		List<MenuItemInstance> subMenus;
 	};

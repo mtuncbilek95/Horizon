@@ -3,6 +3,7 @@
 #include <Editor/ContextMenu/ContextMenuItemAttribute.h>
 #include <Editor/ContextMenu/ContextMenuItem.h>
 #include <Engine/Core/Engine.h>
+#include <Engine/Reflection/ReflectionLibrary.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 
 #include <imgui.h>
@@ -18,6 +19,7 @@ namespace Horizon::Editor
 			i32 order = 0;
 
 			ContextMenuItem<TContext>* pItem = nullptr;
+			const Reflect::Type* pType = nullptr;
 			List<ContextMenuNode> children;
 		};
 	public:
@@ -29,26 +31,12 @@ namespace Horizon::Editor
 		void BootstrapContext(Engine::Engine* pEngine, const std::string& ownerId)
 		{
 			Clear();
+			m_ownerId = ownerId;
 
 			auto* pModule = pEngine->GetReflectionSystem();
 
-			List<Reflect::Type*> types = pModule->GetTypeByAttribute(Reflect::TypeOf<ContextMenuItemAttribute>());
-
-			for (Reflect::Type* pType : types)
-			{
-				auto* pAttr = pType->GetCustomAttribute<ContextMenuItemAttribute>();
-
-				if (pAttr == nullptr)
-				{
-					Terminal::Error(StringOps::GetName(this), "{} type has no ContextMenuItemAttribute", pType->GetName());
-					continue;
-				}
-
-				if (pAttr->GetOwner() != ownerId)
-					continue;
-
-				InsertMenu(pType, pAttr);
-			}
+			for (const Reflect::Type* pType : pModule->GetTypeByAttribute(Reflect::TypeOf<ContextMenuItemAttribute>()))
+				AddType(pType);
 
 			SortRecursive(m_menus);
 		}
@@ -64,6 +52,20 @@ namespace Horizon::Editor
 			}
 		}
 
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+		{
+			for (const Reflect::Type& type : library.types)
+				AddType(&type);
+
+			SortRecursive(m_menus);
+		}
+
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+		{
+			for (const Reflect::Type& type : library.types)
+				RemoveType(m_menus, &type);
+		}
+
 	private:
 		void Clear()
 		{
@@ -73,7 +75,21 @@ namespace Horizon::Editor
 			m_menus.Clear();
 		}
 
-		void InsertMenu(Reflect::Type* pType, ContextMenuItemAttribute* pAttr)
+		b8 AddType(const Reflect::Type* pType)
+		{
+			auto* pAttr = pType->GetCustomAttribute<ContextMenuItemAttribute>();
+
+			if (pAttr == nullptr)
+				return false;
+
+			if (pAttr->GetOwner() != m_ownerId)
+				return false;
+
+			InsertMenu(pType, pAttr);
+			return true;
+		}
+
+		void InsertMenu(const Reflect::Type* pType, ContextMenuItemAttribute* pAttr)
 		{
 			const std::string& path = pAttr->GetPath();
 			i32 order = pAttr->GetOrder();
@@ -92,6 +108,7 @@ namespace Horizon::Editor
 					ContextMenuNode& leaf = pLevel->EmplaceBack();
 					leaf.displayName = std::move(segment);
 					leaf.order = order;
+					leaf.pType = pType;
 					leaf.pItem = static_cast<ContextMenuItem<TContext>*>(pType->Create());
 					break;
 				}
@@ -104,6 +121,34 @@ namespace Horizon::Editor
 				pLevel = &container.children;
 				start = slash + 1;
 			}
+		}
+
+		b8 RemoveType(List<ContextMenuNode>& siblings, const Reflect::Type* pType)
+		{
+			b8 removed = false;
+
+			for (usize i = siblings.GetCount(); i > 0; --i)
+			{
+				ContextMenuNode& node = siblings[i - 1];
+
+				if (node.pType == pType)
+				{
+					ClearRecursive(node);
+					siblings.RemoveAt(i - 1);
+					removed = true;
+					continue;
+				}
+
+				if (!RemoveType(node.children, pType))
+					continue;
+
+				removed = true;
+
+				if (node.pItem == nullptr && node.children.IsEmpty())
+					siblings.RemoveAt(i - 1);
+			}
+
+			return removed;
 		}
 
 		ContextMenuNode& FindOrCreateContainer(List<ContextMenuNode>& siblings, const std::string& name)
@@ -169,6 +214,7 @@ namespace Horizon::Editor
 		}
 
 	private:
+		std::string m_ownerId;
 		List<ContextMenuNode> m_menus;
 	};
 }

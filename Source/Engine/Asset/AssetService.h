@@ -14,6 +14,11 @@ namespace Horizon::Engine
 {
 	class ENGINE_API AssetService : public Service
 	{
+		struct StreamerEntry
+		{
+			const Reflect::Type* pType = nullptr;
+			AssetStreamer* pStreamer = nullptr;
+		};
 	public:
 		AssetService() = default;
 		~AssetService() = default;
@@ -22,6 +27,9 @@ namespace Horizon::Engine
 		void OnExecute(const EngineFrame& ctx) final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
+
+		void OnLibraryRegistered(const ReflectionLibrary& library) final;
+		void OnLibraryUnregistered(const ReflectionLibrary& library) final;
 
 		b8 RegisterAsset(const AssetPhysicalEntry& entry);
 		b8 UnregisterAsset(const Guid& id);
@@ -37,11 +45,13 @@ namespace Horizon::Engine
 		AssetStreamer* FindStreamer(Reflect::TypeHandle handle);
 
 	private:
+		b8 AddStreamerType(const Reflect::Type* pType);
+		void RemoveStreamerType(const Reflect::Type* pType);
 		b8 ReadHeader(AssetObject* pAsset);
 
 	private:
-		List<AssetStreamer*> m_streamers;
-		std::unordered_map<Reflect::TypeHandle, usize> m_streamerLookup;
+		List<StreamerEntry> m_streamers;
+		std::unordered_map<Reflect::TypeHandle, AssetStreamer*> m_streamerLookup;
 
 		List<AssetObject*> m_usableAssets;
 		std::unordered_map<Guid, usize> m_idLookup;

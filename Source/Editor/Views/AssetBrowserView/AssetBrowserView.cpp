@@ -56,8 +56,8 @@ namespace Horizon::Editor
 
 	AssetBrowserView::~AssetBrowserView()
 	{
-		for (auto* pAction : m_openActions)
-			Memory::Allocator::Delete(pAction);
+		for (ActionEntry& entry : m_openActions)
+			Memory::Allocator::Delete(entry.pAction);
 	}
 
 	void AssetBrowserView::OnInvoke()
@@ -65,34 +65,80 @@ namespace Horizon::Editor
 		auto* pDomain = GetContext()->pEngine->RequestService<DomainService>();
 		m_currentFolder = pDomain->GetRoot();
 
-		// Resolve asset actions
 		auto* pReflect = GetContext()->pEngine->GetReflectionSystem();
-		List<Reflect::Type*> actionTypes = pReflect->GetTypeByBase(Reflect::TypeOf<AssetAction>());
-		for (auto* pType : actionTypes)
-		{
-			auto* pAttr = pType->GetCustomAttribute<ActionTypeAttribute>();
-			if (!pAttr)
-			{
-				Terminal::Error(StringOps::GetName(this), "Can't use AssetActions without ActionTypeAttribute");
-				continue;
-			}
 
-			AssetAction* pAction = (AssetAction*)pType->Create();
-
-			if (!pAction)
-			{
-				Terminal::Warn(StringOps::GetName(this), "Forgetting to implement a virtual function can cause the previous error!");
-				continue;
-			}
-
-			Reflect::Type* pAssetType = pReflect->GetType(pAttr->GetAssetType());
-			m_actionNameLookup[pAssetType->GetName()] = m_openActions.GetCount();
-			m_openActions.PushBack(pAction);
-
-			Terminal::Info(StringOps::GetName(this), "{} has been registered!", pType->GetName());
-		}
+		for (const Reflect::Type* pType : pReflect->GetTypeByBase(Reflect::TypeOf<AssetAction>()))
+			AddAction(pType);
 
 		m_contextMenu.BootstrapContext(GetContext()->pEngine, "AssetBrowserView");
+	}
+
+	void AssetBrowserView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	{
+		for (const Reflect::Type& type : library.types)
+		{
+			if (type.GetBaseId() == Reflect::TypeOf<AssetAction>())
+				AddAction(&type);
+		}
+
+		m_contextMenu.OnLibraryRegistered(library);
+	}
+
+	void AssetBrowserView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	{
+		m_contextMenu.OnLibraryUnregistered(library);
+
+		for (const Reflect::Type& type : library.types)
+			RemoveAction(&type);
+	}
+
+	b8 AssetBrowserView::AddAction(const Reflect::Type* pType)
+	{
+		auto* pAttr = pType->GetCustomAttribute<ActionTypeAttribute>();
+
+		if (!pAttr)
+		{
+			Terminal::Error(StringOps::GetName(this), "Can't use AssetActions without ActionTypeAttribute");
+			return false;
+		}
+
+		AssetAction* pAction = (AssetAction*)pType->Create();
+
+		if (!pAction)
+		{
+			Terminal::Warn(StringOps::GetName(this), "Forgetting to implement a virtual function can cause the previous error!");
+			return false;
+		}
+
+		auto* pReflect = GetContext()->pEngine->GetReflectionSystem();
+		Reflect::Type* pAssetType = pReflect->GetType(pAttr->GetAssetType());
+
+		if (!pAssetType)
+		{
+			Memory::Allocator::Delete(pAction);
+			return false;
+		}
+
+		m_actionNameLookup[pAssetType->GetName()] = pAction;
+		m_openActions.EmplaceBack(pType, pAction);
+
+		Terminal::Info(StringOps::GetName(this), "{} has been registered!", pType->GetName());
+		return true;
+	}
+
+	void AssetBrowserView::RemoveAction(const Reflect::Type* pType)
+	{
+		for (usize i = m_openActions.GetCount(); i > 0; --i)
+		{
+			ActionEntry& entry = m_openActions[i - 1];
+
+			if (entry.pType != pType)
+				continue;
+
+			std::erase_if(m_actionNameLookup, [&](const auto& pair) { return pair.second == entry.pAction; });
+			Memory::Allocator::Delete(entry.pAction);
+			m_openActions.RemoveAt(i - 1);
+		}
 	}
 
 	void AssetBrowserView::OnRender(const Engine::EngineFrame& context)
@@ -254,7 +300,7 @@ namespace Horizon::Editor
 				return;
 			}
 
-			m_openActions[it->second]->OnTrigger(GetContext(), pOpenFile);
+			it->second->OnTrigger(GetContext(), pOpenFile);
 		}	
 	}
 

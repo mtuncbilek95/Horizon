@@ -131,7 +131,7 @@ namespace Horizon::Reflect
 		}
 
 		template<typename TAttr>
-		TAttr* GetCustomAttribute()
+		TAttr* GetCustomAttribute() const
 		{
 			for (Attribute* pAttr : m_attributes)
 			{
@@ -143,7 +143,7 @@ namespace Horizon::Reflect
 		}
 
 		template<typename TAttr>
-		List<TAttr*> GetCustomAttributes()
+		List<TAttr*> GetCustomAttributes() const
 		{
 			List<TAttr*> out;
 			for (Attribute* pAttr : m_attributes)

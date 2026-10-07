@@ -1,11 +1,7 @@
 #pragma once
 
+#include <Editor/Renderer/EditorContext.h>
 #include <Runtime/RTTR/Reflection.h>
-
-namespace Horizon::Engine
-{
-	class Engine;
-}
 
 namespace Horizon::Editor
 {
@@ -17,9 +13,9 @@ namespace Horizon::Editor
 
 		virtual void OnExecute() = 0;
 
-		Engine::Engine* GetEngine() const noexcept { return m_engine; }
+		EditorContext* GetContext() const noexcept { return m_context; }
 
 	private:
-		Engine::Engine* m_engine;
+		EditorContext* m_context = nullptr;
 	};
 }

@@ -16,7 +16,7 @@ namespace Horizon::Engine
 
 namespace Horizon::Editor
 {
-	HCLASS(EditorView[ICON_FA_EYE, "Inspector", false, true, DockZone::Right]);
+	HCLASS(EditorView[ICON_FA_EYE, "Inspector", DockZone::Right, EditorViewFlags::OpenOnStart]);
 	class EDITOR_API InspectorView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(InspectorView);
@@ -25,6 +25,9 @@ namespace Horizon::Editor
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
+
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final { m_properties.OnLibraryRegistered(library); }
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final { m_properties.OnLibraryUnregistered(library); }
 
 	private:
 		Engine::ReflectionSystem* m_reflSys = nullptr;

@@ -17,42 +17,24 @@ namespace Horizon::Engine
 	{
 		auto* pReflect = GetEngine()->GetReflectionSystem();
 
-		List<Reflect::Type*> types = pReflect->GetTypeByBase(Reflect::TypeOf<AssetStreamer>());
-
-		for (auto* pType : types)
-		{
-			AssetStreamer* pStreamer = (AssetStreamer*)pType->Create();
-			if (!pStreamer)
-			{
-				Terminal::Warn(StringOps::GetName(this), "Forgetting to implement a virtual function can cause the previous error!");
-				continue;
-			}
-
-			pStreamer->m_engine = GetEngine();
-			pStreamer->OnInitialize();
-
-			m_streamerLookup[pStreamer->GetAssetType()] = m_streamers.GetCount();
-			m_streamers.PushBack(pStreamer);
-
-			auto* pAssetType = pReflect->GetType(pStreamer->GetAssetType());
-			Terminal::Info(StringOps::GetName(this), "{} has been registered for the {} type", pType->GetName(), pAssetType->GetName());
-		}
+		for (const Reflect::Type* pType : pReflect->GetTypeByBase(Reflect::TypeOf<AssetStreamer>()))
+			AddStreamerType(pType);
 
 		return ModuleReport();
 	}
 
 	void AssetService::OnExecute(const EngineFrame& ctx)
 	{
-		for (auto* pStreamer : m_streamers)
-			pStreamer->OnSync(ctx);
+		for (StreamerEntry& entry : m_streamers)
+			entry.pStreamer->OnSync(ctx);
 	}
 
 	void AssetService::OnFinalize()
 	{
-		for (auto* pStreamer : m_streamers)
+		for (StreamerEntry& entry : m_streamers)
 		{
-			pStreamer->OnFinalize();
-			Memory::Allocator::Delete(pStreamer);
+			entry.pStreamer->OnFinalize();
+			Memory::Allocator::Delete(entry.pStreamer);
 		}
 
 		for (auto* pAsset : m_usableAssets)
@@ -64,6 +46,21 @@ namespace Horizon::Engine
 		graph.Requires<GraphicsContext>();
 	}
 
+	void AssetService::OnLibraryRegistered(const ReflectionLibrary& library)
+	{
+		for (const Reflect::Type& type : library.types)
+		{
+			if (type.GetBaseId() == Reflect::TypeOf<AssetStreamer>())
+				AddStreamerType(&type);
+		}
+	}
+
+	void AssetService::OnLibraryUnregistered(const ReflectionLibrary& library)
+	{
+		for (const Reflect::Type& type : library.types)
+			RemoveStreamerType(&type);
+	}
+
 	AssetStreamer* AssetService::FindStreamer(Reflect::TypeHandle handle)
 	{
 		auto it = m_streamerLookup.find(handle);
@@ -71,7 +68,44 @@ namespace Horizon::Engine
 		if (it == m_streamerLookup.end())
 			return nullptr;
 
-		return m_streamers[it->second];
+		return it->second;
+	}
+
+	b8 AssetService::AddStreamerType(const Reflect::Type* pType)
+	{
+		AssetStreamer* pStreamer = (AssetStreamer*)pType->Create();
+
+		if (!pStreamer)
+		{
+			Terminal::Warn(StringOps::GetName(this), "Forgetting to implement a virtual function can cause the previous error!");
+			return false;
+		}
+
+		pStreamer->m_engine = GetEngine();
+		pStreamer->OnInitialize();
+
+		m_streamerLookup[pStreamer->GetAssetType()] = pStreamer;
+		m_streamers.EmplaceBack(pType, pStreamer);
+
+		auto* pAssetType = GetEngine()->GetReflectionSystem()->GetType(pStreamer->GetAssetType());
+		Terminal::Info(StringOps::GetName(this), "{} has been registered for the {} type", pType->GetName(), pAssetType ? pAssetType->GetName() : "unknown");
+		return true;
+	}
+
+	void AssetService::RemoveStreamerType(const Reflect::Type* pType)
+	{
+		for (usize i = m_streamers.GetCount(); i > 0; --i)
+		{
+			StreamerEntry& entry = m_streamers[i - 1];
+
+			if (entry.pType != pType)
+				continue;
+
+			m_streamerLookup.erase(entry.pStreamer->GetAssetType());
+			entry.pStreamer->OnFinalize();
+			Memory::Allocator::Delete(entry.pStreamer);
+			m_streamers.RemoveAt(i - 1);
+		}
 	}
 
 	b8 AssetService::RegisterAsset(const AssetPhysicalEntry& entry)

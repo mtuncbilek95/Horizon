@@ -6,6 +6,7 @@ execute_process(
     COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/Tools/TypeLexer/GenerateReflection.py"
             --source "${CMAKE_SOURCE_DIR}/Source"
             --out    "${CMAKE_SOURCE_DIR}/Intermediate"
+            --exclude Plugins
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     RESULT_VARIABLE REFLECT_GEN_RESULT
     OUTPUT_VARIABLE REFLECT_GEN_OUTPUT

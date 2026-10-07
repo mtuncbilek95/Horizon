@@ -4,109 +4,222 @@
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
 
-#include <string_view>
-#include <string>
-
 namespace Horizon::Engine
 {
 	ReflectionSystem::ReflectionSystem(Engine* pEngine)
 	{
-		// Create exec's library to call manifestation.
 		m_hostLibrary = Memory::Allocator::Create<PAL::SymbolLibrary>(Memory::CurrLoc(), PAL::SymbolLibraryDesc());
+
 		if (!m_hostLibrary)
 		{
 			pEngine->RequestExit("Host Library has not been created!");
 			return;
 		}
 
-		// Functionary
-		using GenerateFn = void(*)(List<Reflect::Type>*);
-		auto* GenerateManifests = reinterpret_cast<GenerateFn>(m_hostLibrary->GetSymbol("GenerateModuleManifestation"));
-
-		// Check if we have it
-		if (!GenerateManifests)
+		if (!RegisterLibrary(m_hostLibrary))
 		{
-			pEngine->RequestExit("GenerateModuleManifestation symbol not found");
-			return;
+			pEngine->RequestExit("Host manifestation could not be registered");
 		}
-
-		// Fill the fuckout
-		List<Reflect::Type> registery;
-		GenerateManifests(&registery);
-
-		// Registry handl for faster iterations
-		usize index = 0;
-		for (auto& manifest : registery)
-		{
-			Terminal::Debug(StringOps::GetName(this), "{} has been registered to reflection system.", manifest.GetName());
-
-			m_typeLookup[manifest.GetTypeId()] = index;
-			m_nameLookup[manifest.GetName()] = index;
-			m_registeredTypes.PushBack(std::move(manifest));
-			index++;
-		}
-
-		Terminal::Info(StringOps::GetName(this), "Loaded {} type manifests", m_registeredTypes.GetCount());
 	}
 
 	ReflectionSystem::~ReflectionSystem()
 	{
+		if (m_hostLibrary)
+		{
+			UnregisterLibrary(m_hostLibrary);
+		}
+
+		if (!m_libraries.IsEmpty())
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} libraries were never unregistered, their types die with the system", m_libraries.GetCount());
+		}
+
 		Memory::Allocator::Delete(m_hostLibrary);
+	}
+
+	b8 ReflectionSystem::RegisterLibrary(const PAL::SymbolLibrary* pLibrary)
+	{
+		if (!pLibrary)
+		{
+			Terminal::Error(StringOps::GetName(this), "RegisterLibrary received a null library");
+			return false;
+		}
+
+		if (FindLibrary(pLibrary))
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} is already registered", pLibrary->GetName());
+			return false;
+		}
+
+		using GenerateFn = void(*)(List<Reflect::Type>*);
+		auto* GenerateManifests = reinterpret_cast<GenerateFn>(pLibrary->GetSymbol("GenerateModuleManifestation"));
+
+		if (!GenerateManifests)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} does not export GenerateModuleManifestation", pLibrary->GetName());
+			return false;
+		}
+
+		List<Reflect::Type> manifests;
+		GenerateManifests(&manifests);
+
+		ReflectionLibrary& library = m_libraries.EmplaceBack();
+		library.library = pLibrary;
+		library.types = std::move(manifests);
+
+		for (Reflect::Type& type : library.types)
+		{
+			if (m_typeLookup.contains(type.GetTypeId()))
+			{
+				Terminal::Error(StringOps::GetName(this), "{} from {} collides with an already registered type, skipped", type.GetName(), pLibrary->GetName());
+				continue;
+			}
+
+			IndexType(type);
+
+			Terminal::Debug(StringOps::GetName(this), "{} has been registered from {}", type.GetName(), pLibrary->GetName());
+		}
+
+		Terminal::Info(StringOps::GetName(this), "{} registered {} type manifests", pLibrary->GetName(), library.types.GetCount());
+		return true;
+	}
+
+	void ReflectionSystem::UnregisterLibrary(const PAL::SymbolLibrary* pLibrary)
+	{
+		ReflectionLibrary* pEntry = FindLibrary(pLibrary);
+
+		if (!pEntry)
+		{
+			Terminal::Warn(StringOps::GetName(this), "UnregisterLibrary could not find the library, nothing to do");
+			return;
+		}
+
+		for (Reflect::Type& type : pEntry->types)
+		{
+			auto typeIt = m_typeLookup.find(type.GetTypeId());
+
+			if (typeIt == m_typeLookup.end() || typeIt->second != &type)
+			{
+				continue;
+			}
+
+			UnindexType(type);
+		}
+
+		const usize count = pEntry->types.GetCount();
+		const usize index = static_cast<usize>(pEntry - m_libraries.GetData());
+		m_libraries.RemoveAt(index);
+
+		Terminal::Info(StringOps::GetName(this), "{} unregistered {} type manifests", pLibrary->GetName(), count);
 	}
 
 	Reflect::Type* ReflectionSystem::GetType(Reflect::TypeHandle handl)
 	{
 		auto it = m_typeLookup.find(handl);
+
 		if (it == m_typeLookup.end())
 		{
 			Terminal::Error(StringOps::GetName(this), "Reflect::TypeHandle could not found. I hope you found it xD");
 			return nullptr;
 		}
 
-		return &m_registeredTypes.At(it->second);
+		return it->second;
 	}
 
 	Reflect::Type* ReflectionSystem::GetTypeByName(const std::string& name)
 	{
 		auto it = m_nameLookup.find(name);
+
 		if (it == m_nameLookup.end())
 		{
 			Terminal::Error(StringOps::GetName(this), "{} could not found in the reflection system.", name);
 			return nullptr;
 		}
 
-		return &m_registeredTypes.At(it->second);
+		return it->second;
 	}
 
 	List<Reflect::Type*> ReflectionSystem::GetTypeByBase(Reflect::TypeHandle handl)
 	{
-		List<Reflect::Type*> result;
+		auto it = m_byBase.find(handl);
 
-		for (auto& pType : m_registeredTypes)
+		if (it == m_byBase.end())
 		{
-			if (pType.GetBaseId() == handl)
-				result.PushBack(&pType);
+			return {};
 		}
 
-		return result;
+		return it->second;
 	}
 
 	List<Reflect::Type*> ReflectionSystem::GetTypeByAttribute(Reflect::TypeHandle attrHandle)
 	{
-		List<Reflect::Type*> result;
+		auto it = m_byAttribute.find(attrHandle);
 
-		for (auto& pType : m_registeredTypes)
+		if (it == m_byAttribute.end())
 		{
-			for (auto* pAttr : pType.GetAttributes())
+			return {};
+		}
+
+		return it->second;
+	}
+
+	ReflectionLibrary* ReflectionSystem::FindLibrary(const PAL::SymbolLibrary* pLibrary)
+	{
+		for (ReflectionLibrary& library : m_libraries)
+		{
+			if (library.library == pLibrary)
 			{
-				if (pAttr->GetTypeId() == attrHandle)
-				{
-					result.PushBack(&pType);
-					break;
-				}
+				return &library;
 			}
 		}
 
-		return result;
+		return nullptr;
+	}
+
+	void ReflectionSystem::IndexType(Reflect::Type& type)
+	{
+		m_typeLookup[type.GetTypeId()] = &type;
+		m_nameLookup[type.GetName()] = &type;
+		m_byBase[type.GetBaseId()].PushBack(&type);
+
+		for (Reflect::Attribute* pAttr : type.GetAttributes())
+		{
+			m_byAttribute[pAttr->GetTypeId()].PushBack(&type);
+		}
+	}
+
+	void ReflectionSystem::UnindexType(Reflect::Type& type)
+	{
+		m_typeLookup.erase(type.GetTypeId());
+		m_nameLookup.erase(type.GetName());
+
+		auto baseIt = m_byBase.find(type.GetBaseId());
+
+		if (baseIt != m_byBase.end())
+		{
+			baseIt->second.Remove(&type);
+
+			if (baseIt->second.IsEmpty())
+			{
+				m_byBase.erase(baseIt);
+			}
+		}
+
+		for (Reflect::Attribute* pAttr : type.GetAttributes())
+		{
+			auto attrIt = m_byAttribute.find(pAttr->GetTypeId());
+
+			if (attrIt == m_byAttribute.end())
+			{
+				continue;
+			}
+
+			attrIt->second.Remove(&type);
+
+			if (attrIt->second.IsEmpty())
+			{
+				m_byAttribute.erase(attrIt);
+			}
+		}
 	}
 }

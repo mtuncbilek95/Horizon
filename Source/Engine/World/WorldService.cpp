@@ -12,48 +12,12 @@ namespace Horizon::Engine
 {
 	ModuleReport WorldService::OnInitialize()
 	{
-		auto* pReflect = GetEngine()->GetReflectionSystem();
-		m_reflection = pReflect;
+		m_reflection = GetEngine()->GetReflectionSystem();
 
-		List<Reflect::Type*> types = pReflect->GetTypeByBase(Reflect::TypeOf<System>());
-		List<SystemEntry> entries;
-		for (auto* pType : types)
-		{
-			auto* pAttr = pType->GetCustomAttribute<SystemOrderAttribute>();
-			if (!pAttr)
-			{
-				Terminal::Error(StringOps::GetName(this), "{} has no SystemOrderAttribute. You won't have this system.", pType->GetName());
-				continue;
-			}
+		for (const Reflect::Type* pType : m_reflection->GetTypeByBase(Reflect::TypeOf<System>()))
+			AddSystemType(pType);
 
-			auto* pSystem = (System*)pType->Create();
-			if (!pSystem)
-			{
-				Terminal::Error(StringOps::GetName(this), "{} has virtual function issues. You won't have this system.", pType->GetName());
-				continue;
-			}
-
-			pSystem->m_engine = GetEngine();
-			pSystem->m_ownerService = this;
-
-			entries.EmplaceBack(pSystem, pType->GetName(), pAttr->GetOrderNumber());
-		}
-
-		entries.Sort([&](const SystemEntry& a, const SystemEntry& b)
-			{
-				return a.order < b.order;
-			});
-
-		for (const auto& entry : entries)
-		{
-			if (entry.pSystem->OnInitialize())
-			{
-				Terminal::Info(StringOps::GetName(this), "{} has been registered to WorldService.", entry.name);
-				m_systemLookup[entry.pSystem->GetTypeId()] = m_systems.GetCount();
-				m_systems.PushBack(entry.pSystem);
-			}
-		}
-
+		SortSystems();
 		return ModuleReport();
 	}
 
@@ -62,21 +26,22 @@ namespace Horizon::Engine
 		if (!m_activeWorld)
 			return;
 
-		for (auto* pSystem : m_systems)
+		for (SystemEntry& entry : m_systems)
 		{
-			if(HasFlag(pSystem->GetWorkingGroup(), m_runningSystems))
-				pSystem->OnExecute(ctx, *m_activeWorld);
+			if (HasFlag(entry.pSystem->GetWorkingGroup(), m_runningSystems))
+				entry.pSystem->OnExecute(ctx, *m_activeWorld);
 		}
 	}
 
 	void WorldService::OnFinalize()
 	{
-		for (auto* pSystem : m_systems)
+		for (SystemEntry& entry : m_systems)
 		{
-			pSystem->OnFinalize();
-			Reflect::Type* pType = m_reflection->GetType(pSystem->GetTypeId());
-			pType->Destroy(pSystem);
+			entry.pSystem->OnFinalize();
+			entry.pType->Destroy(entry.pSystem);
 		}
+
+		m_systems.Clear();
 	}
 
 	void WorldService::DeclareDependencies(ModuleGraph& graph)
@@ -85,13 +50,90 @@ namespace Horizon::Engine
 		graph.Requires<GraphicsContext>();
 	}
 
+	void WorldService::OnLibraryRegistered(const ReflectionLibrary& library)
+	{
+		for (const Reflect::Type& type : library.types)
+		{
+			if (type.GetBaseId() == Reflect::TypeOf<System>())
+				AddSystemType(&type);
+		}
+
+		SortSystems();
+	}
+
+	void WorldService::OnLibraryUnregistered(const ReflectionLibrary& library)
+	{
+		for (const Reflect::Type& type : library.types)
+			RemoveSystemType(&type);
+	}
+
 	System* WorldService::RequestSystem(Reflect::TypeHandle handl) const
 	{
 		auto it = m_systemLookup.find(handl);
+
 		if (it == m_systemLookup.end())
 			return nullptr;
 
-		return m_systems[it->second];
+		return it->second;
+	}
+
+	b8 WorldService::AddSystemType(const Reflect::Type* pType)
+	{
+		auto* pAttr = pType->GetCustomAttribute<SystemOrderAttribute>();
+
+		if (!pAttr)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has no SystemOrderAttribute. You won't have this system.", pType->GetName());
+			return false;
+		}
+
+		auto* pSystem = (System*)pType->Create();
+
+		if (!pSystem)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has virtual function issues. You won't have this system.", pType->GetName());
+			return false;
+		}
+
+		pSystem->m_engine = GetEngine();
+		pSystem->m_ownerService = this;
+
+		if (!pSystem->OnInitialize())
+		{
+			Terminal::Error(StringOps::GetName(this), "{} failed to initialize. You won't have this system.", pType->GetName());
+			pType->Destroy(pSystem);
+			return false;
+		}
+
+		m_systemLookup[pSystem->GetTypeId()] = pSystem;
+		m_systems.EmplaceBack(pSystem, pType, pAttr->GetOrderNumber());
+
+		Terminal::Info(StringOps::GetName(this), "{} has been registered to WorldService.", pType->GetName());
+		return true;
+	}
+
+	void WorldService::RemoveSystemType(const Reflect::Type* pType)
+	{
+		for (usize i = m_systems.GetCount(); i > 0; --i)
+		{
+			SystemEntry& entry = m_systems[i - 1];
+
+			if (entry.pType != pType)
+				continue;
+
+			m_systemLookup.erase(entry.pSystem->GetTypeId());
+			entry.pSystem->OnFinalize();
+			entry.pType->Destroy(entry.pSystem);
+			m_systems.RemoveAt(i - 1);
+		}
+	}
+
+	void WorldService::SortSystems()
+	{
+		m_systems.Sort([](const SystemEntry& a, const SystemEntry& b)
+			{
+				return a.order < b.order;
+			});
 	}
 
 	void WorldService::SetRunningSystems(SystemGroup groups)
@@ -102,7 +144,7 @@ namespace Horizon::Engine
 		const SystemGroup previous = m_runningSystems;
 		m_runningSystems = groups;
 
-		for (auto* pSystem : m_systems)
-			pSystem->OnGroupsChanged(previous, groups);
+		for (SystemEntry& entry : m_systems)
+			entry.pSystem->OnGroupsChanged(previous, groups);
 	}
 }

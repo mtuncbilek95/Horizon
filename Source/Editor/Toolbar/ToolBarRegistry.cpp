@@ -20,35 +20,11 @@ namespace Horizon::Editor
 		m_context = ctx;
 
 		auto* pReflect = ctx.pEngine->GetReflectionSystem();
-		List<Reflect::Type*> types = pReflect->GetTypeByAttribute(Reflect::TypeOf<ToolBarItemAttribute>());
 
-		for (auto* pType : types)
-		{
-			if (pType->GetBaseId() != Reflect::TypeOf<ToolBarItem>())
-			{
-				Terminal::Error(StringOps::GetName(this), "{} has not inherited from ToolBarItem.", pType->GetName());
-				continue;
-			}
+		for (auto* pType : pReflect->GetTypeByAttribute(Reflect::TypeOf<ToolBarItemAttribute>()))
+			AddType(pType);
 
-			auto* pAttr = pType->GetCustomAttribute<ToolBarItemAttribute>();
-			auto* pItem = static_cast<ToolBarItem*>(pType->Create());
-			if (!pItem)
-			{
-				Terminal::Warn(StringOps::GetName(this), "Previous error may cause due to forgetting virtual function implementations");
-				continue;
-			}
-
-			pItem->m_context = &m_context;
-			m_sections[usize(pAttr->GetSection())].EmplaceBack(pItem, pAttr->GetOrder());
-		}
-
-		for (auto& section : m_sections)
-		{
-			section.Sort([](const ItemEntry& a, const ItemEntry& b)
-				{
-					return a.order < b.order;
-				});
-		}
+		SortSections();
 	}
 
 	void ToolBarRegistry::RenderGUI()
@@ -78,6 +54,75 @@ namespace Horizon::Editor
 		}
 
 		ImGui::End();
+	}
+
+	void ToolBarRegistry::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	{
+		for (const Reflect::Type& type : library.types)
+		{
+			if (type.GetCustomAttribute<ToolBarItemAttribute>())
+				AddType(&type);
+		}
+
+		SortSections();
+	}
+
+	void ToolBarRegistry::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	{
+		for (const Reflect::Type& type : library.types)
+			RemoveType(&type);
+	}
+
+	b8 ToolBarRegistry::AddType(const Reflect::Type* pType)
+	{
+		if (pType->GetBaseId() != Reflect::TypeOf<ToolBarItem>())
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has not inherited from ToolBarItem.", pType->GetName());
+			return false;
+		}
+
+		auto* pAttr = pType->GetCustomAttribute<ToolBarItemAttribute>();
+
+		if (!pAttr)
+			return false;
+
+		auto* pItem = static_cast<ToolBarItem*>(pType->Create());
+
+		if (!pItem)
+		{
+			Terminal::Warn(StringOps::GetName(this), "Previous error may cause due to forgetting virtual function implementations");
+			return false;
+		}
+
+		pItem->m_context = &m_context;
+		m_sections[usize(pAttr->GetSection())].EmplaceBack(pItem, pType, pAttr->GetOrder());
+		return true;
+	}
+
+	void ToolBarRegistry::RemoveType(const Reflect::Type* pType)
+	{
+		for (auto& section : m_sections)
+		{
+			for (usize i = section.GetCount(); i > 0; --i)
+			{
+				if (section[i - 1].pType != pType)
+					continue;
+
+				Memory::Allocator::Delete(section[i - 1].pItem);
+				section.RemoveAt(i - 1);
+			}
+		}
+	}
+
+	void ToolBarRegistry::SortSections()
+	{
+		for (auto& section : m_sections)
+		{
+			section.Sort([](const ItemEntry& a, const ItemEntry& b)
+				{
+					return a.order < b.order;
+				});
+		}
 	}
 
 	void ToolBarRegistry::RenderSection(ToolBarSection section, f32 cursorX)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Editor/Views/ViewCommand.h>
+#include <Editor/Views/EditorViewFlags.h>
 #include <Engine/Core/EngineFrame.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <string>
@@ -8,6 +9,7 @@
 namespace Horizon::Engine
 {
 	class Engine;
+	struct ReflectionLibrary;
 }
 
 namespace Horizon::Editor
@@ -28,6 +30,9 @@ namespace Horizon::Editor
 
 		virtual b8 IsFullBleed() const { return false; }
 
+		virtual void OnLibraryRegistered(const Engine::ReflectionLibrary& library) {}
+		virtual void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) {}
+
 		ViewRegistry* GetRegistry() const { return m_holder; }
 		EditorContext* GetContext() const { return m_context; }
 
@@ -42,5 +47,10 @@ namespace Horizon::Editor
 		DomainFile* m_connectedFile = nullptr;
 
 		std::string m_displayName;
+		std::string m_windowTitle;
+		EditorViewFlags m_flags = EditorViewFlags::None;
+
+		b8 m_open = true;
+		b8 m_focusRequested = false;
 	};
 }

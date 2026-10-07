@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
+
+file(GLOB PLUGIN_DIRECTORIES CONFIGURE_DEPENDS LIST_DIRECTORIES true RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/*")
+
+set(HORIZON_PLUGINS "")
+
+foreach(PLUGIN_DIRECTORY ${PLUGIN_DIRECTORIES})
+	if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${PLUGIN_DIRECTORY}")
+		continue()
+	endif()
+
+	if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${PLUGIN_DIRECTORY}/CMakeLists.txt")
+		message(WARNING "Plugin folder ${PLUGIN_DIRECTORY} has no CMakeLists.txt, skipped")
+		continue()
+	endif()
+
+	add_subdirectory("${PLUGIN_DIRECTORY}")
+	list(APPEND HORIZON_PLUGINS "${PLUGIN_DIRECTORY}")
+endforeach()
+
+set(HORIZON_PLUGINS "${HORIZON_PLUGINS}" CACHE INTERNAL "Discovered plugin folders")
+message(STATUS "Plugins: ${HORIZON_PLUGINS}")

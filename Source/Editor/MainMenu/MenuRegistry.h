@@ -2,6 +2,7 @@
 
 #include <Editor/MainMenu/MenuItemInstance.h>
 #include <Editor/Renderer/EditorContext.h>
+#include <Engine/Reflection/ReflectionLibrary.h>
 
 namespace Horizon::Engine
 {
@@ -21,7 +22,14 @@ namespace Horizon::Editor
 		void BootstrapMenus(const EditorContext& ctx);
 		void RenderGUI();
 
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library);
+
 	private:
+		void AddRootType(const Reflect::Type* pType);
+		void AddLeafType(const Reflect::Type* pType);
+		b8 RemoveType(List<MenuItemInstance>& siblings, const Reflect::Type* pType);
+
 		void RenderNode(MenuItemInstance& inst);
 		void ClearRecursive(MenuItemInstance& inst);
 		void SortRecursive(List<MenuItemInstance>& siblings);
@@ -30,6 +38,8 @@ namespace Horizon::Editor
 		PAL::ChromeRect RenderChromeButton(const c8* pLabel, b8 danger);
 
 	private:
+		EditorContext m_context;
+
 		PAL::Window* m_window = nullptr;
 		List<MenuItemInstance> m_menus;
 	};

@@ -31,6 +31,9 @@ namespace Horizon::Engine
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
 
+		void OnLibraryRegistered(const ReflectionLibrary& library) final {}
+		void OnLibraryUnregistered(const ReflectionLibrary& library) final {}
+
 	private:
 		RHI::GfxDevice* m_device = nullptr;
 

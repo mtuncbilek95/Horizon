@@ -1,5 +1,3 @@
-// BitwiseOperators.h
-
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>

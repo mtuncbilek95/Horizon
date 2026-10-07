@@ -28,6 +28,9 @@ namespace Horizon::Engine
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
 
+		void OnLibraryRegistered(const ReflectionLibrary& library) final {}
+		void OnLibraryUnregistered(const ReflectionLibrary& library) final {}
+
 		JPH::PhysicsSystem* GetWorld() const;
 		JPH::TempAllocator* GetTempAllocator() const;
 		JPH::JobSystem* GetJobBridge() const;

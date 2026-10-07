@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Editor/Views/DockZone.h>
+#include <Editor/Views/EditorViewFlags.h>
 #include <Runtime/RTTR/Reflection.h>
 
 #include <string>
@@ -12,8 +13,8 @@ namespace Horizon::Editor
 	{
 		HORIZON_ATTRIBUTE_REFLECT(EditorViewAttribute);
 	public:
-		EditorViewAttribute(const std::string& iconName, const std::string& displayName, b8 multiInstance = false, b8 openOnStart = false, DockZone dock = DockZone::Center) : m_multiInstance(multiInstance), 
-			m_openOnStart(openOnStart), m_dock(dock)
+		EditorViewAttribute(const std::string& iconName, const std::string& displayName, DockZone dock = DockZone::Center, 
+			EditorViewFlags flags = EditorViewFlags::OpenOnStart) : m_dock(dock), m_flags(flags)
 		{
 			m_displayName = iconName + " " + displayName;
 		}
@@ -21,14 +22,12 @@ namespace Horizon::Editor
 		~EditorViewAttribute() = default;
 
 		const std::string& GetDisplayName() const { return m_displayName; }
-		b8 GetMultiInstance() const { return m_multiInstance; }
-		b8 GetOpenOnStart() const { return m_openOnStart; }
+		EditorViewFlags GetFlags() const { return m_flags; }
 		DockZone GetDock() const { return m_dock; }
 
 	private:
 		std::string m_displayName;
-		b8 m_multiInstance;
-		b8 m_openOnStart;
+		EditorViewFlags m_flags;
 		DockZone m_dock;
 	};
 }

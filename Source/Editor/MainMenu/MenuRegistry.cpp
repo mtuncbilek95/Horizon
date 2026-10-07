@@ -25,6 +25,7 @@ namespace Horizon::Editor
 
 	void MenuRegistry::BootstrapMenus(const EditorContext& ctx)
 	{
+		m_context = ctx;
 		m_window = ctx.pWindow;
 
 		for (auto& inst : m_menus)
@@ -33,64 +34,11 @@ namespace Horizon::Editor
 
 		auto* pReflect = ctx.pEngine->GetReflectionSystem();
 
-		List<Reflect::Type*> mainList = pReflect->GetTypeByAttribute(Reflect::TypeOf<MainMenuItemAttribute>());
+		for (auto* pType : pReflect->GetTypeByAttribute(Reflect::TypeOf<MainMenuItemAttribute>()))
+			AddRootType(pType);
 
-		for (auto* pType : mainList)
-		{
-			auto* pAttr = pType->GetCustomAttribute<MainMenuItemAttribute>();
-
-			MenuItemInstance inst;
-			inst.displayName = pAttr->GetPath();
-			inst.isCheckbox = false;
-			inst.order = pAttr->GetOrder();
-			inst.pMenu = nullptr;
-
-			m_menus.PushBack(std::move(inst));
-		}
-
-		List<Reflect::Type*> leafList = pReflect->GetTypeByAttribute(Reflect::TypeOf<MenuItemAttribute>());
-
-		for (auto* pType : leafList)
-		{
-			auto* pAttr = pType->GetCustomAttribute<MenuItemAttribute>();
-			const std::string& path = pAttr->GetPath();
-			i32 order = pAttr->GetOrder();
-
-			List<MenuItemInstance>* pLevel = &m_menus;
-			usize start = 0;
-			b8 rootSegment = true;
-
-			while (true)
-			{
-				const usize slash = path.find('/', start);
-				const b8 isLeaf = (slash == std::string::npos);
-				std::string segment = path.substr(start, isLeaf ? std::string::npos : slash - start);
-
-				if (isLeaf)
-				{
-					auto* pMenuObj = static_cast<MenuItem*>(pType->Create());
-					pMenuObj->m_engine = ctx.pEngine;
-
-					MenuItemInstance leaf;
-					leaf.displayName = std::move(segment);
-					leaf.isCheckbox = pAttr->GetIsCheckbox();
-					leaf.order = order;
-					leaf.pMenu = pMenuObj;
-
-					pLevel->PushBack(std::move(leaf));
-					break;
-				}
-
-				MenuItemInstance& container = FindOrCreateContainer(*pLevel, segment);
-
-				if (!rootSegment && order < container.order)
-					container.order = order;
-
-				pLevel = &container.subMenus;
-				start = slash + 1;
-				rootSegment = false;
-			}
-		}
+		for (auto* pType : pReflect->GetTypeByAttribute(Reflect::TypeOf<MenuItemAttribute>()))
+			AddLeafType(pType);
 
 		SortRecursive(m_menus);
 	}
@@ -175,6 +123,123 @@ namespace Horizon::Editor
 		}
 
 		m_window->SetChrome(chrome);
+	}
+
+	void MenuRegistry::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	{
+		for (const Reflect::Type& type : library.types)
+		{
+			if (type.GetCustomAttribute<MainMenuItemAttribute>())
+				AddRootType(&type);
+		}
+
+		for (const Reflect::Type& type : library.types)
+		{
+			if (type.GetCustomAttribute<MenuItemAttribute>())
+				AddLeafType(&type);
+		}
+
+		SortRecursive(m_menus);
+	}
+
+	void MenuRegistry::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	{
+		for (const Reflect::Type& type : library.types)
+			RemoveType(m_menus, &type);
+	}
+
+	void MenuRegistry::AddRootType(const Reflect::Type* pType)
+	{
+		auto* pAttr = pType->GetCustomAttribute<MainMenuItemAttribute>();
+
+		if (!pAttr)
+			return;
+
+		MenuItemInstance& inst = FindOrCreateContainer(m_menus, pAttr->GetPath());
+		inst.order = pAttr->GetOrder();
+		inst.pType = pType;
+	}
+
+	void MenuRegistry::AddLeafType(const Reflect::Type* pType)
+	{
+		auto* pAttr = pType->GetCustomAttribute<MenuItemAttribute>();
+
+		if (!pAttr)
+			return;
+
+		const std::string& path = pAttr->GetPath();
+		i32 order = pAttr->GetOrder();
+
+		List<MenuItemInstance>* pLevel = &m_menus;
+		usize start = 0;
+		b8 rootSegment = true;
+
+		while (true)
+		{
+			const usize slash = path.find('/', start);
+			const b8 isLeaf = (slash == std::string::npos);
+			std::string segment = path.substr(start, isLeaf ? std::string::npos : slash - start);
+
+			if (isLeaf)
+			{
+				auto* pMenuObj = static_cast<MenuItem*>(pType->Create());
+
+				if (!pMenuObj)
+				{
+					Terminal::Warn(StringOps::GetName(this), "{} could not be created, forgetting a virtual implementation causes this", pType->GetName());
+					return;
+				}
+
+				pMenuObj->m_context = &m_context;
+
+				MenuItemInstance leaf;
+				leaf.displayName = std::move(segment);
+				leaf.isCheckbox = pAttr->GetIsCheckbox();
+				leaf.order = order;
+				leaf.pMenu = pMenuObj;
+				leaf.pType = pType;
+
+				pLevel->PushBack(std::move(leaf));
+				return;
+			}
+
+			MenuItemInstance& container = FindOrCreateContainer(*pLevel, segment);
+
+			if (!rootSegment && order < container.order)
+				container.order = order;
+
+			pLevel = &container.subMenus;
+			start = slash + 1;
+			rootSegment = false;
+		}
+	}
+
+	b8 MenuRegistry::RemoveType(List<MenuItemInstance>& siblings, const Reflect::Type* pType)
+	{
+		b8 removed = false;
+
+		for (usize i = siblings.GetCount(); i > 0; --i)
+		{
+			MenuItemInstance& inst = siblings[i - 1];
+
+			if (inst.pType == pType)
+			{
+				ClearRecursive(inst);
+				siblings.RemoveAt(i - 1);
+				removed = true;
+				continue;
+			}
+
+			if (!RemoveType(inst.subMenus, pType))
+				continue;
+
+			removed = true;
+
+			if (inst.pType == nullptr && inst.pMenu == nullptr && inst.subMenus.IsEmpty())
+				siblings.RemoveAt(i - 1);
+		}
+
+		return removed;
 	}
 
 	void MenuRegistry::RenderNode(MenuItemInstance& inst)

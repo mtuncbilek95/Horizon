@@ -9,6 +9,7 @@
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
+#include <Runtime/PAL/Module/SymbolLibrary.h>
 #include <Runtime/PAL/Timer/Timer.h>
 
 #include <typeindex>
@@ -75,6 +76,9 @@ namespace Horizon::Engine
 		void RequestExit(std::string_view reason);
 
 		ReflectionSystem* GetReflectionSystem() const noexcept { return m_reflectionSystem; }
+		b8 RegisterLibrary(const PAL::SymbolLibrary* pLibrary);
+		void UnregisterLibrary(const PAL::SymbolLibrary* pLibrary);
+
 		JobSystem* GetJobSystem() const noexcept { return m_jobSystem; }
 		const EngineFrame& GetFrame() const { return m_frameContext; }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Editor/Components/PropertyDrawer.h>
+#include <Engine/Reflection/ReflectionLibrary.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/RTTR/Reflection.h>
 
@@ -16,6 +17,12 @@ namespace Horizon::Editor
 {
 	class EDITOR_API PropertyRenderer final
 	{
+		struct DrawerEntry
+		{
+			const Reflect::Type* pType = nullptr;
+			PropertyDrawer* pDrawer = nullptr;
+			Reflect::TypeHandle target;
+		};
 	public:
 		PropertyRenderer() = default;
 		~PropertyRenderer();
@@ -24,10 +31,15 @@ namespace Horizon::Editor
 		PropertyRenderer& operator=(const PropertyRenderer&) = delete;
 
 		void Initialize(Engine::Engine* pEngine);
-
 		void DrawObject(const Reflect::Type& type, void* pInstance);
 
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library);
+
 	private:
+		b8 AddType(const Reflect::Type* pType);
+		void RemoveType(const Reflect::Type* pType);
+
 		void DrawFields(const Reflect::Type& type, void* pInstance);
 		void DrawField(const Reflect::Field& field, void* pValue);
 		void DrawNested(const Reflect::Field& field, void* pValue);
@@ -39,7 +51,7 @@ namespace Horizon::Editor
 	private:
 		PropertyContext m_context;
 
-		List<PropertyDrawer*> m_drawers;
-		std::unordered_map<Reflect::TypeHandle, usize> m_drawerLookups;
+		List<DrawerEntry> m_drawers;
+		std::unordered_map<Reflect::TypeHandle, PropertyDrawer*> m_drawerLookups;
 	};
 }

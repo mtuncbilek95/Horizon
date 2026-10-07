@@ -6,6 +6,6 @@ namespace Horizon::Editor
 {
 	void ExitMenuItem::OnExecute()
 	{
-		GetEngine()->RequestExit("File/Exit has been clicked!");
+		GetContext()->pEngine->RequestExit("File/Exit has been clicked!");
 	}
 }

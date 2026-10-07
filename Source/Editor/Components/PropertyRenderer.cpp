@@ -15,8 +15,8 @@ namespace Horizon::Editor
 {
 	PropertyRenderer::~PropertyRenderer()
 	{
-		for (PropertyDrawer* pDrawer : m_drawers)
-			Memory::Allocator::Delete(pDrawer);
+		for (DrawerEntry& entry : m_drawers)
+			Memory::Allocator::Delete(entry.pDrawer);
 	}
 
 	void PropertyRenderer::Initialize(Engine::Engine* pEngine)
@@ -24,25 +24,61 @@ namespace Horizon::Editor
 		m_context.pEngine = pEngine;
 		m_context.pReflection = pEngine->GetReflectionSystem();
 
-		List<Reflect::Type*> drawerTypes = m_context.pReflection->GetTypeByBase(Reflect::TypeOf<PropertyDrawer>());
+		for (const Reflect::Type* pType : m_context.pReflection->GetTypeByBase(Reflect::TypeOf<PropertyDrawer>()))
+			AddType(pType);
+	}
 
-		for (Reflect::Type* pType : drawerTypes)
+	void PropertyRenderer::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	{
+		for (const Reflect::Type& type : library.types)
 		{
-			if (pType->GetIsAbstract())
+			if (type.GetBaseId() == Reflect::TypeOf<PropertyDrawer>())
+				AddType(&type);
+		}
+	}
+
+	void PropertyRenderer::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	{
+		for (const Reflect::Type& type : library.types)
+			RemoveType(&type);
+	}
+
+	b8 PropertyRenderer::AddType(const Reflect::Type* pType)
+	{
+		if (pType->GetIsAbstract())
+			return false;
+
+		auto* pDrawer = static_cast<PropertyDrawer*>(pType->Create());
+
+		if (!pDrawer)
+			return false;
+
+		const Reflect::TypeHandle target = pDrawer->GetTargetType();
+
+		if (m_drawerLookups.contains(target))
+		{
+			Terminal::Warn("PropertyRenderer", "{} targets a type that already has a drawer, skipped", pType->GetName());
+			Memory::Allocator::Delete(pDrawer);
+			return false;
+		}
+
+		m_drawerLookups[target] = pDrawer;
+		m_drawers.EmplaceBack(pType, pDrawer, target);
+		return true;
+	}
+
+	void PropertyRenderer::RemoveType(const Reflect::Type* pType)
+	{
+		for (usize i = m_drawers.GetCount(); i > 0; --i)
+		{
+			DrawerEntry& entry = m_drawers[i - 1];
+
+			if (entry.pType != pType)
 				continue;
 
-			auto* pDrawer = static_cast<PropertyDrawer*>(pType->Create());
-			Reflect::TypeHandle target = pDrawer->GetTargetType();
-
-			if (m_drawerLookups.contains(target))
-			{
-				Terminal::Warn("PropertyRenderer", "{} targets a type that already has a drawer, skipped", pType->GetName());
-				Memory::Allocator::Delete(pDrawer);
-				continue;
-			}
-
-			m_drawerLookups[target] = m_drawers.GetCount();
-			m_drawers.PushBack(pDrawer);
+			m_drawerLookups.erase(entry.target);
+			Memory::Allocator::Delete(entry.pDrawer);
+			m_drawers.RemoveAt(i - 1);
 		}
 	}
 
@@ -185,7 +221,7 @@ namespace Horizon::Editor
 		if (it == m_drawerLookups.end())
 			return nullptr;
 
-		return m_drawers[it->second];
+		return it->second;
 	}
 
 	std::string PropertyRenderer::ToDisplayLabel(const std::string& fieldName)

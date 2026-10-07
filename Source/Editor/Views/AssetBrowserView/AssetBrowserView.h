@@ -16,7 +16,7 @@
 
 namespace Horizon::Editor
 {
-	HCLASS(EditorView[ICON_FA_FOLDER_TREE, "Asset Browser", false, true, DockZone::Bottom]);
+	HCLASS(EditorView[ICON_FA_FOLDER_TREE, "Asset Browser", DockZone::Bottom, EditorViewFlags::OpenOnStart]);
 	class EDITOR_API AssetBrowserView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(AssetBrowserView);
@@ -40,7 +40,19 @@ namespace Horizon::Editor
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
 
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
+
 	private:
+		struct ActionEntry
+		{
+			const Reflect::Type* pType = nullptr;
+			AssetAction* pAction = nullptr;
+		};
+
+		b8 AddAction(const Reflect::Type* pType);
+		void RemoveAction(const Reflect::Type* pType);
+
 		void RenderToolbar(DomainFolder* pFolder);
 		void RebuildEntries(DomainFolder* pFolder);
 		void RenderGrid();
@@ -53,8 +65,8 @@ namespace Horizon::Editor
 
 	private:
 		// Asset Open Actions
-		List<AssetAction*> m_openActions;
-		std::unordered_map<std::string, usize> m_actionNameLookup;
+		List<ActionEntry> m_openActions;
+		std::unordered_map<std::string, AssetAction*> m_actionNameLookup;
 
 		// Context Menu
 		ContextMenuRegistry<AssetBrowserContext> m_contextMenu;

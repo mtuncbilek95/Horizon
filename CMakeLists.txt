@@ -41,3 +41,5 @@ add_subdirectory("Source/Runtime")
 add_subdirectory("Source/Engine")
 add_subdirectory("Source/Editor")
 add_subdirectory("Source/EditorApplication")
+
+add_subdirectory("Source/Plugins")

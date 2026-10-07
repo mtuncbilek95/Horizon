@@ -49,6 +49,38 @@ namespace Horizon::Engine
 		m_running = false;
 	}
 
+	b8 Engine::RegisterLibrary(const PAL::SymbolLibrary* pLibrary)
+	{
+		// Register on reflection
+		if (!m_reflectionSystem->RegisterLibrary(pLibrary))
+			return false;
+
+		const ReflectionLibrary* pLibraryTypes = m_reflectionSystem->FindLibrary(pLibrary);
+		
+		// Do some shit on libraries that wants to use.
+		for (Module* pModule : m_shutdownOrder)
+			pModule->OnLibraryRegistered(*pLibraryTypes);
+
+		return true;
+	}
+
+	void Engine::UnregisterLibrary(const PAL::SymbolLibrary* pLibrary)
+	{
+		const ReflectionLibrary* pLibraryTypes = m_reflectionSystem->FindLibrary(pLibrary);
+
+		if (!pLibraryTypes)
+		{
+			Terminal::Warn(StringOps::GetName(this), "UnregisterLibrary could not find the library, nothing to do");
+			return;
+		}
+
+		// Do some shit on libraries that wants to remove it from its system.
+		for (usize i = m_shutdownOrder.GetCount(); i > 0; --i)
+			m_shutdownOrder[i - 1]->OnLibraryUnregistered(*pLibraryTypes);
+
+		m_reflectionSystem->UnregisterLibrary(pLibrary);
+	}
+
 	b8 Engine::IsRegistered(std::type_index index) const
 	{
 		if (m_lookupServices.contains(index) || m_lookupContexts.contains(index))

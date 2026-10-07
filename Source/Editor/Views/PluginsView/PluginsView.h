@@ -1,0 +1,31 @@
+#pragma once
+
+#include <Editor/Views/EditorViewAttribute.h>
+#include <Editor/Views/ViewObject.h>
+#include <Editor/Font/IconsFontAwesome6.h>
+
+namespace Horizon::Engine
+{
+	class PluginService;
+}
+
+namespace Horizon::Editor
+{
+	class ProjectContext;
+
+	HCLASS(EditorView[ICON_FA_PLUG, "Plugins", DockZone::Center, EditorViewFlags::Mutable]);
+	class EDITOR_API PluginsView : public ViewObject
+	{
+		HORIZON_TYPE_REFLECT(PluginsView);
+	public:
+		PluginsView() = default;
+		~PluginsView() = default;
+
+		void OnInvoke() final;
+		void OnRender(const Engine::EngineFrame& context) final;
+
+	private:
+		Engine::PluginService* m_pluginService = nullptr;
+		ProjectContext* m_projectContext = nullptr;
+	};
+}
