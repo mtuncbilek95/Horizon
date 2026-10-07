@@ -7,7 +7,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT AliasAttribute final : public Attribute
+	class RUNTIME_API AliasAttribute final : public Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(AliasAttribute);
 	public:

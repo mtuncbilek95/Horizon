@@ -10,7 +10,7 @@ namespace Horizon::Editor
 {
 	class DomainFolder;
 
-	class H_EXPORT DomainFile
+	class EDITOR_API DomainFile
 	{
 	public:
 		static b8 WriteCookFile(const std::string& cookedPath, const Guid& id, const std::string& assetTypeName, const List<u8>& content, usize propertySize);

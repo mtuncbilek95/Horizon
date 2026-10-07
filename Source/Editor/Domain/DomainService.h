@@ -17,7 +17,7 @@ namespace Horizon::Editor
 	class AssetImporter;
 	class ImporterContext;
 
-	class H_EXPORT DomainService : public Engine::Service
+	class EDITOR_API DomainService : public Engine::Service
 	{
 		static constexpr usize MaxConcurrentImports = 4;
 	public:

@@ -5,7 +5,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT StepAttribute final : public Attribute
+	class StepAttribute final : public Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(StepAttribute);
 	public:

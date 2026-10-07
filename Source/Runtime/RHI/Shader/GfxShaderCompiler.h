@@ -6,7 +6,7 @@
 
 namespace Horizon::RHI
 {
-	struct GfxShaderCompiler
+	struct RUNTIME_API GfxShaderCompiler
 	{
 		static List<u8> Compile(const std::string& filePath, GfxShaderStage stage, const std::string& entryPoint, const std::string& includePath = "");
 	};

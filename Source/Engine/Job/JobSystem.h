@@ -15,7 +15,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT JobSystem final
+	class ENGINE_API JobSystem final
 	{
 		friend class JobWorker;
 

@@ -6,7 +6,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ContextMenuItem["SceneHierarchyView", "Create/Entity", 0]);
-	class H_EXPORT CreateEntityItem : public SceneHierarchyMenuItem
+	class EDITOR_API CreateEntityItem : public SceneHierarchyMenuItem
 	{
 		HORIZON_TYPE_REFLECT(CreateEntityItem);
 	public:

@@ -5,7 +5,7 @@
 
 namespace Horizon::Editor
 {
-	class H_EXPORT ImporterContext : public Engine::Context
+	class EDITOR_API ImporterContext : public Engine::Context
 	{
 	public:
 		ImporterContext() = default;

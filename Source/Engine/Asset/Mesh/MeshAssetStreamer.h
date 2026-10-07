@@ -14,9 +14,12 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class H_EXPORT MeshAssetStreamer : public AssetStreamer
+	class ENGINE_API MeshAssetStreamer : public AssetStreamer
 	{
 		HORIZON_TYPE_REFLECT(MeshAssetStreamer);
+	public:
+		static constexpr u64 MinIdleTicks = 3;
+
 	public:
 		MeshAssetStreamer() = default;
 		~MeshAssetStreamer() = default;

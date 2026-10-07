@@ -7,7 +7,7 @@
 
 namespace Horizon::Editor
 {
-	class H_EXPORT ToolBarRegistry
+	class EDITOR_API ToolBarRegistry
 	{
 		static constexpr f32 kHeight = 36.0f;
 		static constexpr usize kSectionCount = 3;

@@ -19,7 +19,7 @@ namespace Horizon::Engine
 	class ReflectionSystem;
 	class JobSystem;
 
-	class H_EXPORT Engine final
+	class ENGINE_API Engine final
 	{
 	public:
 		Engine();

@@ -7,7 +7,7 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class H_EXPORT SceneAsset : public AssetObject
+	class ENGINE_API SceneAsset : public AssetObject
 	{
 		HORIZON_TYPE_REFLECT(SceneAsset);
 		friend class SceneAssetStreamer;

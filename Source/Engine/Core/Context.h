@@ -4,7 +4,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT Context : public Module
+	class ENGINE_API Context : public Module
 	{
 	};
 }

@@ -14,7 +14,7 @@ namespace Horizon::Engine
 
 namespace Horizon::Editor
 {
-	class H_EXPORT PropertyRenderer final
+	class EDITOR_API PropertyRenderer final
 	{
 	public:
 		PropertyRenderer() = default;

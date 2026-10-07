@@ -12,7 +12,7 @@ namespace Horizon::Memory
 	using SourceLocation = std::source_location;
 	inline constexpr SourceLocation CurrLoc(SourceLocation loc = SourceLocation::current()) noexcept { return loc; }
 
-	struct Allocator
+	struct RUNTIME_API Allocator
 	{
 		template<typename T, typename... Args>
 		static T* Create(SourceLocation loc, Args&&... args)

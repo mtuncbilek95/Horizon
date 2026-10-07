@@ -6,7 +6,7 @@ namespace Horizon::PAL
 {
 	using MutexHandle = void*;
 
-	class H_EXPORT Mutex
+	class RUNTIME_API Mutex
 	{
 	public:
 		Mutex();

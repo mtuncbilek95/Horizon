@@ -6,7 +6,7 @@
 
 namespace Horizon::Editor
 {
-	class H_EXPORT ActionTypeAttribute : public Reflect::Attribute
+	class EDITOR_API ActionTypeAttribute : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(ActionTypeAttribute);
 	public:

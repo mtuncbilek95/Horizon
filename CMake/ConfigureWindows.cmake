@@ -1,7 +1,7 @@
 function(ConfigureWindowsDefinitions)
 	add_compile_definitions(HORIZON_WINDOWS)
 
-	add_compile_definitions(H_EXPORT=__declspec\(dllexport\))
+	add_compile_definitions(H_MANIFEST_EXPORT=__declspec\(dllexport\))
 
 	add_compile_definitions(FORCEINLINE=__forceinline)
 	add_compile_definitions(NOINLINE=__declspec\(noinline\))
@@ -9,6 +9,8 @@ function(ConfigureWindowsDefinitions)
 	add_compile_definitions(NULLPTR=decltype\(nullptr\)\(\))
 	add_compile_definitions(RESTRICT=__restrict)
 	add_compile_definitions(NODISCARD=\[\[nodiscard\]\])
+
+	add_compile_options(/wd4251 /wd4275)
 endfunction()
 
 function(ConfigureWindowsLibrary TARGET)

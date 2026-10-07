@@ -17,7 +17,7 @@ namespace Horizon
 
 	constexpr u32 HashArchiveName(std::string_view name);
 
-	class H_EXPORT BinaryArchiveWriter final : public IArchiveWriter
+	class RUNTIME_API BinaryArchiveWriter final : public IArchiveWriter
 	{
 		struct Frame
 		{
@@ -68,7 +68,7 @@ namespace Horizon
 		b8 m_hasError = false;
 	};
 
-	class H_EXPORT BinaryArchiveReader final : public IArchiveReader
+	class RUNTIME_API BinaryArchiveReader final : public IArchiveReader
 	{
 		struct Frame
 		{

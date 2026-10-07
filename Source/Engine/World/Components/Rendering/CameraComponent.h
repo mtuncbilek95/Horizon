@@ -15,7 +15,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(ComponentId["CameraComponent", "Rendering"]);
-	class H_EXPORT CameraComponent final : public ComponentObject
+	class ENGINE_API CameraComponent final : public ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(CameraComponent);
 	public:

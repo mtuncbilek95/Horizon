@@ -4,7 +4,7 @@ namespace Horizon::RHI
 {
 	class GfxDevice;
 
-	class GfxObject
+	class RUNTIME_API GfxObject
 	{
 	public:
 		virtual ~GfxObject() = default;

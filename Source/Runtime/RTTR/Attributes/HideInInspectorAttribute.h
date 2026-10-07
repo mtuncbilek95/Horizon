@@ -4,7 +4,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT HideInInspectorAttribute : public Reflect::Attribute
+	class HideInInspectorAttribute : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(HideInInspectorAttribute);
 	public:

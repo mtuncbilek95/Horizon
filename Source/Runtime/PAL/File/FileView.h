@@ -4,7 +4,7 @@
 
 namespace Horizon::PAL
 {
-	class H_EXPORT FileView final
+	class RUNTIME_API FileView final
 	{
 		friend struct File;
 	public:

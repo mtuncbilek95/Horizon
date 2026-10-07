@@ -18,7 +18,7 @@ namespace Horizon::Engine
 namespace Horizon::Editor
 {
 	HCLASS(EditorView[ICON_FA_MOUNTAIN_SUN, "Scene View", false, true]);
-	class H_EXPORT SceneView : public ViewObject
+	class EDITOR_API SceneView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(SceneView);
 	public:

@@ -6,7 +6,7 @@
 namespace Horizon::Math
 {
 	HCLASS();
-	class H_EXPORT Vec4f final
+	class RUNTIME_API Vec4f final
 	{
 		HORIZON_PRIMITIVE_REFLECT(Vec4f);
 	public:

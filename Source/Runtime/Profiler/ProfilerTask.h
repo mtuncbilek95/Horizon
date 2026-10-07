@@ -4,7 +4,7 @@
 
 namespace Horizon::Profiler
 {
-	struct H_EXPORT Task
+	struct Task
 	{
 		const c8* pName = nullptr;
 		f64 startMs = 0.0;

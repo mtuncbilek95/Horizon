@@ -5,7 +5,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT Service : public Module
+	class ENGINE_API Service : public Module
 	{
 	public:
 		Service() = default;

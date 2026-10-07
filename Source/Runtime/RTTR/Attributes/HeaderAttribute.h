@@ -7,7 +7,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT HeaderAttribute : public Reflect::Attribute
+	class HeaderAttribute : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(HeaderAttribute);
 	public:

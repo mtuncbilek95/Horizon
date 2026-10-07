@@ -25,14 +25,14 @@ namespace Horizon
 	inline constexpr LogLevel CompiledMinLevel = LogLevel::Debug;
 #endif
 
-	class H_EXPORT ILogSink
+	class RUNTIME_API ILogSink
 	{
 	public:
 		virtual ~ILogSink() = default;
 		virtual void OnMessage(LogLevel level, std::string_view titleName, std::string_view message) = 0;
 	};
 
-	class H_EXPORT Terminal
+	class RUNTIME_API Terminal
 	{
 	public:
 		static void SetMinLevel(LogLevel level);

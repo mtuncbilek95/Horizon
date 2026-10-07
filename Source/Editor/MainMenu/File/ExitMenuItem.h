@@ -7,7 +7,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(MenuItem["File/Exit", 100]);
-	class H_EXPORT ExitMenuItem : public MenuItem
+	class EDITOR_API ExitMenuItem : public MenuItem
 	{
 		HORIZON_TYPE_REFLECT(ExitMenuItem);
 	public:

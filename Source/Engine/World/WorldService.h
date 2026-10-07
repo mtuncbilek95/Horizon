@@ -14,7 +14,7 @@ namespace Horizon::Engine
 	class System;
 	class Scene;
 
-	class H_EXPORT WorldService : public Service
+	class ENGINE_API WorldService : public Service
 	{
 		struct SystemEntry
 		{

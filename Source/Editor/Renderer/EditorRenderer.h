@@ -29,7 +29,7 @@ namespace Horizon::Editor
 		RHI::GfxTextureFormat colorFormat = RHI::GfxTextureFormat::RGBA8_UNORM;
 	};
 
-	class H_EXPORT EditorRenderer
+	class EDITOR_API EditorRenderer
 	{
 		struct FrameContext
 		{

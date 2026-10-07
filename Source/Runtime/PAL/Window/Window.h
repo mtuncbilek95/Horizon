@@ -32,7 +32,7 @@ namespace Horizon::PAL
 		WindowFlags flags = WindowFlags::None;
 	};
 
-	class H_EXPORT Window final
+	class RUNTIME_API Window final
 	{
 	public:
 		Window(const WindowDesc& desc);

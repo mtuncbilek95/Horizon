@@ -247,7 +247,6 @@ namespace Horizon::Engine
 		}
 
 		m_fence->WaitCPU(slot.fenceValue);
-		ReleasePending(slot);
 
 		slot.pTargetCmd->Begin();
 		slot.pTargetCmd->BindDescriptorHeaps(m_resourceHeap, nullptr);
@@ -299,33 +298,23 @@ namespace Horizon::Engine
 
 		currentScene.ForEach<MeshComponent, TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
 			{
-				MeshAsset* pAsset = mesh.m_meshHandle.GetAsset();
-				const b8 isResolved = pAsset != nullptr && pAsset->GetPhysicalEntry().assetId == mesh.m_meshHandle.GetId();
-				const b8 isWanted = isResolved && !mesh.m_hideInRender;
-
-				if (mesh.m_permit.IsValid() && (!isWanted || mesh.m_permit.pAsset != pAsset))
-				{
-					mesh.m_permit.pAsset->EndUse(mesh.m_permit);
-					mesh.m_permit = {};
-				}
-
-				if (!isWanted)
+				if (mesh.m_hideInRender)
 					return;
 
-				if (!mesh.m_permit.IsValid())
+				MeshAsset* pAsset = mesh.m_meshHandle.GetAsset();
+
+				if (pAsset == nullptr || pAsset->GetPhysicalEntry().assetId != mesh.m_meshHandle.GetId())
+					return;
+
+				const PermittedMeshData permit = pAsset->BeginUse();
+
+				if (!permit.IsValid())
 				{
-					mesh.m_permit = pAsset->BeginUse();
+					if (pAsset->GetResidencyState() == AssetResidency::Unloaded)
+						pAsset->LoadAsync();
 
-					if (!mesh.m_permit.IsValid())
-					{
-						if (pAsset->GetResidencyState() == AssetResidency::Unloaded)
-							pAsset->LoadAsync();
-
-						return;
-					}
+					return;
 				}
-
-				const PermittedMeshData& permit = mesh.m_permit;
 
 				constants.viewProj = viewProj;
 				constants.model = worldMat.m_worldMatrix;
@@ -341,6 +330,8 @@ namespace Horizon::Engine
 					slot.pTargetCmd->SetGraphicsConstants(&firstVertex, 1, offsetof(FunPushConstant, firstVertex) / sizeof(u32));
 					slot.pTargetCmd->DrawIndexed(subMesh.indexCount, 1, permit.firstIndex + subMesh.indexOffset, 0);
 				}
+
+				pAsset->EndUse(permit);
 			});
 
 		slot.pTargetCmd->EndRendering();
@@ -486,7 +477,6 @@ namespace Horizon::Engine
 	{
 		RenderSlot& slot = m_slots[imageIndex];
 
-		ReleasePending(slot);
 		ClearFunDepthTexture(imageIndex);
 
 		if (!slot.pTargetTexture)
@@ -503,13 +493,5 @@ namespace Horizon::Engine
 		slot.fenceValue = 0;
 
 		return true;
-	}
-
-	void RenderSystem::ReleasePending(RenderSlot& slot)
-	{
-		for (const PermittedMeshData& permit : slot.pendingReleases)
-			permit.pAsset->EndUse(permit);
-
-		slot.pendingReleases.Clear();
 	}
 }

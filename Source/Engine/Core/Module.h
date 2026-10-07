@@ -8,7 +8,7 @@ namespace Horizon::Engine
 	class Engine;
 	class ModuleGraph;
 
-	class H_EXPORT Module
+	class ENGINE_API Module
 	{
 		friend class Engine;
 	public:

@@ -14,7 +14,7 @@ namespace Horizon::Reflect
 {
 	class Type;
 
-	class H_EXPORT Field
+	class RUNTIME_API Field
 	{
 		template<typename>
 		friend class TypeBuilder;

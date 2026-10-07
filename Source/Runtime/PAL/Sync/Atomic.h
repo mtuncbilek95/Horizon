@@ -14,7 +14,7 @@ namespace Horizon::PAL
 		SeqCst
 	};
 
-	struct AtomicOps
+	struct RUNTIME_API AtomicOps
 	{
 		static i64 Load(const i64* pValue, MemoryOrder order = MemoryOrder::SeqCst);
 		static i64 FetchStore(i64* pTarget, const i64 value, MemoryOrder order = MemoryOrder::SeqCst);
@@ -27,7 +27,7 @@ namespace Horizon::PAL
 	};
 
 	template<typename T>
-	class H_EXPORT Atomic
+	class Atomic
 	{
 		static_assert(sizeof(T) <= sizeof(i64), "Atomic<T> only supports to types that sizeof(T) == 64.");
 

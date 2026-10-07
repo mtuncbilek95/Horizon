@@ -7,7 +7,7 @@
 
 namespace Horizon::Editor
 {
-	class H_EXPORT MainMenuItemAttribute : public Reflect::Attribute
+	class EDITOR_API MainMenuItemAttribute : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(MainMenuItemAttribute);
 	public:

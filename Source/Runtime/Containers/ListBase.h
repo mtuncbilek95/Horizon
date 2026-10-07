@@ -4,7 +4,7 @@
 
 namespace Horizon
 {
-	class H_EXPORT ListBase
+	class RUNTIME_API ListBase
 	{
 	public:
 		ListBase() = default;

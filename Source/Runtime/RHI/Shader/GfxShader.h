@@ -7,7 +7,7 @@
 
 namespace Horizon::RHI
 {
-	class GfxShader : public GfxObject
+	class RUNTIME_API GfxShader : public GfxObject
 	{
 	public:
 		GfxShaderStage GetStage() const { return m_stage; }

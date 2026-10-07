@@ -7,7 +7,7 @@
 namespace Horizon::Math
 {
 	HCLASS();
-	class H_EXPORT Quat : public Reflect::Base
+	class RUNTIME_API Quat : public Reflect::Base
 	{
 		HORIZON_TYPE_REFLECT(Quat);
 	public:

@@ -11,7 +11,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(ComponentId["RigidBodyComponent", "Physics"]);
-	class H_EXPORT RigidBodyComponent final : public ComponentObject
+	class ENGINE_API RigidBodyComponent final : public ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(RigidBodyComponent);
 	public:

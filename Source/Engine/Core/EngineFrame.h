@@ -4,7 +4,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT EngineFrame final
+	class ENGINE_API EngineFrame final
 	{
 		friend class Engine;
 	public:

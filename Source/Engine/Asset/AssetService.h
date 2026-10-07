@@ -12,7 +12,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT AssetService : public Service
+	class ENGINE_API AssetService : public Service
 	{
 	public:
 		AssetService() = default;

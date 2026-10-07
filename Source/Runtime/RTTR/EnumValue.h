@@ -5,7 +5,7 @@
 
 namespace Horizon::Reflect
 {
-	struct H_EXPORT EnumValue
+	struct RUNTIME_API EnumValue
 	{
 		std::string name;
 		i64 value = 0;

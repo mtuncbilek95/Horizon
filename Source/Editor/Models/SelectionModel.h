@@ -6,7 +6,7 @@
 
 namespace Horizon::Editor
 {
-	class H_EXPORT SelectionModel final
+	class EDITOR_API SelectionModel final
 	{
 	public:
 		SelectionModel() = default;

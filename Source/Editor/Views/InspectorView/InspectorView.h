@@ -17,7 +17,7 @@ namespace Horizon::Engine
 namespace Horizon::Editor
 {
 	HCLASS(EditorView[ICON_FA_EYE, "Inspector", false, true, DockZone::Right]);
-	class H_EXPORT InspectorView : public ViewObject
+	class EDITOR_API InspectorView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(InspectorView);
 	public:

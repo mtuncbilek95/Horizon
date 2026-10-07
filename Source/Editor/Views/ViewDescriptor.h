@@ -7,7 +7,7 @@
 
 namespace Horizon::Editor
 {
-	struct H_EXPORT ViewDescriptor
+	struct EDITOR_API ViewDescriptor
 	{
 		std::string displayName;
 		b8 multiInstance;

@@ -5,7 +5,7 @@
 
 namespace Horizon::PAL
 {
-	class H_EXPORT DateTime
+	class RUNTIME_API DateTime
 	{
 	public:
 		static constexpr i64 InvalidTicks = i64_min;

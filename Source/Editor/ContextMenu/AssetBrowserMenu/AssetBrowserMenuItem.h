@@ -5,7 +5,7 @@
 
 namespace Horizon::Editor
 {
-	class H_EXPORT AssetBrowserMenuItem : public ContextMenuItem<AssetBrowserContext>
+	class EDITOR_API AssetBrowserMenuItem : public ContextMenuItem<AssetBrowserContext>
 	{
 	};
 }

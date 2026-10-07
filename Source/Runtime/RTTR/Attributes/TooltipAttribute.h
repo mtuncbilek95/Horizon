@@ -7,7 +7,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT TooltipAttribute : public Reflect::Attribute
+	class TooltipAttribute : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(TooltipAttribute);
 	public:

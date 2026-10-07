@@ -8,7 +8,7 @@
 
 namespace Horizon::Math
 {
-	class H_EXPORT Mat4f
+	class RUNTIME_API Mat4f
 	{
 	public:
 		static Mat4f Identity() { return Mat4f(1.f); }

@@ -11,7 +11,7 @@ namespace Horizon::RHI
 {
 	class D3D12Queue;
 
-	class H_EXPORT D3D12Device final : public GfxDevice
+	class RUNTIME_API D3D12Device final : public GfxDevice
 	{
 		static constexpr u32 kDescriptorRootCount = 4;
 

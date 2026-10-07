@@ -5,7 +5,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT BlobAttribute final : public Attribute
+	class BlobAttribute final : public Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(BlobAttribute);
 	public:

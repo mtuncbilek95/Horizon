@@ -5,7 +5,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT AssetRefAttribute final : public Attribute
+	class AssetRefAttribute final : public Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(AssetRefAttribute);
 	public:

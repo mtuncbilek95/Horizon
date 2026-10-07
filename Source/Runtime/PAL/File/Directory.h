@@ -7,7 +7,7 @@
 
 namespace Horizon::PAL
 {
-	struct H_EXPORT Directory
+	struct RUNTIME_API Directory
 	{
 		struct Entry
 		{

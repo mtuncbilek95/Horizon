@@ -4,7 +4,7 @@
 
 namespace Horizon::PAL
 {
-	class Timer
+	class RUNTIME_API Timer
 	{
 	public:
 		void Start();

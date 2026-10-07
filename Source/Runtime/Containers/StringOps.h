@@ -7,7 +7,7 @@
 
 namespace Horizon
 {
-	struct H_EXPORT StringOps
+	struct RUNTIME_API StringOps
 	{
 		static void CopyToChar(c8* pDst, const std::string& src);
 

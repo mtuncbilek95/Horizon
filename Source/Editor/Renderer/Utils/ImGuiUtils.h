@@ -9,7 +9,7 @@
 
 namespace Horizon::Editor
 {
-	struct H_EXPORT ImGuiUtils final
+	struct EDITOR_API ImGuiUtils final
 	{
 		static ImGuiKey GetKeyboardKey(const PAL::KeyCode key);
 		static ImGuiKey GetModifierKey(const PAL::KeyCode key);

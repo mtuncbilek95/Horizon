@@ -11,7 +11,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(SystemOrder[u32_max]);
-	class H_EXPORT RenderSystem : public System
+	class ENGINE_API RenderSystem : public System
 	{
 		HORIZON_TYPE_REFLECT(RenderSystem);
 	public:
@@ -31,8 +31,6 @@ namespace Horizon::Engine
 		b8 RecreateSlot(u32 imageIndex);
 		b8 ClearSlot(u32 imageIndex);
 		
-		void ReleasePending(RenderSlot& slot);
-
 	private:
 		GraphicsContext* m_context = nullptr;
 		RHI::GfxDevice* m_device = nullptr;

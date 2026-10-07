@@ -11,7 +11,7 @@ namespace Horizon::Engine
 		u32 color;
 	};
 
-	class H_EXPORT DebugDraw final
+	class ENGINE_API DebugDraw final
 	{
 	public:
 		static constexpr u32 Rgba(u8 r, u8 g, u8 b, u8 a = 255)

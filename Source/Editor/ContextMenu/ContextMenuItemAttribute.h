@@ -6,7 +6,7 @@
 
 namespace Horizon::Editor
 {
-	class H_EXPORT ContextMenuItemAttribute : public Reflect::Attribute
+	class EDITOR_API ContextMenuItemAttribute : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(ContextMenuItemAttribute);
 	public:

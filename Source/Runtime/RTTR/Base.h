@@ -4,7 +4,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT Base
+	class RUNTIME_API Base
 	{
 	public:
 		virtual ~Base() = default;

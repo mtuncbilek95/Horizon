@@ -10,7 +10,7 @@ namespace Horizon::Engine
 {
 	using JobFunction = void(*)(void* pUserData);
 
-	class H_EXPORT Job
+	class ENGINE_API Job
 	{
 		JobFunction m_execute = nullptr;
 		JobFunction m_discard = nullptr;

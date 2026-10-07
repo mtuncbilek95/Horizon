@@ -5,7 +5,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT DegreesAttribute final : public Attribute
+	class DegreesAttribute final : public Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(DegreesAttribute);
 	public:

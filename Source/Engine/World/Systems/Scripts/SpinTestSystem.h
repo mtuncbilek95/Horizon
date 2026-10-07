@@ -7,7 +7,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(SystemOrder[0]);
-	class H_EXPORT SpinTestSystem : public System
+	class ENGINE_API SpinTestSystem : public System
 	{
 		HORIZON_TYPE_REFLECT(SpinTestSystem);
 	public:

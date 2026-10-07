@@ -5,7 +5,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT ComponentIdAttribute final : public Reflect::Attribute
+	class ENGINE_API ComponentIdAttribute final : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(ComponentIdAttribute);
 	public:

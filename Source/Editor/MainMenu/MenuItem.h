@@ -9,7 +9,7 @@ namespace Horizon::Engine
 
 namespace Horizon::Editor
 {
-	class H_EXPORT MenuItem : public Reflect::Base
+	class EDITOR_API MenuItem : public Reflect::Base
 	{
 		friend class MenuRegistry;
 	public:

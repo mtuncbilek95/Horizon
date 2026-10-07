@@ -9,7 +9,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(SystemOrder[9000]);
-	class H_EXPORT MeshSystem : public System
+	class ENGINE_API MeshSystem : public System
 	{
 		HORIZON_TYPE_REFLECT(MeshSystem);
 	public:

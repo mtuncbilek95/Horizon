@@ -16,7 +16,7 @@ namespace Horizon::Editor
 	class EditorContext;
 	class DomainFile;
 
-	class H_EXPORT ViewObject : public Reflect::Base
+	class EDITOR_API ViewObject : public Reflect::Base
 	{
 		friend class ViewRegistry;
 	public:

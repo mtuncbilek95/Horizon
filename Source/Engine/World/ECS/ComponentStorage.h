@@ -8,7 +8,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT ComponentStorage final
+	class ENGINE_API ComponentStorage final
 	{
 	public:
 		ComponentStorage(const Reflect::Type* pType);

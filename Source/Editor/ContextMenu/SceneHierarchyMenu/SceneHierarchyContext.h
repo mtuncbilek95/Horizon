@@ -6,7 +6,7 @@
 
 namespace Horizon::Editor
 {
-	struct H_EXPORT SceneHierarchyContext
+	struct EDITOR_API SceneHierarchyContext
 	{
 		Engine::Engine* pEngine = nullptr;
 		Engine::Scene* pCurrentScene = nullptr;

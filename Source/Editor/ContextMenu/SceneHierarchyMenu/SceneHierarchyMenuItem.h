@@ -5,7 +5,7 @@
 
 namespace Horizon::Editor
 {
-	class H_EXPORT SceneHierarchyMenuItem : public ContextMenuItem<SceneHierarchyContext>
+	class EDITOR_API SceneHierarchyMenuItem : public ContextMenuItem<SceneHierarchyContext>
 	{
 	};
 }

@@ -8,7 +8,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(SystemOrder[3000]);
-	class H_EXPORT CameraSystem : public System
+	class ENGINE_API CameraSystem : public System
 	{
 		HORIZON_TYPE_REFLECT(CameraSystem);
 	public:

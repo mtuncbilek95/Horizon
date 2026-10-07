@@ -39,7 +39,7 @@ namespace Horizon::RHI
 #define CHECK_REASON(hr, what) \
 	if(FAILED(hr)) { Terminal::Error("D3D12", "{}: {}", what, _com_error(hr).ErrorMessage()); }
 
-	struct H_EXPORT Helpers
+	struct RUNTIME_API Helpers
 	{
 		static D3D12_DESCRIPTOR_HEAP_TYPE ToDescriptorHeapType(GfxDescriptorHeapType type);
 		static D3D12_COMMAND_LIST_TYPE ToCommandListType(GfxQueueType type);

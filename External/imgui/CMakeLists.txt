@@ -94,3 +94,8 @@ if(WIN32)
     include(ConfigureWindows)
     ConfigureD3D12Library(Imgui)
 endif()
+
+if(NOT HORIZON_MONOLITHIC)
+	target_compile_definitions(Imgui PRIVATE IMGUI_API=__declspec\(dllexport\))
+	target_compile_definitions(ImGuizmo PRIVATE IMGUI_API=__declspec\(dllexport\))
+endif()

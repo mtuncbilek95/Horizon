@@ -5,7 +5,7 @@
 
 namespace Horizon::Editor
 {
-	class H_EXPORT ToolBarItem : public Reflect::Base
+	class ToolBarItem : public Reflect::Base
 	{
 		friend class ToolBarRegistry;
 	public:

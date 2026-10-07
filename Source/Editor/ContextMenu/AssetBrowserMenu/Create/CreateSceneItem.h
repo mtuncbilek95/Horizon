@@ -6,7 +6,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ContextMenuItem["AssetBrowserView", "Create/Scene", 1]);
-	class H_EXPORT CreateSceneItem : public AssetBrowserMenuItem
+	class EDITOR_API CreateSceneItem : public AssetBrowserMenuItem
 	{
 		HORIZON_TYPE_REFLECT(CreateSceneItem);
 	public:

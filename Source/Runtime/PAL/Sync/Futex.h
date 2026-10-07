@@ -4,7 +4,7 @@
 
 namespace Horizon::PAL
 {
-	struct H_EXPORT Futex
+	struct RUNTIME_API Futex
 	{
 		static void Wait(void* pAddress, i64 expectedValue);
 		static void WakeAll(void* pAddress);

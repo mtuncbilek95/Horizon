@@ -5,7 +5,7 @@
 namespace Horizon::Editor
 {
 	HCLASS();
-	class H_EXPORT SignedPropertyDrawer final : public PropertyDrawer
+	class EDITOR_API SignedPropertyDrawer final : public PropertyDrawer
 	{
 		HORIZON_TYPE_REFLECT(SignedPropertyDrawer);
 	public:

@@ -11,7 +11,7 @@ namespace JPH
 
 namespace Horizon::Engine
 {
-	class H_EXPORT PhysicsService final : public Service
+	class ENGINE_API PhysicsService final : public Service
 	{
 		static constexpr u32 MaxBodies = 65536u;
 		static constexpr u32 MaxBodyPairs = 65536u;

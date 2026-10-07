@@ -16,7 +16,7 @@ namespace Horizon::Editor
 		Engine::ReflectionSystem* pReflection = nullptr;
 	};
 
-	class H_EXPORT PropertyDrawer : public Reflect::Base
+	class EDITOR_API PropertyDrawer : public Reflect::Base
 	{
 	public:
 		virtual ~PropertyDrawer() override = default;

@@ -5,7 +5,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT WindowService : public Service
+	class ENGINE_API WindowService : public Service
 	{
 	public:
 		WindowService() = default;

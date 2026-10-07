@@ -19,7 +19,7 @@ namespace Horizon::Editor
 	class MenuRegistry;
 	class ToolBarRegistry;
 
-	class H_EXPORT EditorService final : public Engine::Service
+	class EDITOR_API EditorService final : public Engine::Service
 	{
 	public:
 		EditorService() = default;

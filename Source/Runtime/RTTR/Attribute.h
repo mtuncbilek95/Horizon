@@ -4,7 +4,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT Attribute
+	class RUNTIME_API Attribute
 	{
 	public:
 		virtual ~Attribute() = default;

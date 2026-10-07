@@ -11,7 +11,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(ComponentId["MeshComponent", "Rendering"]);
-	class H_EXPORT MeshComponent final : public ComponentObject
+	class ENGINE_API MeshComponent final : public ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(MeshComponent);
 	public:
@@ -25,6 +25,5 @@ namespace Horizon::Engine
 		b8 m_hideInRender = false;
 
 		Guid m_resolvedId;
-		PermittedMeshData m_permit;
 	};
 }

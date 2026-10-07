@@ -55,6 +55,7 @@ namespace Horizon::Engine
 
 	void MeshAssetStreamer::OnSync(const EngineFrame& frameContext)
 	{
+		m_useClock.FetchAdd(1, PAL::MemoryOrder::Relaxed);
 	}
 
 	void MeshAssetStreamer::OnFinalize()
@@ -116,8 +117,6 @@ namespace Horizon::Engine
 		permit.firstVertex = u32(pAsset->m_vertexRange.offset / sizeof(MeshVertex));
 		permit.firstIndex = u32(pAsset->m_indexRange.offset / sizeof(u32));
 
-		Terminal::Info(StringOps::GetName(this), "BeginUse {} useCount {}", pAsset->m_ownerEntry.assetId.ToString(), pAsset->m_useCount.Load(PAL::MemoryOrder::SeqCst));
-
 		return permit;
 	}
 
@@ -127,7 +126,6 @@ namespace Horizon::Engine
 
 		const u32 previous = permit.pAsset->m_useCount.FetchSubtract(1, PAL::MemoryOrder::SeqCst);
 		Terminal::Assert(previous != 0, StringOps::GetName(this), "Use count underflow, EndUse without BeginUse");
-		Terminal::Info(StringOps::GetName(this), "EndUse {} useCount {}", permit.pAsset->m_ownerEntry.assetId.ToString(), previous - 1);
 	}
 
 	b8 MeshAssetStreamer::Evict(MeshAsset* pAsset)
@@ -165,12 +163,17 @@ namespace Horizon::Engine
 			MeshAsset* pVictim = nullptr;
 			u64 oldestTick = 0;
 
+			const u64 now = m_useClock.Load(PAL::MemoryOrder::Relaxed);
+
 			for (MeshAsset* pAsset : m_resident)
 			{
 				if (pAsset->m_useCount.Load(PAL::MemoryOrder::SeqCst) != 0)
 					continue;
 
 				const u64 tick = pAsset->m_lastUsedTick.Load(PAL::MemoryOrder::Relaxed);
+
+				if (now - tick < MinIdleTicks)
+					continue;
 
 				if (pVictim == nullptr || tick < oldestTick)
 				{

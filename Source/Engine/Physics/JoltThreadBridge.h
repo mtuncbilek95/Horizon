@@ -7,7 +7,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT JoltThreadBridge : public JPH::JobSystemWithBarrier
+	class ENGINE_API JoltThreadBridge : public JPH::JobSystemWithBarrier
 	{
 		using JoltJob = JPH::JobSystem::Job;
 		using JoltFunction = JPH::JobSystem::JobFunction;

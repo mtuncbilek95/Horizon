@@ -6,7 +6,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ContextMenuItem["AssetBrowserView", "Rename", 2]);
-	class H_EXPORT RenameObjectItem : public AssetBrowserMenuItem
+	class EDITOR_API RenameObjectItem : public AssetBrowserMenuItem
 	{
 		HORIZON_TYPE_REFLECT(RenameObjectItem);
 	public:

@@ -40,7 +40,7 @@ namespace Horizon::RHI
 
 	struct GfxTextureFootprint;
 
-	class H_EXPORT GfxDevice
+	class RUNTIME_API GfxDevice
 	{
 	public:
 		virtual ~GfxDevice() = default;
@@ -72,5 +72,5 @@ namespace Horizon::RHI
 	protected:
 		u64 m_frameNumber = 0;
 	};
-	GfxDevice* CreateDevice(const GfxDeviceDesc& desc);
+	RUNTIME_API GfxDevice* CreateDevice(const GfxDeviceDesc& desc);
 }

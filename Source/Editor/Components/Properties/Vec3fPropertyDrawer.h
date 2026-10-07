@@ -6,7 +6,7 @@
 namespace Horizon::Editor
 {
 	HCLASS();
-	class H_EXPORT Vec3fPropertyDrawer final : public PropertyDrawer
+	class EDITOR_API Vec3fPropertyDrawer final : public PropertyDrawer
 	{
 		HORIZON_TYPE_REFLECT(Vec3fPropertyDrawer);
 	public:

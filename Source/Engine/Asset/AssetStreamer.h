@@ -8,7 +8,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT AssetStreamer : public Reflect::Base
+	class ENGINE_API AssetStreamer : public Reflect::Base
 	{
 		friend class AssetService;
 	public:

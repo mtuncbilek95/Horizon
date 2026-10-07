@@ -3,9 +3,11 @@
 #include <Engine/Core/Context.h>
 #include <Engine/Core/Engine.h>
 
+#include <string>
+
 namespace Horizon::Editor
 {
-	class ProjectContext final : public Engine::Context
+	class EDITOR_API ProjectContext final : public Engine::Context
 	{
 	public:
 		ProjectContext(const std::string& projectPath, const std::string& engineResourcePath);

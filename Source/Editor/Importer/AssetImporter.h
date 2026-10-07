@@ -8,7 +8,7 @@
 
 namespace Horizon::Editor
 {
-	class H_EXPORT AssetImporter : public Reflect::Base
+	class EDITOR_API AssetImporter : public Reflect::Base
 	{
 	public:
 		virtual AssetImportResult ImportAsset(Engine::Engine* pEngine, const std::string& inPath, List<u8>& outByteArr) = 0;

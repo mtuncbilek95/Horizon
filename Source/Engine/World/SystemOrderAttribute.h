@@ -4,7 +4,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT SystemOrderAttribute : public Reflect::Attribute
+	class ENGINE_API SystemOrderAttribute : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(SystemOrderAttribute);
 	public:

@@ -7,7 +7,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(ComponentId["NameComponent", "Tag"]);
-	class H_EXPORT NameComponent final : public ComponentObject
+	class NameComponent final : public ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(NameComponent);
 	public:

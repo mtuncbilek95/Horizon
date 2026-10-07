@@ -5,7 +5,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT SliderAttribute final : public Attribute
+	class SliderAttribute final : public Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(SliderAttribute);
 	public:

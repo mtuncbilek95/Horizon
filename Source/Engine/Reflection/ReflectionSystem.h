@@ -10,11 +10,14 @@ namespace Horizon::Engine
 {
 	class Engine;
 
-	class ReflectionSystem final
+	class ENGINE_API ReflectionSystem final
 	{
 	public:
 		ReflectionSystem(Engine* pEngine);
 		~ReflectionSystem();
+
+		ReflectionSystem(const ReflectionSystem&) = delete;
+		ReflectionSystem& operator=(const ReflectionSystem&) = delete;
 
 		Reflect::Type* GetType(Reflect::TypeHandle handl);
 		Reflect::Type* GetTypeByName(const std::string& name);

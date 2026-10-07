@@ -11,7 +11,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(ComponentId["FogComponent", "Postprocess"]);
-	class H_EXPORT FogComponent : public ComponentObject
+	class ENGINE_API FogComponent : public ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(FogComponent);
 	public:

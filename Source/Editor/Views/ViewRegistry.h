@@ -8,7 +8,7 @@
 
 namespace Horizon::Editor
 {
-	class H_EXPORT ViewRegistry
+	class EDITOR_API ViewRegistry
 	{
 	public:
 		ViewRegistry();

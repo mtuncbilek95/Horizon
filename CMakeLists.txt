@@ -11,7 +11,17 @@ set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS OFF CACHE BOOL "CMake Suppresse Developer 
 
 set(CMAKE_ROOT_DIR ${CMAKE_SOURCE_DIR})
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
- 
+
+option(ENABLE_CATCH_TEST "Enable testing" OFF)
+option(DEV_MODE "Enable developer mode" OFF)
+option(HORIZON_MONOLITHIC "Link every module statically into the application" OFF)
+
+if(HORIZON_MONOLITHIC)
+	set(HORIZON_MODULE_TYPE OBJECT)
+else()
+	set(HORIZON_MODULE_TYPE SHARED)
+endif()
+
 if(WIN32)
 	include(ConfigureWindows)
 	ConfigureWindowsDefinitions()
@@ -20,8 +30,7 @@ endif()
 include(SetupConfig)
 SetupConfig()
 
-option(ENABLE_CATCH_TEST "Enable testing" OFF)
-option(DEV_MODE "Enable developer mode" OFF)
+include(HorizonModule)
 
 if(ENABLE_CATCH_TEST)
 	enable_testing()
@@ -31,5 +40,4 @@ add_subdirectory("External")
 add_subdirectory("Source/Runtime")
 add_subdirectory("Source/Engine")
 add_subdirectory("Source/Editor")
-
 add_subdirectory("Source/EditorApplication")

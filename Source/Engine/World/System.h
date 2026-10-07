@@ -9,7 +9,7 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class H_EXPORT System : public Reflect::Base
+	class ENGINE_API System : public Reflect::Base
 	{
 		friend class WorldService;
 	public:

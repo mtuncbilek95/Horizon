@@ -8,7 +8,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(ComponentId["SpinTestComponent", "Script"]);
-	class H_EXPORT SpinTestComponent final : public ComponentObject
+	class ENGINE_API SpinTestComponent final : public ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(SpinTestComponent);
 	public:

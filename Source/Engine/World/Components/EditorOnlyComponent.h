@@ -7,7 +7,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(ComponentId["", ""]);
-	class H_EXPORT EditorOnlyComponent final : public ComponentObject
+	class EditorOnlyComponent final : public ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(EditorOnlyComponent);
 	public:

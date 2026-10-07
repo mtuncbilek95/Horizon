@@ -14,7 +14,7 @@ namespace Horizon::PAL
 		b8 isMain = true;
 	};
 
-	class H_EXPORT SymbolLibrary
+	class RUNTIME_API SymbolLibrary
 	{
 	public:
 		SymbolLibrary(const SymbolLibraryDesc& desc);

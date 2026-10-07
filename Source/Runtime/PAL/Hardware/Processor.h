@@ -5,7 +5,7 @@
 
 namespace Horizon::PAL
 {
-	struct H_EXPORT CoreInfo
+	struct RUNTIME_API CoreInfo
 	{
 		u32 logicalIndex;
 		u32 physicalIndex;
@@ -14,7 +14,7 @@ namespace Horizon::PAL
 		b8 isPrimarySibling;
 	};
 
-	struct H_EXPORT Processor
+	struct RUNTIME_API Processor
 	{
 		static List<CoreInfo> EnumerateCores();
 		static u32 PerformanceCoreCount();

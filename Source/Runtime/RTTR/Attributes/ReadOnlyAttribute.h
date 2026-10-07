@@ -5,7 +5,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT ReadOnlyAttribute final : public Attribute
+	class ReadOnlyAttribute final : public Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(ReadOnlyAttribute);
 	public:

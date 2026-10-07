@@ -13,7 +13,7 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class H_EXPORT MeshAsset : public AssetObject
+	class ENGINE_API MeshAsset : public AssetObject
 	{
 		HORIZON_TYPE_REFLECT(MeshAsset);
 		friend class MeshAssetStreamer;

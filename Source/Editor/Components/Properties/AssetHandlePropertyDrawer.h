@@ -13,7 +13,7 @@ namespace Horizon::Editor
 	class DomainService;
 
 	HCLASS();
-	class H_EXPORT AssetHandlePropertyDrawer final : public PropertyDrawer
+	class EDITOR_API AssetHandlePropertyDrawer final : public PropertyDrawer
 	{
 		HORIZON_TYPE_REFLECT(AssetHandlePropertyDrawer);
 	public:

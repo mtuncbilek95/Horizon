@@ -5,7 +5,7 @@
 
 namespace Horizon::Reflect
 {
-	class H_EXPORT RangeAttribute final : public Attribute
+	class RangeAttribute final : public Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(RangeAttribute);
 	public:

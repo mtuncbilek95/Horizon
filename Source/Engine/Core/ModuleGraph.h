@@ -9,7 +9,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT ModuleGraph
+	class ENGINE_API ModuleGraph
 	{
 	public:
 		void BeginNode(std::type_index owner)

@@ -5,7 +5,7 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class H_EXPORT TextureAsset : public AssetObject
+	class ENGINE_API TextureAsset : public AssetObject
 	{
 		HORIZON_TYPE_REFLECT(TextureAsset);
 	public:

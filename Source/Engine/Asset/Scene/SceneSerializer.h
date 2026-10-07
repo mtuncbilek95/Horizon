@@ -14,7 +14,7 @@ namespace Horizon::Engine
 	class ReflectionSystem;
 	class Scene;
 
-	class H_EXPORT SceneSerializer
+	class ENGINE_API SceneSerializer
 	{
 		using EntityRemap = std::unordered_map<u32, EntityHandle>;
 	public:

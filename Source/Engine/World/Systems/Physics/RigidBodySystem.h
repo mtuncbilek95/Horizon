@@ -13,7 +13,7 @@ namespace Horizon::Engine
 	class TransformComponent;
 
 	HCLASS(SystemOrder[1000]);
-	class H_EXPORT RigidBodySystem : public System
+	class ENGINE_API RigidBodySystem : public System
 	{
 		HORIZON_TYPE_REFLECT(RigidBodySystem);
 	public:

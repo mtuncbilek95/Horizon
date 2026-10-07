@@ -10,7 +10,7 @@
 
 namespace Horizon::Engine
 {
-	class H_EXPORT GraphicsContext : public Context
+	class ENGINE_API GraphicsContext : public Context
 	{
 	public:
 		static constexpr u32 MaxFramesInFlight = 2;

@@ -9,7 +9,7 @@ blockCommentRe = re.compile(r'/\*.*?\*/', flags=re.S)
 lineCommentRe = re.compile(r'//[^\n]*')
 
 namespaceTailRe = re.compile(r'namespace\s+([A-Za-z_][\w:]*)\s*$')
-attributeRe = re.compile(r'\s*([A-Za-z_]\w*)\s*(?:\[(.*)\])?\s*$', flags=re.S)
+attributeRe = re.compile(r'\s*([A-Za-z_][\w:]*)\s*(?:\[(.*)\])?\s*$', flags=re.S)
 
 classDeclRe = re.compile(r'\b(enum\s+)?(?:class|struct)\s+(?:[A-Z_][A-Z0-9_]*\s+)?([A-Za-z_]\w*)\b([^{;]*)\{')
 enumDeclRe = re.compile(r'\benum\s+(?:class\s+|struct\s+)?(?:[A-Z_][A-Z0-9_]*\s+)?([A-Za-z_]\w*)\b[^{;]*\{')
@@ -504,7 +504,7 @@ def EmitAccessor(reflected):
 
 
 # Renders the module wide header that registers every generated type.
-def EmitManifestation(reflected):
+def EmitManifestation(reflected, exportMacro):
     includes = '\n'.join(
         f'#include <{entry.layerName}/{entry.typeName}.reflected.h>' for entry in reflected)
     pushes = '\n'.join(
@@ -516,7 +516,7 @@ def EmitManifestation(reflected):
         '#include <Runtime/RTTR/Reflection.h>\n'
         '#include <Runtime/Definitions/Allocator.h>\n'
         '#include <Runtime/Containers/List.h>\n\n'
-        'extern "C" H_EXPORT void GenerateModuleManifestation(Horizon::List<Horizon::Reflect::Type>* outTypes)\n'
+        f'extern "C" {exportMacro} void GenerateModuleManifestation(Horizon::List<Horizon::Reflect::Type>* outTypes)\n'
         '{\n'
         '\tif (!outTypes)\n'
         '\t\treturn;\n\n'
@@ -526,29 +526,48 @@ def EmitManifestation(reflected):
     )
 
 # Deletes generated headers left over from types that no longer exist in the source tree.
-def PruneStale(outRoot, claimed):
+def PruneStale(outRoot, claimed, excluded):
     for path in outRoot.rglob('*.reflected.h'):
         if path in claimed:
             continue
 
+        if path.relative_to(outRoot).parts[0] in excluded:
+            continue
+
         path.unlink()
         print(f'[del] {path.relative_to(outRoot)}')
+
+# Decides whether a top level source layer takes part in this generation run.
+def LayerAllowed(layerName, only, excluded):
+    if layerName in excluded:
+        return False
+
+    return not only or layerName in only
 
 # Generates one .reflected.h per marked type plus the module manifestation header.
 def Main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', default='Source')
     parser.add_argument('--out', default='Intermediate')
+    parser.add_argument('--only', nargs='*', default=[])
+    parser.add_argument('--exclude', nargs='*', default=[])
+    parser.add_argument('--export', default='H_MANIFEST_EXPORT')
     arguments = parser.parse_args()
 
     sourceRoot = Path(arguments.source).resolve()
     outRoot = Path(arguments.out).resolve()
     outRoot.mkdir(parents=True, exist_ok=True)
 
+    only = set(arguments.only)
+    excluded = set(arguments.exclude)
+
     generated = []
     claimed = {}
 
     for path in sourceRoot.rglob('*.h'):
+        if not LayerAllowed(path.relative_to(sourceRoot).parts[0], only, excluded):
+            continue
+
         raw = path.read_text(encoding='utf-8', errors='ignore')
 
         if 'HCLASS' not in raw and 'HENUM' not in raw:
@@ -570,10 +589,10 @@ def Main():
             outPath.write_text(EmitAccessor(reflected), encoding='utf-8', newline='\n')
             print(f'[gen] {qualified} -> {outPath.relative_to(outRoot)}')
 
-    PruneStale(outRoot, claimed)
+    PruneStale(outRoot, claimed, excluded)
 
     (outRoot / 'TypeManifestation.h').write_text(
-        EmitManifestation(generated), encoding='utf-8', newline='\n')
+        EmitManifestation(generated, arguments.export), encoding='utf-8', newline='\n')
     print(f'[gen] TypeManifestation.h ({len(generated)} types)')
 
 if __name__ == '__main__':
