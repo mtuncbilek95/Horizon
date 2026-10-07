@@ -1,7 +1,6 @@
-#include "PluginService.h"
+#include "PluginSystem.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Window/WindowService.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
@@ -9,84 +8,33 @@
 
 namespace Horizon::Engine
 {
-	ModuleReport PluginService::OnInitialize()
+	PluginSystem::PluginSystem(Engine* pEngine) : m_engine(pEngine)
 	{
-		return ModuleReport();
 	}
 
-	void PluginService::OnFinalize()
+	PluginSystem::~PluginSystem()
 	{
-		for (usize i = m_plugins.GetCount(); i > 0; --i)
-		{
-			UnloadEntry(m_plugins[i - 1]);
-		}
-
-		m_plugins.Clear();
+		UnloadAll();
 	}
 
-	void PluginService::OnExecute(const EngineFrame& ctx)
-	{
-		FlushRequests();
-	}
-
-	void PluginService::DeclareDependencies(ModuleGraph& graph)
-	{
-		graph.Precedes<WindowService>();
-	}
-
-	void PluginService::RequestLoad(const std::string& name)
-	{
-		m_pending.PushBack(PendingRequest{ name, true });
-	}
-
-	void PluginService::RequestUnload(const std::string& name)
-	{
-		m_pending.PushBack(PendingRequest{ name, false });
-	}
-
-	void PluginService::FlushRequests()
-	{
-		if (m_pending.IsEmpty())
-		{
-			return;
-		}
-
-		List<PendingRequest> pending = std::move(m_pending);
-		m_pending = {};
-
-		for (const PendingRequest& request : pending)
-		{
-			if (request.load)
-			{
-				LoadPlugin(request.name);
-			}
-			else
-			{
-				UnloadPlugin(request.name);
-			}
-		}
-	}
-
-	const PluginEntry* PluginService::FindPlugin(const std::string& name) const
+	const PluginEntry* PluginSystem::FindPlugin(const std::string& name) const
 	{
 		for (const PluginEntry& entry : m_plugins)
 		{
 			if (entry.name == name)
-			{
 				return &entry;
-			}
 		}
 
 		return nullptr;
 	}
 
-	void PluginService::SetRoots(const std::string& engineRoot, const std::string& projectRoot)
+	void PluginSystem::SetRoots(const std::string& engineRoot, const std::string& projectRoot)
 	{
 		m_engineRoot = engineRoot.empty() ? std::string() : StringOps::NormalizePath(engineRoot);
 		m_projectRoot = projectRoot.empty() ? std::string() : StringOps::NormalizePath(projectRoot);
 	}
 
-	void PluginService::DiscoverPlugins()
+	void PluginSystem::DiscoverPlugins()
 	{
 		List<PluginEntry> discovered;
 
@@ -96,9 +44,7 @@ namespace Horizon::Engine
 		for (PluginEntry& previous : m_plugins)
 		{
 			if (previous.state != PluginState::Loaded)
-			{
 				continue;
-			}
 
 			b8 replaced = false;
 
@@ -113,9 +59,7 @@ namespace Horizon::Engine
 			}
 
 			if (!replaced)
-			{
 				discovered.PushBack(std::move(previous));
-			}
 		}
 
 		m_plugins = std::move(discovered);
@@ -123,7 +67,21 @@ namespace Horizon::Engine
 		Terminal::Info(StringOps::GetName(this), "Discovered {} plugins", m_plugins.GetCount());
 	}
 
-	b8 PluginService::LoadPlugin(const std::string& name)
+	void PluginSystem::LoadPlugins()
+	{
+		for (const std::string& name : m_enabledPlugins)
+			LoadPlugin(name);
+	}
+
+	void PluginSystem::UnloadAll()
+	{
+		m_pending.Clear();
+
+		for (usize i = m_plugins.GetCount(); i > 0; --i)
+			UnloadEntry(m_plugins[i - 1]);
+	}
+
+	b8 PluginSystem::LoadPlugin(const std::string& name)
 	{
 		PluginEntry* pEntry = FindEntry(name);
 
@@ -142,7 +100,7 @@ namespace Horizon::Engine
 		return LoadEntry(*pEntry);
 	}
 
-	b8 PluginService::UnloadPlugin(const std::string& name)
+	b8 PluginSystem::UnloadPlugin(const std::string& name)
 	{
 		PluginEntry* pEntry = FindEntry(name);
 
@@ -162,39 +120,58 @@ namespace Horizon::Engine
 		return true;
 	}
 
-	PluginEntry* PluginService::FindEntry(const std::string& name)
+	void PluginSystem::RequestLoad(const std::string& name)
+	{
+		m_pending.PushBack(PendingRequest{ name, true });
+	}
+
+	void PluginSystem::RequestUnload(const std::string& name)
+	{
+		m_pending.PushBack(PendingRequest{ name, false });
+	}
+
+	void PluginSystem::FlushRequests()
+	{
+		if (m_pending.IsEmpty())
+			return;
+
+		List<PendingRequest> pending = std::move(m_pending);
+		m_pending = {};
+
+		for (const PendingRequest& request : pending)
+		{
+			if (request.load)
+				LoadPlugin(request.name);
+			else
+				UnloadPlugin(request.name);
+		}
+	}
+
+	PluginEntry* PluginSystem::FindEntry(const std::string& name)
 	{
 		for (PluginEntry& entry : m_plugins)
 		{
 			if (entry.name == name)
-			{
 				return &entry;
-			}
 		}
 
 		return nullptr;
 	}
 
-	void PluginService::DiscoverRoot(const std::string& root, PluginOrigin origin, List<PluginEntry>& outEntries)
+	void PluginSystem::DiscoverRoot(const std::string& root, PluginOrigin origin, List<PluginEntry>& outEntries)
 	{
 		if (root.empty() || !PAL::Directory::Exists(root))
-		{
 			return;
-		}
 
 		for (const PAL::Directory::Entry& dirEntry : PAL::Directory::Iterate(root))
 		{
 			if (!dirEntry.isDirectory)
-			{
 				continue;
-			}
 
 			const std::string libraryPath = dirEntry.fullPath + "/" + dirEntry.name + ".dll";
 
 			if (!PAL::File::Exists(libraryPath))
-			{
 				continue;
-			}
 
 			PluginEntry* pExisting = nullptr;
 
@@ -216,7 +193,7 @@ namespace Horizon::Engine
 		}
 	}
 
-	b8 PluginService::LoadEntry(PluginEntry& entry)
+	b8 PluginSystem::LoadEntry(PluginEntry& entry)
 	{
 		PAL::SymbolLibraryDesc desc;
 		desc.path = entry.libraryPath;
@@ -233,7 +210,7 @@ namespace Horizon::Engine
 			return false;
 		}
 
-		if (!GetEngine()->RegisterLibrary(pLibrary))
+		if (!m_engine->RegisterLibrary(pLibrary))
 		{
 			Memory::Allocator::Delete(pLibrary);
 			entry.state = PluginState::Failed;
@@ -250,27 +227,16 @@ namespace Horizon::Engine
 		return true;
 	}
 
-	void PluginService::UnloadEntry(PluginEntry& entry)
+	void PluginSystem::UnloadEntry(PluginEntry& entry)
 	{
 		if (!entry.pLibrary)
-		{
 			return;
-		}
 
-		GetEngine()->UnregisterLibrary(entry.pLibrary);
+		m_engine->UnregisterLibrary(entry.pLibrary);
 		Memory::Allocator::Delete(entry.pLibrary);
 		entry.pLibrary = nullptr;
 		entry.state = PluginState::Available;
 
 		Terminal::Info(StringOps::GetName(this), "{} unloaded", entry.name);
-	}
-
-	void PluginService::LoadPlugins()
-	{
-		for (const std::string& name : m_enabledPlugins)
-		{
-			if (!LoadPlugin(name))
-				Terminal::Error(StringOps::GetName(this), "{} could not loaded", name);
-		}
 	}
 }

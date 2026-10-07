@@ -5,7 +5,6 @@
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Reflection/ReflectionSystem.h>
-#include <Engine/Plugin/PluginService.h>
 
 #include <Runtime/PAL/File/File.h>
 #include <Runtime/Containers/StringOps.h>
@@ -45,7 +44,6 @@ namespace Horizon::Engine
 	void AssetService::DeclareDependencies(ModuleGraph& graph)
 	{
 		graph.Requires<GraphicsContext>();
-		graph.Requires<PluginService>();
 	}
 
 	void AssetService::OnLibraryRegistered(const ReflectionLibrary& library)

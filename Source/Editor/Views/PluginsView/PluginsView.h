@@ -6,7 +6,7 @@
 
 namespace Horizon::Engine
 {
-	class PluginService;
+	class PluginSystem;
 }
 
 namespace Horizon::Editor
@@ -25,7 +25,7 @@ namespace Horizon::Editor
 		void OnRender(const Engine::EngineFrame& context) final;
 
 	private:
-		Engine::PluginService* m_pluginService = nullptr;
+		Engine::PluginSystem* m_pluginSystem = nullptr;
 		ProjectContext* m_projectContext = nullptr;
 	};
 }

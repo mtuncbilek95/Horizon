@@ -1,6 +1,6 @@
 #include "ProjectContext.h"
 
-#include <Engine/Plugin/PluginService.h>
+#include <Engine/Plugin/PluginSystem.h>
 #include <Engine/Window/WindowService.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/PAL/File/Directory.h>
@@ -36,10 +36,7 @@ namespace Horizon::Editor
 		if (!PAL::Directory::Exists(m_pluginPath) && !PAL::Directory::Create(m_pluginPath))
 			return Engine::ModuleReport("Plugin root cannot be created");
 
-		auto* pPlugins = GetEngine()->RequestService<Engine::PluginService>();
-
-		if (!pPlugins)
-			return Engine::ModuleReport("PluginService is not active");
+		auto* pPlugins = GetEngine()->GetPluginSystem();
 
 		pPlugins->SetRoots("", m_pluginPath);
 		pPlugins->SetEnabledPlugins(m_enabledPlugins);
@@ -56,7 +53,6 @@ namespace Horizon::Editor
 	void ProjectContext::DeclareDependencies(Engine::ModuleGraph& graph)
 	{
 		graph.Precedes<Engine::WindowService>();
-		graph.Requires<Engine::PluginService>();
 	}
 
 	void ProjectContext::SetPluginEnabled(const std::string& name, b8 enabled)

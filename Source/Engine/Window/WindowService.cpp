@@ -1,7 +1,6 @@
 #include "WindowService.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Plugin/PluginService.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
 
@@ -51,6 +50,5 @@ namespace Horizon::Engine
 
 	void WindowService::DeclareDependencies(ModuleGraph& graph)
 	{
-		graph.Requires<PluginService>();
 	}
 }

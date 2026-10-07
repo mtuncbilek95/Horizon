@@ -3,7 +3,7 @@
 #include <Editor/Project/ProjectContext.h>
 #include <Editor/Renderer/EditorContext.h>
 #include <Engine/Core/Engine.h>
-#include <Engine/Plugin/PluginService.h>
+#include <Engine/Plugin/PluginSystem.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
@@ -16,26 +16,26 @@ namespace Horizon::Editor
 	{
 		auto* pEngine = GetContext()->pEngine;
 
-		if (!m_pluginService)
-			m_pluginService = pEngine->RequestService<Engine::PluginService>();
+		if (!m_pluginSystem)
+			m_pluginSystem = pEngine->GetPluginSystem();
 
 		if (!m_projectContext)
 			m_projectContext = pEngine->RequestContext<ProjectContext>();
 
-		if (!m_pluginService || !m_projectContext)
+		if (!m_pluginSystem || !m_projectContext)
 			Terminal::Error(StringOps::GetName(this), "Plugin service or project context is unavailable");
 	}
 
 	void PluginsView::OnRender(const Engine::EngineFrame& context)
 	{
-		if (!m_pluginService || !m_projectContext)
+		if (!m_pluginSystem || !m_projectContext)
 		{
 			ImGui::TextDisabled("Plugin service or project context is unavailable");
 			return;
 		}
 
 		if (ImGui::Button(ICON_FA_ROTATE " Refresh"))
-			m_pluginService->DiscoverPlugins();
+			m_pluginSystem->DiscoverPlugins();
 
 		ImGui::SameLine();
 		ImGui::BeginDisabled();
@@ -60,7 +60,7 @@ namespace Horizon::Editor
 
 		auto* pReflect = GetContext()->pEngine->GetReflectionSystem();
 
-		for (const Engine::PluginEntry& entry : m_pluginService->GetPlugins())
+		for (const Engine::PluginEntry& entry : m_pluginSystem->GetPlugins())
 		{
 			ImGui::PushID(entry.name.c_str());
 			ImGui::TableNextRow();
@@ -73,9 +73,9 @@ namespace Horizon::Editor
 				m_projectContext->SetPluginEnabled(entry.name, enabled);
 
 				if (enabled)
-					m_pluginService->RequestLoad(entry.name);
+					m_pluginSystem->RequestLoad(entry.name);
 				else
-					m_pluginService->RequestUnload(entry.name);
+					m_pluginSystem->RequestUnload(entry.name);
 			}
 
 			ImGui::TableNextColumn();

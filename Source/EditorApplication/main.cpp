@@ -9,7 +9,6 @@
 #include <Engine/Asset/AssetService.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/Physics/PhysicsService.h>
-#include <Engine/Plugin/PluginService.h>
 
 #include "TypeManifestation.h"
 
@@ -26,7 +25,6 @@ int main(int argC, char** argV)
 
 	Engine::Engine engine;
 	engine.RegisterModule<Editor::ProjectContext>(projectPath, HORIZON_RESOURCE_DIR);
-	engine.RegisterModule<Engine::PluginService>();
 	engine.RegisterModule<Engine::WindowService>();
 	engine.RegisterModule<Engine::GraphicsContext>();
 	engine.RegisterModule<Editor::ImporterContext>();

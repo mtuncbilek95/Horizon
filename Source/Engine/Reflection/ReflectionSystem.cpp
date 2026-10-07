@@ -80,7 +80,7 @@ namespace Horizon::Engine
 			Terminal::Debug(StringOps::GetName(this), "{} has been registered from {}", type.GetName(), pLibrary->GetName().substr(pLibrary->GetName().rfind('/\\') + 1));
 		}
 
-		Terminal::Info(StringOps::GetName(this), "{} registered {} type manifests", pLibrary->GetName(), library.types.GetCount());
+		Terminal::Info(StringOps::GetName(this), "{} registered {} type manifests", pLibrary->GetName().substr(pLibrary->GetName().rfind('/\\') + 1), library.types.GetCount());
 		return true;
 	}
 

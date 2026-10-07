@@ -4,7 +4,6 @@
 #include <Engine/Job/JobSystem.h>
 #include <Engine/Physics/JoltThreadBridge.h>
 #include <Engine/World/WorldService.h>
-#include <Engine/Plugin/PluginService.h>
 
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
@@ -166,7 +165,6 @@ namespace Horizon::Engine
 	void PhysicsService::DeclareDependencies(ModuleGraph& graph)
 	{
 		graph.Precedes<WorldService>();
-		graph.Requires<PluginService>();
 	}
 
 	JPH::PhysicsSystem* PhysicsService::GetWorld() const

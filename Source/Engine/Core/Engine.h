@@ -19,6 +19,7 @@ namespace Horizon::Engine
 {
 	class ReflectionSystem;
 	class JobSystem;
+	class PluginSystem;
 
 	class ENGINE_API Engine final
 	{
@@ -80,6 +81,7 @@ namespace Horizon::Engine
 		void UnregisterLibrary(const PAL::SymbolLibrary* pLibrary);
 
 		JobSystem* GetJobSystem() const noexcept { return m_jobSystem; }
+		PluginSystem* GetPluginSystem() const noexcept { return m_pluginSystem; }
 		const EngineFrame& GetFrame() const { return m_frameContext; }
 
 	private:
@@ -103,6 +105,7 @@ namespace Horizon::Engine
 
 		ReflectionSystem* m_reflectionSystem = nullptr;
 		JobSystem* m_jobSystem = nullptr;
+		PluginSystem* m_pluginSystem = nullptr;
 
 		b8 m_running = true;
 	};

@@ -7,7 +7,6 @@
 #include <Engine/World/System.h>
 #include <Engine/World/SystemOrderAttribute.h>
 #include <Engine/World/ECS/Scene.h>
-#include <Engine/Plugin/PluginService.h>
 
 namespace Horizon::Engine
 {
@@ -49,7 +48,6 @@ namespace Horizon::Engine
 	{
 		graph.Requires<AssetService>();
 		graph.Requires<GraphicsContext>();
-		graph.Requires<PluginService>();
 	}
 
 	void WorldService::OnLibraryRegistered(const ReflectionLibrary& library)

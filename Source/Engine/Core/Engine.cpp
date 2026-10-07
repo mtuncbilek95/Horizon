@@ -2,6 +2,7 @@
 
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/Job/JobSystem.h>
+#include <Engine/Plugin/PluginSystem.h>
 
 #include <unordered_set>
 
@@ -11,10 +12,12 @@ namespace Horizon::Engine
 	{
 		m_reflectionSystem = Memory::Allocator::Create<ReflectionSystem>(Memory::CurrLoc(), this);
 		m_jobSystem = Memory::Allocator::Create<JobSystem>(Memory::CurrLoc());
+		m_pluginSystem = Memory::Allocator::Create<PluginSystem>(Memory::CurrLoc(), this);
 	}
 
 	Engine::~Engine()
 	{
+		Memory::Allocator::Delete(m_pluginSystem);
 		Memory::Allocator::Delete(m_jobSystem);
 		Memory::Allocator::Delete(m_reflectionSystem);
 		Memory::Allocator::ReportLeaks();
@@ -27,6 +30,7 @@ namespace Horizon::Engine
 		while (m_running)
 		{
 			FlushPending();
+			m_pluginSystem->FlushRequests();
 
 			f64 deltaTime = m_timer.GetElapsedTimeInSec();
 			m_timer.Reset();
@@ -173,6 +177,8 @@ namespace Horizon::Engine
 
 	void Engine::Shutdown()
 	{
+		m_pluginSystem->UnloadAll();
+
 		for (usize i = m_shutdownOrder.GetCount(); i > 0; --i)
 			m_shutdownOrder[i - 1]->OnFinalize();
 

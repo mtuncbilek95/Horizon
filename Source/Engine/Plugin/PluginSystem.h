@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Engine/Core/Service.h>
 #include <Engine/Plugin/PluginEntry.h>
 #include <Runtime/Containers/List.h>
 
@@ -8,7 +7,9 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API PluginService final : public Service
+	class Engine;
+
+	class ENGINE_API PluginSystem final
 	{
 		struct PendingRequest
 		{
@@ -16,19 +17,11 @@ namespace Horizon::Engine
 			b8 load;
 		};
 	public:
-		PluginService() = default;
-		~PluginService() = default;
+		PluginSystem(Engine* pEngine);
+		~PluginSystem();
 
-		PluginService(const PluginService&) = delete;
-		PluginService& operator=(const PluginService&) = delete;
-
-		ModuleReport OnInitialize() final;
-		void OnExecute(const EngineFrame& ctx) final;
-		void OnFinalize() final;
-		void DeclareDependencies(ModuleGraph& graph) final;
-
-		void OnLibraryRegistered(const ReflectionLibrary& library) final {}
-		void OnLibraryUnregistered(const ReflectionLibrary& library) final {}
+		PluginSystem(const PluginSystem&) = delete;
+		PluginSystem& operator=(const PluginSystem&) = delete;
 
 		const List<PluginEntry>& GetPlugins() const { return m_plugins; }
 		const PluginEntry* FindPlugin(const std::string& name) const;
@@ -36,23 +29,26 @@ namespace Horizon::Engine
 		void SetRoots(const std::string& engineRoot, const std::string& projectRoot);
 		void SetEnabledPlugins(const List<std::string>& enabled) { m_enabledPlugins = enabled; }
 
-		void RequestLoad(const std::string& name);
-		void RequestUnload(const std::string& name);
-
 		void DiscoverPlugins();
 		void LoadPlugins();
+		void UnloadAll();
 
-	private:
 		b8 LoadPlugin(const std::string& name);
 		b8 UnloadPlugin(const std::string& name);
 
+		void RequestLoad(const std::string& name);
+		void RequestUnload(const std::string& name);
 		void FlushRequests();
+
+	private:
 		PluginEntry* FindEntry(const std::string& name);
 		void DiscoverRoot(const std::string& root, PluginOrigin origin, List<PluginEntry>& outEntries);
 		b8 LoadEntry(PluginEntry& entry);
 		void UnloadEntry(PluginEntry& entry);
 
 	private:
+		Engine* m_engine = nullptr;
+
 		std::string m_engineRoot;
 		std::string m_projectRoot;
 		List<std::string> m_enabledPlugins;
