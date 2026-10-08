@@ -163,6 +163,9 @@ namespace Horizon::Editor
 
 		for (const auto& view : m_registeredViews)
 		{
+			if (!HasFlag(view.flags, EditorViewFlags::OpenOnStart))
+				continue;
+
 			ImGuiID target = center;
 			switch (view.dockZone)
 			{

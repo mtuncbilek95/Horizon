@@ -10,6 +10,8 @@
 #include <Engine/World/WorldService.h>
 #include <Engine/Physics/PhysicsService.h>
 
+#include <Runtime/PAL/Console/Console.h>
+
 #include "TypeManifestation.h"
 
 using namespace Horizon;

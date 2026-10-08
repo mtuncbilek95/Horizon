@@ -2,6 +2,7 @@
 
 #include <Runtime/Containers/List.h>
 #include <Runtime/Containers/RingBuffer.h>
+#include <Runtime/PAL/Console/Console.h>
 
 #include <chrono>
 #include <cstdlib>
@@ -22,6 +23,7 @@ namespace Horizon
 			List<ILogSink*> sinks;
 			RingBuffer<LogEntry> history{ Terminal::DefaultHistoryCapacity };
 			u64 sequence = 0;
+			b8 consoleOutput = true;
 			std::mutex mutex;
 		};
 
@@ -101,6 +103,20 @@ namespace Horizon
 	void Terminal::SetMinLevel(LogLevel level) { g_minLevel = level; }
 	LogLevel Terminal::GetMinLevel() { return g_minLevel; }
 
+	void Terminal::SetConsoleOutput(b8 enabled)
+	{
+		SinkRegistry& registry = Registry();
+		std::lock_guard lock(registry.mutex);
+		registry.consoleOutput = enabled;
+	}
+
+	b8 Terminal::GetConsoleOutput()
+	{
+		SinkRegistry& registry = Registry();
+		std::lock_guard lock(registry.mutex);
+		return registry.consoleOutput;
+	}
+
 	void Terminal::AddSink(ILogSink* pSink)
 	{
 		if (!pSink)
@@ -163,18 +179,21 @@ namespace Horizon
 		SinkRegistry& registry = Registry();
 		std::lock_guard lock(registry.mutex);
 
-		if (UseColor())
+		if (PAL::Console::IsAttached())
 		{
-			constexpr const c8* kOrange = "\033[38;5;208m";
-			constexpr const c8* kReset = "\033[0m";
+			if (UseColor())
+			{
+				constexpr const c8* kOrange = "\033[38;5;208m";
+				constexpr const c8* kReset = "\033[0m";
 
-			std::println("[{}][{}{}{}][{}{}{}]: {}", timestamp,
-				kOrange, titleName, kReset,
-				ColorFor(level), NameFor(level), kReset, message);
-		}
-		else
-		{
-			std::println("[{}][{}][{}]: {}", timestamp, titleName, NameFor(level), message);
+				std::println("[{}][{}{}{}][{}{}{}]: {}", timestamp,
+					kOrange, titleName, kReset,
+					ColorFor(level), NameFor(level), kReset, message);
+			}
+			else
+			{
+				std::println("[{}][{}][{}]: {}", timestamp, titleName, NameFor(level), message);
+			}
 		}
 
 		LogEntry entry;

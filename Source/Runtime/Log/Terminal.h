@@ -52,6 +52,9 @@ namespace Horizon
 		static void SetMinLevel(LogLevel level);
 		static LogLevel GetMinLevel();
 
+		static void SetConsoleOutput(b8 enabled);
+		static b8 GetConsoleOutput();
+
 		static void AddSink(ILogSink* pSink);
 		static void RemoveSink(ILogSink* pSink);
 

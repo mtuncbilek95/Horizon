@@ -12,6 +12,7 @@
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/World/WorldService.h>
 
+#include <Runtime/PAL/Console/Console.h>
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Swapchain/GfxSwapchain.h>
 #include <Runtime/RHI/Fence/GfxFence.h>

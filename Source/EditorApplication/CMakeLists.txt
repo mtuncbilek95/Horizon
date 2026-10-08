@@ -12,6 +12,9 @@ target_link_libraries(EditorApplication
 		Runtime Engine Editor
 )
 
+set_target_properties(EditorApplication PROPERTIES WIN32_EXECUTABLE ON)
+target_link_options(EditorApplication PRIVATE /ENTRY:mainCRTStartup)
+
 HorizonReflection(EditorApplication "${HORIZON_ROOT}/Source"
 	"${HORIZON_ROOT}/Source/Runtime"
 	"${HORIZON_ROOT}/Source/Engine"
