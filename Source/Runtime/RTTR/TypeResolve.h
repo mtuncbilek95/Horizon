@@ -57,9 +57,9 @@ namespace Horizon::Reflect
 	template<typename E>
 	struct TypeResolve<List<E>>
 	{
-		using Element = E;
+		using Element = typename TypeResolve<E>::Element;
 		static constexpr TypeMode Mode = TypeMode::Array;
-		static constexpr TypeKind Kind = KindOf<E>();
+		static constexpr TypeKind Kind = TypeResolve<E>::Kind;
 	};
 
 	template<typename E>

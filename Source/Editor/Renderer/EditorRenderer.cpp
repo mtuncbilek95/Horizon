@@ -277,13 +277,13 @@ namespace Horizon::Editor
 		pColors[ImGuiCol_TitleBgCollapsed] = ImGuiUtils::Hex("#161616BF");
 		pColors[ImGuiCol_TitleBgActive] = ImGuiUtils::Hex("#0E0E0E");
 
-		style.ChildRounding = 0.0f;
+		style.ChildRounding = 4.0f;
 		style.ChildBorderSize = 1.0f;
 		pColors[ImGuiCol_ChildBg] = ImGuiUtils::Hex("#00000000");
 
 		pColors[ImGuiCol_MenuBarBg] = ImGuiUtils::Hex("#161616");
 
-		style.PopupRounding = 2.0f;
+		style.PopupRounding = 4.0f;
 		style.PopupBorderSize = 1.0f;
 		pColors[ImGuiCol_PopupBg] = ImGuiUtils::Hex("#1C1C1C");
 
@@ -292,7 +292,7 @@ namespace Horizon::Editor
 		pColors[ImGuiCol_ButtonActive] = ImGuiUtils::Hex("#0E79D0");
 
 		style.FramePadding = { 4.0f, 3.0f };
-		style.FrameRounding = 2.0f;
+		style.FrameRounding = 4.0f;
 		style.FrameBorderSize = 1.0f;
 		pColors[ImGuiCol_FrameBg] = ImGuiUtils::Hex("#151515");
 		pColors[ImGuiCol_FrameBgHovered] = ImGuiUtils::Hex("#1F1F1F");
@@ -303,14 +303,14 @@ namespace Horizon::Editor
 		pColors[ImGuiCol_HeaderActive] = ImGuiUtils::Hex("#0E79D0");
 
 		style.ScrollbarSize = 12.0f;
-		style.ScrollbarRounding = 0.0f;
+		style.ScrollbarRounding = 4.0f;
 		pColors[ImGuiCol_ScrollbarBg] = ImGuiUtils::Hex("#1C1C1C");
 		pColors[ImGuiCol_ScrollbarGrab] = ImGuiUtils::Hex("#5A5A5A");
 		pColors[ImGuiCol_ScrollbarGrabHovered] = ImGuiUtils::Hex("#6E6E6E");
 		pColors[ImGuiCol_ScrollbarGrabActive] = ImGuiUtils::Hex("#868686");
 
 		style.GrabMinSize = 8.0f;
-		style.GrabRounding = 2.0f;
+		style.GrabRounding = 4.0f;
 		pColors[ImGuiCol_SliderGrab] = ImGuiUtils::Hex("#0E79D0");
 		pColors[ImGuiCol_SliderGrabActive] = ImGuiUtils::Hex("#3D96E0");
 
@@ -320,7 +320,7 @@ namespace Horizon::Editor
 		pColors[ImGuiCol_ResizeGripHovered] = ImGuiUtils::Hex("#4A4A4A");
 		pColors[ImGuiCol_ResizeGripActive] = ImGuiUtils::Hex("#0E79D0");
 
-		style.TabRounding = 0.0f;
+		style.TabRounding = 4.0f;
 		style.TabBorderSize = 0.0f;
 		style.TabBarBorderSize = 1.0f;
 		pColors[ImGuiCol_Tab] = ImGuiUtils::Hex("#191919");

@@ -10,10 +10,13 @@ namespace Horizon::Engine
 
 namespace Horizon::Editor
 {
+	class PropertyRenderer;
+
 	struct PropertyContext
 	{
 		Engine::Engine* pEngine = nullptr;
 		Engine::ReflectionSystem* pReflection = nullptr;
+		PropertyRenderer* pRenderer = nullptr;
 	};
 
 	class EDITOR_API PropertyDrawer : public Reflect::Base

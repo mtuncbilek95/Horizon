@@ -23,6 +23,7 @@ namespace Horizon::Editor
 	{
 		m_context.pEngine = pEngine;
 		m_context.pReflection = pEngine->GetReflectionSystem();
+		m_context.pRenderer = this;
 
 		for (const Reflect::Type* pType : m_context.pReflection->GetTypeByBase(Reflect::TypeOf<PropertyDrawer>()))
 			AddType(pType);
@@ -125,14 +126,22 @@ namespace Horizon::Editor
 	{
 		PropertyDrawer* pDrawer = nullptr;
 
-		if (field.GetMode() == Reflect::TypeMode::Compose)
+		if (field.GetMode() == Reflect::TypeMode::Array)
+		{
+			if (PropertyDrawer* pListDrawer = FindDrawer(Reflect::TypeOf<ListBase>()))
+			{
+				pListDrawer->OnDraw(field, pValue, m_context);
+				return;
+			}
+		}
+		else if (field.GetMode() == Reflect::TypeMode::Compose)
 		{
 			if (field.GetKind() == Reflect::TypeKind::Enum)
 				pDrawer = FindDrawer(Reflect::TypeOf<Reflect::EnumValue>());
 			else
 				pDrawer = FindDrawer(field.GetTypeId());
 
-			if (!pDrawer && field.GetKind() == Reflect::TypeKind::Object)
+			if (pDrawer == nullptr && field.GetKind() == Reflect::TypeKind::Object)
 			{
 				DrawNested(field, pValue);
 				return;

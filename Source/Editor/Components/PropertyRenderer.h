@@ -24,6 +24,9 @@ namespace Horizon::Editor
 			Reflect::TypeHandle target;
 		};
 	public:
+		static std::string ToDisplayLabel(const std::string& fieldName);
+
+	public:
 		PropertyRenderer() = default;
 		~PropertyRenderer();
 
@@ -32,6 +35,8 @@ namespace Horizon::Editor
 
 		void Initialize(Engine::Engine* pEngine);
 		void DrawObject(const Reflect::Type& type, void* pInstance);
+		void DrawFields(const Reflect::Type& type, void* pInstance);
+		PropertyDrawer* FindDrawer(Reflect::TypeHandle handle) const;
 
 		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
 		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library);
@@ -40,13 +45,9 @@ namespace Horizon::Editor
 		b8 AddType(const Reflect::Type* pType);
 		void RemoveType(const Reflect::Type* pType);
 
-		void DrawFields(const Reflect::Type& type, void* pInstance);
 		void DrawField(const Reflect::Field& field, void* pValue);
 		void DrawNested(const Reflect::Field& field, void* pValue);
 		void DrawHeaderRow(const std::string& header);
-
-		PropertyDrawer* FindDrawer(Reflect::TypeHandle handle) const;
-		static std::string ToDisplayLabel(const std::string& fieldName);
 
 	private:
 		PropertyContext m_context;
