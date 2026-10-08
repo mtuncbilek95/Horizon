@@ -19,7 +19,7 @@ namespace Horizon::Editor
 		MenuRegistry() = default;
 		~MenuRegistry();
 
-		void BootstrapMenus(const EditorContext& ctx);
+		void BootstrapMenus(EditorContext* ctx);
 		void RenderGUI();
 
 		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
@@ -38,7 +38,7 @@ namespace Horizon::Editor
 		PAL::ChromeRect RenderChromeButton(const c8* pLabel, b8 danger);
 
 	private:
-		EditorContext m_context;
+		EditorContext* m_context = nullptr;
 
 		PAL::Window* m_window = nullptr;
 		List<MenuItemInstance> m_menus;

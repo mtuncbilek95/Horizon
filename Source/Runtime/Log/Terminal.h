@@ -8,6 +8,9 @@
 
 namespace Horizon
 {
+	template<typename T>
+	class List;
+
 	enum class LogLevel : u8
 	{
 		Debug,
@@ -32,14 +35,29 @@ namespace Horizon
 		virtual void OnMessage(LogLevel level, std::string_view titleName, std::string_view message) = 0;
 	};
 
+	struct LogEntry
+	{
+		u64 sequence = 0;
+		LogLevel level = LogLevel::Log;
+		std::string timestamp;
+		std::string title;
+		std::string message;
+	};
+
 	class RUNTIME_API Terminal
 	{
 	public:
+		static constexpr usize DefaultHistoryCapacity = 4096;
+
 		static void SetMinLevel(LogLevel level);
 		static LogLevel GetMinLevel();
 
 		static void AddSink(ILogSink* pSink);
 		static void RemoveSink(ILogSink* pSink);
+
+		static u64 CopyHistory(u64 afterSequence, List<LogEntry>& outEntries);
+		static void ClearHistory();
+		static void SetHistoryCapacity(usize capacity);
 
 		static b8 IsEnabled(LogLevel level)
 		{

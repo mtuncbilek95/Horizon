@@ -14,12 +14,12 @@ namespace Horizon::Editor
 		Clear();
 	}
 
-	void ToolBarRegistry::BootstrapItems(const EditorContext& ctx)
+	void ToolBarRegistry::BootstrapItems(EditorContext* ctx)
 	{
 		Clear();
 		m_context = ctx;
 
-		auto* pReflect = ctx.pEngine->GetReflectionSystem();
+		auto* pReflect = ctx->pEngine->GetReflectionSystem();
 
 		for (auto* pType : pReflect->GetTypeByAttribute(Reflect::TypeOf<ToolBarItemAttribute>()))
 			AddType(pType);
@@ -94,7 +94,7 @@ namespace Horizon::Editor
 			return false;
 		}
 
-		pItem->m_context = &m_context;
+		pItem->m_context = m_context;
 		m_sections[usize(pAttr->GetSection())].EmplaceBack(pItem, pType, pAttr->GetOrder());
 		return true;
 	}

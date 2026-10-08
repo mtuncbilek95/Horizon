@@ -6,9 +6,13 @@
 
 namespace Horizon::Engine
 {
+	WindowService::WindowService(const WindowParams& params) : m_params(params)
+	{
+	}
+
 	ModuleReport WindowService::OnInitialize()
 	{
-		// TODO: Those values will come from a different place later.
+		// TODO: Add Config later
 
 		// Create Window.
 		PAL::WindowDesc winDesc = {};
@@ -16,7 +20,7 @@ namespace Horizon::Engine
 		winDesc.height = 1080;
 		winDesc.mode = PAL::WindowMode::Windowed;
 		winDesc.titleName = "Horizon Engine";
-		winDesc.flags = PAL::WindowFlags::CustomTitleBar;
+		winDesc.flags = m_params.flags;
 
 		m_window = Memory::Allocator::Create<PAL::Window>(Memory::CurrLoc(), winDesc);
 		if (!m_window)

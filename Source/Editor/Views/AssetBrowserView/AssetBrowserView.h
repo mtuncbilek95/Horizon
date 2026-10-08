@@ -63,6 +63,8 @@ namespace Horizon::Editor
 		void RenderRenameModal();
 		BrowserEntry* FindEntry(const std::string& path);
 
+		void ImportFiles(const List<std::string>& files);
+
 	private:
 		// Asset Open Actions
 		List<ActionEntry> m_openActions;

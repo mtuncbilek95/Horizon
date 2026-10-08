@@ -99,7 +99,7 @@ namespace Horizon::Editor
 	void EditorRenderer::OnMouseWheel(f32 delta)
 	{
 		ImGuiIO& io = ImGui::GetIO();
-		io.AddMouseWheelEvent(delta * (io.DeltaTime * 4), delta * (io.DeltaTime * 4));
+		io.AddMouseWheelEvent(0.0f, delta);
 	}
 
 	void EditorRenderer::OnKeyboardDown(PAL::KeyCode key)

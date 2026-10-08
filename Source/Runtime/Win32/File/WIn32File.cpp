@@ -456,4 +456,20 @@ namespace Horizon::PAL
 	{
 		return MoveFile(oldPath.data(), newPath.data());
 	}
+
+	b8 File::Copy(const std::string& sourcePath, const std::string& targetFolder)
+	{
+		const std::string source = StringOps::NormalizePath(sourcePath);
+		const usize slash = source.rfind('/');
+		const std::string fileName = slash == std::string::npos ? source : source.substr(slash + 1);
+		const std::string target = StringOps::NormalizePath(targetFolder) + "/" + fileName;
+
+		if (!CopyFile(source.data(), target.data(), FALSE))
+		{
+			Terminal::Error("File", "{} could not be copied to {}", source, target);
+			return false;
+		}
+
+		return true;
+	}
 }

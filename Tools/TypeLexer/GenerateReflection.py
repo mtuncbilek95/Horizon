@@ -547,7 +547,7 @@ def LayerAllowed(layerName, only, excluded):
 # Generates one .reflected.h per marked type plus the module manifestation header.
 def Main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--source', default='Source')
+    parser.add_argument('--source', nargs='+', default=['Source'])
     parser.add_argument('--root', default=None)
     parser.add_argument('--out', default='Intermediate')
     parser.add_argument('--only', nargs='*', default=[])
@@ -555,8 +555,8 @@ def Main():
     parser.add_argument('--export', default='H_MANIFEST_EXPORT')
     arguments = parser.parse_args()
 
-    scanRoot = Path(arguments.source).resolve()
-    includeRoot = Path(arguments.root).resolve() if arguments.root else scanRoot
+    scanRoots = [Path(source).resolve() for source in arguments.source]
+    includeRoot = Path(arguments.root).resolve() if arguments.root else scanRoots[0]
     outRoot = Path(arguments.out).resolve()
     outRoot.mkdir(parents=True, exist_ok=True)
 
@@ -566,7 +566,7 @@ def Main():
     generated = []
     claimed = {}
 
-    for path in scanRoot.rglob('*.h'):
+    for path in (header for scanRoot in scanRoots for header in scanRoot.rglob('*.h')):
         if not LayerAllowed(path.relative_to(includeRoot).parts[0], only, excluded):
             continue
 

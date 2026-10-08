@@ -25,11 +25,11 @@ namespace Horizon::Editor
 		m_registeredViews.Clear();
 	}
 
-	void ViewRegistry::BootstrapViews(const EditorContext& ctx)
+	void ViewRegistry::BootstrapViews(EditorContext* ctx)
 	{
 		m_context = ctx;
 
-		if (!ctx.pEngine)
+		if (!ctx->pEngine)
 		{
 			Terminal::Fatal(StringOps::GetName(this), "Somehow engine is not there!");
 			return;
@@ -41,7 +41,7 @@ namespace Horizon::Editor
 		m_createdViews.Clear();
 		m_registeredViews.Clear();
 
-		auto* pReflect = ctx.pEngine->GetReflectionSystem();
+		auto* pReflect = ctx->pEngine->GetReflectionSystem();
 
 		for (auto* pType : pReflect->GetTypeByAttribute(Reflect::TypeOf<EditorViewAttribute>()))
 			AddType(pType);
@@ -204,7 +204,7 @@ namespace Horizon::Editor
 				return pView;
 		}
 
-		auto* pReflect = m_context.pEngine->GetReflectionSystem();
+		auto* pReflect = m_context->pEngine->GetReflectionSystem();
 		std::string_view handlName = pReflect->GetType(handl)->GetName();
 		Terminal::Error(StringOps::GetName(this), "Could not find {}", handlName);
 		return nullptr;
@@ -306,7 +306,7 @@ namespace Horizon::Editor
 	ViewObject* ViewRegistry::CreateView(const ViewDescriptor& descriptor)
 	{
 		auto* pView = (ViewObject*)descriptor.pCoreType->Create();
-		pView->m_context = &m_context;
+		pView->m_context = m_context;
 		pView->m_holder = this;
 		pView->m_displayName = descriptor.displayName;
 		pView->m_flags = descriptor.flags;

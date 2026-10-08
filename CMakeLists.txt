@@ -17,10 +17,12 @@ option(DEV_MODE "Enable developer mode" OFF)
 option(HORIZON_MONOLITHIC "Link every module statically into the application" OFF)
 
 if(HORIZON_MONOLITHIC)
-	set(HORIZON_MODULE_TYPE OBJECT)
+	set(HORIZON_MODULE_TYPE OBJECT CACHE INTERNAL "Horizon module library type")
 else()
-	set(HORIZON_MODULE_TYPE SHARED)
+	set(HORIZON_MODULE_TYPE SHARED CACHE INTERNAL "Horizon module library type")
 endif()
+
+include(HorizonModule)
 
 if(WIN32)
 	include(ConfigureWindows)
@@ -29,8 +31,6 @@ endif()
 
 include(SetupConfig)
 SetupConfig()
-
-include(HorizonModule)
 
 if(ENABLE_CATCH_TEST)
 	enable_testing()

@@ -15,7 +15,7 @@ namespace Horizon::Editor
 		ViewRegistry();
 		~ViewRegistry();
 
-		void BootstrapViews(const EditorContext& ctx);
+		void BootstrapViews(EditorContext* ctx);
 		void RenderGUI(const Engine::EngineFrame& context);
 
 		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
@@ -47,7 +47,7 @@ namespace Horizon::Editor
 		void BuildDefaultLayout(u32 rootId);
 
 	private:
-		EditorContext m_context;
+		EditorContext* m_context;
 
 		List<ViewDescriptor> m_registeredViews;
 		List<ViewObject*> m_createdViews;

@@ -50,17 +50,17 @@ namespace Horizon::Editor
 		m_viewRegistry = Memory::Allocator::Create<ViewRegistry>(Memory::CurrLoc());
 
 		m_editorContext.pViews = m_viewRegistry;
-		m_viewRegistry->BootstrapViews(m_editorContext);
+		m_viewRegistry->BootstrapViews(&m_editorContext);
 
 		m_menuRegistry = Memory::Allocator::Create<MenuRegistry>(Memory::CurrLoc());
 
 		m_editorContext.pMenus = m_menuRegistry;
-		m_menuRegistry->BootstrapMenus(m_editorContext);
+		m_menuRegistry->BootstrapMenus(&m_editorContext);
 
 		m_toolRegistry = Memory::Allocator::Create<ToolBarRegistry>(Memory::CurrLoc());
 
 		m_editorContext.pTools = m_toolRegistry;
-		m_toolRegistry->BootstrapItems(m_editorContext);
+		m_toolRegistry->BootstrapItems(&m_editorContext);
 
 		return Engine::ModuleReport();
 	}
@@ -122,6 +122,9 @@ namespace Horizon::Editor
 				break;
 			case PAL::InputMessageType::LostFocus:
 				m_editorRenderer->OnWindowFocus(false);
+				break;
+			case PAL::InputMessageType::DropFiles:
+				m_editorContext.upComingFiles = message.filePaths;
 				break;
 			}
 		}

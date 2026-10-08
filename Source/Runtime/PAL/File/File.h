@@ -28,5 +28,7 @@ namespace Horizon::PAL
 
 		static b8 RenameWithLock(FileAccessRequest fileAccess, const std::string oldPath, const std::string newPath);
 		static b8 Rename(const std::string oldPath, const std::string newPath);
+
+		static b8 Copy(const std::string& sourcePath, const std::string& targetFolder);
 	};
 }

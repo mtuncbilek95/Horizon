@@ -1,6 +1,7 @@
 #include "Terminal.h"
 
 #include <Runtime/Containers/List.h>
+#include <Runtime/Containers/RingBuffer.h>
 
 #include <chrono>
 #include <cstdlib>
@@ -19,6 +20,8 @@ namespace Horizon
 		struct SinkRegistry
 		{
 			List<ILogSink*> sinks;
+			RingBuffer<LogEntry> history{ Terminal::DefaultHistoryCapacity };
+			u64 sequence = 0;
 			std::mutex mutex;
 		};
 
@@ -123,10 +126,39 @@ namespace Horizon
 		}
 	}
 
+	u64 Terminal::CopyHistory(u64 afterSequence, List<LogEntry>& outEntries)
+	{
+		SinkRegistry& registry = Registry();
+		std::lock_guard lock(registry.mutex);
+
+		for (const LogEntry& entry : registry.history)
+		{
+			if (entry.sequence > afterSequence)
+				outEntries.PushBack(entry);
+		}
+
+		return registry.sequence;
+	}
+
+	void Terminal::ClearHistory()
+	{
+		SinkRegistry& registry = Registry();
+		std::lock_guard lock(registry.mutex);
+		registry.history.Clear();
+	}
+
+	void Terminal::SetHistoryCapacity(usize capacity)
+	{
+		SinkRegistry& registry = Registry();
+		std::lock_guard lock(registry.mutex);
+		registry.history.Reset(capacity);
+	}
+
 	void Terminal::Print(LogLevel level, std::string_view titleName, std::string_view message)
 	{
 		const auto utcNow = std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
 		const auto local = utcNow + CachedUtcOffset();
+		std::string timestamp = std::format("{:%H:%M:%S}", local);
 
 		SinkRegistry& registry = Registry();
 		std::lock_guard lock(registry.mutex);
@@ -136,14 +168,22 @@ namespace Horizon
 			constexpr const c8* kOrange = "\033[38;5;208m";
 			constexpr const c8* kReset = "\033[0m";
 
-			std::println("[{:%H:%M:%S}][{}{}{}][{}{}{}]: {}", local,
+			std::println("[{}][{}{}{}][{}{}{}]: {}", timestamp,
 				kOrange, titleName, kReset,
 				ColorFor(level), NameFor(level), kReset, message);
 		}
 		else
 		{
-			std::println("[{:%H:%M:%S}][{}][{}]: {}", local, titleName, NameFor(level), message);
+			std::println("[{}][{}][{}]: {}", timestamp, titleName, NameFor(level), message);
 		}
+
+		LogEntry entry;
+		entry.sequence = ++registry.sequence;
+		entry.level = level;
+		entry.timestamp = std::move(timestamp);
+		entry.title = std::string(titleName);
+		entry.message = std::string(message);
+		registry.history.PushBack(std::move(entry));
 
 		for (ILogSink* pSink : registry.sinks)
 			pSink->OnMessage(level, titleName, message);

@@ -1,4 +1,5 @@
 #include <Runtime/PAL/File/Directory.h>
+#include <Runtime/PAL/File/File.h>
 
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
@@ -72,5 +73,47 @@ namespace Horizon::PAL
 	b8 Directory::Rename(const std::string oldPath, const std::string newPath)
 	{
 		return MoveFile(oldPath.data(), newPath.data());
+	}
+
+	b8 Directory::Copy(const std::string& sourcePath, const std::string& targetFolder)
+	{
+		const std::string source = StringOps::NormalizePath(sourcePath);
+
+		if (!Exists(source))
+		{
+			Terminal::Error("Directory", "{} does not exist, nothing to copy", source);
+			return false;
+		}
+
+		const usize slash = source.find_last_of('/');
+		const std::string name = slash == std::string::npos ? source : source.substr(slash + 1);
+		const std::string target = StringOps::NormalizePath(targetFolder) + "/" + name;
+
+		if (target == source || target.starts_with(source + "/"))
+		{
+			Terminal::Error("Directory", "{} cannot be copied into itself", source);
+			return false;
+		}
+
+		if (!Create(target))
+			return false;
+
+		b8 result = true;
+
+		for (const Entry& entry : Iterate(source))
+		{
+			if (entry.isDirectory)
+			{
+				if (!Copy(entry.fullPath, target))
+					result = false;
+			}
+			else
+			{
+				if (!File::Copy(entry.fullPath, target))
+					result = false;
+			}
+		}
+
+		return result;
 	}
 }

@@ -25,7 +25,14 @@ int main(int argC, char** argV)
 
 	Engine::Engine engine;
 	engine.RegisterModule<Editor::ProjectContext>(projectPath, HORIZON_RESOURCE_DIR);
-	engine.RegisterModule<Engine::WindowService>();
+
+	Engine::WindowParams windowParams =
+	{
+		.windowSize = Math::Vec2u::Zero(), // This will be filled by argV for force-arguments thingy.
+		.flags = PAL::WindowFlags::EnableDragDrop | PAL::WindowFlags::CustomTitleBar
+	};
+	engine.RegisterModule<Engine::WindowService>(windowParams);
+
 	engine.RegisterModule<Engine::GraphicsContext>();
 	engine.RegisterModule<Editor::ImporterContext>();
 	engine.RegisterModule<Editor::DomainService>();

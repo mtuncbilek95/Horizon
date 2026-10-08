@@ -21,5 +21,6 @@ namespace Horizon::PAL
 		static b8 Exists(const std::string& path);
 		static List<Entry> Iterate(const std::string& path);
 		static b8 Rename(const std::string oldPath, const std::string newPath);
+		static b8 Copy(const std::string& sourcePath, const std::string& targetFolder);
 	};
 }

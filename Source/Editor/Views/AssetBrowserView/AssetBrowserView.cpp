@@ -6,6 +6,7 @@
 #include <Engine/Core/Engine.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
+#include <Runtime/PAL/File/File.h>
 
 #include <imgui_internal.h>
 
@@ -147,6 +148,12 @@ namespace Horizon::Editor
 		{
 			ImGui::TextDisabled("Root folder is unavailable");
 			return;
+		}
+
+		if (!GetContext()->upComingFiles.IsEmpty())
+		{
+			ImportFiles(GetContext()->upComingFiles);
+			GetContext()->upComingFiles.Clear();
 		}
 
 		DomainFolder* pFolder = m_currentFolder;
@@ -405,5 +412,17 @@ namespace Horizon::Editor
 		}
 
 		return nullptr;
+	}
+
+	void AssetBrowserView::ImportFiles(const List<std::string>& files)
+	{
+		for (const auto& filePath : files)
+		{
+			if (PAL::File::Exists(filePath))
+				PAL::File::Copy(filePath, m_currentFolder->GetAbsolutePath());
+
+			if (PAL::Directory::Exists(filePath))
+				PAL::Directory::Copy(filePath, m_currentFolder->GetAbsolutePath());
+		}
 	}
 }

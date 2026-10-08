@@ -5,7 +5,7 @@ function(SetupConfig)
         $<$<CONFIG:Release>:HORIZON_RELEASE=1>
     )
 
-add_compile_definitions(HORIZON_RESOURCE_DIR="${CMAKE_SOURCE_DIR}/Resources")
-add_compile_definitions(HORIZON_EXAMPLE_DIR="${CMAKE_SOURCE_DIR}/ExampleProject")
+	add_compile_definitions(HORIZON_RESOURCE_DIR="${HORIZON_ROOT}/Resources")
+	add_compile_definitions(HORIZON_EXAMPLE_DIR="${HORIZON_ROOT}/ExampleProject")
 
 endfunction()

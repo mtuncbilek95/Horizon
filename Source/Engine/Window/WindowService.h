@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Core/Service.h>
+#include <Engine/Window/WindowParams.h>
 #include <Runtime/PAL/Window/Window.h>
 
 namespace Horizon::Engine
@@ -8,7 +9,7 @@ namespace Horizon::Engine
 	class ENGINE_API WindowService : public Service
 	{
 	public:
-		WindowService() = default;
+		WindowService(const WindowParams& params);
 		~WindowService() = default;
 
 		PAL::Window* GetWindow() const noexcept { return m_window; }
@@ -22,6 +23,7 @@ namespace Horizon::Engine
 		void OnLibraryUnregistered(const ReflectionLibrary& library) final {}
 
 	private:
+		WindowParams m_params;
 		PAL::Window* m_window = nullptr;
 	};
 }

@@ -24,7 +24,7 @@ namespace Horizon::Editor
 		ToolBarRegistry() = default;
 		~ToolBarRegistry();
 
-		void BootstrapItems(const EditorContext& ctx);
+		void BootstrapItems(EditorContext* ctx);
 		void RenderGUI();
 
 		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
@@ -39,7 +39,7 @@ namespace Horizon::Editor
 		void Clear();
 
 	private:
-		EditorContext m_context;
+		EditorContext* m_context;
 		List<ItemEntry> m_sections[kSectionCount];
 		f32 m_sectionWidths[kSectionCount] = {};
 	};
