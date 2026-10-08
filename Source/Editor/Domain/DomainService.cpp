@@ -198,8 +198,9 @@ namespace Horizon::Editor
 
 		DomainFile* pFile = FindFileByGuid(m_root, guid);
 
-		if (pFile == nullptr)
-			Terminal::Error(StringOps::GetName(this), "{} is not tracked by any domain file", guid.ToString());
+		// TODO: Too much log
+		/*if (pFile == nullptr)
+			Terminal::Error(StringOps::GetName(this), "{} is not tracked by any domain file", guid.ToString());*/
 
 		return pFile;
 	}
