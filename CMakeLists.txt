@@ -22,8 +22,6 @@ else()
 	set(HORIZON_MODULE_TYPE SHARED CACHE INTERNAL "Horizon module library type")
 endif()
 
-include(HorizonModule)
-
 if(WIN32)
 	include(ConfigureWindows)
 	ConfigureWindowsDefinitions()

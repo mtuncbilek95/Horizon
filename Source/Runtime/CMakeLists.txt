@@ -1,7 +1,28 @@
 cmake_minimum_required(VERSION 3.26 FATAL_ERROR)
 
-HorizonModule(Runtime RUNTIME_API)
-HorizonModuleApi(Runtime IMGUI_API)
+file(GLOB_RECURSE SUBDIRECTORIES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/*.h")
+source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${SUBDIRECTORIES})
+
+add_library(Runtime ${HORIZON_MODULE_TYPE} ${SUBDIRECTORIES})
+
+target_include_directories(Runtime PUBLIC "${CMAKE_SOURCE_DIR}/Source")
+
+if(HORIZON_MONOLITHIC)
+	target_compile_definitions(Runtime
+		PUBLIC
+			RUNTIME_API=
+			IMGUI_API=
+	)
+else()
+	target_compile_definitions(Runtime
+		PRIVATE
+			RUNTIME_API=__declspec\(dllexport\)
+			IMGUI_API=__declspec\(dllexport\)
+		INTERFACE
+			RUNTIME_API=__declspec\(dllimport\)
+			IMGUI_API=__declspec\(dllimport\)
+	)
+endif()
 
 target_link_libraries(Runtime
 	PUBLIC

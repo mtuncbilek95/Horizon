@@ -1,6 +1,7 @@
 #include "TestViewMenuItem.h"
 
 #include <TestLibrary/TestView.h>
+
 #include <Editor/Views/ViewRegistry.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
