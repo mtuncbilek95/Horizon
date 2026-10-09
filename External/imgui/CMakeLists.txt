@@ -2,6 +2,7 @@ if(NOT DEFINED IMGUI_URL)
     set(IMGUI_URL https://github.com/ocornut/imgui.git)
     set(IMNODES_URL https://github.com/Nelarius/imnodes.git)
     set(IMGUIZMO_URL https://github.com/CedricGuillemet/ImGuizmo.git)
+    set(IMGUI_NODE_EDITOR_URL https://github.com/thedmd/imgui-node-editor.git)
 endif()
 
 FetchContent_Declare(
@@ -28,6 +29,14 @@ FetchContent_Declare(
     GIT_TAG master
     GIT_SHALLOW TRUE
 )
+FetchContent_Declare(
+    imgui_node_editor
+    EXCLUDE_FROM_ALL
+    GIT_REPOSITORY ${IMGUI_NODE_EDITOR_URL}
+    GIT_TAG 021aa0ea4da13fed864bafb2a92d4c5205076866
+    UPDATE_DISCONNECTED TRUE
+    PATCH_COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=<SOURCE_DIR> -P ${CMAKE_SOURCE_DIR}/CMake/PatchImGuiNodeEditor.cmake
+)
 cmake_policy(SET CMP0169 OLD)
 FetchContent_GetProperties(imnodes)
 if(NOT imnodes_POPULATED)
@@ -36,6 +45,10 @@ endif()
 FetchContent_GetProperties(imguizmo)
 if(NOT imguizmo_POPULATED)
     FetchContent_Populate(imguizmo)
+endif()
+FetchContent_GetProperties(imgui_node_editor)
+if(NOT imgui_node_editor_POPULATED)
+    FetchContent_Populate(imgui_node_editor)
 endif()
 
 file(GLOB IMGUI_COMMON_FILES
@@ -90,6 +103,16 @@ add_library(ImGuizmo STATIC ${TARGET_IMGUIZMO_FILES})
 target_include_directories(ImGuizmo PUBLIC "${imguizmo_SOURCE_DIR}/src")
 target_link_libraries(ImGuizmo PUBLIC Imgui)
 
+file(GLOB TARGET_NODE_EDITOR_FILES
+    "${imgui_node_editor_SOURCE_DIR}/*.h"
+    "${imgui_node_editor_SOURCE_DIR}/*.inl"
+    "${imgui_node_editor_SOURCE_DIR}/*.cpp"
+)
+source_group(TREE "${imgui_node_editor_SOURCE_DIR}" FILES ${TARGET_NODE_EDITOR_FILES})
+add_library(ImNodeEditor STATIC ${TARGET_NODE_EDITOR_FILES})
+target_include_directories(ImNodeEditor PUBLIC "${imgui_node_editor_SOURCE_DIR}")
+target_link_libraries(ImNodeEditor PUBLIC Imgui)
+
 if(WIN32)
     include(ConfigureWindows)
     ConfigureD3D12Library(Imgui)
@@ -98,4 +121,5 @@ endif()
 if(NOT HORIZON_MONOLITHIC)
 	target_compile_definitions(Imgui PRIVATE IMGUI_API=__declspec\(dllexport\))
 	target_compile_definitions(ImGuizmo PRIVATE IMGUI_API=__declspec\(dllexport\))
+	target_compile_definitions(ImNodeEditor PRIVATE IMGUI_NODE_EDITOR_API=__declspec\(dllexport\))
 endif()
