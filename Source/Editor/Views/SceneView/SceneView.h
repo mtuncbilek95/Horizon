@@ -28,6 +28,9 @@ namespace Horizon::Editor
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
 
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
+
 		b8 IsFullBleed() const { return true; }
 
 	private:

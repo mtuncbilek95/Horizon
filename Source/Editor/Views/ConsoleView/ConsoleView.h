@@ -25,6 +25,9 @@ namespace Horizon::Editor
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
 
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
+
 	private:
 		void PullHistory();
 		void RenderToolbar();

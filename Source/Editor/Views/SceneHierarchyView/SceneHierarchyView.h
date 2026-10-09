@@ -20,10 +20,10 @@ namespace Horizon::Editor
 		void OnRender(const Engine::EngineFrame& context) final;
 		b8 OnCommand(ViewCommand command) final;
 
-		b8 IsFullBleed() const final { return true; }
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final { m_context.OnLibraryRegistered(library); }
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final { m_context.OnLibraryUnregistered(library); }
+		b8 IsFullBleed() const final { return true; }
 
 	private:
 		void BeginRename(Engine::EntityHandle handl);

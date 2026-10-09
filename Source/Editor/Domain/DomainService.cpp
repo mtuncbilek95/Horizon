@@ -106,6 +106,8 @@ namespace Horizon::Editor
 
 		BindWatcher();
 
+		m_importPipelineRegistry.BootstrapViews(GetEngine());
+
 		return Engine::ModuleReport();
 	}
 
@@ -147,6 +149,16 @@ namespace Horizon::Editor
 		graph.Requires<Engine::AssetService>();
 		graph.Requires<ImporterContext>();
 		graph.Requires<ProjectContext>();
+	}
+
+	void DomainService::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	{
+		m_importPipelineRegistry.OnLibraryRegistered(library);
+	}
+
+	void DomainService::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	{
+		m_importPipelineRegistry.OnLibraryUnregistered(library);
 	}
 
 	void DomainService::BindWatcher()

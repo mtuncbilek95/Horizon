@@ -19,8 +19,8 @@ namespace Horizon::Engine
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
 
-		void OnLibraryRegistered(const ReflectionLibrary& library) final {}
-		void OnLibraryUnregistered(const ReflectionLibrary& library) final {}
+		void OnLibraryRegistered(const ReflectionLibrary& library) final;
+		void OnLibraryUnregistered(const ReflectionLibrary& library) final;
 
 	private:
 		WindowParams m_params;

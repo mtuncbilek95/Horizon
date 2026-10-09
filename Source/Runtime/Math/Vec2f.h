@@ -8,7 +8,7 @@ namespace Horizon::Math
 	HCLASS();
 	class RUNTIME_API Vec2f final
 	{
-		HORIZON_PRIMITIVE_REFLECT(Vec2f);
+		HORIZON_DATA_REFLECT(Vec2f);
 	public:
 		static Vec2f Zero() { return Vec2f(0.f, 0.f); }
 		static Vec2f One() { return Vec2f(1.f, 1.f); }

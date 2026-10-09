@@ -183,6 +183,14 @@ namespace Horizon::Editor
 			RenderGizmo({ imageMin.x, imageMin.y }, { area.x, area.y }, *pCamera);
 	}
 
+	void SceneView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	{
+	}
+
+	void SceneView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	{
+	}
+
 	Engine::CameraComponent* SceneView::EnsureEditorCamera(Engine::Scene* pScene)
 	{
 		if (m_editorCamera.IsValid() && pScene->IsAlive(m_editorCamera))

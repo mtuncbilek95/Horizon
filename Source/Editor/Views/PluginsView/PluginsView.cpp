@@ -120,4 +120,12 @@ namespace Horizon::Editor
 
 		ImGui::EndTable();
 	}
+
+	void PluginsView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	{
+	}
+
+	void PluginsView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	{
+	}
 }

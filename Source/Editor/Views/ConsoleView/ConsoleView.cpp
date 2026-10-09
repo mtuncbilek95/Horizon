@@ -180,4 +180,12 @@ namespace Horizon::Editor
 
 		return entry.message.find(m_search) != std::string::npos || entry.title.find(m_search) != std::string::npos;
 	}
+
+	void ConsoleView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	{
+	}
+
+	void ConsoleView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	{
+	}
 }

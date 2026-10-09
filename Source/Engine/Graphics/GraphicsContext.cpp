@@ -81,4 +81,12 @@ namespace Horizon::Engine
 	{
 		graph.Requires<WindowService>();
 	}
+
+	void GraphicsContext::OnLibraryRegistered(const ReflectionLibrary& library)
+	{
+	}
+
+	void GraphicsContext::OnLibraryUnregistered(const ReflectionLibrary& library)
+	{
+	}
 }

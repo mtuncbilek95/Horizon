@@ -4,6 +4,7 @@
 #include <Runtime/Containers/ListBase.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/Timer/DateTime.h>
+#include <Runtime/RTTR/Base.h>
 #include <Runtime/RTTR/Attributes/TransientAttribute.h>
 #include <Runtime/RTTR/Attributes/AliasAttribute.h>
 
@@ -68,6 +69,16 @@ namespace Horizon
 	void Serializer::WriteObject(const void* pObject, const Reflect::Type& type, IArchiveWriter& writer)
 	{
 		writer.BeginObject();
+		WriteFields(pObject, type, writer);
+		writer.EndObject();
+	}
+
+	void Serializer::WriteFields(const void* pObject, const Reflect::Type& type, IArchiveWriter& writer)
+	{
+		const Reflect::Type* pBase = ResolveBase(type);
+
+		if (pBase)
+			WriteFields(static_cast<const c8*>(pObject) + type.GetBaseOffset(), *pBase, writer);
 
 		for (const Reflect::Field& field : type.GetFields())
 		{
@@ -77,8 +88,6 @@ namespace Horizon
 			writer.Key(field.GetName());
 			WriteField(field.GetValue(pObject), field, writer);
 		}
-
-		writer.EndObject();
 	}
 
 	void Serializer::WriteField(const void* pValue, const Reflect::Field& field, IArchiveWriter& writer)
@@ -180,6 +189,16 @@ namespace Horizon
 	void Serializer::ReadObject(void* pObject, const Reflect::Type& type, IArchiveReader& reader)
 	{
 		reader.BeginObject();
+		ReadFields(pObject, type, reader);
+		reader.EndObject();
+	}
+
+	void Serializer::ReadFields(void* pObject, const Reflect::Type& type, IArchiveReader& reader)
+	{
+		const Reflect::Type* pBase = ResolveBase(type);
+
+		if (pBase)
+			ReadFields(static_cast<c8*>(pObject) + type.GetBaseOffset(), *pBase, reader);
 
 		for (const Reflect::Field& field : type.GetFields())
 		{
@@ -189,8 +208,6 @@ namespace Horizon
 			if (SeekField(field, reader))
 				ReadField(field.GetValue(pObject), field, reader);
 		}
-
-		reader.EndObject();
 	}
 
 	void Serializer::ReadField(void* pValue, const Reflect::Field& field, IArchiveReader& reader)
@@ -267,6 +284,24 @@ namespace Horizon
 		}
 
 		return false;
+	}
+
+	const Reflect::Type* Serializer::ResolveBase(const Reflect::Type& type)
+	{
+		const Reflect::TypeHandle baseId = type.GetBaseId();
+
+		if (!baseId.IsValid() || baseId == Reflect::TypeOf<Reflect::Base>())
+			return nullptr;
+
+		const Reflect::Type* pBase = Resolve(baseId);
+
+		if (!pBase)
+		{
+			Terminal::Warn("Serializer", "Base of '{}' is not registered, inherited fields skipped", type.GetName());
+			return nullptr;
+		}
+
+		return pBase;
 	}
 
 	void Serializer::ReadValue(void* pValue, const Reflect::Field& field, IArchiveReader& reader)

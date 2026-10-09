@@ -67,6 +67,7 @@ namespace Horizon::Reflect
 		TypeBuilder& WithBase()
 		{
 			m_type.m_baseId = TypeOf<TBase>();
+			m_type.m_baseOffset = BaseOffsetOf<TBase>();
 			return *this;
 		}
 
@@ -121,6 +122,13 @@ namespace Horizon::Reflect
 		static usize OffsetOf(TField TOwner::* member)
 		{
 			return reinterpret_cast<usize>(&(reinterpret_cast<const TOwner*>(0)->*member));
+		}
+
+		template<typename TBase>
+		static usize BaseOffsetOf()
+		{
+			constexpr usize probe = 0x1000;
+			return reinterpret_cast<usize>(static_cast<const TBase*>(reinterpret_cast<const TType*>(probe))) - probe;
 		}
 
 	private:

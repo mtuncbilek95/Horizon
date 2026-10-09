@@ -26,8 +26,8 @@ namespace Horizon::Editor
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
 
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final { m_properties.OnLibraryRegistered(library); }
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final { m_properties.OnLibraryUnregistered(library); }
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
 	private:
 		Engine::ReflectionSystem* m_reflSys = nullptr;

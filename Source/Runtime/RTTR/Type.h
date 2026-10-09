@@ -37,6 +37,7 @@ namespace Horizon::Reflect
 
 		TypeHandle GetTypeId() const { return m_typeId; }
 		TypeHandle GetBaseId() const { return m_baseId; }
+		usize GetBaseOffset() const { return m_baseOffset; }
 
 		const std::string& GetName() const { return m_name; }
 		TypeKind GetKind() const { return m_kind; }
@@ -168,6 +169,7 @@ namespace Horizon::Reflect
 
 		TypeHandle m_typeId;
 		TypeHandle m_baseId;
+		usize m_baseOffset = 0;
 
 		std::string m_name;
 		usize m_size = 0;

@@ -17,14 +17,14 @@ namespace Horizon::Reflect
 	struct TypeAccessor;
 }
 
-#define HORIZON_PRIMITIVE_REFLECT(XClass)																\
+#define HORIZON_DATA_REFLECT(XClass)																	\
 	template<typename>																					\
 	friend struct Horizon::Reflect::TypeAccessor;
 
 #define HORIZON_TYPE_REFLECT(XClass)																	\
 	template<typename>																					\
 	friend struct Horizon::Reflect::TypeAccessor;														\
-	Horizon::Reflect::TypeHandle GetTypeId() const final { return Horizon::Reflect::TypeOf<XClass>(); }
+	Horizon::Reflect::TypeHandle GetTypeId() const { return Horizon::Reflect::TypeOf<XClass>(); }
 
 #define HORIZON_ATTRIBUTE_REFLECT(XClass)																\
 	Horizon::Reflect::TypeHandle GetTypeId() const final { return Horizon::Reflect::TypeOf<XClass>(); }

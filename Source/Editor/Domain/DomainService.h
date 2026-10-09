@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Editor/Importer/AssetImportTask.h>
+#include <Editor/Domain/ImportPipeline/ImportPipelineRegistry.h>
 #include <Engine/Core/Service.h>
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
 #include <Runtime/Containers/Guid.h>
@@ -29,8 +30,8 @@ namespace Horizon::Editor
 		void OnFinalize() final;
 		void DeclareDependencies(Engine::ModuleGraph& graph) final;
 
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final {}
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final {}
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
 		DomainFolder* GetRoot() const { return m_root; }
 		DomainFolder* FindFolder(std::string_view relativePath) const;
@@ -82,6 +83,7 @@ namespace Horizon::Editor
 		std::string m_cookPath;
 		DomainFolder* m_root = nullptr;
 
+		ImportPipelineRegistry m_importPipelineRegistry;
 		ImporterContext* m_importerContext = nullptr;
 
 		List<std::string> m_pendingImports;

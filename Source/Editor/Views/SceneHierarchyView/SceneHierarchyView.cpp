@@ -129,6 +129,16 @@ namespace Horizon::Editor
 		return true;
 	}
 
+	void SceneHierarchyView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	{
+		m_context.OnLibraryRegistered(library);
+	}
+
+	void SceneHierarchyView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	{
+		m_context.OnLibraryUnregistered(library);
+	}
+
 	void SceneHierarchyView::BeginRename(Engine::EntityHandle handl)
 	{
 		if (!m_renamePath.empty())

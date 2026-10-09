@@ -140,4 +140,14 @@ namespace Horizon::Editor
 
 		ImGui::EndPopup();
 	}
+
+	void InspectorView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	{
+		m_properties.OnLibraryRegistered(library);
+	}
+
+	void InspectorView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	{
+		m_properties.OnLibraryUnregistered(library);
+	}
 }

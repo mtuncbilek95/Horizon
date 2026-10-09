@@ -8,7 +8,7 @@ namespace Horizon::Math
 	HCLASS();
 	class RUNTIME_API Color4f final
 	{
-		HORIZON_PRIMITIVE_REFLECT(Color4f);
+		HORIZON_DATA_REFLECT(Color4f);
 	public:
 		static Color4f Black() { return Color4f(0.f, 0.f, 0.f, 1.f); }
 		static Color4f White() { return Color4f(1.f, 1.f, 1.f, 1.f); }
