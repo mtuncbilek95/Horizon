@@ -41,9 +41,9 @@ target_link_libraries(EditorApplication
 		Runtime Engine Editor
 )
 
-# editor will be available only on windows so add this motherfucker here
-set_target_properties(EditorApplication PROPERTIES WIN32_EXECUTABLE ON)
-target_link_options(EditorApplication PRIVATE /ENTRY:mainCRTStartup)
+# Editor will be available only on windows so add this motherfucker here (TODO: OPEN THIS LATER)
+# set_target_properties(EditorApplication PROPERTIES WIN32_EXECUTABLE ON)
+# target_link_options(EditorApplication PRIVATE /ENTRY:mainCRTStartup)
 
 # Copy the fuckout
 add_custom_command(TARGET EditorApplication POST_BUILD

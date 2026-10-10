@@ -12,7 +12,7 @@ namespace Horizon::Engine
 	class RigidBodyComponent;
 	class TransformComponent;
 
-	HCLASS(SystemOrder[1000]);
+	HCLASS(SystemOrder[2000]);
 	class ENGINE_API RigidBodySystem : public System
 	{
 		HORIZON_TYPE_REFLECT(RigidBodySystem);

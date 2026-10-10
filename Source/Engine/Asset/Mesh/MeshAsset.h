@@ -3,11 +3,12 @@
 #include <Engine/Asset/AssetObject.h>
 #include <Engine/Asset/Mesh/MeshProperties.h>
 #include <Engine/Asset/Mesh/MeshSubMesh.h>
-#include <Engine/Asset/Mesh/PermittedMeshData.h>
+#include <Engine/Asset/Mesh/MeshVertex.h>
 #include <Engine/Job/JobSystem.h>
 
 #include <Runtime/Containers/List.h>
-#include <Runtime/PAL/Sync/Atomic.h>
+#include <Runtime/RHI/Device/GfxDevice.h>
+#include <Runtime/RHI/Buffer/GfxBuffer.h>
 #include <Runtime/RHI/Buffer/GfxBufferRange.h>
 
 namespace Horizon::Engine
@@ -22,9 +23,12 @@ namespace Horizon::Engine
 		~MeshAsset() = default;
 
 		void LoadAsync();
+		void UnloadAsync();
 
-		PermittedMeshData BeginUse();
-		void EndUse(const PermittedMeshData& permit);
+		const List<MeshSubMesh>& GetSubmeshes() const { return m_submeshes; }
+
+		u32 GetFirstVertex() const { return m_vertexRange.offset / sizeof(MeshVertex); }
+		u32 GetFirstIndex() const { return m_indexRange.offset / sizeof(u32); }
 
 	private:
 		SubmitTicket m_ticket = InvalidSubmitTicket;
@@ -34,8 +38,5 @@ namespace Horizon::Engine
 		MeshProperties m_properties;
 		RHI::GfxBufferRange m_vertexRange;
 		RHI::GfxBufferRange m_indexRange;
-
-		PAL::Atomic<u32> m_useCount = 0;
-		PAL::Atomic<u64> m_lastUsedTick = 0;
 	};
 }

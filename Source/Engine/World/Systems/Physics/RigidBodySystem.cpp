@@ -19,27 +19,11 @@
 
 namespace Horizon::Engine
 {
-	static JPH::Vec3 ToJolt(const Math::Vec3f& v)
-	{
-		return JPH::Vec3(v.X(), v.Y(), v.Z());
-	}
-
-	static JPH::Quat ToJolt(const Math::Quat& q)
-	{
-		return JPH::Quat(q.X(), q.Y(), q.Z(), q.W());
-	}
-
-	static Math::Vec3f FromJolt(JPH::Vec3Arg v)
-	{
-		return Math::Vec3f(v.GetX(), v.GetY(), v.GetZ());
-	}
-
-	static Math::Quat FromJolt(JPH::QuatArg q)
-	{
-		return Math::Quat(q.GetX(), q.GetY(), q.GetZ(), q.GetW());
-	}
-
-	static JPH::EMotionType ToJolt(PhysicsMotion motion)
+	static JPH::Vec3 ToJolt(const Math::Vec3f& v) { return JPH::Vec3(v.X(), v.Y(), v.Z()); }
+	static JPH::Quat ToJolt(const Math::Quat& q) { return JPH::Quat(q.X(), q.Y(), q.Z(), q.W()); }
+	static Math::Vec3f FromJolt(JPH::Vec3Arg v) { return Math::Vec3f(v.GetX(), v.GetY(), v.GetZ()); }
+	static Math::Quat FromJolt(JPH::QuatArg q) { return Math::Quat(q.GetX(), q.GetY(), q.GetZ(), q.GetW()); }
+	static JPH::EMotionType ToJolt(PhysicsMotion motion) 
 	{
 		switch (motion)
 		{

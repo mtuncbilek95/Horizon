@@ -6,7 +6,7 @@
 
 namespace Horizon::Engine
 {
-	HCLASS(SystemOrder[2000]);
+	HCLASS(SystemOrder[3000]);
 	class ENGINE_API TransformSystem : public System
 	{
 		HORIZON_TYPE_REFLECT(TransformSystem);

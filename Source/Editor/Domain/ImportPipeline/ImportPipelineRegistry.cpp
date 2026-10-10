@@ -10,6 +10,10 @@ namespace Horizon::Editor
 {
 	ImportPipelineRegistry::~ImportPipelineRegistry()
 	{
+		for (const auto& entry : m_pipelines)
+			Memory::Allocator::Delete(entry.pPipeline);
+
+		m_pipelines.Clear();
 	}
 
 	void ImportPipelineRegistry::BootstrapViews(Engine::Engine* ctx)

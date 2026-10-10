@@ -306,11 +306,11 @@ namespace Horizon::Engine
 				if (pAsset == nullptr || pAsset->GetPhysicalEntry().assetId != mesh.m_meshHandle.GetId())
 					return;
 
-				const PermittedMeshData permit = pAsset->BeginUse();
+				const AssetResidency residency = pAsset->GetResidencyState();
 
-				if (!permit.IsValid())
+				if (residency != AssetResidency::Resident)
 				{
-					if (pAsset->GetResidencyState() == AssetResidency::Unloaded)
+					if (residency == AssetResidency::Unloaded)
 						pAsset->LoadAsync();
 
 					return;
@@ -322,16 +322,18 @@ namespace Horizon::Engine
 				constants.vertexBufferIndex = sFunVertexSrv;
 				slot.pTargetCmd->SetGraphicsConstants(&constants, sizeof(FunPushConstant) / sizeof(u32));
 
-				for (u32 i = 0; i < permit.subMeshCount; ++i)
+				const List<MeshSubMesh>& subMeshes = pAsset->GetSubmeshes();
+				const u32 meshFirstVertex = pAsset->GetFirstVertex();
+				const u32 meshFirstIndex = pAsset->GetFirstIndex();
+
+				for (usize i = 0; i < subMeshes.GetCount(); ++i)
 				{
-					const MeshSubMesh& subMesh = permit.pSubMeshes[i];
-					const u32 firstVertex = permit.firstVertex + subMesh.vertexOffset;
+					const MeshSubMesh& subMesh = subMeshes[i];
+					const u32 firstVertex = meshFirstVertex + subMesh.vertexOffset;
 
 					slot.pTargetCmd->SetGraphicsConstants(&firstVertex, 1, offsetof(FunPushConstant, firstVertex) / sizeof(u32));
-					slot.pTargetCmd->DrawIndexed(subMesh.indexCount, 1, permit.firstIndex + subMesh.indexOffset, 0);
+					slot.pTargetCmd->DrawIndexed(subMesh.indexCount, 1, meshFirstIndex + subMesh.indexOffset, 0);
 				}
-
-				pAsset->EndUse(permit);
 			});
 
 		slot.pTargetCmd->EndRendering();
@@ -357,9 +359,6 @@ namespace Horizon::Engine
 	void RenderSystem::OnFinalize()
 	{
 		m_device->WaitIdle();
-
-		for (usize i = 0; i < m_slots.GetCount(); i++)
-			m_slots[i].pendingReleases.Clear();
 
 		if (sFunPipeline)
 		{

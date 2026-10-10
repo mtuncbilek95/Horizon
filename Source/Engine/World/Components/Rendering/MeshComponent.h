@@ -2,7 +2,6 @@
 
 #include <Engine/Asset/AssetHandle.h>
 #include <Engine/Asset/Mesh/MeshAsset.h>
-#include <Engine/Asset/Mesh/PermittedMeshData.h>
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Runtime/RTTR/Reflection.h>

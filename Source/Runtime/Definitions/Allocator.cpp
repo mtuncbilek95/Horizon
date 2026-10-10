@@ -8,6 +8,13 @@
 #include <unordered_map>
 #include <cstddef>
 
+#if defined(HORIZON_WINDOWS)
+#include <format>
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <Windows.h>
+#endif
+
 namespace Horizon::Memory
 {
 	namespace
@@ -78,6 +85,14 @@ namespace Horizon::Memory
 
 					for (const auto& [pAddress, record] : shard.live)
 						Terminal::Error("LeakTracker", "  {} bytes @ {}:{}", record.size, record.pFile, record.line);
+
+#if defined(HORIZON_WINDOWS)
+					for (const auto& [pAddress, record] : shard.live)
+					{
+						std::string line = std::format("{}({}): [LeakTracker] {} bytes leaked\n", record.pFile, record.line, record.size);
+						OutputDebugStringA(line.c_str());
+					}
+#endif
 				}
 			}
 

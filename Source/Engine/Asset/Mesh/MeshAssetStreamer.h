@@ -6,9 +6,7 @@
 
 #include <Runtime/Containers/List.h>
 #include <Runtime/RHI/Buffer/GfxBufferArena.h>
-#include <Runtime/RHI/Buffer/GfxBuffer.h>
 #include <Runtime/RTTR/Reflection.h>
-#include <Runtime/PAL/Sync/Atomic.h>
 #include <Runtime/PAL/Sync/CriticalSection.h>
 
 namespace Horizon::Engine
@@ -17,9 +15,6 @@ namespace Horizon::Engine
 	class ENGINE_API MeshAssetStreamer : public AssetStreamer
 	{
 		HORIZON_TYPE_REFLECT(MeshAssetStreamer);
-	public:
-		static constexpr u64 MinIdleTicks = 3;
-
 	public:
 		MeshAssetStreamer() = default;
 		~MeshAssetStreamer() = default;
@@ -33,18 +28,11 @@ namespace Horizon::Engine
 
 		Reflect::TypeHandle GetAssetType() final { return Reflect::TypeOf<MeshAsset>(); }
 
-		PermittedMeshData BeginUse(MeshAsset* pAsset);
-		void EndUse(const PermittedMeshData& permit);
-
 		RHI::GfxBuffer* GetVertexBuffer() const { return m_vertexArena->GetBuffer(); }
 		RHI::GfxBuffer* GetIndexBuffer() const { return m_indexArena->GetBuffer(); }
 
 	private:
 		void RunLoadAsset(MeshAsset* pAsset);
-
-		b8 TryAllocate(usize vertexBytes, usize indexBytes, RHI::GfxBufferRange& vertexRange, RHI::GfxBufferRange& indexRange);
-		b8 EvictLeastRecentlyUsed();
-		b8 Evict(MeshAsset* pAsset);
 
 	private:
 		RHI::GfxDevice* m_device = nullptr;
@@ -56,8 +44,5 @@ namespace Horizon::Engine
 
 		JobSystem* m_jobSystem = nullptr;
 		PAL::CriticalSection m_arenaLock;
-
-		List<MeshAsset*> m_resident;
-		PAL::Atomic<u64> m_useClock = 0;
 	};
 }
