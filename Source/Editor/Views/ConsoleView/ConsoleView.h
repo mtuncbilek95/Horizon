@@ -17,6 +17,7 @@ namespace Horizon::Editor
 		HORIZON_TYPE_REFLECT(ConsoleView);
 
 		static constexpr usize ViewCapacity = 8192;
+		static constexpr f32 DetailLines = 8.0f;
 
 	public:
 		ConsoleView() = default;
@@ -31,7 +32,11 @@ namespace Horizon::Editor
 	private:
 		void PullHistory();
 		void RenderToolbar();
+		void RenderEntries();
 		void RenderEntry(const LogEntry& entry);
+		void RenderDetail();
+		void Select(const LogEntry& entry);
+		void ClearSelection();
 		b8 PassesFilter(const LogEntry& entry) const;
 
 	private:
@@ -40,9 +45,12 @@ namespace Horizon::Editor
 		List<LogEntry> m_scratch;
 
 		std::string m_search;
+		std::string m_detail;
 		u64 m_lastSequence = 0;
 		u64 m_dropped = 0;
+		u64 m_selectedSequence = 0;
 		u32 m_levelMask = 0xFF;
+		b8 m_hasSelection = false;
 		b8 m_autoScroll = true;
 	};
 }

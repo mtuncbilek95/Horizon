@@ -250,7 +250,7 @@ namespace Horizon::Editor
 
 	void AssetBrowserView::RenderGrid()
 	{
-		const f32 cell = ImGui::GetFontSize() * 4.f;
+		const f32 cell = ImGui::GetFontSize() * 6.f;
 		const f32 step = cell + ImGui::GetStyle().ItemSpacing.x;
 		const usize columnCount = static_cast<usize>(ImMax(1, static_cast<i32>(ImGui::GetContentRegionAvail().x / step)));
 		const ImVec2 startPos = ImGui::GetCursorScreenPos();

@@ -5,6 +5,9 @@
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 
+#include <algorithm>
+#include <string_view>
+
 namespace Horizon::Editor
 {
 	namespace
@@ -52,6 +55,38 @@ namespace Horizon::Editor
 			ImGui::TextColored(color, "%s", pText);
 			ImGui::SameLine(0.0f, 0.0f);
 		}
+
+		std::string_view FirstLine(const std::string& text)
+		{
+			const usize end = text.find_first_of("\r\n");
+			return std::string_view(text).substr(0, end);
+		}
+
+		usize ExtraLineCount(const std::string& text)
+		{
+			const usize trimmed = text.find_last_not_of("\r\n");
+
+			if (trimmed == std::string::npos)
+				return 0;
+
+			return static_cast<usize>(std::count(text.begin(), text.begin() + trimmed + 1, '\n'));
+		}
+
+		std::string ExpandTabs(const std::string& text)
+		{
+			std::string result;
+			result.reserve(text.size());
+
+			for (c8 c : text)
+			{
+				if (c == '\t')
+					result.append("    ");
+				else
+					result.push_back(c);
+			}
+
+			return result;
+		}
 	}
 
 	void ConsoleView::OnInvoke()
@@ -73,36 +108,18 @@ namespace Horizon::Editor
 				m_visible.PushBack(i);
 		}
 
+		const f32 detailHeight = m_hasSelection ? ImGui::GetTextLineHeightWithSpacing() * DetailLines : 0.0f;
+
 		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGuiUtils::Hex("#121212"));
-		if (!ImGui::BeginChild("##ConsoleScroll", ImVec2(0.0f, 0.0f), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar))
-		{
-			ImGui::EndChild();
-			ImGui::PopStyleColor();
-			return;
-		}
 
-		if (m_dropped > 0)
-			ImGui::TextDisabled("%llu older messages were dropped by the history buffer", static_cast<u64>(m_dropped));
-
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 2.0f));
-
-		ImGuiListClipper clipper;
-		clipper.Begin(static_cast<i32>(m_visible.GetCount()));
-
-		while (clipper.Step())
-		{
-			for (i32 row = clipper.DisplayStart; row < clipper.DisplayEnd; ++row)
-				RenderEntry(m_entries.At(m_visible[static_cast<usize>(row)]));
-		}
-
-		clipper.End();
-		ImGui::PopStyleVar();
-
-		if (m_autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f)
-			ImGui::SetScrollHereY(1.0f);
+		if (ImGui::BeginChild("##ConsoleScroll", ImVec2(0.0f, -detailHeight), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar))
+			RenderEntries();
 
 		ImGui::EndChild();
 		ImGui::PopStyleColor();
+
+		if (m_hasSelection)
+			RenderDetail();
 	}
 
 	void ConsoleView::PullHistory()
@@ -127,6 +144,7 @@ namespace Horizon::Editor
 		{
 			m_entries.Clear();
 			m_dropped = 0;
+			ClearSelection();
 		}
 
 		ImGui::SameLine();
@@ -154,9 +172,45 @@ namespace Horizon::Editor
 		}
 	}
 
+	void ConsoleView::RenderEntries()
+	{
+		if (m_dropped > 0)
+			ImGui::TextDisabled("%llu older messages were dropped by the history buffer", static_cast<u64>(m_dropped));
+
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 2.0f));
+
+		ImGuiListClipper clipper;
+		clipper.Begin(static_cast<i32>(m_visible.GetCount()));
+
+		while (clipper.Step())
+		{
+			for (i32 row = clipper.DisplayStart; row < clipper.DisplayEnd; ++row)
+				RenderEntry(m_entries.At(m_visible[static_cast<usize>(row)]));
+		}
+
+		clipper.End();
+		ImGui::PopStyleVar();
+
+		if (m_autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 1.0f)
+			ImGui::SetScrollHereY(1.0f);
+	}
+
 	void ConsoleView::RenderEntry(const LogEntry& entry)
 	{
 		ImGui::PushID(static_cast<i32>(entry.sequence));
+
+		const f32 rowStart = ImGui::GetCursorPosX();
+		const b8 selected = m_hasSelection && m_selectedSequence == entry.sequence;
+
+		if (ImGui::Selectable("##Row", selected, ImGuiSelectableFlags_AllowOverlap))
+		{
+			if (selected)
+				ClearSelection();
+			else
+				Select(entry);
+		}
+
+		ImGui::SameLine(rowStart, 0.0f);
 
 		Piece(BracketColor, "[");
 		Piece(TimestampColor, entry.timestamp.c_str());
@@ -165,9 +219,41 @@ namespace Horizon::Editor
 		Piece(BracketColor, "][");
 		Piece(LevelColor(entry.level), LevelName(entry.level));
 		Piece(BracketColor, "]: ");
-		ImGui::TextColored(MessageColor, "%s", entry.message.c_str());
+
+		const std::string_view line = FirstLine(entry.message);
+
+		ImGui::PushStyleColor(ImGuiCol_Text, MessageColor);
+		ImGui::TextUnformatted(line.data(), line.data() + line.size());
+		ImGui::PopStyleColor();
+
+		const usize extraLines = ExtraLineCount(entry.message);
+
+		if (extraLines > 0)
+		{
+			ImGui::SameLine();
+			ImGui::TextDisabled("(+%llu lines)", static_cast<u64>(extraLines));
+		}
 
 		ImGui::PopID();
+	}
+
+	void ConsoleView::RenderDetail()
+	{
+		ImGui::InputTextMultiline("##ConsoleDetail", &m_detail, ImVec2(-FLT_MIN, -FLT_MIN), ImGuiInputTextFlags_ReadOnly);
+	}
+
+	void ConsoleView::Select(const LogEntry& entry)
+	{
+		m_hasSelection = true;
+		m_selectedSequence = entry.sequence;
+		m_detail = ExpandTabs(entry.message);
+	}
+
+	void ConsoleView::ClearSelection()
+	{
+		m_hasSelection = false;
+		m_selectedSequence = 0;
+		m_detail.clear();
 	}
 
 	b8 ConsoleView::PassesFilter(const LogEntry& entry) const
