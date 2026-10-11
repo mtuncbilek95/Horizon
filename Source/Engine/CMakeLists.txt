@@ -27,4 +27,5 @@ target_link_libraries(Engine
 		Runtime
 	PRIVATE
 		Jolt
+		sol2
 )
