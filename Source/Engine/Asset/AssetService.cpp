@@ -153,7 +153,13 @@ namespace Horizon::Engine
 			return false;
 		}
 
-		return ReadHeader(m_usableAssets[it->second]);
+		AssetObject* pAsset = m_usableAssets[it->second];
+
+		if (!ReadHeader(pAsset))
+			return false;
+
+		pAsset->m_revision.FetchAdd(1);
+		return true;
 	}
 
 	AssetObject* AssetService::FindAsset(const Guid& id)

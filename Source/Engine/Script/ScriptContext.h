@@ -6,6 +6,8 @@ struct lua_State;
 
 namespace Horizon::Engine
 {
+	class Scene;
+
 	class ENGINE_API ScriptContext final : public Context
 	{
 	public:
@@ -13,10 +15,11 @@ namespace Horizon::Engine
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
 
-		void OnLibraryRegistered(const ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const ReflectionLibrary& library) final;
+		void OnLibraryRegistered(const ReflectionLibrary& library) final {}
+		void OnLibraryUnregistered(const ReflectionLibrary& library) final {}
 
 		void Reset();
+		void BindWorld(Scene* pScene);
 		lua_State* GetState() const;
 
 	private:

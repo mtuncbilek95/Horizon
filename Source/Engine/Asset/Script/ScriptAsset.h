@@ -19,6 +19,7 @@ namespace Horizon::Engine
 		~ScriptAsset() = default;
 
 		void LoadAsync();
+		void ReloadAsync();
 		void UnloadAsync();
 
 		const std::string& GetSource() const { return m_source; }

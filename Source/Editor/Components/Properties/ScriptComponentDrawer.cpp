@@ -63,6 +63,9 @@ namespace Horizon::Editor
 			return false;
 
 		auto* pAssets = ctx.pEngine->RequestService<Engine::AssetService>();
+		auto* pWorld = ctx.pEngine->RequestService<Engine::WorldService>();
+
+		const b8 isEditing = HasFlag(pWorld->GetRunningSystems(), Engine::SystemGroup::Editor);
 
 		if (!pAssets->HasAsset(id))
 		{
@@ -71,7 +74,11 @@ namespace Horizon::Editor
 		}
 
 		auto* pAsset = pAssets->FindAsset<Engine::ScriptAsset>(id);
-		pAsset->LoadAsync();
+
+		if (isEditing && pAsset->IsStale())
+			pAsset->ReloadAsync();
+		else
+			pAsset->LoadAsync();
 
 		const Engine::AssetResidency residency = pAsset->GetResidencyState();
 
@@ -87,11 +94,8 @@ namespace Horizon::Editor
 			return false;
 		}
 
-		auto* pWorld = ctx.pEngine->RequestService<Engine::WorldService>();
 		auto* pDomain = ctx.pEngine->RequestService<DomainService>();
 		Engine::Scene* pScene = pWorld->GetCurrentWorld();
-
-		const b8 isEditing = HasFlag(pWorld->GetRunningSystems(), Engine::SystemGroup::Editor);
 		const List<Engine::ScriptField>& fields = pAsset->GetFields();
 
 		if (isEditing)

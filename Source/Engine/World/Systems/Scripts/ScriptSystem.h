@@ -49,13 +49,14 @@ namespace Horizon::Engine
 		SystemGroup GetWorkingGroup() const final { return SystemGroup::Script; }
 
 	private:
-		void BeginSession();
+		void BeginSession(Scene* pScene);
 		void EndSession(Scene* pScene);
 
 		ScriptAsset* ResolveAsset(const ScriptComponent& comp);
 		ScriptInstance* FindInstance(EntityHandle entity);
 		ScriptInstance* CreateInstance(EntityHandle entity, ScriptComponent& comp, const ScriptAsset& asset);
 		i32 LoadClass(const ScriptAsset& asset);
+		b8 IsAssetOfType(const ScriptField& field, const Guid& id) const;
 		void UpdateInstance(ScriptInstance& instance, ScriptComponent& comp, const ScriptAsset& asset, f32 deltaTime);
 		void StopInstance(ScriptInstance& instance);
 		void SweepInstances();

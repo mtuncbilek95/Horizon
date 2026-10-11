@@ -472,4 +472,14 @@ namespace Horizon::PAL
 
 		return true;
 	}
+
+	u64 File::GetLastWriteTime(const std::string& path)
+	{
+		WIN32_FILE_ATTRIBUTE_DATA data = {};
+
+		if (!GetFileAttributesEx(path.data(), GetFileExInfoStandard, &data))
+			return 0;
+
+		return (u64(data.ftLastWriteTime.dwHighDateTime) << 32) | u64(data.ftLastWriteTime.dwLowDateTime);
+	}
 }

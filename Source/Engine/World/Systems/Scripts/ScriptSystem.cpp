@@ -1,5 +1,6 @@
 #include "ScriptSystem.h"
 
+#include <Engine/Asset/AssetObject.h>
 #include <Engine/Asset/AssetService.h>
 #include <Engine/Asset/Script/ScriptAsset.h>
 #include <Engine/Core/Engine.h>
@@ -141,6 +142,7 @@ namespace Horizon::Engine
 		if (!m_inSession)
 			return;
 
+		m_context->BindWorld(&currentScene);
 		m_frame++;
 
 		currentScene.ForEach<ScriptComponent>([&](EntityHandle handl, ScriptComponent& comp)
@@ -186,7 +188,7 @@ namespace Horizon::Engine
 		// Stop to play
 		if (previous == SceneGroups::Edit && current == SceneGroups::Play)
 		{
-			BeginSession();
+			BeginSession(pScene);
 			return;
 		}
 
@@ -205,12 +207,29 @@ namespace Horizon::Engine
 		}
 	}
 
-	void ScriptSystem::BeginSession()
+	void ScriptSystem::BeginSession(Scene* pScene)
 	{
 		m_context->Reset();
 		m_instances.clear();
 		m_classRefs.clear();
 		m_frame = 0;
+
+		if (pScene != nullptr)
+		{
+			pScene->ForEach<ScriptComponent>([&](EntityHandle handl, ScriptComponent& comp)
+				{
+					const Guid& id = comp.m_script.GetId();
+
+					if (!id.IsValid() || !m_assetService->HasAsset(id))
+						return;
+
+					ScriptAsset* pAsset = m_assetService->FindAsset<ScriptAsset>(id);
+
+					if (pAsset->IsStale())
+						pAsset->ReloadAsync();
+				});
+		}
+
 		m_inSession = true;
 	}
 
@@ -304,6 +323,9 @@ namespace Horizon::Engine
 			live.value = ResolveValue(comp, field);
 			live.entity = FindEntityRef(comp, field.name);
 
+			if (field.kind == ScriptFieldKind::Asset && !IsAssetOfType(field, live.value.assetValue))
+				live.value.assetValue = Guid();
+
 			self[field.name] = ToLua(lua, field, live.value, live.entity);
 		}
 
@@ -356,6 +378,28 @@ namespace Horizon::Engine
 		m_classRefs[id] = metaRef;
 
 		return metaRef;
+	}
+
+	b8 ScriptSystem::IsAssetOfType(const ScriptField& field, const Guid& id) const
+	{
+		if (!id.IsValid())
+			return true;
+
+		if (!m_assetService->HasAsset(id))
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} points to an unregistered asset, passed as nil", field.name);
+			return false;
+		}
+
+		const AssetObject* pAsset = m_assetService->FindAsset(id);
+
+		if (pAsset->GetPhysicalEntry().assetType != field.assetType)
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} expects {} but holds another asset type, passed as nil", field.name, field.assetTypeName);
+			return false;
+		}
+
+		return true;
 	}
 
 	void ScriptSystem::UpdateInstance(ScriptInstance& instance, ScriptComponent& comp, const ScriptAsset& asset, f32 deltaTime)

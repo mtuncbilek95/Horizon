@@ -417,6 +417,9 @@ namespace Horizon::Editor
 				if (Materialize(pParent, name, meta, false))
 					++m_revision;
 
+				if (PAL::File::GetLastWriteTime(sourcePath) > PAL::File::GetLastWriteTime(CookedPathOf(meta.id)))
+					m_pendingImports.PushBack(relativePath);
+
 				return;
 			}
 		}
