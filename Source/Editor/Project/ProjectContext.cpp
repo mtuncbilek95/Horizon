@@ -26,6 +26,7 @@ namespace Horizon::Editor
 		m_assetPath = m_projectPath + "/Assets";
 		m_cookPath = m_projectPath + "/Cooked";
 		m_pluginPath = m_projectPath + "/Plugins";
+		m_codePath = m_projectPath + "/Code";
 
 		if (!PAL::Directory::Exists(m_assetPath) && !PAL::Directory::Create(m_assetPath))
 			return Engine::ModuleReport("Asset root cannot be created");

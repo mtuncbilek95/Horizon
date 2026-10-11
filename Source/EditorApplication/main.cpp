@@ -19,12 +19,20 @@ using namespace Horizon;
 
 int main(int argC, char** argV)
 {
-	std::string projectPath;
+	if (argC <= 1)
+	{
+		Terminal::Error("Main", "Invoking the engine without a project");
+		return -1;
+	}
 
-	if (argC < 2)
-		projectPath = std::string(HORIZON_EXAMPLE_DIR) + "/ExampleProject.hproject";
+	std::string projectPath = argV[1];
+	if (projectPath.substr(projectPath.rfind(".")) != ".hproject")
+	{
+		Terminal::Error("Main", "It's not a Horizon Project!");
+		return -1;
+	}
 	else
-		projectPath = argV[1];
+		Terminal::Info("Main", "{} has been registered. Opening the project!", projectPath);
 
 	Engine::Engine engine;
 	engine.RegisterModule<Editor::ProjectContext>(projectPath, HORIZON_RESOURCE_DIR);

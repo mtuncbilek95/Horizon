@@ -37,6 +37,7 @@ namespace Horizon::Editor
 		std::string m_projectPath;
 		std::string m_assetPath;
 		std::string m_cookPath;
+		std::string m_codePath;
 		std::string m_pluginPath;
 		std::string m_engineResourcePath;
 
