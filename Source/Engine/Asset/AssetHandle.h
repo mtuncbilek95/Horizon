@@ -9,7 +9,7 @@ namespace Horizon::Engine
 {
 	template<typename T>
 		requires std::is_base_of_v<AssetObject, T>
-	class ENGINE_API AssetHandle
+	class AssetHandle
 	{
 	public:
 		AssetHandle() = default;
