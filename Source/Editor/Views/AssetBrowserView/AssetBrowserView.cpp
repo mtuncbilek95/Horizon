@@ -9,6 +9,7 @@
 #include <Runtime/PAL/File/File.h>
 
 #include <imgui_internal.h>
+#include <map>
 
 namespace Horizon::Editor
 {
@@ -41,6 +42,25 @@ namespace Horizon::Editor
 			}
 
 			return result + "...";
+		}
+
+		std::string DomainToAssetIcon(DomainFile* pFile)
+		{
+			static std::map<std::string, std::string> nameMap =
+			{
+				{ "ScriptAsset", ICON_FA_CODE },
+				{ "TextureAsset", ICON_FA_IMAGE_PORTRAIT },
+				{ "MeshAsset", ICON_FA_DRAW_POLYGON },
+				{ "SceneAsset", ICON_FA_EARTH_AMERICAS },
+				{ "AudioAsset", ICON_FA_AUDIO_DESCRIPTION },
+				{ "InputMapAsset", ICON_FA_GAMEPAD }
+			};
+
+			auto it = nameMap.find(pFile->GetMeta().assetTypeName);
+			if (it == nameMap.end())
+				return ICON_FA_FILE;
+
+			return it->second;
 		}
 	}
 
@@ -313,15 +333,15 @@ namespace Horizon::Editor
 
 	void AssetBrowserView::DrawCell(ImDrawList* pDrawList, const BrowserEntry& entry, const ImVec2& cellMin, f32 cell)
 	{
-		const c8* pIcon = entry.IsFolder() ? ICON_FA_FOLDER : ICON_FA_FILE;
+		std::string fileIcon = entry.IsFolder() ? ICON_FA_FOLDER : DomainToAssetIcon(entry.pFile);
 		const ImU32 textColor = ImGui::GetColorU32(ImGuiCol_Text);
 
 		ImGui::PushFont(ImGui::GetFont(), cell * 0.5f);
 
-		const ImVec2 iconSize = ImGui::CalcTextSize(pIcon);
+		const ImVec2 iconSize = ImGui::CalcTextSize(fileIcon.c_str());
 		const ImVec2 iconPos = ImVec2(cellMin.x + (cell - iconSize.x) * 0.5f, cellMin.y + cell * 0.14f);
 
-		pDrawList->AddText(iconPos, textColor, pIcon);
+		pDrawList->AddText(iconPos, textColor, fileIcon.c_str());
 		ImGui::PopFont();
 
 		const std::string label = TruncateToWidth(entry.GetName(), cell - 6.f);
