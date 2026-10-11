@@ -442,6 +442,11 @@ namespace Horizon::Editor
 
 		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
 		pAssetService->UnregisterAsset(id);
+
+		const std::string cookedPath = CookedPathOf(id);
+
+		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
+			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
 	}
 
 	b8 DomainService::Materialize(DomainFolder* pParent, const std::string& name, const DomainMeta& meta, b8 writeMeta)

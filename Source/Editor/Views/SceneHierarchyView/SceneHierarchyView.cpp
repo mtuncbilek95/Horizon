@@ -1,13 +1,16 @@
 #include "SceneHierarchyView.h"
 
+#include <Editor/Components/Helpers/EntityPickerWidget.h>
 #include <Editor/Models/SelectionModel.h>
 #include <Editor/Renderer/EditorContext.h>
 #include <Editor/Domain/DomainFile.h>
+
 #include <Engine/Asset/Scene/SceneSerializer.h>
 #include <Engine/Job/JobSystem.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/World/Components/Tag/NameComponent.h>
 #include <Engine/World/Components/EditorOnlyComponent.h>
+
 #include <Runtime/PAL/File/File.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Log/Terminal.h>
@@ -54,9 +57,9 @@ namespace Horizon::Editor
 				m_entities.PushBack(entt);
 			});
 
-		ImGuiMultiSelectFlags msFlags = ImGuiMultiSelectFlags_ClearOnEscape;
+		ImGuiMultiSelectFlags msFlags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_SelectOnClickRelease;
 
-		if (!ImGui::IsPopupOpen(sContextName.data(), ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
+		if (!ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
 			msFlags |= ImGuiMultiSelectFlags_BoxSelect1d | ImGuiMultiSelectFlags_ClearOnClickVoid;
 
 		ImGuiMultiSelectIO* pMultiIO = ImGui::BeginMultiSelect(msFlags, m_selection.Size, static_cast<i32>(m_entities.GetCount()));
@@ -86,6 +89,14 @@ namespace Horizon::Editor
 			ImGui::PushID(i32(id));
 			ImGui::SetNextItemSelectionUserData(u64(i));
 			ImGui::Selectable(name.data(), m_selection.Contains(id));
+
+			if (ImGui::BeginDragDropSource())
+			{
+				ImGui::SetDragDropPayload(EntityPickerWidget::PayloadName, &entt, sizeof(Engine::EntityHandle));
+				ImGui::TextUnformatted(name.c_str());
+				ImGui::EndDragDropSource();
+			}
+
 			ImGui::PopID();
 		}
 

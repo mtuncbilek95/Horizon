@@ -6,6 +6,7 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowService.h>
 #include <Engine/Graphics/GraphicsContext.h>
+#include <Engine/Script/ScriptContext.h>
 #include <Engine/Asset/AssetService.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/Physics/PhysicsService.h>
@@ -37,6 +38,7 @@ int main(int argC, char** argV)
 
 	engine.RegisterModule<Engine::GraphicsContext>();
 	engine.RegisterModule<Editor::ImporterContext>();
+	engine.RegisterModule<Engine::ScriptContext>();
 	engine.RegisterModule<Editor::DomainService>();
 	engine.RegisterModule<Engine::AssetService>();
 	engine.RegisterModule<Engine::WorldService>();
