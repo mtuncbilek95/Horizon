@@ -76,7 +76,7 @@ namespace Horizon::Reflect
 	template<typename Tag>
 	struct TypeResolve<Handle<Tag>>
 	{
-		using Element = u64;
+		using Element = Handle<Tag>;
 		static constexpr TypeMode Mode = TypeMode::Compose;
 		static constexpr TypeKind Kind = TypeKind::Unsigned64;
 	};
@@ -84,7 +84,7 @@ namespace Horizon::Reflect
 	template<typename Tag>
 	struct TypeResolve<HandleEx<Tag>>
 	{
-		using Element = u64;
+		using Element = HandleEx<Tag>;
 		static constexpr TypeMode Mode = TypeMode::Compose;
 		static constexpr TypeKind Kind = TypeKind::Unsigned64;
 	};

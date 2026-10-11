@@ -12,12 +12,28 @@
 
 #include <misc/cpp/imgui_stdlib.h>
 
+#include <algorithm>
+#include <cctype>
+
 namespace Horizon::Editor
 {
 	namespace
 	{
 		static constexpr std::string_view sButtonName = "Add Component";
 		static constexpr std::string_view sPopupName = "UsableComponents";
+		static constexpr std::string_view sRootTitle = "Component";
+		static constexpr f32 sPopupWidth = 260.f;
+		static constexpr f32 sPopupListHeight = 300.f;
+
+		b8 ContainsNoCase(std::string_view text, std::string_view pattern)
+		{
+			auto equalsNoCase = [](c8 lhs, c8 rhs)
+				{
+					return std::tolower((u8)lhs) == std::tolower((u8)rhs);
+				};
+
+			return std::search(text.begin(), text.end(), pattern.begin(), pattern.end(), equalsNoCase) != text.end();
+		}
 	}
 
 	void InspectorView::OnInvoke()
@@ -98,47 +114,13 @@ namespace Horizon::Editor
 			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + offsetY);
 
 		if (ImGui::Button(sButtonName.data(), ImVec2(buttonWidth, 0.f)))
-			ImGui::OpenPopup(sPopupName.data());
-
-		if (!ImGui::BeginPopup(sPopupName.data()))
-			return;
-
-		ImGui::InputTextWithHint("##search", "Search...", &m_searchBuffer);
-		ImGui::Separator();
-
-		List<Reflect::Type*> compTypes = m_reflSys->GetTypeByBase(Reflect::TypeOf<Engine::ComponentObject>());
-		for (usize i = 0; i < compTypes.GetCount(); i++)
 		{
-			Reflect::Type* pCompType = compTypes[i];
-
-			if (pCompType->GetIsAbstract())
-				continue;
-
-			if (pCompType->GetTypeId() == Reflect::TypeOf<Engine::NameComponent>())
-				continue;
-
-			if (pCompType->GetTypeId() == Reflect::TypeOf<Engine::EditorOnlyComponent>())
-				continue;
-
-			const auto* pId = pCompType->GetCustomAttribute<Engine::ComponentIdAttribute>();
-			const std::string& label = pId ? pId->GetDisplayName() : pCompType->GetName();
-
-			if (!m_searchBuffer.empty() && label.find(m_searchBuffer) == std::string::npos)
-				continue;
-
-			b8 ownedByEntt = pCurrScene->HasComponent(entity, pCompType->GetTypeId());
-
-			if (ImGui::Selectable(label.c_str(), false, ownedByEntt ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None))
-			{
-				pCurrScene->AddComponent(entity, pCompType->GetTypeId());
-
-				auto* pNameComp = pCurrScene->FindComponent<Engine::NameComponent>(entity);
-				Terminal::Info(StringOps::GetName(this), "{} has been added to {}", label, pNameComp->m_name);
-				ImGui::CloseCurrentPopup();
-			}
+			m_searchBuffer.clear();
+			m_activeCategory.clear();
+			ImGui::OpenPopup(sPopupName.data());
 		}
 
-		ImGui::EndPopup();
+		DrawAddComponentPopup(pCurrScene, entity);
 	}
 
 	void InspectorView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
@@ -149,5 +131,189 @@ namespace Horizon::Editor
 	void InspectorView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
 	{
 		m_properties.OnLibraryUnregistered(library);
+	}
+
+	List<InspectorView::ComponentEntry> InspectorView::CollectComponents() const
+	{
+		List<ComponentEntry> entries;
+
+		List<Reflect::Type*> compTypes = m_reflSys->GetTypeByBase(Reflect::TypeOf<Engine::ComponentObject>());
+		for (Reflect::Type* pCompType : compTypes)
+		{
+			if (pCompType->GetIsAbstract())
+				continue;
+
+			if (pCompType->GetTypeId() == Reflect::TypeOf<Engine::NameComponent>())
+				continue;
+
+			if (pCompType->GetTypeId() == Reflect::TypeOf<Engine::EditorOnlyComponent>())
+				continue;
+
+			const auto* pId = pCompType->GetCustomAttribute<Engine::ComponentIdAttribute>();
+
+			ComponentEntry& entry = entries.EmplaceBack();
+			entry.pType = pCompType;
+			entry.label = pId ? pId->GetDisplayName() : pCompType->GetName();
+			entry.category = pId ? pId->GetDisplayCategory() : std::string();
+		}
+
+		entries.Sort([](const ComponentEntry& lhs, const ComponentEntry& rhs)
+			{
+				return lhs.label < rhs.label;
+			});
+
+		return entries;
+	}
+
+	void InspectorView::DrawAddComponentPopup(Engine::Scene* pScene, Engine::EntityHandle entity)
+	{
+		ImGui::SetNextWindowSize(ImVec2(sPopupWidth, 0.f));
+
+		if (!ImGui::BeginPopup(sPopupName.data()))
+			return;
+
+		List<ComponentEntry> entries = CollectComponents();
+
+		DrawPopupHeader();
+
+		if (ImGui::IsWindowAppearing())
+			ImGui::SetKeyboardFocusHere();
+
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		ImGui::InputTextWithHint("##search", "Search...", &m_searchBuffer);
+		ImGui::Separator();
+
+		ImGui::BeginChild("##componentList", ImVec2(0.f, sPopupListHeight));
+
+		if (!m_searchBuffer.empty())
+			DrawSearchResults(entries, pScene, entity);
+		else if (m_activeCategory.empty())
+			DrawCategoryRoot(entries, pScene, entity);
+		else
+			DrawCategory(entries, pScene, entity);
+
+		ImGui::EndChild();
+
+		ImGui::EndPopup();
+	}
+
+	void InspectorView::DrawPopupHeader()
+	{
+		b8 inCategory = !m_activeCategory.empty() && m_searchBuffer.empty();
+		std::string_view title = inCategory ? std::string_view(m_activeCategory) : sRootTitle;
+
+		if (inCategory)
+		{
+			if (ImGui::ArrowButton("##back", ImGuiDir_Left))
+				m_activeCategory.clear();
+
+			ImGui::SameLine();
+		}
+
+		f32 titleWidth = ImGui::CalcTextSize(title.data(), title.data() + title.size()).x;
+		f32 titleX = (ImGui::GetWindowWidth() - titleWidth) * 0.5f;
+
+		if (titleX > ImGui::GetCursorPosX())
+			ImGui::SetCursorPosX(titleX);
+
+		ImGui::AlignTextToFramePadding();
+		ImGui::TextUnformatted(title.data(), title.data() + title.size());
+	}
+
+	void InspectorView::DrawCategoryRoot(const List<ComponentEntry>& entries, Engine::Scene* pScene, Engine::EntityHandle entity)
+	{
+		List<std::string> categories;
+
+		for (const ComponentEntry& entry : entries)
+		{
+			if (entry.category.empty() || categories.Contains(entry.category))
+				continue;
+
+			categories.PushBack(entry.category);
+		}
+
+		categories.Sort([](const std::string& lhs, const std::string& rhs)
+			{
+				return lhs < rhs;
+			});
+
+		for (const std::string& category : categories)
+		{
+			if (DrawNavigationRow(category))
+				m_activeCategory = category;
+		}
+
+		for (const ComponentEntry& entry : entries)
+		{
+			if (!entry.category.empty())
+				continue;
+
+			DrawComponentRow(entry, pScene, entity, false);
+		}
+	}
+
+	void InspectorView::DrawCategory(const List<ComponentEntry>& entries, Engine::Scene* pScene, Engine::EntityHandle entity)
+	{
+		for (const ComponentEntry& entry : entries)
+		{
+			if (entry.category != m_activeCategory)
+				continue;
+
+			DrawComponentRow(entry, pScene, entity, false);
+		}
+	}
+
+	void InspectorView::DrawSearchResults(const List<ComponentEntry>& entries, Engine::Scene* pScene, Engine::EntityHandle entity)
+	{
+		for (const ComponentEntry& entry : entries)
+		{
+			if (!ContainsNoCase(entry.label, m_searchBuffer))
+				continue;
+
+			DrawComponentRow(entry, pScene, entity, true);
+		}
+	}
+
+	b8 InspectorView::DrawNavigationRow(const std::string& label)
+	{
+		ImGui::PushID(label.c_str());
+
+		f32 rowRight = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x;
+		b8 clicked = ImGui::Selectable(label.c_str(), false, ImGuiSelectableFlags_NoAutoClosePopups);
+
+		f32 iconWidth = ImGui::CalcTextSize(ICON_FA_CHEVRON_RIGHT).x;
+		ImGui::SameLine(rowRight - iconWidth);
+		ImGui::TextUnformatted(ICON_FA_CHEVRON_RIGHT);
+
+		ImGui::PopID();
+
+		return clicked;
+	}
+
+	void InspectorView::DrawComponentRow(const ComponentEntry& entry, Engine::Scene* pScene, Engine::EntityHandle entity, b8 showCategory)
+	{
+		ImGui::PushID(entry.pType);
+
+		f32 rowRight = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x;
+		b8 ownedByEntt = pScene->HasComponent(entity, entry.pType->GetTypeId());
+		b8 clicked = ImGui::Selectable(entry.label.c_str(), false, ownedByEntt ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None);
+
+		if (showCategory && !entry.category.empty())
+		{
+			f32 categoryWidth = ImGui::CalcTextSize(entry.category.c_str()).x;
+			ImGui::SameLine(rowRight - categoryWidth);
+			ImGui::TextDisabled("%s", entry.category.c_str());
+		}
+
+		ImGui::PopID();
+
+		if (!clicked)
+			return;
+
+		pScene->AddComponent(entity, entry.pType->GetTypeId());
+
+		auto* pNameComp = pScene->FindComponent<Engine::NameComponent>(entity);
+		Terminal::Info(StringOps::GetName(this), "{} has been added to {}", entry.label, pNameComp->m_name);
+		ImGui::CloseCurrentPopup();
 	}
 }

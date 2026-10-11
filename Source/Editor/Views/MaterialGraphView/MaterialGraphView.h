@@ -6,7 +6,7 @@
 
 namespace Horizon::Editor
 {
-	HCLASS(EditorView[ICON_FA_BRUSH, "Material Graph", DockZone::Center, EditorViewFlags::OpenOnStart]);
+	HCLASS(EditorView[ICON_FA_BRUSH, "Material Graph", DockZone::Center, EditorViewFlags::Mutable | EditorViewFlags::MultiInstance]);
 	class EDITOR_API MaterialGraphView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(MaterialGraphView);
