@@ -1,0 +1,10 @@
+/*
+!/.gitignore
+!/ExampleProject.hproject
+!/CMakeLists.txt
+!/CMakePresets.json
+!/launch.vs.json.in
+
+!/Code/
+/Code/*
+!/Code/ExampleProjectModule.cpp

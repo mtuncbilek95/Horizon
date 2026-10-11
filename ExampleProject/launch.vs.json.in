@@ -1,0 +1,15 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "dll",
+      "project": "CMakeLists.txt",
+      "projectTarget": "@HORIZON_LAUNCH_TARGET@",
+      "name": "@NAME@ (Editor)",
+      "exe": "@HORIZON_EDITOR_EXE@",
+      "args": [ "@HORIZON_PROJECT_FILE@" ],
+      "currentDir": "@HORIZON_EDITOR_DIR@"
+    }
+  ]
+}

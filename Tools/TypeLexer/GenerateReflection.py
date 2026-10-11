@@ -1,5 +1,3 @@
-# GenerateReflection.py
-
 import re
 import argparse
 from dataclasses import dataclass
@@ -544,6 +542,13 @@ def LayerAllowed(layerName, only, excluded):
 
     return not only or layerName in only
 
+def WriteIfChanged(path, content):
+    if path.exists() and path.read_text(encoding='utf-8') == content:
+        return False
+
+    path.write_text(content, encoding='utf-8', newline='\n')
+    return True
+
 # Generates one .reflected.h per marked type plus the module manifestation header.
 def Main():
     parser = argparse.ArgumentParser()
@@ -588,14 +593,14 @@ def Main():
             generated.append(reflected)
 
             outPath.parent.mkdir(parents=True, exist_ok=True)
-            outPath.write_text(EmitAccessor(reflected), encoding='utf-8', newline='\n')
-            print(f'[gen] {qualified} -> {outPath.relative_to(outRoot)}')
+
+            if WriteIfChanged(outPath, EmitAccessor(reflected)):
+                print(f'[gen] {qualified} -> {outPath.relative_to(outRoot)}')
 
     PruneStale(outRoot, claimed, excluded)
 
-    (outRoot / 'TypeManifestation.h').write_text(
-        EmitManifestation(generated, arguments.export), encoding='utf-8', newline='\n')
-    print(f'[gen] TypeManifestation.h ({len(generated)} types)')
+    if WriteIfChanged(outRoot / 'TypeManifestation.h', EmitManifestation(generated, arguments.export)):
+        print(f'[gen] TypeManifestation.h ({len(generated)} types)')
 
 if __name__ == '__main__':
     Main()
