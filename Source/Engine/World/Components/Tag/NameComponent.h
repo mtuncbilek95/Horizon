@@ -16,5 +16,11 @@ namespace Horizon::Engine
 
 		HFIELD();
 		std::string m_name;
+
+		HFIELD();
+		std::string m_typeIcon;
+
+		HFIELD(); 
+		std::string m_typeInfo;
 	};
 }

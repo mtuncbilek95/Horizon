@@ -5,10 +5,10 @@
 
 namespace Horizon::Editor
 {
-	HCLASS(ContextMenuItem["SceneHierarchyView", "Create/Folder", 1]);
-	class EDITOR_API CreateFolderItem : public SceneHierarchyMenuItem
+	HCLASS(ContextMenuItem["SceneHierarchyView", "SetIcon", i32_max]);
+	class EDITOR_API SetEntityIconItem : public SceneHierarchyMenuItem
 	{
-		HORIZON_TYPE_REFLECT(CreateFolderItem);
+		HORIZON_TYPE_REFLECT(SetEntityIconItem);
 	public:
 		void OnExecute(SceneHierarchyContext& context) final;
 		b8 IsEnabled(const SceneHierarchyContext& context) final;

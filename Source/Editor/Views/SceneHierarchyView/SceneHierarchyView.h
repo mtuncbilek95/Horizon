@@ -11,6 +11,7 @@
 
 #include <map>
 #include <set>
+#include <string_view>
 
 namespace Horizon::Editor
 {
@@ -18,17 +19,7 @@ namespace Horizon::Editor
 	class EDITOR_API SceneHierarchyView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(SceneHierarchyView);
-	public:
-		void OnInvoke() final;
-		void OnRender(const Engine::EngineFrame& context) final;
-		b8 OnCommand(ViewCommand command) final;
 
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
-
-		b8 IsFullBleed() const final { return true; }
-
-	private:
 		struct FolderNode
 		{
 			std::set<std::string> folders;
@@ -51,6 +42,17 @@ namespace Horizon::Editor
 			b8 isValid = false;
 		};
 
+	public:
+		void OnInvoke() final;
+		void OnRender(const Engine::EngineFrame& context) final;
+		b8 OnCommand(ViewCommand command) final;
+
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
+
+		b8 IsFullBleed() const final { return true; }
+
+	private:
 		void ResetSceneState();
 		void CollectEntities();
 		void AttachMissingFolders();
@@ -62,15 +64,27 @@ namespace Horizon::Editor
 		void RenderFolderRow(const HierarchyRow& row);
 		void RenderEntityRow(const HierarchyRow& row, usize selectionIndex);
 		void RenderVoidTarget();
+		void ApplySelectionRequests(ImGuiMultiSelectIO* pMultiIO);
+		void SelectFolder(const std::string& path, b8 additive);
 		void QueueMove(const ImGuiPayload* pPayload, const std::string& folder, Engine::EntityHandle anchor, b8 after);
 		void ApplyMove(const List<Engine::EntityHandle>& selected);
 
 		void CreateFolder(const List<Engine::EntityHandle>& selected);
 		void RenameFolder(const std::string& path, const std::string& leaf);
+		b8 HasEntitiesUnder(const std::string& path) const;
+		void BeginFolderDelete();
+		void DeleteFolders(b8 withInside);
+		void RenderDeleteFolderModal();
 
 		void BeginRename(Engine::EntityHandle handl);
 		void BeginFolderRename(const std::string& path);
 		void RenderRenameModal();
+
+		void BeginIconPick(Engine::EntityHandle handl);
+		void RebuildIconMatches();
+		void RenderIconModal();
+		void CloseIconModal();
+
 		void SaveSceneToSource();
 
 	private:
@@ -83,6 +97,8 @@ namespace Horizon::Editor
 
 		std::map<std::string, FolderNode> m_tree;
 		std::set<std::string> m_sessionFolders;
+		std::set<std::string> m_selectedFolders;
+		std::set<std::string> m_deleteFolders;
 		std::string m_openFolder;
 		PendingMove m_pendingMove;
 
@@ -90,6 +106,11 @@ namespace Horizon::Editor
 		std::string m_renameFolder;
 		Engine::EntityHandle m_renameHandl;
 		c8 m_renameBuffer[256] = {};
+
+		Engine::EntityHandle m_iconHandl;
+		std::string m_iconSelection;
+		List<std::pair<std::string_view, std::string_view>> m_iconMatches;
+		c8 m_iconFilter[64] = {};
 
 		Engine::Scene* m_currentScene = nullptr;
 	};
