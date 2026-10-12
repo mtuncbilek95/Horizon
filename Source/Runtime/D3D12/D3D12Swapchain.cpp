@@ -22,6 +22,9 @@ namespace Horizon::RHI
 		if (m_colorHeap)
 			Memory::Allocator::Delete(m_colorHeap);
 
+		if (m_waitableObject)
+			CloseHandle(m_waitableObject);
+
 		if (m_swapchain)
 			m_swapchain->Release();
 	}
@@ -89,6 +92,12 @@ namespace Horizon::RHI
 			return false;
 		}
 
+		if (m_waitableObject)
+		{
+			if (WaitForSingleObjectEx(m_waitableObject, 1000, TRUE) == WAIT_TIMEOUT)
+				Terminal::Warn(StringOps::GetName(this), "Frame latency waitable object timed out");
+		}
+
 		m_imageIndex = m_swapchain->GetCurrentBackBufferIndex();
 		pFence->WaitCPU(m_imageFenceValues[m_imageIndex]);
 
@@ -115,8 +124,7 @@ namespace Horizon::RHI
 
 		const DXGI_FORMAT format = Helpers::ToSwapchainFormat(Helpers::ToFormat(m_desc.format));
 
-		HRESULT hr = m_swapchain->ResizeBuffers(m_desc.imageCount, width, height, format,
-			DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING);
+		HRESULT hr = m_swapchain->ResizeBuffers(m_desc.imageCount, width, height, format, m_swapchainFlags);
 		CHECK_HR(hr, "IDXGISwapChain4 - ResizeBuffers");
 
 		m_desc.width = width;
@@ -135,7 +143,7 @@ namespace Horizon::RHI
 		if (!pName)
 			return;
 
-		char buffer[128];
+		c8 buffer[128];
 
 		for (u32 i = 0; i < m_images.GetCount(); i++)
 		{

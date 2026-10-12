@@ -18,6 +18,50 @@ namespace Horizon::PAL
 		OSInstance ToOSInstance(HMODULE m) { return (OSInstance)(uptr(m)); }
 		Window* GetWindowFromHandle(HWND hwnd) { return (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA); }
 
+		DWORD ToWin32Style(WindowFlags flags)
+		{
+			if (HasFlag(flags, WindowFlags::NoDecoration))
+				return WS_POPUP;
+
+			return WS_OVERLAPPEDWINDOW;
+		}
+
+		DWORD ToWin32ExStyle(WindowFlags flags)
+		{
+			DWORD exStyle = 0;
+
+			if (HasFlag(flags, WindowFlags::EnableDragDrop))
+				exStyle |= WS_EX_ACCEPTFILES;
+
+			if (HasFlag(flags, WindowFlags::NoTaskbarIcon))
+				exStyle |= WS_EX_TOOLWINDOW;
+			else
+				exStyle |= WS_EX_APPWINDOW;
+
+			if (HasFlag(flags, WindowFlags::TopMost))
+				exStyle |= WS_EX_TOPMOST;
+
+			return exStyle;
+		}
+
+		RECT ToWindowRect(DWORD style, DWORD exStyle, b8 customFrame, i32 posX, i32 posY, u32 width, u32 height)
+		{
+			RECT rect = { posX, posY, posX + i32(width), posY + i32(height) };
+
+			if (!customFrame)
+				AdjustWindowRectEx(&rect, style, FALSE, exStyle);
+
+			return rect;
+		}
+
+		RECT ToWindowRect(HWND hwnd, b8 customFrame, i32 posX, i32 posY, u32 width, u32 height)
+		{
+			const DWORD style = DWORD(GetWindowLong(hwnd, GWL_STYLE));
+			const DWORD exStyle = DWORD(GetWindowLong(hwnd, GWL_EXSTYLE));
+
+			return ToWindowRect(style, exStyle, customFrame, posX, posY, width, height);
+		}
+
 		ChromeButton ToChromeButton(WPARAM hitCode)
 		{
 			switch (hitCode)
@@ -115,6 +159,8 @@ namespace Horizon::PAL
 			message.type = InputMessageType::MouseMove;
 			message.mouseX = pt.x;
 			message.mouseY = pt.y;
+			message.screenX = screenX;
+			message.screenY = screenY;
 
 			pWindow->SubmitMessage(message);
 		}
@@ -157,10 +203,22 @@ namespace Horizon::PAL
 			{
 				Window* pWindow = GetWindowFromHandle(hwnd);
 
+				if (pWindow != nullptr && HasFlag(pWindow->GetFlags(), WindowFlags::PassThroughInput))
+					return HTTRANSPARENT;
+
 				if (pWindow == nullptr || !pWindow->GetCustomFrame())
 					return DefWindowProc(hwnd, msg, wParam, lParam);
 
 				return HitTestCustomFrame(hwnd, pWindow, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+			}
+			case WM_MOUSEACTIVATE:
+			{
+				Window* pWindow = GetWindowFromHandle(hwnd);
+
+				if (pWindow != nullptr && HasFlag(pWindow->GetFlags(), WindowFlags::NoActivate))
+					return MA_NOACTIVATE;
+
+				return DefWindowProc(hwnd, msg, wParam, lParam);
 			}
 			case WM_NCMOUSEMOVE:
 			{
@@ -224,7 +282,7 @@ namespace Horizon::PAL
 			case WM_SIZE:
 			{
 				Window* pWindow = GetWindowFromHandle(hwnd);
-				pWindow->OnSizeState(wParam == SIZE_MAXIMIZED);
+				pWindow->OnSizeState(wParam == SIZE_MAXIMIZED, wParam == SIZE_MINIMIZED);
 
 				InputMessage message = {};
 				message.type = InputMessageType::Resize;
@@ -267,10 +325,15 @@ namespace Horizon::PAL
 			{
 				Window* pWindow = GetWindowFromHandle(hwnd);
 
+				POINT screen = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+				ClientToScreen(hwnd, &screen);
+
 				InputMessage message = {};
 				message.type = InputMessageType::MouseMove;
 				message.mouseX = GET_X_LPARAM(lParam);
 				message.mouseY = GET_Y_LPARAM(lParam);
+				message.screenX = screen.x;
+				message.screenY = screen.y;
 
 				pWindow->SubmitMessage(message);
 				break;
@@ -447,7 +510,7 @@ namespace Horizon::PAL
 	}
 
 	Window::Window(const WindowDesc& desc) : m_desc(desc), m_handle(OSHandle{}),
-		m_instance(OSInstance{}), m_visible(false), m_active(false),
+		m_instance(OSInstance{}), m_posX(desc.posX), m_posY(desc.posY), m_visible(false), m_active(false),
 		m_customFrame(HasFlag(desc.flags, WindowFlags::CustomTitleBar))
 	{
 		constexpr char WindowClassName[] = "HorizonRuntimeWindowClassName";
@@ -476,8 +539,13 @@ namespace Horizon::PAL
 				Terminal::Fatal("Win32Window", "RegisterClassEx failed (err {}).", err);
 		}
 
-		HWND hwnd = CreateWindowEx(WS_EX_ACCEPTFILES, WindowClassName, desc.titleName.c_str(), WS_OVERLAPPEDWINDOW,
-			m_posX, m_posY, desc.width, desc.height, nullptr, nullptr, instance, this);
+		const DWORD style = ToWin32Style(desc.flags);
+		const DWORD exStyle = ToWin32ExStyle(desc.flags);
+		const RECT rect = ToWindowRect(style, exStyle, m_customFrame, desc.posX, desc.posY, desc.width, desc.height);
+		HWND owner = desc.pOwner != nullptr ? ToHWND(desc.pOwner->GetOSHandle()) : nullptr;
+
+		HWND hwnd = CreateWindowEx(exStyle, WindowClassName, desc.titleName.c_str(), style,
+			rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, owner, nullptr, instance, this);
 
 		if (hwnd == nullptr)
 			Terminal::Fatal("Win32Window", "CreateWindowEx failed (err {}).", GetLastError());
@@ -604,13 +672,98 @@ namespace Horizon::PAL
 		m_mouseCaptured = false;
 	}
 
+	void Window::SetPosition(i32 posX, i32 posY)
+	{
+		HWND hwnd = ToHWND(m_handle);
+		const RECT rect = ToWindowRect(hwnd, m_customFrame, posX, posY, 0, 0);
+
+		SetWindowPos(hwnd, nullptr, rect.left, rect.top, 0, 0, SWP_NOZORDER | SWP_NOSIZE | SWP_NOACTIVATE);
+	}
+
+	void Window::SetSize(u32 width, u32 height)
+	{
+		HWND hwnd = ToHWND(m_handle);
+		const RECT rect = ToWindowRect(hwnd, m_customFrame, 0, 0, width, height);
+
+		SetWindowPos(hwnd, nullptr, 0, 0, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER | SWP_NOMOVE | SWP_NOACTIVATE);
+	}
+
+	void Window::SetTitle(const std::string& title)
+	{
+		m_desc.titleName = title;
+		SetWindowText(ToHWND(m_handle), title.c_str());
+	}
+
+	void Window::SetFocus()
+	{
+		HWND hwnd = ToHWND(m_handle);
+
+		BringWindowToTop(hwnd);
+		SetForegroundWindow(hwnd);
+		::SetFocus(hwnd);
+	}
+
+	void Window::SetAlpha(f32 alpha)
+	{
+		HWND hwnd = ToHWND(m_handle);
+		const DWORD exStyle = DWORD(GetWindowLong(hwnd, GWL_EXSTYLE));
+
+		if (alpha >= 1.0f)
+		{
+			SetWindowLong(hwnd, GWL_EXSTYLE, LONG(exStyle & ~WS_EX_LAYERED));
+			return;
+		}
+
+		const f32 clamped = alpha < 0.0f ? 0.0f : alpha;
+
+		SetWindowLong(hwnd, GWL_EXSTYLE, LONG(exStyle | WS_EX_LAYERED));
+		SetLayeredWindowAttributes(hwnd, 0, BYTE(255.0f * clamped), LWA_ALPHA);
+	}
+
+	void Window::SetFlags(WindowFlags flags)
+	{
+		if (m_desc.flags == flags)
+			return;
+
+		HWND hwnd = ToHWND(m_handle);
+
+		const DWORD oldStyle = DWORD(GetWindowLong(hwnd, GWL_STYLE));
+		const DWORD oldExStyle = DWORD(GetWindowLong(hwnd, GWL_EXSTYLE));
+		const DWORD newStyle = ToWin32Style(flags) | (oldStyle & WS_VISIBLE);
+		const DWORD newExStyle = ToWin32ExStyle(flags) | (oldExStyle & WS_EX_LAYERED);
+
+		const b8 wasTopMost = HasFlag(m_desc.flags, WindowFlags::TopMost);
+		const b8 isTopMost = HasFlag(flags, WindowFlags::TopMost);
+
+		m_desc.flags = flags;
+
+		if (oldStyle == newStyle && oldExStyle == newExStyle && wasTopMost == isTopMost)
+			return;
+
+		SetWindowLong(hwnd, GWL_STYLE, LONG(newStyle));
+		SetWindowLong(hwnd, GWL_EXSTYLE, LONG(newExStyle));
+
+		const RECT rect = ToWindowRect(newStyle, newExStyle, m_customFrame, m_posX, m_posY, m_desc.width, m_desc.height);
+
+		UINT swpFlags = SWP_FRAMECHANGED | SWP_NOACTIVATE;
+		if (wasTopMost == isTopMost)
+			swpFlags |= SWP_NOZORDER;
+
+		SetWindowPos(hwnd, isTopMost ? HWND_TOPMOST : HWND_NOTOPMOST, rect.left, rect.top,
+			rect.right - rect.left, rect.bottom - rect.top, swpFlags);
+	}
+
 	void Window::Show()
 	{
-		m_visible = ShowWindow(ToHWND(m_handle), SW_SHOW);
+		const i32 command = HasFlag(m_desc.flags, WindowFlags::NoActivate) ? SW_SHOWNA : SW_SHOW;
+
+		ShowWindow(ToHWND(m_handle), command);
+		m_visible = true;
 	}
 
 	void Window::Hide()
 	{
-		m_visible = ShowWindow(ToHWND(m_handle), SW_HIDE);
+		ShowWindow(ToHWND(m_handle), SW_HIDE);
+		m_visible = false;
 	}
 }

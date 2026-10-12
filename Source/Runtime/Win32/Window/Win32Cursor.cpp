@@ -61,6 +61,21 @@ namespace Horizon::PAL
 		::SetCursor(ToWin32Cursor(type));
 	}
 
+	CursorPoint Cursor::GetScreenPosition() const
+	{
+		POINT pt = {};
+
+		if (!GetCursorPos(&pt))
+			return {};
+
+		return { pt.x, pt.y };
+	}
+
+	void Cursor::SetScreenPosition(i32 x, i32 y)
+	{
+		SetCursorPos(x, y);
+	}
+
 	void Cursor::SetClipTarget(Window* pWindow)
 	{
 		if (m_clipTarget == pWindow)

@@ -13,10 +13,13 @@
 #include <Engine/World/WorldService.h>
 
 #include <Runtime/PAL/Console/Console.h>
+#include <Runtime/PAL/Timer/Timer.h>
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Swapchain/GfxSwapchain.h>
 #include <Runtime/RHI/Fence/GfxFence.h>
 #include <Runtime/RHI/Queue/GfxQueue.h>
+
+#include <imgui.h>
 
 namespace Horizon::Editor
 {
@@ -41,6 +44,7 @@ namespace Horizon::Editor
 		renderDesc.pDevice = pGraphSub->GetDevice();
 		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
 		renderDesc.colorFormat = m_swapchain->GetDesc().format;
+		renderDesc.pWindowService = pWindowSub;
 
 		m_editorRenderer = Memory::Allocator::Create<EditorRenderer>(Memory::CurrLoc(), renderDesc);
 		Terminal::Debug(StringOps::GetName(this), "EditorRenderer has been initialized!");
@@ -77,41 +81,6 @@ namespace Horizon::Editor
 		{
 			switch (message.type)
 			{
-			case PAL::InputMessageType::MouseMove:
-			{
-				m_editorRenderer->OnMousePosition(message.mouseX, message.mouseY);
-				break;
-			}
-			case PAL::InputMessageType::MouseDown:
-			{
-				m_editorRenderer->OnMouseButtonDown(message.button);
-				break;
-			}
-			case PAL::InputMessageType::MouseUp:
-			{
-				m_editorRenderer->OnMouseButtonUp(message.button);
-				break;
-			}
-			case PAL::InputMessageType::MouseScroll:
-			{
-				m_editorRenderer->OnMouseWheel(message.scrollY);
-				break;
-			}
-			case PAL::InputMessageType::KeyDown:
-			{
-				m_editorRenderer->OnKeyboardDown(message.key);
-				break;
-			}
-			case PAL::InputMessageType::KeyUp:
-			{
-				m_editorRenderer->OnKeyboardUp(message.key);
-				break;
-			}
-			case PAL::InputMessageType::Char:
-			{
-				m_editorRenderer->OnKeyboardChar(message.character);
-				break;
-			}
 			case PAL::InputMessageType::Resize:
 			{
 				newWindowWidth = message.width;
@@ -119,26 +88,21 @@ namespace Horizon::Editor
 				onResizeDone = false;
 				break;
 			}
-			case PAL::InputMessageType::Focus:
-				m_editorRenderer->OnWindowFocus(true);
-				break;
-			case PAL::InputMessageType::LostFocus:
-				m_editorRenderer->OnWindowFocus(false);
-				break;
 			case PAL::InputMessageType::DropFiles:
 				m_editorContext.upComingFiles = message.filePaths;
 				break;
+			default:
+				break;
 			}
 		}
+
+		m_editorRenderer->UpdatePlatform();
 
 		if (!onResizeDone)
 		{
 			m_swapchain->Resize(newWindowWidth, newWindowHeight);
 			onResizeDone = true;
 		}
-
-		PAL::WindowRect rect = m_engineWindow->GetRect();
-		m_editorRenderer->OnResizeWindow(rect.width, rect.height);
 
 		if (!m_swapchain->AcquireNextImage(m_fence))
 			return;
@@ -148,11 +112,6 @@ namespace Horizon::Editor
 		m_menuRegistry->RenderGUI();
 		m_toolRegistry->RenderGUI();
 		m_viewRegistry->RenderGUI(ctx);
-
-		const b8 dragging = m_editorRenderer->CheckMouseDragging();
-		m_engineWindow->SetMouseCapture(dragging);
-		m_engineCursor->SetClipTarget(dragging ? m_engineWindow : nullptr);
-		m_engineCursor->SetShape(m_editorRenderer->GetMouseCursor());
 
 		m_editorRenderer->EndRender(m_swapchain->GetImage(m_swapchain->GetCurrentImageIndex()));
 

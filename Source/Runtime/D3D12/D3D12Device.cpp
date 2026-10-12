@@ -255,7 +255,8 @@ namespace Horizon::RHI
 		pSwapchain->m_desc = desc;
 		pSwapchain->m_colorHeap = pColorHeap;
 		pSwapchain->m_syncInterval = Helpers::ToSyncInterval(desc.presentMode);
-		pSwapchain->m_presentFlags = Helpers::ToPresentFlags(desc.presentMode);
+		pSwapchain->m_presentFlags = 0;
+		pSwapchain->m_swapchainFlags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
 		DXGI_SWAP_CHAIN_DESC1 chainDesc = {};
 
@@ -268,7 +269,7 @@ namespace Horizon::RHI
 		chainDesc.Scaling = DXGI_SCALING_NONE;
 		chainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 		chainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-		chainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+		chainDesc.Flags = pSwapchain->m_swapchainFlags;
 
 		const HWND window = HWND(desc.pWindowHandle);
 		IDXGISwapChain1* pBase = nullptr;
@@ -279,6 +280,12 @@ namespace Horizon::RHI
 		hr = pBase->QueryInterface(IID_PPV_ARGS(&pSwapchain->m_swapchain));
 		CHECK_HR(hr, "IDXGISwapChain4 - QueryInterface");
 		pBase->Release();
+
+		const u32 frameLatency = desc.imageCount > 1 ? desc.imageCount - 1 : 1;
+		hr = pSwapchain->m_swapchain->SetMaximumFrameLatency(frameLatency);
+		CHECK_HR(hr, "IDXGISwapChain4 - SetMaximumFrameLatency");
+
+		pSwapchain->m_waitableObject = pSwapchain->m_swapchain->GetFrameLatencyWaitableObject();
 
 		m_factory->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER);
 

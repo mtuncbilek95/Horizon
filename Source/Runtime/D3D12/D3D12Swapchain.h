@@ -30,14 +30,17 @@ namespace Horizon::RHI
 		void AcquireImages();
 		void ReleaseImages();
 
+	private:
 		IDXGISwapChain4* m_swapchain = nullptr;
 		D3D12Device* m_device = nullptr;
 		GfxDescriptorHeap* m_colorHeap = nullptr;
+		HANDLE m_waitableObject = nullptr;
 
 		List<D3D12Texture*> m_images;
 		List<u32> m_imageViews;
 
 		u32 m_syncInterval = 0;
 		u32 m_presentFlags = 0;
+		u32 m_swapchainFlags = 0;
 	};
 }

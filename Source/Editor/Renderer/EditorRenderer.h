@@ -1,8 +1,5 @@
 #pragma once
 
-#include <Runtime/PAL/Window/MouseButton.h>
-#include <Runtime/PAL/Window/KeyCode.h>
-#include <Runtime/PAL/Window/CursorType.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/RHI/Texture/GfxTextureFormat.h>
 
@@ -18,8 +15,15 @@ namespace Horizon::RHI
 	class GfxFence;
 }
 
+namespace Horizon::Engine
+{
+	class WindowService;
+}
+
 namespace Horizon::Editor
 {
+	class EditorPlatform;
+
 	using RenderContext = void*;
 
 	struct EditorRendererDesc
@@ -27,6 +31,7 @@ namespace Horizon::Editor
 		RHI::GfxDevice* pDevice = nullptr;
 		RHI::GfxQueue* pQueue = nullptr;
 		RHI::GfxTextureFormat colorFormat = RHI::GfxTextureFormat::RGBA8_UNORM;
+		Engine::WindowService* pWindowService = nullptr;
 	};
 
 	class EDITOR_API EditorRenderer
@@ -41,21 +46,11 @@ namespace Horizon::Editor
 		EditorRenderer(const EditorRendererDesc& desc);
 		~EditorRenderer();
 
-		void OnMousePosition(i32 x, i32 y);
-		void OnMouseButtonDown(PAL::MouseButton button);
-		void OnMouseButtonUp(PAL::MouseButton button);
-		void OnMouseWheel(f32 delta);
-		void OnKeyboardDown(PAL::KeyCode key);
-		void OnKeyboardUp(PAL::KeyCode key);
-		void OnKeyboardChar(u32 value);
-		void OnResizeWindow(u32 width, u32 height);
-		void OnWindowFocus(b8 focused);
+		void UpdatePlatform();
 
 		b8 BeginRender(f32 dt);
 		b8 EndRender(RHI::GfxTexture* pBackbuffer);
 		b8 CheckMouseDragging();
-
-		PAL::CursorType GetMouseCursor() const;
 
 	private:
 		void LoadFonts();
@@ -65,12 +60,13 @@ namespace Horizon::Editor
 		static constexpr u32 kImGuiHeapCapacity = 64;
 
 		RenderContext m_context;
+		EditorPlatform* m_platform = nullptr;
 
 		RHI::GfxDevice* m_device;
 		RHI::GfxQueue* m_graphicsQueue;
 		RHI::GfxDescriptorHeap* m_resourceHeap = nullptr;
 		List<FrameContext> m_frames;
-		
+
 		RHI::GfxFence* m_fence = nullptr;
 		u32 m_frameIndex = 0;
 	};

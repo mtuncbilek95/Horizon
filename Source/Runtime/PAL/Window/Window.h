@@ -1,5 +1,3 @@
-// Window.h
-
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
@@ -7,7 +5,6 @@
 #include <Runtime/PAL/Window/WindowFlags.h>
 #include <Runtime/PAL/Window/WindowChrome.h>
 #include <Runtime/PAL/Window/InputMessage.h>
-// #include <Runtime/PAL/Window/CursorType.h> // siliniyor
 
 #include <Runtime/Containers/List.h>
 #include <Runtime/Containers/ReadOnlyList.h>
@@ -17,7 +14,8 @@
 
 namespace Horizon::PAL
 {
-	class WindowListener; // eklendi
+	class WindowListener;
+	class Window;
 
 	enum class OSHandle : uptr {};
 	enum class OSInstance : uptr {};
@@ -32,8 +30,10 @@ namespace Horizon::PAL
 	{
 		std::string titleName = "Horizon";
 		u32 width = 1920, height = 1080;
+		i32 posX = 100, posY = 100;
 		WindowMode mode = WindowMode::Borderless;
 		WindowFlags flags = WindowFlags::None;
+		Window* pOwner = nullptr;
 	};
 
 	class RUNTIME_API Window final
@@ -60,6 +60,7 @@ namespace Horizon::PAL
 
 		WindowRect GetRect() const { return { m_desc.width, m_desc.height, m_posX, m_posY }; }
 		const std::string& GetName() const { return m_desc.titleName; }
+		WindowFlags GetFlags() const { return m_desc.flags; }
 		OSHandle GetOSHandle() const { return m_handle; }
 		OSInstance GetOSInstance() const { return m_instance; }
 
@@ -67,6 +68,7 @@ namespace Horizon::PAL
 		b8 GetActive() const { return m_active; }
 		b8 GetFocused() const { return m_focused; }
 		b8 GetMaximized() const { return m_maximized; }
+		b8 GetMinimized() const { return m_minimized; }
 		b8 GetCustomFrame() const { return m_customFrame; }
 
 		const WindowChrome& GetChrome() const { return m_chrome; }
@@ -77,8 +79,15 @@ namespace Horizon::PAL
 
 		void SetMouseCapture(b8 enabled);
 
+		void SetPosition(i32 posX, i32 posY);
+		void SetSize(u32 width, u32 height);
+		void SetTitle(const std::string& title);
+		void SetFocus();
+		void SetAlpha(f32 alpha);
+		void SetFlags(WindowFlags flags);
+
 		void OnCaptureLost() { m_mouseCaptured = false; }
-		void OnSizeState(b8 maximized) { m_maximized = maximized; }
+		void OnSizeState(b8 maximized, b8 minimized) { m_maximized = maximized; m_minimized = minimized; }
 
 		void Show();
 		void Hide();
@@ -99,6 +108,7 @@ namespace Horizon::PAL
 		b8 m_focused = false;
 
 		b8 m_maximized = false;
+		b8 m_minimized = false;
 		b8 m_customFrame = false;
 
 		b8 m_mouseCaptured = false;

@@ -15,12 +15,13 @@ namespace Horizon::PAL
 	struct InputMessage
 	{
 		InputMessageType type;
-		
+
 		KeyCode key;
 		u32 character;
-		
+
 		MouseButton button;
 		i32 mouseX, mouseY;
+		i32 screenX, screenY;
 		f32 scrollX, scrollY;
 
 		u32 width, height;

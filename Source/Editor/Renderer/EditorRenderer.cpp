@@ -3,6 +3,7 @@
 #include <Editor/Font/IconsFontAudio.h>
 #include <Editor/Font/IconsFontAwesome6.h>
 #include <Editor/Font/IconsKenney.h>
+#include <Editor/Renderer/EditorPlatform.h>
 #include <Editor/Renderer/Utils/ImGuiUtils.h>
 
 #include <Engine/Graphics/GraphicsContext.h>
@@ -33,10 +34,12 @@ namespace Horizon::Editor
 		ImGui::SetCurrentContext((ImGuiContext*)m_context);
 
 		ImGuiIO& io = ImGui::GetIO();
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
 		io.BackendFlags = ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasTextures;
 		io.DisplaySize = { 512.f, 512.f };
 		io.DisplayFramebufferScale = { 1.0f, 1.0f };
+
+		m_platform = Memory::Allocator::Create<EditorPlatform>(Memory::CurrLoc(), desc.pWindowService);
 
 		LoadFonts();
 
@@ -73,81 +76,15 @@ namespace Horizon::Editor
 		Memory::Allocator::Delete(m_fence);
 		m_device->ShutdownImGui();
 
+		Memory::Allocator::Delete(m_platform);
 		Memory::Allocator::Delete(m_resourceHeap);
 
 		ImGui::DestroyContext((ImGuiContext*)m_context);
 	}
 
-	void EditorRenderer::OnMousePosition(i32 x, i32 y)
+	void EditorRenderer::UpdatePlatform()
 	{
-		ImGuiIO& io = ImGui::GetIO();
-		io.AddMousePosEvent(x, y);
-	}
-
-	void EditorRenderer::OnMouseButtonDown(PAL::MouseButton button)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		io.AddMouseButtonEvent(ImGuiUtils::GetMouseButton(button), true);
-	}
-
-	void EditorRenderer::OnMouseButtonUp(PAL::MouseButton button)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		io.AddMouseButtonEvent(ImGuiUtils::GetMouseButton(button), false);
-	}
-
-	void EditorRenderer::OnMouseWheel(f32 delta)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		io.AddMouseWheelEvent(0.0f, delta);
-	}
-
-	void EditorRenderer::OnKeyboardDown(PAL::KeyCode key)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		io.AddKeyEvent(ImGuiUtils::GetKeyboardKey(key), true);
-
-		if (key == PAL::KeyCode::LeftControl)
-			io.AddKeyEvent(ImGuiKey_ReservedForModCtrl, true);
-		if (key == PAL::KeyCode::LeftShift)
-			io.AddKeyEvent(ImGuiKey_ReservedForModShift, true);
-		if (key == PAL::KeyCode::LeftAlt)
-			io.AddKeyEvent(ImGuiKey_ReservedForModAlt, true);
-		if (key == PAL::KeyCode::LeftSuper)
-			io.AddKeyEvent(ImGuiKey_ReservedForModSuper, true);
-	}
-
-	void EditorRenderer::OnKeyboardUp(PAL::KeyCode key)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		io.AddKeyEvent(ImGuiUtils::GetKeyboardKey(key), false);
-
-		if (key == PAL::KeyCode::LeftControl)
-			io.AddKeyEvent(ImGuiKey_ReservedForModCtrl, false);
-		if (key == PAL::KeyCode::LeftShift)
-			io.AddKeyEvent(ImGuiKey_ReservedForModShift, false);
-		if (key == PAL::KeyCode::LeftAlt)
-			io.AddKeyEvent(ImGuiKey_ReservedForModAlt, false);
-		if (key == PAL::KeyCode::LeftSuper)
-			io.AddKeyEvent(ImGuiKey_ReservedForModSuper, false);
-	}
-
-	void EditorRenderer::OnKeyboardChar(u32 value)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		io.AddInputCharacter(value);
-	}
-
-	void EditorRenderer::OnResizeWindow(u32 width, u32 height)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		io.DisplaySize = { (f32)width,(f32)height };
-	}
-
-	void EditorRenderer::OnWindowFocus(b8 focused)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		io.AddFocusEvent(focused);
+		m_platform->NewFrame();
 	}
 
 	b8 EditorRenderer::BeginRender(f32 dt)
@@ -195,6 +132,9 @@ namespace Horizon::Editor
 
 		context.fenceValue = m_graphicsQueue->Signal(m_fence);
 		m_frameIndex = (m_frameIndex + 1) % Engine::GraphicsContext::MaxFramesInFlight;
+
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
 
 		return true;
 	}
@@ -358,15 +298,5 @@ namespace Horizon::Editor
 		style.CircleTessellationMaxError = 0.3f;
 		style.CurveTessellationTol = 1.25f;
 		style.WindowMenuButtonPosition = ImGuiDir_None;
-	}
-
-	PAL::CursorType EditorRenderer::GetMouseCursor() const
-	{
-		const ImGuiIO& io = ImGui::GetIO();
-
-		if (io.MouseDrawCursor)
-			return PAL::CursorType::Hidden;
-
-		return ImGuiUtils::ToCursorType(ImGui::GetMouseCursor());
 	}
 }

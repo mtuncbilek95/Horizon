@@ -6,6 +6,11 @@
 
 namespace Horizon::PAL
 {
+	struct CursorPoint 
+	{
+		i32 x, y;
+	};
+
 	class RUNTIME_API Cursor final : public WindowListener
 	{
 	public:
@@ -20,6 +25,9 @@ namespace Horizon::PAL
 
 		CursorType GetShape() const { return m_shape; }
 		void SetShape(CursorType type);
+
+		CursorPoint GetScreenPosition() const;
+		void SetScreenPosition(i32 x, i32 y);
 
 		Window* GetClipTarget() const { return m_clipTarget; }
 		void SetClipTarget(Window* pWindow);
