@@ -12,4 +12,12 @@ namespace Horizon::TestLibrary
 	{
 		ImGui::Text("Hello from TestLibrary.dll");
 	}
+
+	void TestView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	{
+	}
+
+	void TestView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	{
+	}
 }

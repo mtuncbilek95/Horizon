@@ -16,5 +16,8 @@ namespace Horizon::TestLibrary
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
+
+		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
+		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library);
 	};
 }
