@@ -9,6 +9,7 @@
 #include <Engine/World/WorldService.h>
 #include <Engine/World/Components/Tag/NameComponent.h>
 #include <Engine/World/Components/EditorOnlyComponent.h>
+#include <Engine/World/Components/FolderComponent.h>
 
 #include <misc/cpp/imgui_stdlib.h>
 
@@ -67,6 +68,13 @@ namespace Horizon::Editor
 
 			if (typeId == Reflect::TypeOf<Engine::NameComponent>())
 				continue;
+
+			if (typeId == Reflect::TypeOf<Engine::EditorOnlyComponent>())
+				continue;
+
+			if (typeId == Reflect::TypeOf<Engine::FolderComponent>())
+				continue;
+
 
 			Reflect::Type* pType = m_reflSys->GetType(typeId);
 

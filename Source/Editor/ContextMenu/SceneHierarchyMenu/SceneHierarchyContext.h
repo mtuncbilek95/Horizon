@@ -14,5 +14,6 @@ namespace Horizon::Editor
 		List<Engine::EntityHandle> selectedEntities;
 
 		Engine::EntityHandle renameEntity;
+		b8 createFolder = false;
 	};
 }
