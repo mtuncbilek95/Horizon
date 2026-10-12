@@ -1,4 +1,5 @@
 #include <Runtime/PAL/Window/Window.h>
+#include <Runtime/PAL/Window/WindowListener.h>
 
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Win32/Helpers/Win32WindowHelpers.h>
@@ -16,39 +17,6 @@ namespace Horizon::PAL
 		OSHandle ToOSHandle(HWND h) { return (OSHandle)(uptr(h)); }
 		OSInstance ToOSInstance(HMODULE m) { return (OSInstance)(uptr(m)); }
 		Window* GetWindowFromHandle(HWND hwnd) { return (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA); }
-
-		HCURSOR ToWin32Cursor(CursorType type)
-		{
-			switch (type)
-			{
-			case CursorType::Arrow:
-				return LoadCursor(NULL, IDC_ARROW);
-			case CursorType::TextInput:
-				return LoadCursor(NULL, IDC_IBEAM);
-			case CursorType::ResizeAll:
-				return LoadCursor(NULL, IDC_SIZEALL);
-			case CursorType::ResizeNS:
-				return LoadCursor(NULL, IDC_SIZENS);
-			case CursorType::ResizeEW:
-				return LoadCursor(NULL, IDC_SIZEWE);
-			case CursorType::ResizeNESW:
-				return LoadCursor(NULL, IDC_SIZENESW);
-			case CursorType::ResizeNWSE:
-				return LoadCursor(NULL, IDC_SIZENWSE);
-			case CursorType::Hand:
-				return LoadCursor(NULL, IDC_HAND);
-			case CursorType::Wait:
-				return LoadCursor(NULL, IDC_WAIT);
-			case CursorType::Progress:
-				return LoadCursor(NULL, IDC_APPSTARTING);
-			case CursorType::NotAllowed:
-				return LoadCursor(NULL, IDC_NO);
-			case CursorType::Hidden:
-				return NULL;
-			default:
-				return LoadCursor(NULL, IDC_ARROW);
-			}
-		}
 
 		ChromeButton ToChromeButton(WPARAM hitCode)
 		{
@@ -443,14 +411,15 @@ namespace Horizon::PAL
 			}
 			case WM_SETCURSOR:
 			{
-				if (LOWORD(lParam) == HTCLIENT)
-				{
-					Window* pWindow = GetWindowFromHandle(hwnd);
-					::SetCursor(ToWin32Cursor(pWindow->GetCursorShape()));
-					return TRUE;
-				}
+				if (LOWORD(lParam) != HTCLIENT)
+					return DefWindowProc(hwnd, msg, wParam, lParam);
 
-				return DefWindowProc(hwnd, msg, wParam, lParam);
+				Window* pWindow = GetWindowFromHandle(hwnd);
+
+				if (pWindow == nullptr || !pWindow->DispatchSetCursor())
+					::SetCursor(LoadCursor(NULL, IDC_ARROW));
+
+				return TRUE;
 			}
 			default:
 				return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -521,10 +490,26 @@ namespace Horizon::PAL
 
 	Window::~Window()
 	{
+		const List<WindowListener*> listeners = m_listeners;
+		for (WindowListener* pListener : listeners)
+			pListener->OnWindowDestroyed(*this);
+
+		m_listeners.Clear();
+
 		DestroyWindow(ToHWND(m_handle));
 
 		m_instance = OSInstance{};
 		m_handle = OSHandle{};
+	}
+
+	void Window::PumpMessages()
+	{
+		MSG msg = {};
+		while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE) != 0)
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
 	}
 
 	void Window::SubmitMessage(const InputMessage& msg)
@@ -542,9 +527,61 @@ namespace Horizon::PAL
 		case InputMessageType::Resize:
 			m_desc.width = msg.width; m_desc.height = msg.height;
 			break;
+
+		case InputMessageType::Focus:
+			m_focused = true;
+			break;
+
+		case InputMessageType::LostFocus:
+			m_focused = false;
+			break;
 		}
 
 		m_messages.PushBack(msg);
+
+		switch (msg.type)
+		{
+		case InputMessageType::Move:
+		case InputMessageType::Resize:
+			for (WindowListener* pListener : m_listeners)
+				pListener->OnWindowRectChanged(*this);
+			break;
+
+		case InputMessageType::Focus:
+		case InputMessageType::LostFocus:
+			for (WindowListener* pListener : m_listeners)
+				pListener->OnWindowFocusChanged(*this, m_focused);
+			break;
+		}
+	}
+
+	void Window::ClearMessages()
+	{
+		m_messages.Clear();
+	}
+
+	void Window::AddListener(WindowListener* pListener)
+	{
+		if (pListener == nullptr || m_listeners.Contains(pListener))
+			return;
+
+		m_listeners.PushBack(pListener);
+	}
+
+	void Window::RemoveListener(WindowListener* pListener)
+	{
+		m_listeners.Remove(pListener);
+	}
+
+	b8 Window::DispatchSetCursor()
+	{
+		for (WindowListener* pListener : m_listeners)
+		{
+			if (pListener->OnWindowSetCursor(*this))
+				return true;
+		}
+
+		return false;
 	}
 
 	void Window::SetMouseCapture(b8 enabled)
@@ -567,42 +604,6 @@ namespace Horizon::PAL
 		m_mouseCaptured = false;
 	}
 
-	void Window::SetCursorClip(b8 enabled)
-	{
-		if (m_cursorClipped == enabled)
-			return;
-
-		m_cursorClipped = enabled;
-
-		if (!enabled)
-		{
-			ClipCursor(nullptr);
-			return;
-		}
-
-		HWND hwnd = ToHWND(m_handle);
-
-		RECT client = {};
-		GetClientRect(hwnd, &client);
-
-		POINT topLeft = { client.left, client.top };
-		POINT bottomRight = { client.right, client.bottom };
-		ClientToScreen(hwnd, &topLeft);
-		ClientToScreen(hwnd, &bottomRight);
-
-		RECT screen = { topLeft.x, topLeft.y, bottomRight.x, bottomRight.y };
-		ClipCursor(&screen);
-	}
-
-	void Window::SetCursorShape(CursorType type)
-	{
-		if (m_cursorType == type)
-			return;
-
-		m_cursorType = type;
-		::SetCursor(ToWin32Cursor(type));
-	}
-
 	void Window::Show()
 	{
 		m_visible = ShowWindow(ToHWND(m_handle), SW_SHOW);
@@ -611,17 +612,5 @@ namespace Horizon::PAL
 	void Window::Hide()
 	{
 		m_visible = ShowWindow(ToHWND(m_handle), SW_HIDE);
-	}
-
-	void Window::PollEvents()
-	{
-		m_messages.Clear();
-
-		MSG msg = {};
-		while (PeekMessage(&msg, ToHWND(m_handle), 0, 0, PM_REMOVE) != 0)
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
 	}
 }

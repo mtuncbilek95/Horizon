@@ -12,6 +12,10 @@ namespace Horizon::Engine
 
 	ModuleReport WindowService::OnInitialize()
 	{
+		m_cursor = Memory::Allocator::Create<PAL::Cursor>(Memory::CurrLoc());
+		if (!m_cursor)
+			return ModuleReport("Cursor has not been initialize.");
+
 		// TODO: Add Config later
 
 		// Create Window.
@@ -22,11 +26,11 @@ namespace Horizon::Engine
 		winDesc.titleName = "Horizon Engine";
 		winDesc.flags = m_params.flags;
 
-		m_window = Memory::Allocator::Create<PAL::Window>(Memory::CurrLoc(), winDesc);
-		if (!m_window)
+		m_mainWindow = SpawnWindow(winDesc);
+		if (!m_mainWindow)
 			return ModuleReport("Window has not been initialize.");
 
-		m_window->Show();
+		m_mainWindow->Show();
 		Terminal::Info(StringOps::GetName(this), "Window has been initialized!");
 
 		return ModuleReport();
@@ -34,22 +38,61 @@ namespace Horizon::Engine
 
 	void WindowService::OnExecute(const EngineFrame& ctx)
 	{
-		if (!m_window)
+		if (!m_mainWindow)
 			return;
 
-		m_window->PollEvents();
+		for (PAL::Window* pWindow : m_windows)
+			pWindow->ClearMessages();
 
-		if (!m_window->GetActive())
+		PAL::Window::PumpMessages();
+		m_cursor->Update();
+
+		if (!m_mainWindow->GetActive())
 			GetEngine()->RequestExit("Main window is no longer active!");
 	}
 
 	void WindowService::OnFinalize()
 	{
-		if (!m_window)
+		while (!m_windows.IsEmpty())
+			DestroyWindow(m_windows.Back());
+
+		m_mainWindow = nullptr;
+
+		Memory::Allocator::Delete(m_cursor);
+		m_cursor = nullptr;
+	}
+
+	PAL::Window* WindowService::SpawnWindow(const PAL::WindowDesc& desc)
+	{
+		PAL::Window* pWindow = Memory::Allocator::Create<PAL::Window>(Memory::CurrLoc(), desc);
+
+		if (!pWindow)
+		{
+			Terminal::Error(StringOps::GetName(this), "Failed to spawn window '{}'.", desc.titleName);
+			return nullptr;
+		}
+
+		pWindow->AddListener(m_cursor);
+		m_windows.PushBack(pWindow);
+
+		return pWindow;
+	}
+
+	void WindowService::DestroyWindow(PAL::Window* pWindow)
+	{
+		if (!pWindow)
 			return;
 
-		Memory::Allocator::Delete(m_window);
-		m_window = nullptr;
+		if (!m_windows.Remove(pWindow))
+		{
+			Terminal::Warn(StringOps::GetName(this), "Window '{}' is not owned by WindowService.", pWindow->GetName());
+			return;
+		}
+
+		if (pWindow == m_mainWindow)
+			m_mainWindow = nullptr;
+
+		Memory::Allocator::Delete(pWindow);
 	}
 
 	void WindowService::DeclareDependencies(ModuleGraph& graph)

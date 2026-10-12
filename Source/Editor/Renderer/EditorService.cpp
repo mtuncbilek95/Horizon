@@ -27,6 +27,7 @@ namespace Horizon::Editor
 			return Engine::ModuleReport("Failed to get WindowService. Nothing will work...");
 
 		m_engineWindow = pWindowSub->GetWindow();
+		m_engineCursor = pWindowSub->GetCursor();
 
 		auto* pGraphSub = GetEngine()->RequestContext<Engine::GraphicsContext>();
 		if (!pGraphSub)
@@ -150,8 +151,8 @@ namespace Horizon::Editor
 
 		const b8 dragging = m_editorRenderer->CheckMouseDragging();
 		m_engineWindow->SetMouseCapture(dragging);
-		m_engineWindow->SetCursorClip(dragging);
-		m_engineWindow->SetCursorShape(m_editorRenderer->GetMouseCursor());
+		m_engineCursor->SetClipTarget(dragging ? m_engineWindow : nullptr);
+		m_engineCursor->SetShape(m_editorRenderer->GetMouseCursor());
 
 		m_editorRenderer->EndRender(m_swapchain->GetImage(m_swapchain->GetCurrentImageIndex()));
 
@@ -162,7 +163,7 @@ namespace Horizon::Editor
 	{
 		const u64 value = m_queue->Signal(m_fence);
 		m_fence->WaitCPU(value);
-		
+
 		Memory::Allocator::Delete(m_fence);
 
 		Memory::Allocator::Delete(m_menuRegistry);

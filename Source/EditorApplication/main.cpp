@@ -19,13 +19,18 @@ using namespace Horizon;
 
 int main(int argC, char** argV)
 {
+	std::string projectPath;
 	if (argC <= 1)
 	{
-		Terminal::Error("Main", "Invoking the engine without a project");
-		return -1;
+		Terminal::Warn("Main", "Invoking the engine without a project");
+		projectPath = HORIZON_EXAMPLE_DIR + std::string("/ExampleProject.hproject");
+	}
+	else
+	{
+		projectPath = argV[1];
+		Terminal::Warn("Main", "Invoking the engine with project -> {}", projectPath);
 	}
 
-	std::string projectPath = argV[1];
 	if (projectPath.substr(projectPath.rfind(".")) != ".hproject")
 	{
 		Terminal::Error("Main", "It's not a Horizon Project!");

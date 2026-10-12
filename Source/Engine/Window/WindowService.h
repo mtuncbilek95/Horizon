@@ -3,6 +3,9 @@
 #include <Engine/Core/Service.h>
 #include <Engine/Window/WindowParams.h>
 #include <Runtime/PAL/Window/Window.h>
+#include <Runtime/PAL/Window/Cursor.h>
+#include <Runtime/Containers/List.h>
+#include <Runtime/Containers/ReadOnlyList.h>
 
 namespace Horizon::Engine
 {
@@ -12,7 +15,12 @@ namespace Horizon::Engine
 		WindowService(const WindowParams& params);
 		~WindowService() = default;
 
-		PAL::Window* GetWindow() const noexcept { return m_window; }
+		PAL::Window* GetWindow() const noexcept { return m_mainWindow; }
+		ReadOnlyList<PAL::Window*> GetWindows() const noexcept { return m_windows; }
+		PAL::Cursor* GetCursor() const noexcept { return m_cursor; }
+
+		PAL::Window* SpawnWindow(const PAL::WindowDesc& desc);
+		void DestroyWindow(PAL::Window* pWindow);
 
 		ModuleReport OnInitialize() final;
 		void OnExecute(const EngineFrame& ctx) final;
@@ -24,6 +32,9 @@ namespace Horizon::Engine
 
 	private:
 		WindowParams m_params;
-		PAL::Window* m_window = nullptr;
+
+		PAL::Cursor* m_cursor = nullptr;
+		PAL::Window* m_mainWindow = nullptr;
+		List<PAL::Window*> m_windows;
 	};
 }

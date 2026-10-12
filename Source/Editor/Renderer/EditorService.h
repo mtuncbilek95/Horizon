@@ -3,6 +3,7 @@
 #include <Editor/Renderer/EditorContext.h>
 #include <Engine/Core/Service.h>
 #include <Runtime/PAL/Window/Window.h>
+#include <Runtime/PAL/Window/Cursor.h>
 
 namespace Horizon::RHI
 {
@@ -37,6 +38,7 @@ namespace Horizon::Editor
 
 	private:
 		PAL::Window* m_engineWindow = nullptr;
+		PAL::Cursor* m_engineCursor = nullptr;
 		EditorRenderer* m_editorRenderer = nullptr;
 
 		MenuRegistry* m_menuRegistry = nullptr;
