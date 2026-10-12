@@ -74,7 +74,11 @@ namespace Horizon::Editor
 		ImGui::InvisibleButton("##TitleHandle", handleSize);
 
 		if (ImGui::IsItemActivated())
-			ImGui::StartMouseMovingWindow(ImGui::GetCurrentWindow());
+		{
+			ImGuiWindow* pWindow = ImGui::GetCurrentWindow();
+			ImGui::StartMouseMovingWindow(pWindow);
+			ImGui::GetCurrentContext()->MovingWindow = pWindow;
+		}
 
 		const ImVec2 textPos = ImVec2(handlePos.x + TitlePadding, handlePos.y + (Height - textSize.y) * 0.5f);
 		ImGui::GetWindowDrawList()->AddText(textPos, ImGui::GetColorU32(ImGuiCol_Text), pTitle);

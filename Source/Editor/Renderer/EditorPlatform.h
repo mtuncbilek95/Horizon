@@ -63,8 +63,8 @@ namespace Horizon::Editor
 		static void OnSetWindowFocus(ImGuiViewport* pViewport);
 		static bool OnGetWindowFocus(ImGuiViewport* pViewport);
 		static bool OnGetWindowMinimized(ImGuiViewport* pViewport);
-		static void OnSetWindowTitle(ImGuiViewport* pViewport, const char* pTitle);
-		static void OnSetWindowAlpha(ImGuiViewport* pViewport, float alpha);
+		static void OnSetWindowTitle(ImGuiViewport* pViewport, const c8* pTitle);
+		static void OnSetWindowAlpha(ImGuiViewport* pViewport, f32 alpha);
 
 	private:
 		Engine::WindowService* m_windowService = nullptr;

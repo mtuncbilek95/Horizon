@@ -436,12 +436,12 @@ namespace Horizon::Editor
 		return ToWindow(pViewport)->GetMinimized();
 	}
 
-	void EditorPlatform::OnSetWindowTitle(ImGuiViewport* pViewport, const char* pTitle)
+	void EditorPlatform::OnSetWindowTitle(ImGuiViewport* pViewport, const c8* pTitle)
 	{
 		ToWindow(pViewport)->SetTitle(pTitle);
 	}
 
-	void EditorPlatform::OnSetWindowAlpha(ImGuiViewport* pViewport, float alpha)
+	void EditorPlatform::OnSetWindowAlpha(ImGuiViewport* pViewport, f32 alpha)
 	{
 		ToWindow(pViewport)->SetAlpha(alpha);
 	}

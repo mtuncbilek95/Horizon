@@ -81,7 +81,7 @@ namespace Horizon::Editor
 		{
 			const b8 closable = HasFlag(pView->m_flags, EditorViewFlags::Mutable);
 			const b8 floating = IsFloatingInOwnWindow(pView);
-			const ImGuiWindowFlags windowFlags = floating ? ImGuiWindowFlags_NoTitleBar : ImGuiWindowFlags_None;
+			const ImGuiWindowFlags windowFlags = floating ? (ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove) : ImGuiWindowFlags_None;
 
 			if (pView->IsFullBleed())
 			{
