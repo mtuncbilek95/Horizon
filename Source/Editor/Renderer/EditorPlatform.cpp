@@ -10,6 +10,7 @@
 #include <Runtime/PAL/Window/Window.h>
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 namespace Horizon::Editor
 {
@@ -91,6 +92,7 @@ namespace Horizon::Editor
 		const b8 viewportsEnabled = (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0;
 		const b8 isMain = pWindow == m_windowService->GetWindow();
 		ImGuiViewport* pViewport = ImGui::FindViewportByPlatformHandle(pWindow);
+		const PAL::WindowRect rect = pWindow->GetRect();
 
 		for (const PAL::InputMessage& message : pWindow->GetMessages())
 		{
@@ -146,13 +148,19 @@ namespace Horizon::Editor
 			}
 			case PAL::InputMessageType::Move:
 			{
-				if (pViewport != nullptr)
+				if (pViewport == nullptr)
+					break;
+
+				if (i32(pViewport->Pos.x) != rect.posX || i32(pViewport->Pos.y) != rect.posY)
 					pViewport->PlatformRequestMove = true;
 				break;
 			}
 			case PAL::InputMessageType::Resize:
 			{
-				if (pViewport != nullptr)
+				if (pViewport == nullptr)
+					break;
+
+				if (u32(pViewport->Size.x) != rect.width || u32(pViewport->Size.y) != rect.height)
 					pViewport->PlatformRequestResize = true;
 				break;
 			}
@@ -297,12 +305,28 @@ namespace Horizon::Editor
 		return (EditorPlatform*)ImGui::GetIO().BackendPlatformUserData;
 	}
 
-	PAL::WindowFlags EditorPlatform::ToWindowFlags(i32 viewportFlags)
+	b8 EditorPlatform::IsPanelViewport(ImGuiViewport* pViewport)
+	{
+		const ImGuiWindow* pOwner = ((ImGuiViewportP*)pViewport)->Window;
+
+		if (pOwner == nullptr)
+			return false;
+
+		const ImGuiWindowFlags excluded = ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_Popup |
+			ImGuiWindowFlags_ChildMenu | ImGuiWindowFlags_DockNodeHost;
+
+		return (pOwner->Flags & excluded) == 0;
+	}
+
+	PAL::WindowFlags EditorPlatform::ToWindowFlags(i32 viewportFlags, b8 customFrame)
 	{
 		PAL::WindowFlags flags = PAL::WindowFlags::None;
 
-		if (viewportFlags & ImGuiViewportFlags_NoDecoration)
+		if (customFrame)
+			flags |= PAL::WindowFlags::CustomTitleBar;
+		else if (viewportFlags & ImGuiViewportFlags_NoDecoration)
 			flags |= PAL::WindowFlags::NoDecoration;
+
 		if (viewportFlags & ImGuiViewportFlags_NoTaskBarIcon)
 			flags |= PAL::WindowFlags::NoTaskbarIcon;
 		if (viewportFlags & ImGuiViewportFlags_TopMost)
@@ -326,7 +350,7 @@ namespace Horizon::Editor
 		desc.width = u32(pViewport->Size.x);
 		desc.height = u32(pViewport->Size.y);
 		desc.mode = PAL::WindowMode::Windowed;
-		desc.flags = ToWindowFlags(pViewport->Flags);
+		desc.flags = ToWindowFlags(pViewport->Flags, IsPanelViewport(pViewport));
 		desc.pOwner = pViewport->ParentViewport != nullptr ? ToWindow(pViewport->ParentViewport) : nullptr;
 
 		PAL::Window* pWindow = pBackend->m_windowService->SpawnWindow(desc);
@@ -371,7 +395,8 @@ namespace Horizon::Editor
 		if (pWindow == pBackend->m_windowService->GetWindow())
 			return;
 
-		pWindow->SetFlags(ToWindowFlags(pViewport->Flags));
+		const b8 customFrame = HasFlag(pWindow->GetFlags(), PAL::WindowFlags::CustomTitleBar);
+		pWindow->SetFlags(ToWindowFlags(pViewport->Flags, customFrame));
 	}
 
 	void EditorPlatform::OnSetWindowPos(ImGuiViewport* pViewport, ImVec2 pos)

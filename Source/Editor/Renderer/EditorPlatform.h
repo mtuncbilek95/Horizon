@@ -49,7 +49,8 @@ namespace Horizon::Editor
 		void ResetCapture();
 
 		static EditorPlatform* GetBackend();
-		static PAL::WindowFlags ToWindowFlags(i32 viewportFlags);
+		static b8 IsPanelViewport(ImGuiViewport* pViewport);
+		static PAL::WindowFlags ToWindowFlags(i32 viewportFlags, b8 customFrame);
 
 		static void OnCreateWindow(ImGuiViewport* pViewport);
 		static void OnDestroyWindow(ImGuiViewport* pViewport);

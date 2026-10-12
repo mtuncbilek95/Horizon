@@ -725,12 +725,15 @@ namespace Horizon::PAL
 		if (m_desc.flags == flags)
 			return;
 
+		constexpr DWORD ManagedStyle = WS_OVERLAPPEDWINDOW | WS_POPUP;
+		constexpr DWORD ManagedExStyle = WS_EX_ACCEPTFILES | WS_EX_TOOLWINDOW | WS_EX_APPWINDOW | WS_EX_TOPMOST;
+
 		HWND hwnd = ToHWND(m_handle);
 
 		const DWORD oldStyle = DWORD(GetWindowLong(hwnd, GWL_STYLE));
 		const DWORD oldExStyle = DWORD(GetWindowLong(hwnd, GWL_EXSTYLE));
-		const DWORD newStyle = ToWin32Style(flags) | (oldStyle & WS_VISIBLE);
-		const DWORD newExStyle = ToWin32ExStyle(flags) | (oldExStyle & WS_EX_LAYERED);
+		const DWORD newStyle = (oldStyle & ~ManagedStyle) | ToWin32Style(flags);
+		const DWORD newExStyle = (oldExStyle & ~ManagedExStyle) | ToWin32ExStyle(flags);
 
 		const b8 wasTopMost = HasFlag(m_desc.flags, WindowFlags::TopMost);
 		const b8 isTopMost = HasFlag(flags, WindowFlags::TopMost);

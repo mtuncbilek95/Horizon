@@ -1,9 +1,12 @@
 #include "ViewRegistry.h"
 
+#include <Editor/Renderer/Utils/ChromeBar.h>
 #include <Editor/Views/EditorViewAttribute.h>
 #include <Editor/Views/ViewCommandBinding.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
+
+#include <Runtime/PAL/Window/Window.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -77,6 +80,8 @@ namespace Horizon::Editor
 		for (auto* pView : m_createdViews)
 		{
 			const b8 closable = HasFlag(pView->m_flags, EditorViewFlags::Mutable);
+			const b8 floating = IsFloatingInOwnWindow(pView);
+			const ImGuiWindowFlags windowFlags = floating ? ImGuiWindowFlags_NoTitleBar : ImGuiWindowFlags_None;
 
 			if (pView->IsFullBleed())
 			{
@@ -90,13 +95,16 @@ namespace Horizon::Editor
 				pView->m_focusRequested = false;
 			}
 
-			const b8 visible = ImGui::Begin(pView->m_windowTitle.c_str(), closable ? &pView->m_open : nullptr);
+			const b8 visible = ImGui::Begin(pView->m_windowTitle.c_str(), closable ? &pView->m_open : nullptr, windowFlags);
 
 			if (pView->IsFullBleed())
 				ImGui::PopStyleVar(2);
 
 			if (visible)
 			{
+				if (floating)
+					RenderFloatingTitleBar(pView, closable);
+
 				for (const ViewCommandBinding& binding : ViewCommandBindings)
 				{
 					if (ImGui::Shortcut(binding.focusedChord))
@@ -186,6 +194,58 @@ namespace Horizon::Editor
 		}
 
 		ImGui::DockBuilderFinish(rootId);
+	}
+
+	b8 ViewRegistry::IsFloatingInOwnWindow(const ViewObject* pView) const
+	{
+		const ImGuiWindow* pWindow = ImGui::FindWindowByName(pView->m_windowTitle.c_str());
+
+		if (pWindow == nullptr || !pWindow->ViewportOwned || pWindow->DockIsActive)
+			return false;
+
+		const ImGuiViewport* pViewport = pWindow->Viewport;
+
+		if (pViewport == nullptr || pViewport == ImGui::GetMainViewport())
+			return false;
+
+		const PAL::Window* pPlatformWindow = (const PAL::Window*)pViewport->PlatformHandle;
+
+		return pPlatformWindow != nullptr && HasFlag(pPlatformWindow->GetFlags(), PAL::WindowFlags::CustomTitleBar);
+	}
+
+	void ViewRegistry::RenderFloatingTitleBar(const ViewObject* pView, b8 closable)
+	{
+		ImGuiWindow* pWindow = ImGui::GetCurrentWindow();
+		PAL::Window* pPlatformWindow = (PAL::Window*)ImGui::GetWindowViewport()->PlatformHandle;
+
+		if (pPlatformWindow == nullptr)
+			return;
+
+		PAL::WindowChrome chrome = {};
+		chrome.captionHeight = u32(ChromeBar::Height);
+
+		const ImVec2 barMin = pWindow->Pos;
+		const ImVec2 barMax = ImVec2(pWindow->Pos.x + pWindow->Size.x, pWindow->Pos.y + ChromeBar::Height);
+		const ImVec2 contentStart = ImGui::GetCursorScreenPos();
+
+		ImGui::PushID("##FloatingChromeBar");
+		ImGui::PushClipRect(barMin, barMax, false);
+
+		pWindow->DrawList->AddRectFilled(barMin, barMax, ImGui::GetColorU32(ImGuiCol_MenuBarBg));
+
+		ImGui::SetCursorScreenPos(barMin);
+		chrome.clientAreas.PushBack(ChromeBar::RenderTitleHandle(pView->GetDisplayName().c_str()));
+
+		ImGui::SetCursorScreenPos(ImVec2(barMax.x - ChromeBar::GetButtonsWidth(closable), barMin.y));
+		ChromeBar::RenderButtons(pPlatformWindow, chrome, closable);
+
+		ImGui::PopClipRect();
+		ImGui::PopID();
+
+		ImGui::SetCursorScreenPos(ImVec2(contentStart.x, barMax.y + pWindow->WindowPadding.y));
+		ImGui::Dummy(ImVec2(0.0f, 0.0f));
+
+		pPlatformWindow->SetChrome(chrome);
 	}
 
 	b8 ViewRegistry::HasViewObject(Reflect::TypeHandle handl)

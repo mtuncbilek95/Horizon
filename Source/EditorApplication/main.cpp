@@ -15,10 +15,20 @@
 
 #include "TypeManifestation.h"
 
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <Windows.h>
+
 using namespace Horizon;
 
 int main(int argC, char** argV)
 {
+	PROCESS_POWER_THROTTLING_STATE throttling = {};
+	throttling.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
+	throttling.ControlMask = PROCESS_POWER_THROTTLING_EXECUTION_SPEED | PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION;
+	throttling.StateMask = 0;
+	SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, &throttling, sizeof(throttling));
+
 	std::string projectPath;
 	if (argC <= 1)
 	{

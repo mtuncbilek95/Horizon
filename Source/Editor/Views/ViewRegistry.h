@@ -46,6 +46,9 @@ namespace Horizon::Editor
 		ViewObject* CreateView(const ViewDescriptor& descriptor);
 		void BuildDefaultLayout(u32 rootId);
 
+		b8 IsFloatingInOwnWindow(const ViewObject* pView) const;
+		void RenderFloatingTitleBar(const ViewObject* pView, b8 closable);
+
 	private:
 		EditorContext* m_context;
 

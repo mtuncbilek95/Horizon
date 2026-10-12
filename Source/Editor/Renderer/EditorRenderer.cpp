@@ -38,6 +38,7 @@ namespace Horizon::Editor
 		io.BackendFlags = ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasTextures;
 		io.DisplaySize = { 512.f, 512.f };
 		io.DisplayFramebufferScale = { 1.0f, 1.0f };
+		io.ConfigWindowsMoveFromTitleBarOnly = true;
 
 		m_platform = Memory::Allocator::Create<EditorPlatform>(Memory::CurrLoc(), desc.pWindowService);
 
