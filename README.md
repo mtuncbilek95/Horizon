@@ -83,8 +83,9 @@ Horizon has multiple requirements:
 
 1. Use Visual Studio 2026 (If possible because project heavily relies on CMakePresets.json)
 2. You should have the latest Windows 11 SDK.
-3. Don't generate a solution file. Trust CMake.
-4. Don't run anything on terminal to build the project otherwise you will encounter lots of issues.
+3. Install Python 3.XX
+4. Don't generate a solution file. Trust CMake.
+5. Don't run anything on terminal to build the project otherwise you will encounter lots of issues.
 
 After the requirements, here is the list:
 
