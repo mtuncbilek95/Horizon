@@ -3,7 +3,6 @@
 #include <Runtime/Log/Terminal.h>
 
 #include <Windows.h>
-
 #include <cassert>
 
 namespace Horizon::PAL
@@ -51,6 +50,17 @@ namespace Horizon::PAL
 
 		m_name = name;
 		m_instance = instance;
+	}
+
+	SymbolLibrary::~SymbolLibrary()
+	{
+		if (!m_instance || m_desc.isMain)
+			return;
+
+		if (!FreeLibrary(HINSTANCE(m_instance)))
+			Terminal::Warn("SymbolLibrary", "{} could not be freed, error {}", m_name, GetLastError());
+
+		m_instance = nullptr;
 	}
 
 	SymbolAddress SymbolLibrary::GetSymbol(const std::string& name) const

@@ -17,6 +17,7 @@
 
 namespace Horizon::Engine
 {
+	class GameSystem;
 	class ReflectionSystem;
 	class JobSystem;
 	class PluginSystem;
@@ -80,6 +81,7 @@ namespace Horizon::Engine
 		b8 RegisterLibrary(const PAL::SymbolLibrary* pLibrary);
 		void UnregisterLibrary(const PAL::SymbolLibrary* pLibrary);
 
+		GameSystem* GetGameSystem() const noexcept { return m_gameSystem; }
 		JobSystem* GetJobSystem() const noexcept { return m_jobSystem; }
 		PluginSystem* GetPluginSystem() const noexcept { return m_pluginSystem; }
 		const EngineFrame& GetFrame() const { return m_frameContext; }
@@ -106,6 +108,7 @@ namespace Horizon::Engine
 		ReflectionSystem* m_reflectionSystem = nullptr;
 		JobSystem* m_jobSystem = nullptr;
 		PluginSystem* m_pluginSystem = nullptr;
+		GameSystem* m_gameSystem = nullptr;
 
 		b8 m_running = true;
 	};

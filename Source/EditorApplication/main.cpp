@@ -6,7 +6,6 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Window/WindowService.h>
 #include <Engine/Graphics/GraphicsContext.h>
-#include <Engine/Script/ScriptContext.h>
 #include <Engine/Asset/AssetService.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/Physics/PhysicsService.h>
@@ -15,20 +14,10 @@
 
 #include "TypeManifestation.h"
 
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <Windows.h>
-
 using namespace Horizon;
 
 int main(int argC, char** argV)
 {
-	PROCESS_POWER_THROTTLING_STATE throttling = {};
-	throttling.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
-	throttling.ControlMask = PROCESS_POWER_THROTTLING_EXECUTION_SPEED | PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION;
-	throttling.StateMask = 0;
-	SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, &throttling, sizeof(throttling));
-
 	std::string projectPath;
 	if (argC <= 1)
 	{
@@ -61,7 +50,6 @@ int main(int argC, char** argV)
 
 	engine.RegisterModule<Engine::GraphicsContext>();
 	engine.RegisterModule<Editor::ImporterContext>();
-	engine.RegisterModule<Engine::ScriptContext>();
 	engine.RegisterModule<Editor::DomainService>();
 	engine.RegisterModule<Engine::AssetService>();
 	engine.RegisterModule<Engine::WorldService>();

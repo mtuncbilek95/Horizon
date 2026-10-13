@@ -6,6 +6,7 @@
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/Serialization/Archive.h>
 
+#include <string>
 #include <unordered_map>
 
 namespace Horizon::Engine
@@ -25,13 +26,13 @@ namespace Horizon::Engine
 
 	private:
 		static const Reflect::Type* ResolveType(void* pUserData, Reflect::TypeHandle handle);
+		static const Reflect::Type* ResolveTypeByName(void* pUserData, const std::string& name);
 
 		static List<ComponentStorage*> SortedStorages(const Scene& scene);
 		static usize CountComponentsOf(const List<ComponentStorage*>& storages, EntityHandle handle);
 
-		static List<const Reflect::Field*> EntityFieldsOf(const Reflect::Type* pType);
 		static void RemapHandle(EntityHandle& handle, const EntityRemap& remap);
-		static void RemapComponent(void* pComponent, const List<const Reflect::Field*>& fields, const EntityRemap& remap);
-		static void RemapEntityFields(Scene& scene, const EntityRemap& remap);
+		static void RemapObject(void* pObject, const Reflect::Type& type, ReflectionSystem* pReflection, const EntityRemap& remap);
+		static void RemapEntityFields(Scene& scene, ReflectionSystem* pReflection, const EntityRemap& remap);
 	};
 }

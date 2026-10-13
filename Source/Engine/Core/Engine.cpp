@@ -1,5 +1,6 @@
 #include "Engine.h"
 
+#include <Engine/Game/GameSystem.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/Job/JobSystem.h>
 #include <Engine/Plugin/PluginSystem.h>
@@ -13,10 +14,12 @@ namespace Horizon::Engine
 		m_reflectionSystem = Memory::Allocator::Create<ReflectionSystem>(Memory::CurrLoc(), this);
 		m_jobSystem = Memory::Allocator::Create<JobSystem>(Memory::CurrLoc());
 		m_pluginSystem = Memory::Allocator::Create<PluginSystem>(Memory::CurrLoc(), this);
+		m_gameSystem = Memory::Allocator::Create<GameSystem>(Memory::CurrLoc(), this);
 	}
 
 	Engine::~Engine()
 	{
+		Memory::Allocator::Delete(m_gameSystem);
 		Memory::Allocator::Delete(m_pluginSystem);
 		Memory::Allocator::Delete(m_jobSystem);
 		Memory::Allocator::Delete(m_reflectionSystem);

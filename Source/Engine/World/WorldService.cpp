@@ -4,7 +4,6 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Reflection/ReflectionSystem.h>
-#include <Engine/Script/ScriptContext.h>
 #include <Engine/World/System.h>
 #include <Engine/World/SystemOrderAttribute.h>
 #include <Engine/World/ECS/Scene.h>
@@ -49,7 +48,6 @@ namespace Horizon::Engine
 	{
 		graph.Requires<AssetService>();
 		graph.Requires<GraphicsContext>();
-		graph.Requires<ScriptContext>();
 	}
 
 	void WorldService::OnLibraryRegistered(const ReflectionLibrary& library)

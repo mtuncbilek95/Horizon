@@ -1,6 +1,7 @@
 #include "ProjectContext.h"
 
 #include <Engine/Plugin/PluginSystem.h>
+#include <Engine/Game/GameSystem.h>
 #include <Engine/Window/WindowService.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/PAL/File/Directory.h>
@@ -38,11 +39,20 @@ namespace Horizon::Editor
 			return Engine::ModuleReport("Plugin root cannot be created");
 
 		auto* pPlugins = GetEngine()->GetPluginSystem();
+		auto* pGame = GetEngine()->GetGameSystem();
 
+		// TODO: Check if the game has plugin dependency
+		// TODO: Check version
+		// TODO: Check all the security shit like it is corrupted or something else etc.
+
+		// Load the fuck them out
 		pPlugins->SetRoots("", m_pluginPath);
 		pPlugins->SetEnabledPlugins(m_enabledPlugins);
 		pPlugins->DiscoverPlugins();
 		pPlugins->LoadPlugins();
+
+		const std::string moduleName = m_projectName.substr(0, m_projectName.rfind('.'));
+		pGame->Load(m_projectPath, moduleName);
 
 		return Engine::ModuleReport();
 	}

@@ -24,6 +24,7 @@ namespace Horizon::Engine
 		RHI::GfxDeviceDesc deviceDesc = {};
 #if defined(HORIZON_DEBUG)
 		deviceDesc.enableDebugLayer = true;
+		deviceDesc.enableGpuValidation = true;
 #endif
 		deviceDesc.resourceDescriptorCapacity = 1 << 17;
 		deviceDesc.colorDescriptorCapacity = 1 << 10;

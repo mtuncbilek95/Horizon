@@ -18,7 +18,10 @@ namespace Horizon::PAL
 	{
 	public:
 		SymbolLibrary(const SymbolLibraryDesc& desc);
-		~SymbolLibrary() = default;
+		~SymbolLibrary();
+
+		SymbolLibrary(const SymbolLibrary&) = delete;
+		SymbolLibrary& operator=(const SymbolLibrary&) = delete;
 
 		const std::string& GetPath() const noexcept { return m_desc.path; }
 		const std::string& GetName() const noexcept { return m_name; }
@@ -30,6 +33,6 @@ namespace Horizon::PAL
 		SymbolLibraryDesc m_desc;
 		std::string m_name;
 
-		LibInstance m_instance;
+		LibInstance m_instance = nullptr;
 	};
 }

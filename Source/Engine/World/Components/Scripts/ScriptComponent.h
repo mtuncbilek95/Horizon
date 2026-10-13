@@ -1,18 +1,9 @@
 #pragma once
 
-#include <Engine/Asset/AssetHandle.h>
-#include <Engine/Asset/Script/ScriptAsset.h>
-#include <Engine/Asset/Script/ScriptFieldOverride.h>
-#include <Engine/World/Components/Scripts/ScriptLiveValue.h>
+#include <Engine/Game/GameScript.h>
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
-#include <Engine/World/ECS/Definitions.h>
-#include <Runtime/Containers/List.h>
 #include <Runtime/RTTR/Reflection.h>
-#include <Runtime/RTTR/Attributes/AssetRefAttribute.h>
-#include <Runtime/RTTR/Attributes/HideInInspectorAttribute.h>
-
-#include <string>
 
 namespace Horizon::Engine
 {
@@ -22,20 +13,15 @@ namespace Horizon::Engine
 		HORIZON_TYPE_REFLECT(ScriptComponent);
 	public:
 		ScriptComponent() = default;
-		~ScriptComponent() = default;
+		~ScriptComponent();
 
-		HFIELD(AssetRef[Reflect::TypeOf<ScriptAsset>()]);
-		AssetHandle<ScriptAsset> m_script;
+		ScriptComponent(const ScriptComponent&) = delete;
+		ScriptComponent& operator=(const ScriptComponent&) = delete;
 
-		HFIELD(HideInInspector);
-		List<ScriptFieldOverride> m_overrides;
+		ScriptComponent(ScriptComponent&& other) noexcept;
+		ScriptComponent& operator=(ScriptComponent&& other) noexcept;
 
-		HFIELD(HideInInspector);
-		List<std::string> m_entityNames;
-
-		HFIELD(HideInInspector);
-		List<EntityHandle> m_entityRefs;
-
-		List<ScriptLiveValue> m_liveValues;
+		HFIELD();
+		GameScript* m_script = nullptr;
 	};
 }

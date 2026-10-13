@@ -11,7 +11,7 @@ namespace Horizon::Engine
 {
 	void SceneSerializer::Serialize(const Scene& scene, ReflectionSystem* pReflection, IArchiveWriter& writer)
 	{
-		Serializer serializer(pReflection, ResolveType);
+		Serializer serializer(pReflection, ResolveType, ResolveTypeByName);
 
 		const EntityStorage& entities = scene.GetEntities();
 		const List<ComponentStorage*> storages = SortedStorages(scene);
@@ -69,7 +69,7 @@ namespace Horizon::Engine
 
 	b8 SceneSerializer::Deserialize(Scene& scene, ReflectionSystem* pReflection, IArchiveReader& reader)
 	{
-		Serializer serializer(pReflection, ResolveType);
+		Serializer serializer(pReflection, ResolveType, ResolveTypeByName);
 		EntityRemap remap;
 
 		reader.BeginObject();
@@ -151,7 +151,7 @@ namespace Horizon::Engine
 		reader.EndArray();
 		reader.EndObject();
 
-		RemapEntityFields(scene, remap);
+		RemapEntityFields(scene, pReflection, remap);
 
 		return !reader.HasError();
 	}
@@ -159,6 +159,11 @@ namespace Horizon::Engine
 	const Reflect::Type* SceneSerializer::ResolveType(void* pUserData, Reflect::TypeHandle handle)
 	{
 		return static_cast<ReflectionSystem*>(pUserData)->GetType(handle);
+	}
+
+	const Reflect::Type* SceneSerializer::ResolveTypeByName(void* pUserData, const std::string& name)
+	{
+		return static_cast<ReflectionSystem*>(pUserData)->GetTypeByName(name);
 	}
 
 	List<ComponentStorage*> SceneSerializer::SortedStorages(const Scene& scene)
@@ -186,19 +191,6 @@ namespace Horizon::Engine
 		return count;
 	}
 
-	List<const Reflect::Field*> SceneSerializer::EntityFieldsOf(const Reflect::Type* pType)
-	{
-		List<const Reflect::Field*> fields;
-
-		for (const Reflect::Field& field : pType->GetFields())
-		{
-			if (field.GetTypeId() == Reflect::TypeOf<EntityHandle>())
-				fields.PushBack(&field);
-		}
-
-		return fields;
-	}
-
 	void SceneSerializer::RemapHandle(EntityHandle& handle, const EntityRemap& remap)
 	{
 		if (!handle.IsValid())
@@ -216,32 +208,46 @@ namespace Horizon::Engine
 		handle = it->second;
 	}
 
-	void SceneSerializer::RemapComponent(void* pComponent, const List<const Reflect::Field*>& fields, const EntityRemap& remap)
+	void SceneSerializer::RemapObject(void* pObject, const Reflect::Type& type, ReflectionSystem* pReflection, const EntityRemap& remap)
 	{
-		for (const Reflect::Field* pField : fields)
+		for (const Reflect::Field& field : type.GetFields())
 		{
-			if (pField->GetMode() != Reflect::TypeMode::Array)
+			if (field.GetMode() == Reflect::TypeMode::Pointer)
 			{
-				RemapHandle(pField->GetValueAs<EntityHandle>(pComponent), remap);
+				Reflect::Base* pTarget = field.GetValueAs<Reflect::Base*>(pObject);
+
+				if (pTarget == nullptr)
+					continue;
+
+				const Reflect::Type* pTargetType = pReflection->GetType(pTarget->GetTypeId());
+
+				if (pTargetType == nullptr)
+					continue;
+
+				RemapObject(pTarget, *pTargetType, pReflection, remap);
 				continue;
 			}
 
-			for (EntityHandle& handle : pField->GetValueAs<List<EntityHandle>>(pComponent))
+			if (field.GetTypeId() != Reflect::TypeOf<EntityHandle>())
+				continue;
+
+			if (field.GetMode() != Reflect::TypeMode::Array)
+			{
+				RemapHandle(field.GetValueAs<EntityHandle>(pObject), remap);
+				continue;
+			}
+
+			for (EntityHandle& handle : field.GetValueAs<List<EntityHandle>>(pObject))
 				RemapHandle(handle, remap);
 		}
 	}
 
-	void SceneSerializer::RemapEntityFields(Scene& scene, const EntityRemap& remap)
+	void SceneSerializer::RemapEntityFields(Scene& scene, ReflectionSystem* pReflection, const EntityRemap& remap)
 	{
 		for (ComponentStorage* pStorage : scene.GetComponents().GetStorages())
 		{
-			const List<const Reflect::Field*> fields = EntityFieldsOf(pStorage->GetType());
-
-			if (fields.IsEmpty())
-				continue;
-
 			for (usize i = 0; i < pStorage->GetCount(); i++)
-				RemapComponent(pStorage->GetAt(i), fields, remap);
+				RemapObject(pStorage->GetAt(i), *pStorage->GetType(), pReflection, remap);
 		}
 	}
 }
