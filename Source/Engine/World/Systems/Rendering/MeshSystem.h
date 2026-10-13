@@ -8,7 +8,7 @@
 
 namespace Horizon::Engine
 {
-	HCLASS(SystemOrder[9000]);
+	HCLASS(SystemOrder[SystemPhase::Mesh]);
 	class ENGINE_API MeshSystem : public System
 	{
 		HORIZON_TYPE_REFLECT(MeshSystem);

@@ -9,7 +9,7 @@ namespace Horizon::Engine
 {
 	class GameScript;
 
-	HCLASS(SystemOrder[1000]);
+	HCLASS(SystemOrder[SystemPhase::Script]);
 	class ENGINE_API ScriptSystem : public System
 	{
 		HORIZON_TYPE_REFLECT(ScriptSystem);

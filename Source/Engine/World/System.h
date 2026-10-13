@@ -4,6 +4,7 @@
 #include <Engine/World/SystemGroup.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Engine/World/WorldService.h>
+#include <Engine/World/SystemPhase.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Engine
