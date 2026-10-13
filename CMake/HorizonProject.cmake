@@ -125,6 +125,10 @@ function(HorizonGameModule NAME)
 		RUNTIME_OUTPUT_DIRECTORY "${ARG_OUTPUT_DIR}/$<CONFIG>"
 	)
 
+	add_custom_command(TARGET ${NAME} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E touch "$<TARGET_FILE_DIR:${NAME}>/${NAME}.reload"
+	)
+
 	HorizonLaunchConfig(${NAME} "${ARG_OUTPUT_DIR}")
 endfunction()
 

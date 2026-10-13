@@ -1,6 +1,7 @@
 #include "SceneSerializer.h"
 
 #include <Engine/Reflection/ReflectionSystem.h>
+#include <Engine/World/Components/EditorOnlyComponent.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Serialization/Serializer.h>
@@ -22,13 +23,13 @@ namespace Horizon::Engine
 		writer.WriteU64(Version);
 
 		writer.Key("entities");
-		writer.BeginArray(entities.GetAliveCount());
+		writer.BeginArray(CountSerializableEntities(scene));
 
 		for (u32 index = 0; index < entities.GetLatestIndex(); index++)
 		{
 			const EntityHandle handle = entities.GetHandleAt(index);
 
-			if (!entities.IsAlive(handle))
+			if (!IsSerializable(scene, handle))
 				continue;
 
 			writer.BeginObject();
@@ -164,6 +165,28 @@ namespace Horizon::Engine
 	const Reflect::Type* SceneSerializer::ResolveTypeByName(void* pUserData, const std::string& name)
 	{
 		return static_cast<ReflectionSystem*>(pUserData)->GetTypeByName(name);
+	}
+
+	b8 SceneSerializer::IsSerializable(const Scene& scene, EntityHandle handle)
+	{
+		if (!scene.IsAlive(handle))
+			return false;
+
+		return !scene.HasComponent<EditorOnlyComponent>(handle);
+	}
+
+	usize SceneSerializer::CountSerializableEntities(const Scene& scene)
+	{
+		const EntityStorage& entities = scene.GetEntities();
+		usize count = 0;
+
+		for (u32 index = 0; index < entities.GetLatestIndex(); index++)
+		{
+			if (IsSerializable(scene, entities.GetHandleAt(index)))
+				count++;
+		}
+
+		return count;
 	}
 
 	List<ComponentStorage*> SceneSerializer::SortedStorages(const Scene& scene)

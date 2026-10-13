@@ -9,7 +9,8 @@ namespace Horizon::Engine
 	class Engine;
 	class ScriptSystem;
 
-	class GameScript : public Reflect::Base
+	HCLASS();
+	class ENGINE_API GameScript : public Reflect::Base
 	{
 		friend class ScriptSystem;
 	public:
@@ -26,7 +27,7 @@ namespace Horizon::Engine
 		Engine* GetEngine() const { return m_engine; }
 
 		template<typename T>
-		T* GetComponent(EntityHandle entt = m_entity) const
+		T* GetComponent(EntityHandle entt) const
 		{
 			return m_scene->FindComponent<T>(entt);
 		}

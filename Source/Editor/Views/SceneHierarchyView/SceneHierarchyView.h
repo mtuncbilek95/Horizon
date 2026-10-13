@@ -54,6 +54,7 @@ namespace Horizon::Editor
 
 	private:
 		void ResetSceneState();
+		void ResetSelectionState();
 		void CollectEntities();
 		void AttachMissingFolders();
 		void BuildTree();

@@ -49,6 +49,9 @@ namespace Horizon::Engine
 		void RemoveSystemType(const Reflect::Type* pType);
 		void SortSystems();
 
+		void CaptureSnapshot();
+		void RestoreSnapshot();
+
 	private:
 		ReflectionSystem* m_reflection;
 		List<SystemEntry> m_systems;
@@ -56,5 +59,8 @@ namespace Horizon::Engine
 
 		Scene* m_activeWorld = nullptr;
 		SystemGroup m_runningSystems = SystemGroup::None;
+
+		List<u8> m_snapshot;
+		Scene* m_snapshotWorld = nullptr;
 	};
 }

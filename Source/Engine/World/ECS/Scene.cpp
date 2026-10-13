@@ -43,6 +43,21 @@ namespace Horizon::Engine
 		return m_entities.IsAlive(handl);
 	}
 
+	void Scene::Clear()
+	{
+		for (u32 index = 0; index < m_entities.GetLatestIndex(); index++)
+		{
+			const EntityHandle handl = m_entities.GetHandleAt(index);
+
+			if (!m_entities.IsAlive(handl))
+				continue;
+
+			m_entities.Destroy(handl);
+		}
+
+		m_components.Clear();
+	}
+
 	ComponentObject* Scene::AddComponent(EntityHandle handl, ComponentTypeId typeId)
 	{
 		ComponentStorage* pStorage = ResolveStorage(typeId);

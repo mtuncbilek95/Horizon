@@ -28,6 +28,12 @@ namespace Horizon::Editor
 			return AssetImportResult::EmptyInput;
 		}
 
+		if (text.find_first_not_of(" \t\r\n") == std::string::npos)
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} is empty", inPath);
+			return AssetImportResult::EmptyInput;
+		}
+
 		JsonArchiveReader reader(text);
 
 		if (reader.HasError())

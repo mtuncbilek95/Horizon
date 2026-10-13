@@ -24,6 +24,7 @@ namespace Horizon::Engine
 		u32 FindSlot(ComponentTypeId typeId) const;
 
 		const List<ComponentStorage*>& GetStorages() const { return m_storages; }
+		void Clear();
 
 	private:
 		std::unordered_map<ComponentTypeId, u32> m_slots;

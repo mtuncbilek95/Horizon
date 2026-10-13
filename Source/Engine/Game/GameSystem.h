@@ -27,6 +27,8 @@ namespace Horizon::Engine
 
 		b8 Load(const std::string& projectRoot, const std::string& moduleName);
 		void Unload();
+		b8 Reload();
+		void PollReload();
 
 		GameModuleState GetState() const { return m_state; }
 		b8 IsLoaded() const { return m_state == GameModuleState::Loaded; }
@@ -34,8 +36,9 @@ namespace Horizon::Engine
 		const std::string& GetModuleName() const { return m_moduleName; }
 		const std::string& GetLibraryPath() const { return m_libraryPath; }
 		const std::string& GetFailReason() const { return m_failReason; }
-	
+
 	private:
+		b8 LoadShadowCopy();
 		b8 Fail(const std::string& reason);
 
 	private:
@@ -44,7 +47,13 @@ namespace Horizon::Engine
 
 		std::string m_moduleName;
 		std::string m_libraryPath;
+		std::string m_markerPath;
+		std::string m_shadowRoot;
+		std::string m_shadowPath;
 		std::string m_failReason;
+
+		u64 m_loadedStamp = 0;
+		b8 m_reloadDeferred = false;
 
 		GameModuleState m_state = GameModuleState::None;
 	};

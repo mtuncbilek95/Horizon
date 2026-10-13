@@ -34,6 +34,7 @@ namespace Horizon::Engine
 		{
 			FlushPending();
 			m_pluginSystem->FlushRequests();
+			m_gameSystem->PollReload();
 
 			f64 deltaTime = m_timer.GetElapsedTimeInSec();
 			m_timer.Reset();

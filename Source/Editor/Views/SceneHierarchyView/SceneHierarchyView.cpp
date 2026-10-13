@@ -234,19 +234,27 @@ namespace Horizon::Editor
 	void SceneHierarchyView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
 	{
 		m_context.OnLibraryUnregistered(library);
+		ResetSelectionState();
 	}
 
 	void SceneHierarchyView::ResetSceneState()
 	{
-		GetContext()->pSelection->Clear();
-		m_selection.Clear();
+		ResetSelectionState();
 		m_sessionFolders.clear();
 		m_selectedFolders.clear();
 		m_deleteFolders.clear();
 		m_openFolder.clear();
-		m_pendingMove = PendingMove();
 		m_renamePath.clear();
 		m_renameFolder.clear();
+	}
+
+	void SceneHierarchyView::ResetSelectionState()
+	{
+		if (GetContext()->pSelection->Is<Engine::EntityTag>())
+			GetContext()->pSelection->Clear();
+
+		m_selection.Clear();
+		m_pendingMove = PendingMove();
 		m_renameHandl = Engine::EntityHandle();
 		m_iconHandl = Engine::EntityHandle();
 		m_iconSelection.clear();
@@ -742,7 +750,7 @@ namespace Horizon::Editor
 
 		ImGui::TextUnformatted(ICON_FA_TRIANGLE_EXCLAMATION " Selected folder(s) are not empty.");
 		ImGui::TextUnformatted("Just Folder moves the contents to the parent folder.");
-		ImGui::TextUnformatted("With Inside deletes every entity and subfolder inside.");
+		ImGui::TextUnformatted("With Inside deletes every entity and sub-folder inside.");
 		ImGui::Spacing();
 
 		if (ImGui::Button("Just Folder"))
@@ -975,18 +983,21 @@ namespace Horizon::Editor
 
 	void SceneHierarchyView::SaveSceneToSource()
 	{
+		if (!m_currentScene)
+			return;
+
 		auto* pJobSys = GetContext()->pEngine->GetJobSystem();
+		Engine::ReflectionSystem* pReflection = GetContext()->pEngine->GetReflectionSystem();
 
-		pJobSys->SubmitJob(Engine::JobLane::Background, Engine::Job([this]()
+		JsonArchiveWriter writer;
+		Engine::SceneSerializer::Serialize(*m_currentScene, pReflection, writer);
+
+		std::string text = writer.ToString();
+		std::string path = GetConnectedFile()->GetSourcePath();
+
+		pJobSys->SubmitJob(Engine::JobLane::Background, Engine::Job([text = std::move(text), path = std::move(path)]()
 			{
-				Engine::ReflectionSystem* pReflection = GetContext()->pEngine->GetReflectionSystem();
-
-				JsonArchiveWriter writer;
-				Engine::SceneSerializer::Serialize(*m_currentScene, pReflection, writer);
-
-				const std::string text = writer.ToString();
-
-				PAL::FileAccessRequest handle = PAL::File::RequestAccess(GetConnectedFile()->GetSourcePath(),
+				PAL::FileAccessRequest handle = PAL::File::RequestAccess(path,
 					PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::SharedWrite);
 
 				PAL::File::WriteString(handle, text);

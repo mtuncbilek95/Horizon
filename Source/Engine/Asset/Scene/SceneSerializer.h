@@ -28,6 +28,9 @@ namespace Horizon::Engine
 		static const Reflect::Type* ResolveType(void* pUserData, Reflect::TypeHandle handle);
 		static const Reflect::Type* ResolveTypeByName(void* pUserData, const std::string& name);
 
+		static b8 IsSerializable(const Scene& scene, EntityHandle handle);
+		static usize CountSerializableEntities(const Scene& scene);
+
 		static List<ComponentStorage*> SortedStorages(const Scene& scene);
 		static usize CountComponentsOf(const List<ComponentStorage*>& storages, EntityHandle handle);
 

@@ -1,12 +1,14 @@
 #include "WorldService.h"
 
 #include <Engine/Asset/AssetService.h>
+#include <Engine/Asset/Scene/SceneSerializer.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/World/System.h>
 #include <Engine/World/SystemOrderAttribute.h>
 #include <Engine/World/ECS/Scene.h>
+#include <Runtime/Serialization/BinaryArchive.h>
 
 namespace Horizon::Engine
 {
@@ -23,6 +25,9 @@ namespace Horizon::Engine
 
 	void WorldService::OnExecute(const EngineFrame& ctx)
 	{
+		if (m_snapshotWorld)
+			RestoreSnapshot();
+
 		if (!m_activeWorld)
 			return;
 
@@ -63,8 +68,13 @@ namespace Horizon::Engine
 
 	void WorldService::OnLibraryUnregistered(const ReflectionLibrary& library)
 	{
+		CaptureSnapshot();
+
 		for (const Reflect::Type& type : library.types)
 			RemoveSystemType(&type);
+
+		if (m_snapshotWorld)
+			m_snapshotWorld->Clear();
 	}
 
 	System* WorldService::RequestSystem(Reflect::TypeHandle handl) const
@@ -146,5 +156,47 @@ namespace Horizon::Engine
 
 		for (SystemEntry& entry : m_systems)
 			entry.pSystem->OnGroupsChanged(previous, groups);
+	}
+
+	void WorldService::CaptureSnapshot()
+	{
+		if (!m_activeWorld || m_snapshotWorld)
+			return;
+
+		BinaryArchiveWriter writer;
+		SceneSerializer::Serialize(*m_activeWorld, m_reflection, writer);
+
+		if (!writer.IsComplete())
+		{
+			Terminal::Error(StringOps::GetName(this), "Active world could not be captured, its content will be lost");
+			m_snapshotWorld = m_activeWorld;
+			return;
+		}
+
+		m_snapshot = writer.GetBytes();
+		m_snapshotWorld = m_activeWorld;
+	}
+
+	void WorldService::RestoreSnapshot()
+	{
+		Scene* pTarget = m_snapshotWorld;
+		m_snapshotWorld = nullptr;
+
+		if (m_snapshot.IsEmpty())
+			return;
+
+		if (pTarget != m_activeWorld)
+		{
+			Terminal::Warn(StringOps::GetName(this), "Active world changed before restore, snapshot is dropped");
+			m_snapshot.Clear();
+			return;
+		}
+
+		BinaryArchiveReader reader(m_snapshot.GetData(), m_snapshot.GetCount());
+
+		if (!SceneSerializer::Deserialize(*pTarget, m_reflection, reader))
+			Terminal::Error(StringOps::GetName(this), "Active world could not be restored completely");
+
+		m_snapshot.Clear();
 	}
 }

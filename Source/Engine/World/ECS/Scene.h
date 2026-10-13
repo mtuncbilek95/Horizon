@@ -23,6 +23,7 @@ namespace Horizon::Engine
 		void RemoveEntity(EntityHandle handl);
 		void RemoveEntity(usize index);
 		b8 IsAlive(EntityHandle handl) const;
+		void Clear();
 
 		ComponentObject* AddComponent(EntityHandle handl, ComponentTypeId typeId);
 		void RemoveComponent(EntityHandle handl, ComponentTypeId typeId);
