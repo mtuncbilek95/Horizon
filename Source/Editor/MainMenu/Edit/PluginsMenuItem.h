@@ -6,7 +6,7 @@
 
 namespace Horizon::Editor
 {
-	HCLASS(MenuItem["Edit/Plugins", i32_max - 1]);
+	HCLASS(MenuItem["Edit/Plugins", i32_max - 2]);
 	class EDITOR_API PluginsMenuItem : public MenuItem
 	{
 		HORIZON_TYPE_REFLECT(PluginsMenuItem);

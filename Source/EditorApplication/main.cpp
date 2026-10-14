@@ -9,6 +9,7 @@
 #include <Engine/Asset/AssetService.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/Physics/PhysicsService.h>
+#include <Engine/Input/InputService.h>
 
 #include <Runtime/PAL/Console/Console.h>
 
@@ -53,6 +54,7 @@ int main(int argC, char** argV)
 	engine.RegisterModule<Editor::DomainService>();
 	engine.RegisterModule<Engine::AssetService>();
 	engine.RegisterModule<Engine::WorldService>();
+	engine.RegisterModule<Engine::InputService>();
 	engine.RegisterModule<Editor::EditorService>();
 	engine.RegisterModule<Engine::PhysicsService>();
 

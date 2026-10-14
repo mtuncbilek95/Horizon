@@ -19,7 +19,7 @@ function(ConfigureWindowsLibrary TARGET)
 			user32.lib gdi32.lib shell32.lib 
 			Setupapi.lib windowscodecs.lib 
 			Synchronization.lib dwmapi.lib 
-			Shcore.lib
+			Shcore.lib GameInput.lib
 	)
 endfunction()
 

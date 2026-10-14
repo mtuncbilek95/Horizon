@@ -1,9 +1,11 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::PAL
 {
+	HENUM();
 	enum class KeyCode : u64
 	{
 		Unknown = 0,

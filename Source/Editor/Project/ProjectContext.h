@@ -26,6 +26,7 @@ namespace Horizon::Editor
 		const std::string& GetAssetPath() const { return m_assetPath; }
 		const std::string& GetCookPath() const { return m_cookPath; }
 		const std::string& GetPluginPath() const { return m_pluginPath; }
+		const std::string& GetSettingsPath() const { return m_settingsPath; }
 		const std::string& GetEngineResourcePath() const { return m_engineResourcePath; }
 
 		const List<std::string>& GetEnabledPlugins() const { return m_enabledPlugins; }
@@ -39,6 +40,7 @@ namespace Horizon::Editor
 		std::string m_cookPath;
 		std::string m_codePath;
 		std::string m_pluginPath;
+		std::string m_settingsPath;
 		std::string m_engineResourcePath;
 
 		List<std::string> m_enabledPlugins;
