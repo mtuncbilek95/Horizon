@@ -2,6 +2,7 @@
 
 #include <Engine/World/System.h>
 #include <Engine/World/SystemOrderAttribute.h>
+#include <Engine/World/ECS/Definitions.h>
 #include <Runtime/Math/Vec2u.h>
 #include <Runtime/RTTR/Reflection.h>
 
@@ -18,5 +19,17 @@ namespace Horizon::Engine
 		void OnGroupsChanged(SystemGroup previous, SystemGroup current) final;
 
 		SystemGroup GetWorkingGroup() const final { return SystemGroup::General; }
+
+		void SetOverride(EntityHandle camera) { m_override = camera; }
+		void ClearOverride() { m_override = EntityHandle(); }
+		EntityHandle GetOverride() const { return m_override; }
+		EntityHandle GetActiveCamera() const { return m_active; }
+
+	private:
+		EntityHandle ResolveActiveCamera(Scene& currentScene) const;
+
+	private:
+		EntityHandle m_override;
+		EntityHandle m_active;
 	};
 }

@@ -9,6 +9,7 @@
 namespace Horizon::Engine
 {
 	class RenderSystem;
+	class CameraSystem;
 	class WorldService;
 	class Scene;
 	class CameraComponent;
@@ -40,6 +41,7 @@ namespace Horizon::Editor
 
 	private:
 		Engine::RenderSystem* m_renderer = nullptr;
+		Engine::CameraSystem* m_cameraSystem = nullptr;
 		Engine::WorldService* m_world = nullptr;
 		Engine::EntityHandle m_editorCamera;
 

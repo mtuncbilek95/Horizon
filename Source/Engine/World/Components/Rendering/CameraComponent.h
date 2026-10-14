@@ -1,3 +1,4 @@
+// CameraComponent.h
 #pragma once
 
 #include <Engine/World/ECS/ComponentIdAttribute.h>
@@ -31,6 +32,9 @@ namespace Horizon::Engine
 		HFIELD();
 		f32 m_farPlane = 1000.f;
 
+		HFIELD(Tooltip["Highest priority non-editor camera becomes the game view"]);
+		i32 m_priority = 0;
+
 		HFIELD(ReadOnly);
 		Math::Vec2f m_targetScreen = { 0.f, 0.f };
 
@@ -38,6 +42,5 @@ namespace Horizon::Engine
 		Math::Mat4f m_view;
 		Math::Mat4f m_projection;
 		Math::Vec3f m_worldPosition;
-		b8 m_inUse = false;
 	};
 }

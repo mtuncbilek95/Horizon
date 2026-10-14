@@ -10,6 +10,7 @@
 #include <Engine/World/Components/Physics/TransformComponent.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Engine/World/Systems/Rendering/RenderSystem.h>
+#include <Engine/World/Systems/Rendering/CameraSystem.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/World/SystemGroup.h>
 
@@ -51,6 +52,7 @@ namespace Horizon::Editor
 		}
 
 		m_renderer = m_world->RequestSystem<Engine::RenderSystem>();
+		m_cameraSystem = m_world->RequestSystem<Engine::CameraSystem>();
 
 		ImGuizmo::Style& style = ImGuizmo::GetStyle();
 		style.TranslationLineThickness = 3.0f;
@@ -68,7 +70,7 @@ namespace Horizon::Editor
 
 	void SceneView::OnRender(const Engine::EngineFrame& context)
 	{
-		if (m_renderer == nullptr)
+		if (m_renderer == nullptr || m_cameraSystem == nullptr)
 		{
 			ImGui::TextDisabled("No render system");
 			return;
@@ -85,38 +87,25 @@ namespace Horizon::Editor
 		if (area.x < 1.0f || area.y < 1.0f)
 			return;
 
-		Engine::TransformComponent* pCameraPos = nullptr;
-		Engine::CameraComponent* pCamera = nullptr;
-
 		// Choose camera according to SceneGroup
 		// TODO: This may change due to ejecting camera during gameplay to test out things.
 		if (m_world->GetRunningSystems() != Engine::SceneGroups::Play)
 		{
-			pCamera = EnsureEditorCamera(pScene);
-			pCamera->m_inUse = true; // Make sure that its in use
-
-			pCameraPos = pScene->FindComponent<Engine::TransformComponent>(m_editorCamera);
+			EnsureEditorCamera(pScene);
+			m_cameraSystem->SetOverride(m_editorCamera);
 		}
 		else
-		{
-			pCamera = EnsureEditorCamera(pScene);
-			pCamera->m_inUse = false; // Make sure that its not in use
-			pCamera = nullptr;
+			m_cameraSystem->ClearOverride();
 
-			b8 hasCam = false;
-			pScene->ForEach<Engine::CameraComponent>([&](Engine::EntityHandle handl, Engine::CameraComponent& camComp)
-				{
-					if (hasCam)
-						return;
+		const Engine::EntityHandle activeCamera = m_cameraSystem->GetActiveCamera();
+		Engine::CameraComponent* pCamera = nullptr;
+		Engine::TransformComponent* pCameraPos = nullptr;
 
-					if (pScene->HasComponent<Engine::EditorOnlyComponent>(handl))
-						return;
+		if (activeCamera.IsValid())
+			pCamera = pScene->FindComponent<Engine::CameraComponent>(activeCamera);
 
-					pCamera = &camComp;
-					hasCam = true;
-					pCamera->m_inUse = true;
-				});
-		}
+		if (activeCamera == m_editorCamera)
+			pCameraPos = pScene->FindComponent<Engine::TransformComponent>(m_editorCamera);
 
 		if (pCamera == nullptr)
 		{

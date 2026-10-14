@@ -4,6 +4,8 @@
 #include <Engine/World/Components/Rendering/CameraComponent.h>
 #include <Engine/World/Components/Rendering/MeshComponent.h>
 #include <Engine/World/Components/PostProcess/FogComponent.h>
+#include <Engine/World/Systems/Rendering/CameraSystem.h>
+
 #include <Engine/Asset/AssetService.h>
 #include <Engine/Asset/Mesh/MeshAssetStreamer.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
@@ -219,21 +221,19 @@ namespace Horizon::Engine
 	{
 		Math::Mat4f viewProj = Math::Mat4f::Identity();
 		Math::Vec3f camPos = Math::Vec3f::Zero();
-		b8 hasView = false;
 
-		currentScene.ForEach<CameraComponent>([&](EntityHandle handl, CameraComponent& camera)
-			{
-				if (hasView || !camera.m_inUse)
-					return;
+		CameraSystem* pCameraSystem = RequestSystem<CameraSystem>();
+		CameraComponent* pCamera = nullptr;
 
-				if (camera.m_targetScreen.X() < 1.0f || camera.m_targetScreen.Y() < 1.0f)
-					return;
+		if (pCameraSystem != nullptr && pCameraSystem->GetActiveCamera().IsValid())
+			pCamera = currentScene.FindComponent<CameraComponent>(pCameraSystem->GetActiveCamera());
 
-				viewProj = camera.m_viewProjection;
-				camPos = camera.m_worldPosition;
-				ResizeImage({ u32(camera.m_targetScreen.X()), u32(camera.m_targetScreen.Y()) });
-				hasView = true;
-			});
+		if (pCamera != nullptr && pCamera->m_targetScreen.X() >= 1.0f && pCamera->m_targetScreen.Y() >= 1.0f)
+		{
+			viewProj = pCamera->m_viewProjection;
+			camPos = pCamera->m_worldPosition;
+			ResizeImage({ u32(pCamera->m_targetScreen.X()), u32(pCamera->m_targetScreen.Y()) });
+		}
 
 		RenderSlot& slot = m_slots[m_frameIndex];
 
