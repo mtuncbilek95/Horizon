@@ -149,7 +149,17 @@ There are two ways to write gameplay. Pick by asking "how many of these are ther
 Components are **pure data**. If you put a function into a component, the system loses the reason to exist. Logic lives in the system's private functions.
 
 Prefer composition over specialised components. Don't write `InteractableDoorComponent`. Write an `InteractableComponent` (range, prompt, "interacted this frame") and a
-`DoorComponent` (angles, speed, state). Then a door that opens with a lever or a trigger doesn't need a copy-pasted door logic.
+`DoorComponent` (angles, speed, state). Then a door that opens with a lever or a trigger doesn't need a copy-pasted door logic. If you're lunatic enough, you can add multi-tag and
+define this component on runtime attachment with a script and use it like this order:
+
+- Create a script that searchs for every "Door" tag.
+- Check if they have your needed components
+- If not, add. Otherwise continue.
+- Put this algorithm in OnStart
+- Create an entity in the editor scene
+- Add ScriptComponent and connect this script.
+- Now your scene will handle the auto add mechanism
+- Notice that this is pretty bloated as hell and find a different solution.
 
 ### NO REGISTRATION
 There's no `RegisterSystem<T>()` or anything like that. Reflection finds every `GameScript` and `System` in your module through its base type.
