@@ -46,9 +46,11 @@ namespace Horizon::Engine
 
 		m_moduleName = moduleName;
 		m_libraryPath = std::format("{}/{}.dll", binaries, moduleName);
+		m_symbolPath = std::format("{}/{}.pdb", binaries, moduleName);
 		m_markerPath = std::format("{}/{}.reload", binaries, moduleName);
 		m_shadowRoot = std::format("{}/Intermediate/HotReload", root);
 		m_shadowPath = std::format("{}/{}.dll", m_shadowRoot, moduleName);
+		m_shadowSymbolPath = std::format("{}/{}.pdb", m_shadowRoot, moduleName);
 
 		if (!PAL::File::Exists(m_libraryPath))
 			return Fail("Library is not built");
@@ -71,6 +73,9 @@ namespace Horizon::Engine
 
 		if (!PAL::File::Delete(m_shadowPath))
 			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted, library may still be alive", m_shadowPath);
+
+		if (PAL::File::Exists(m_shadowSymbolPath))
+			PAL::File::Delete(m_shadowSymbolPath);
 
 		Terminal::Info(StringOps::GetName(this), "{} unloaded", m_moduleName);
 	}
@@ -121,6 +126,9 @@ namespace Horizon::Engine
 
 		if (!PAL::File::Copy(m_libraryPath, m_shadowRoot))
 			return Fail("Library could not be shadow copied, previous copy may still be loaded");
+
+		if (PAL::File::Exists(m_symbolPath) && !PAL::File::Copy(m_symbolPath, m_shadowRoot))
+			Terminal::Warn(StringOps::GetName(this), "{} could not be copied, debugger may not resolve symbols of the new build", m_symbolPath);
 
 		PAL::SymbolLibraryDesc desc;
 		desc.path = m_shadowPath;

@@ -51,6 +51,8 @@ namespace Horizon::Engine
 		std::string m_shadowRoot;
 		std::string m_shadowPath;
 		std::string m_failReason;
+		std::string m_symbolPath;
+		std::string m_shadowSymbolPath;
 
 		u64 m_loadedStamp = 0;
 		b8 m_reloadDeferred = false;

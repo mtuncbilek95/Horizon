@@ -120,6 +120,7 @@ function(HorizonGameModule NAME)
 	)
 
 	target_link_libraries(${NAME} PRIVATE Engine Runtime)
+	target_link_options(${NAME} PRIVATE "/PDBALTPATH:%_PDB%")
 
 	set_target_properties(${NAME} PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY "${ARG_OUTPUT_DIR}/$<CONFIG>"
