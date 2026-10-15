@@ -34,7 +34,7 @@ namespace Horizon::Editor
 		ufbx_load_opts opts = {};
 		opts.generate_missing_normals = true;
 		opts.target_axes = ufbx_axes_right_handed_y_up;
-		opts.target_unit_meters = 1.f;
+		opts.target_unit_meters = 0.1f;
 
 		ufbx_error error = {};
 		ufbx_scene* pScene = ufbx_load_file(inPath.c_str(), &opts, &error);
