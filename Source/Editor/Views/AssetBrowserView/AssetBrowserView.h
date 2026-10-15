@@ -33,6 +33,18 @@ namespace Horizon::Editor
 			const std::string& GetName() const;
 		};
 
+		struct ActionEntry
+		{
+			const Reflect::Type* pType = nullptr;
+			AssetAction* pAction = nullptr;
+		};
+
+		struct ImportEntry
+		{
+			std::string fileToImport;
+			std::string currentPath;
+		};
+
 	public:
 		AssetBrowserView() = default;
 		~AssetBrowserView() final;
@@ -44,12 +56,6 @@ namespace Horizon::Editor
 		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
 	private:
-		struct ActionEntry
-		{
-			const Reflect::Type* pType = nullptr;
-			AssetAction* pAction = nullptr;
-		};
-
 		b8 AddAction(const Reflect::Type* pType);
 		void RemoveAction(const Reflect::Type* pType);
 
@@ -63,8 +69,9 @@ namespace Horizon::Editor
 		void RenderRenameModal();
 		BrowserEntry* FindEntry(const std::string& path);
 
+		// Import action
 		void ImportFiles(const List<std::string>& files);
-
+		void RenderDialog(const ImportEntry& entry);
 	private:
 		// Asset Open Actions
 		List<ActionEntry> m_openActions;
@@ -77,6 +84,7 @@ namespace Horizon::Editor
 
 		// Safe-use entries
 		List<BrowserEntry> m_entries;
+		List<ImportEntry> m_pendingImportList;
 		ImGuiSelectionBasicStorage m_selection;
 
 		// Rename misc.

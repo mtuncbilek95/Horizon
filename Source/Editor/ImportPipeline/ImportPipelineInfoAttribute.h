@@ -8,14 +8,17 @@ namespace Horizon::Editor
 	{
 		HORIZON_ATTRIBUTE_REFLECT(ImportPipelineInfoAttribute);
 	public:
-		ImportPipelineInfoAttribute(const List<std::string>& extensions) : m_extensions(extensions)
+		ImportPipelineInfoAttribute(Reflect::TypeHandle handl, const List<std::string>& extensions) : m_assetType(handl), 
+			m_extensions(extensions)
 		{
 		}
 		~ImportPipelineInfoAttribute() = default;
 
+		Reflect::TypeHandle GetWorkingAssetType() const { return m_assetType; }
 		const List<std::string>& GetExtensions() const { return m_extensions; }
 
 	private:
+		Reflect::TypeHandle m_assetType;
 		List<std::string> m_extensions;
 	};
 }

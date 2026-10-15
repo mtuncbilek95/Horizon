@@ -39,7 +39,10 @@ namespace Horizon::Engine
 
 		// Nearly impossible but sure
 		if (pSceneAsset->m_ticket == InvalidSubmitTicket)
-			FailedAssetLog(pSceneAsset, "Job could not be submitted");
+		{
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Job could not be submitted", pSceneAsset->m_ownerEntry.assetId.ToString());
+			pSceneAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+		}
 	}
 
 	void SceneAssetStreamer::UnloadAsync(AssetObject* pAsset)
@@ -53,14 +56,16 @@ namespace Horizon::Engine
 		// Fail checks (Doesn't happen but safe)
 		if (header.magic != AssetHeader::Magic)
 		{
-			FailedAssetLog(pAsset, "Magic number doesn't match up!");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Magic number doesn't match up!", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
 		// Fail checks (Doesn't happen but safe)
 		if (header.version != AssetHeader::Version)
 		{
-			FailedAssetLog(pAsset, "Versions are not matching!");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Versions are not matching!", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
@@ -74,13 +79,16 @@ namespace Horizon::Engine
 		PAL::FileAccessRequest fileHandl = PAL::File::RequestAccess(cookPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
 		if (!fileHandl.IsValid())
 		{
-			FailedAssetLog(pAsset, "Access request to file has failed!");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Access request to file has failed!", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
 		if (!PAL::File::ReadMemory(fileHandl, propertyBytes, header.propertyOffset, header.propertyOffset + header.propertySize))
 		{
-			FailedAssetLog(pAsset, "Failed to read memory file for MeshProperties");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Failed to read memory file for SceneProperties", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+
 			PAL::File::ReleaseAccess(fileHandl);
 			return;
 		}
@@ -101,7 +109,8 @@ namespace Horizon::Engine
 
 		if (!PAL::File::ReadMemory(fileHandl, dataPayload, header.payloadOffset, header.payloadOffset + header.payloadSize))
 		{
-			FailedAssetLog(pAsset, "Failed to read memory file for BinaryData");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Failed to read memory file for BinaryData", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::ReleaseAccess(fileHandl);
 			return;
 		}

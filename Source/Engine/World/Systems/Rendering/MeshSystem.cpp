@@ -36,7 +36,7 @@ namespace Horizon::Engine
 					return;
 				}
 
-				mesh.m_meshHandle.SetAsset(m_assetService->FindAsset<MeshAsset>(id));
+				mesh.m_meshHandle.SetAsset(m_assetService->FindAsset(id));
 				mesh.m_resolvedId = id;
 			});
 	}

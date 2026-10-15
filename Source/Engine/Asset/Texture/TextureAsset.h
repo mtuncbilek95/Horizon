@@ -11,5 +11,8 @@ namespace Horizon::Engine
 	public:
 		TextureAsset() = default;
 		~TextureAsset() = default;
+
+	protected:
+		void OnPropertiesLoaded(ReadOnlyList<u8> propertyBytes) {}
 	};
 }

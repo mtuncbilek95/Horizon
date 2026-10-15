@@ -21,14 +21,14 @@ namespace Horizon::Editor
 		static constexpr const c8* sClearPopup = "##assetClear";
 	}
 
-	b8 AssetPickerWidget::Draw(Guid* pId, const std::string& assetTypeName, DomainService* pDomain)
+	b8 AssetPickerWidget::Draw(Guid* pId, Reflect::Type* pAssetType, DomainService* pDomain)
 	{
 		std::string label = "None";
 
 		if (pId->IsValid())
 		{
 			DomainFile* pFile = pDomain->FindFileByGuid(*pId);
-			label = pFile ? pFile->GetPureName() : pId->ToString();
+			label = pFile ? pFile->GetName() : pId->ToString();
 		}
 
 		const ImGuiStyle& style = ImGui::GetStyle();
@@ -50,23 +50,23 @@ namespace Horizon::Editor
 			ImGui::EndPopup();
 		}
 
-		changed |= DrawDropTarget(pId, assetTypeName);
+		changed |= DrawDropTarget(pId, pAssetType);
 
 		ImGui::SameLine(0.f, style.ItemInnerSpacing.x);
 
 		if (ImGui::Button(ICON_FA_MAGNIFYING_GLASS, ImVec2(pickerWidth, 0.f)))
 		{
 			m_search.clear();
-			RefreshCandidates(pDomain, assetTypeName);
+			RefreshCandidates(pDomain, pAssetType);
 			ImGui::OpenPopup(sPickerPopup);
 		}
 
-		changed |= DrawPicker(pId, pDomain, assetTypeName);
+		changed |= DrawPicker(pId, pDomain, pAssetType);
 
 		return changed;
 	}
 
-	b8 AssetPickerWidget::DrawDropTarget(Guid* pId, const std::string& assetTypeName)
+	b8 AssetPickerWidget::DrawDropTarget(Guid* pId, Reflect::Type* pAssetType)
 	{
 		if (!ImGui::BeginDragDropTarget())
 			return false;
@@ -78,14 +78,14 @@ namespace Horizon::Editor
 			if (pPayload->DataSize == sizeof(DomainFile*))
 			{
 				DomainFile* pDropped = *static_cast<DomainFile* const*>(pPayload->Data);
-				const b8 acceptable = pDropped->GetMeta().assetTypeName == assetTypeName;
+				const b8 acceptable = pDropped->GetAssetTypeName() == pAssetType->GetName();
 
 				if (acceptable && pPayload->IsDelivery())
 				{
 					*pId = pDropped->GetID();
 					changed = true;
 
-					Terminal::Info("AssetPickerWidget", "{} dropped as {}", pDropped->GetID().ToString(), assetTypeName);
+					Terminal::Info("AssetPickerWidget", "{} dropped as {}", pDropped->GetID().ToString(), pAssetType->GetName());
 				}
 			}
 		}
@@ -94,15 +94,15 @@ namespace Horizon::Editor
 		return changed;
 	}
 
-	b8 AssetPickerWidget::DrawPicker(Guid* pId, DomainService* pDomain, const std::string& assetTypeName)
+	b8 AssetPickerWidget::DrawPicker(Guid* pId, DomainService* pDomain, Reflect::Type* pAssetType)
 	{
 		ImGui::SetNextWindowSize(ImVec2(320.f, 360.f), ImGuiCond_Appearing);
 
 		if (!ImGui::BeginPopup(sPickerPopup))
 			return false;
 
-		if (m_candidateRevision != pDomain->GetRevision() || m_candidateTypeName != assetTypeName)
-			RefreshCandidates(pDomain, assetTypeName);
+		if (m_candidateRevision != pDomain->GetRevision() || m_candidateTypeName != pAssetType->GetName())
+			RefreshCandidates(pDomain, pAssetType);
 
 		if (ImGui::IsWindowAppearing())
 			ImGui::SetKeyboardFocusHere();
@@ -132,14 +132,14 @@ namespace Horizon::Editor
 
 		for (DomainFile* pFile : m_candidates)
 		{
-			if (!SearchFilter::Matches(pFile->GetPureName(), m_search))
+			if (!SearchFilter::Matches(pFile->GetName(), m_search))
 				continue;
 
 			const b8 selected = pFile->GetID() == *pId;
 
 			ImGui::PushID(pFile);
 
-			if (ImGui::Selectable(pFile->GetPureName().c_str(), selected))
+			if (ImGui::Selectable(pFile->GetName().c_str(), selected))
 			{
 				*pId = pFile->GetID();
 				changed = true;
@@ -158,25 +158,25 @@ namespace Horizon::Editor
 		return changed;
 	}
 
-	void AssetPickerWidget::RefreshCandidates(DomainService* pDomain, const std::string& assetTypeName)
+	void AssetPickerWidget::RefreshCandidates(DomainService* pDomain, Reflect::Type* pAssetType)
 	{
 		m_candidates.Clear();
-		m_candidateTypeName = assetTypeName;
+		m_candidateTypeName = pAssetType->GetName();
 		m_candidateRevision = pDomain->GetRevision();
 
 		if (DomainFolder* pRoot = pDomain->GetRoot())
-			CollectFiles(pRoot, assetTypeName);
+			CollectFiles(pRoot, pAssetType);
 	}
 
-	void AssetPickerWidget::CollectFiles(DomainFolder* pFolder, const std::string& assetTypeName)
+	void AssetPickerWidget::CollectFiles(DomainFolder* pFolder, Reflect::Type* pAssetType)
 	{
 		for (DomainFile* pFile : pFolder->GetFiles())
 		{
-			if (pFile->GetMeta().assetTypeName == assetTypeName)
+			if (pFile->GetAssetTypeName() == pAssetType->GetName())
 				m_candidates.PushBack(pFile);
 		}
 
 		for (DomainFolder* pChild : pFolder->GetFolders())
-			CollectFiles(pChild, assetTypeName);
+			CollectFiles(pChild, pAssetType);
 	}
 }

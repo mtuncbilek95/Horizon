@@ -61,7 +61,7 @@ namespace Horizon::Engine
 			RemoveStreamerType(&type);
 	}
 
-	AssetStreamer* AssetService::FindStreamer(Reflect::TypeHandle handle)
+	AssetStreamer* AssetService::FindStreamer(Reflect::TypeHandle handle) const
 	{
 		auto it = m_streamerLookup.find(handle);
 
@@ -120,6 +120,7 @@ namespace Horizon::Engine
 		pNewAssetObject->m_streamer = FindStreamer(entry.assetType);
 		pNewAssetObject->m_ownerEntry = entry;
 
+		// TODO: I don't like this motherfucker.
 		ReadHeader(pNewAssetObject);
 
 		m_idLookup[entry.assetId] = m_usableAssets.GetCount();
@@ -162,7 +163,7 @@ namespace Horizon::Engine
 		return true;
 	}
 
-	AssetObject* AssetService::FindAsset(const Guid& id)
+	AssetObject* AssetService::FindAsset(const Guid& id) const
 	{
 		auto it = m_idLookup.find(id);
 

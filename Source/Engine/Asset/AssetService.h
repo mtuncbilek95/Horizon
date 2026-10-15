@@ -20,9 +20,6 @@ namespace Horizon::Engine
 			AssetStreamer* pStreamer = nullptr;
 		};
 	public:
-		AssetService() = default;
-		~AssetService() = default;
-
 		ModuleReport OnInitialize() final;
 		void OnExecute(const EngineFrame& ctx) final;
 		void OnFinalize() final;
@@ -36,13 +33,8 @@ namespace Horizon::Engine
 		b8 RefreshAsset(const Guid& id);
 		b8 HasAsset(const Guid& id) const { return m_idLookup.contains(id); }
 
-		template<typename T>
-		T* FindAsset(const Guid& id)
-		{
-			return (T*)FindAsset(id);
-		}
-		AssetObject* FindAsset(const Guid& id);
-		AssetStreamer* FindStreamer(Reflect::TypeHandle handle);
+		AssetObject* FindAsset(const Guid& id) const;
+		AssetStreamer* FindStreamer(Reflect::TypeHandle handle) const;
 
 	private:
 		b8 AddStreamerType(const Reflect::Type* pType);
@@ -55,5 +47,6 @@ namespace Horizon::Engine
 
 		List<AssetObject*> m_usableAssets;
 		std::unordered_map<Guid, usize> m_idLookup;
+		std::unordered_map<std::string, usize> m_relativePathLookup;
 	};
 }

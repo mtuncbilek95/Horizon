@@ -4,7 +4,7 @@
 
 namespace Horizon::Editor
 {
-	class EDITOR_API ImportPipeline : public Reflect::Base
+	class AssetImportSettings : Reflect::Base
 	{
 	};
 }

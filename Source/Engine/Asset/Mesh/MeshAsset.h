@@ -30,6 +30,9 @@ namespace Horizon::Engine
 		u32 GetFirstVertex() const { return m_vertexRange.offset / sizeof(MeshVertex); }
 		u32 GetFirstIndex() const { return m_indexRange.offset / sizeof(u32); }
 
+	protected:
+		void OnPropertiesLoaded(ReadOnlyList<u8> propertyBytes) {}
+
 	private:
 		SubmitTicket m_ticket = InvalidSubmitTicket;
 

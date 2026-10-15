@@ -20,9 +20,11 @@ namespace Horizon::Engine
 
 		Scene* GetScene() const { return m_scene; }
 
+	protected:
+		void OnPropertiesLoaded(ReadOnlyList<u8> propertyBytes) {}
+
 	private:
 		SubmitTicket m_ticket = InvalidSubmitTicket;
-
 		Scene* m_scene = nullptr;
 	};
 }

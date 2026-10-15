@@ -56,7 +56,7 @@ namespace Horizon::Editor
 				{ "InputMapAsset", ICON_FA_GAMEPAD }
 			};
 
-			auto it = nameMap.find(pFile->GetMeta().assetTypeName);
+			auto it = nameMap.find(pFile->GetAssetTypeName());
 			if (it == nameMap.end())
 				return ICON_FA_FILE;
 
@@ -71,9 +71,8 @@ namespace Horizon::Editor
 
 	const std::string& AssetBrowserView::BrowserEntry::GetName() const
 	{
-		return pFolder ? pFolder->GetName() : pFile->GetPureName();
+		return pFolder ? pFolder->GetName() : pFile->GetName();
 	}
-
 
 	AssetBrowserView::~AssetBrowserView()
 	{
@@ -320,10 +319,10 @@ namespace Horizon::Editor
 
 		if (pOpenFile != nullptr)
 		{
-			auto it = m_actionNameLookup.find(pOpenFile->GetMeta().assetTypeName);
+			auto it = m_actionNameLookup.find(pOpenFile->GetAssetTypeName());
 			if (it == m_actionNameLookup.end())
 			{
-				Terminal::Warn(StringOps::GetName(this), "{} is {} and there is no action for this asset.", pOpenFile->GetPureName(), pOpenFile->GetMeta().assetTypeName);
+				Terminal::Warn(StringOps::GetName(this), "{} is {} and there is no action for this asset.", pOpenFile->GetName(), pOpenFile->GetAssetTypeName());
 				return;
 			}
 
@@ -437,12 +436,13 @@ namespace Horizon::Editor
 	void AssetBrowserView::ImportFiles(const List<std::string>& files)
 	{
 		for (const auto& filePath : files)
-		{
-			if (PAL::File::Exists(filePath))
-				PAL::File::Copy(filePath, m_currentFolder->GetAbsolutePath());
+			m_pendingImportList.PushBack({ filePath, m_currentFolder->GetAbsolutePath() });
+	}
 
-			if (PAL::Directory::Exists(filePath))
-				PAL::Directory::Copy(filePath, m_currentFolder->GetAbsolutePath());
-		}
+	void AssetBrowserView::RenderDialog(const ImportEntry& entry)
+	{
+		auto* pDomain = GetContext()->pEngine->RequestService<DomainService>();
+
+		std::string extension = entry.fileToImport.substr(entry.fileToImport.rfind('.'));
 	}
 }

@@ -4,10 +4,8 @@
 
 namespace Horizon::Editor
 {
-	HCLASS();
-	class ImportStage
+	class EDITOR_API ImportPipeline : public Reflect::Base
 	{
-		HORIZON_DATA_REFLECT(ImportStage);
 	public:
 	};
 }

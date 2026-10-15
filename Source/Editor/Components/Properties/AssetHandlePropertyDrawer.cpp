@@ -33,6 +33,6 @@ namespace Horizon::Editor
 		}
 
 		auto* pDomain = ctx.pEngine->RequestService<DomainService>();
-		return m_picker.Draw(pId, pAssetType->GetName(), pDomain);
+		return m_picker.Draw(pId, pAssetType, pDomain);
 	}
 }

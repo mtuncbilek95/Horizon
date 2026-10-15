@@ -27,6 +27,9 @@ namespace Horizon::Engine
 		AssetStreamer* GetStreamer() const { return m_streamer; }
 
 		const AssetPhysicalEntry& GetPhysicalEntry() const { return m_ownerEntry; }
+	
+	protected:
+		virtual void OnPropertiesLoaded(ReadOnlyList<u8> propertyBytes) = 0;
 
 	protected:
 		AssetPhysicalEntry m_ownerEntry;

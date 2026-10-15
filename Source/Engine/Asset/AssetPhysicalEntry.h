@@ -13,6 +13,5 @@ namespace Horizon::Engine
 		std::string cookPath;
 
 		Reflect::TypeHandle assetType;
-
 	};
 }

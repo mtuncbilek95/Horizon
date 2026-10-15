@@ -2,6 +2,7 @@
 
 #include <Runtime/Containers/Guid.h>
 #include <Runtime/Containers/List.h>
+#include <Runtime/RTTR/Reflection.h>
 
 #include <string>
 
@@ -17,14 +18,14 @@ namespace Horizon::Editor
 		AssetPickerWidget() = default;
 		~AssetPickerWidget() = default;
 
-		b8 Draw(Guid* pId, const std::string& assetTypeName, DomainService* pDomain);
+		b8 Draw(Guid* pId, Reflect::Type* pAssetType, DomainService* pDomain);
 
 	private:
-		b8 DrawDropTarget(Guid* pId, const std::string& assetTypeName);
-		b8 DrawPicker(Guid* pId, DomainService* pDomain, const std::string& assetTypeName);
+		b8 DrawDropTarget(Guid* pId, Reflect::Type* pAssetType);
+		b8 DrawPicker(Guid* pId, DomainService* pDomain, Reflect::Type* pAssetType);
 
-		void RefreshCandidates(DomainService* pDomain, const std::string& assetTypeName);
-		void CollectFiles(DomainFolder* pFolder, const std::string& assetTypeName);
+		void RefreshCandidates(DomainService* pDomain, Reflect::Type* pAssetType);
+		void CollectFiles(DomainFolder* pFolder, Reflect::Type* pAssetType);
 
 	private:
 		std::string m_search;

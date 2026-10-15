@@ -1,6 +1,5 @@
 #include <Editor/Domain/DomainService.h>
 #include <Editor/Renderer/EditorService.h>
-#include <Editor/Importer/ImporterContext.h>
 #include <Editor/Project/ProjectContext.h>
 
 #include <Engine/Core/Engine.h>
@@ -50,7 +49,6 @@ int main(int argC, char** argV)
 	engine.RegisterModule<Engine::WindowService>(windowParams);
 
 	engine.RegisterModule<Engine::GraphicsContext>();
-	engine.RegisterModule<Editor::ImporterContext>();
 	engine.RegisterModule<Editor::DomainService>();
 	engine.RegisterModule<Engine::AssetService>();
 	engine.RegisterModule<Engine::WorldService>();

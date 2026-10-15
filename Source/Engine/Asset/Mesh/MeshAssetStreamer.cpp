@@ -71,7 +71,8 @@ namespace Horizon::Engine
 
 		if (m_device == nullptr || m_vertexArena == nullptr || m_indexArena == nullptr)
 		{
-			FailedAssetLog(pMeshAsset, "No device! No Vertex Arena! No Index Arena!");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "No device! No Vertex Arena! No Index Arena!", pMeshAsset->m_ownerEntry.assetId.ToString());
+			pMeshAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
@@ -81,7 +82,10 @@ namespace Horizon::Engine
 			}));
 
 		if (pMeshAsset->m_ticket == InvalidSubmitTicket)
-			FailedAssetLog(pMeshAsset, "Job could not be submitted");
+		{
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Job could not be submitted", pMeshAsset->m_ownerEntry.assetId.ToString());
+			pMeshAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+		}
 	}
 
 	void MeshAssetStreamer::UnloadAsync(AssetObject* pAsset)
@@ -95,19 +99,22 @@ namespace Horizon::Engine
 
 		if (header.magic != AssetHeader::Magic)
 		{
-			FailedAssetLog(pAsset, "Magic number doesn't match up!");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Magic number doesn't match up!", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
 		if (header.version != AssetHeader::Version)
 		{
-			FailedAssetLog(pAsset, "Versions are not matching!");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Versions are not matching!", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
 		if (header.propertySize != sizeof(MeshProperties))
 		{
-			FailedAssetLog(pAsset, "MeshProperties are not matching!");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "MeshProperties are not matching!", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
@@ -117,7 +124,8 @@ namespace Horizon::Engine
 		PAL::FileAccessRequest fileHandl = PAL::File::RequestAccess(cookPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
 		if (!fileHandl.IsValid())
 		{
-			FailedAssetLog(pAsset, "Access request to file has failed!");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Access request to file has failed!", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
@@ -126,7 +134,8 @@ namespace Horizon::Engine
 
 		if (!view.IsValid())
 		{
-			FailedAssetLog(pAsset, "Failed to map the cook file");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Failed to map the cook file", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
@@ -134,7 +143,8 @@ namespace Horizon::Engine
 		const usize payloadEnd = header.payloadOffset + header.payloadSize;
 		if (propertyEnd > view.GetSize() || payloadEnd > view.GetSize())
 		{
-			FailedAssetLog(pAsset, "Header offsets point outside of the cook file");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Header offsets point outside of the cook file", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;
 		}
@@ -146,7 +156,8 @@ namespace Horizon::Engine
 
 		if (props.vertexStride != sizeof(MeshVertex) || props.indexStride != sizeof(u32))
 		{
-			FailedAssetLog(pAsset, "VertexStride or IndexStride is not properly sized");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "VertexStride or IndexStride is not properly sized", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;
 		}
@@ -157,7 +168,8 @@ namespace Horizon::Engine
 
 		if (subMeshTable + vertBlock + indexBlock != header.payloadSize)
 		{
-			FailedAssetLog(pAsset, "Payload size does not match MeshProperties");
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Payload size does not match MeshProperties", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;
 		}
@@ -176,7 +188,8 @@ namespace Horizon::Engine
 
 			if (!hasValidIndices || !hasValidVertices)
 			{
-				FailedAssetLog(pAsset, "a sub-mesh points outside of its buffers");
+				Terminal::Error(StringOps::GetName(this), "{} Path: {}", "a sub-mesh points outside of its buffers", pAsset->m_ownerEntry.assetId.ToString());
+				pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 				PAL::File::CloseMap(view);
 				return;
 			}
@@ -193,7 +206,8 @@ namespace Horizon::Engine
 			RHI::GfxBufferRange vRange = m_vertexArena->Allocate(vertBlock, sizeof(MeshVertex));
 			if (!vRange.IsValid())
 			{
-				FailedAssetLog(pAsset, "VertexBufferArena is out of space");
+				Terminal::Error(StringOps::GetName(this), "{} Path: {}", "VertexBufferArena is out of space", pAsset->m_ownerEntry.assetId.ToString());
+				pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 				PAL::File::CloseMap(view);
 				return;
 			}
@@ -201,7 +215,8 @@ namespace Horizon::Engine
 			RHI::GfxBufferRange iRange = m_indexArena->Allocate(indexBlock, sizeof(u32));
 			if (!iRange.IsValid())
 			{
-				FailedAssetLog(pAsset, "IndexBufferArena is out of space");
+				Terminal::Error(StringOps::GetName(this), "{} Path: {}", "IndexBufferArena is out of space", pAsset->m_ownerEntry.assetId.ToString());
+				pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 				m_vertexArena->Free(vRange);
 				PAL::File::CloseMap(view);
 				return;
