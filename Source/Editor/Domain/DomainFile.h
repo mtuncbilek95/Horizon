@@ -17,6 +17,13 @@ namespace Horizon::Editor
 	public:
 		static constexpr std::string_view MetaSuffix = ".hmeta";
 		static constexpr std::string_view CookSuffix = ".hasset";
+		
+		struct DomainSubAsset
+		{
+			std::string key;
+			Guid id;
+			Reflect::Type* pAssetType = nullptr;
+		};
 
 	public:
 		DomainFile(DomainFolder* pParent, const Guid& id, const std::string& name, const std::string& metaPath, 
@@ -37,6 +44,10 @@ namespace Horizon::Editor
 		const std::string& GetCookFolder() const { return m_cookFolder; }
 		std::string GetCookedPath() const { return m_cookFolder + "/" + m_id.ToString() + std::string(CookSuffix); }
 
+		const List<DomainSubAsset>& GetSubAssets() const { return m_subAssets; }
+		DomainSubAsset* FindSubAsset(std::string_view key);
+		std::string GetSubAssetCookedPath(const Guid& id) const { return m_cookFolder + "/" + id.ToString() + std::string(CookSuffix); }
+
 		void Rename(const std::string& newName);
 		
 		b8 CreateSettings(Reflect::Type* pType);
@@ -56,5 +67,7 @@ namespace Horizon::Editor
 		std::string m_metaPath;
 		std::string m_sourcePath;
 		std::string m_cookFolder;
+
+		List<DomainSubAsset> m_subAssets;
 	};
 }
