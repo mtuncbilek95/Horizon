@@ -452,6 +452,7 @@ namespace Horizon::Editor
 		if (IsImportPending(id))
 			return;
 
+		// Gather everything, we're going to the war
 		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(pFile->GetExtension());
 		if (!pEntry)
 			return;
@@ -463,6 +464,7 @@ namespace Horizon::Editor
 			return;
 		}
 
+		// Take a snapshot, to save your ass.
 		AssetImportSettings* pSnapshot = CloneSettings(pFile->GetSettings(), pEntry->pSettingsType);
 		if (!pSnapshot)
 		{
@@ -470,6 +472,7 @@ namespace Horizon::Editor
 			return;
 		}
 
+		// Create a pending
 		DomainImportTask task;
 		task.id = id;
 		task.relativePath = pFile->GetRelativePath() + pFile->GetExtension();
