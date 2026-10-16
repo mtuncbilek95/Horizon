@@ -2,6 +2,7 @@
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionLibrary.h>
+#include <Engine/Reflection/ReflectionSystem.h>
 #include <Runtime/Containers/List.h>
 
 namespace Horizon::Editor
@@ -9,21 +10,24 @@ namespace Horizon::Editor
 	class ImportPipeline;
 	class AssetImporter;
 
+	struct ImportPipelineEntry
+	{
+		ImportPipeline* pPipeline = nullptr;
+		Reflect::Type* pPipelineType = nullptr;
+		Reflect::Type* pAssetType = nullptr;
+		Reflect::Type* pSettingsType = nullptr;
+		List<std::string> extensions;
+	};
+
+	struct AssetImporterEntry
+	{
+		AssetImporter* pImporter = nullptr;
+		Reflect::Type* pImportType = nullptr;
+		Reflect::Type* pAssetType = nullptr;
+	};
+
 	class ImporterRegistry
 	{
-		struct PipelineEntry
-		{
-			ImportPipeline* pPipeline = nullptr;
-			const Reflect::Type* pType = nullptr;
-			List<std::string> extensions;
-		};
-
-		struct ImporterEntry
-		{
-			AssetImporter* pImporter = nullptr;
-			const Reflect::Type* pType = nullptr;
-		};
-
 	public:
 		~ImporterRegistry();
 
@@ -32,13 +36,8 @@ namespace Horizon::Editor
 		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
 		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library);
 
-		template<typename T>
-		T* GetPipeline()
-		{
-			return (T*)GetPipeline(Reflect::TypeOf<T>());
-		}
-		ImportPipeline* GetPipeline(Reflect::TypeHandle handl);
-		ImportPipeline* GetPipeline(const std::string extension);
+		ImportPipelineEntry* GetImportPipelineEntry(const std::string& extension);
+		AssetImporterEntry* GetAssetImporterEntry(Reflect::TypeHandle handle);
 
 	private:
 		b8 AddPipelineType(const Reflect::Type* pType);
@@ -49,11 +48,13 @@ namespace Horizon::Editor
 
 	private:
 		Engine::Engine* m_engine = nullptr;
-		List<PipelineEntry> m_pipelines;
+		Engine::ReflectionSystem* m_reflection = nullptr;
+
+		List<ImportPipelineEntry> m_pipelines;
 		std::unordered_map<std::string, usize> m_pipelineLookup;
 		std::unordered_map<Reflect::TypeHandle, usize> m_typeToPipelineLookup;
 
-		List<ImporterEntry> m_importers;
+		List<AssetImporterEntry> m_importers;
 		std::unordered_map<Reflect::TypeHandle, usize> m_typeToImporterLookup;
 	};
 }

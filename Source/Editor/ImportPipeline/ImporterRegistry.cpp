@@ -30,14 +30,14 @@ namespace Horizon::Editor
 	{
 		m_engine = ctx;
 
-		auto* pReflection = ctx->GetReflectionSystem();
+		m_reflection = ctx->GetReflectionSystem();
 
 		// Register the Import Pipeline processor mechs
-		for (auto* pType : pReflection->GetTypeByBase(Reflect::TypeOf<ImportPipeline>()))
+		for (auto* pType : m_reflection->GetTypeByBase(Reflect::TypeOf<ImportPipeline>()))
 			AddPipelineType(pType);
 
 		// Register the importers such as ufbx/fast-gltf/ktx etc
-		for (auto* pType : pReflection->GetTypeByBase(Reflect::TypeOf<AssetImporter>()))
+		for (auto* pType : m_reflection->GetTypeByBase(Reflect::TypeOf<AssetImporter>()))
 			AddImporterType(pType);
 	}
 
@@ -63,35 +63,25 @@ namespace Horizon::Editor
 			RemoveImporterType(&type);
 	}
 
-	ImportPipeline* ImporterRegistry::GetPipeline(Reflect::TypeHandle handl)
-	{
-		for (const auto& entry : m_pipelines)
-		{
-			if (entry.pType->GetTypeId() == handl)
-				return entry.pPipeline;
-		}
-
-		Reflect::Type* pType = m_engine->GetReflectionSystem()->GetType(handl);
-		if (!pType)
-		{
-			Terminal::Warn(StringOps::GetName(this), "Type has not registered to ReflectionSystem.");
-			return nullptr;
-		}
-
-		Terminal::Warn(StringOps::GetName(this), "Type '{}' has not registered to ImporterRegistry", pType->GetName());
-		return nullptr;
-	}
-
-	ImportPipeline* ImporterRegistry::GetPipeline(const std::string extension)
+	ImportPipelineEntry* ImporterRegistry::GetImportPipelineEntry(const std::string& extension)
 	{
 		auto it = m_pipelineLookup.find(extension);
 		if (it == m_pipelineLookup.end())
 		{
-			Terminal::Warn(StringOps::GetName(this), "Extension '{}' has no default importer pipeline system. Could not have the asset as well check properly", extension);
+			Terminal::Error(StringOps::GetName(this), "{} has no pipeline entry", extension);
 			return nullptr;
 		}
 
-		return m_pipelines[it->second].pPipeline;
+		return &m_pipelines[it->second];
+	}
+
+	AssetImporterEntry* ImporterRegistry::GetAssetImporterEntry(Reflect::TypeHandle handle)
+	{
+		auto it = m_typeToImporterLookup.find(handle);
+		if (it == m_typeToImporterLookup.end())
+			return nullptr;
+
+		return &m_importers[it->second];
 	}
 
 	b8 ImporterRegistry::AddPipelineType(const Reflect::Type* pType)
@@ -113,9 +103,11 @@ namespace Horizon::Editor
 			return false;
 		}
 
-		PipelineEntry entry = {};
+		ImportPipelineEntry entry = {};
 		entry.pPipeline = pObject;
-		entry.pType = pType;
+		entry.pPipelineType = const_cast<Reflect::Type*>(pType);
+		entry.pAssetType = m_reflection->GetType(pAttr->GetWorkingAssetType());
+		entry.pSettingsType = m_reflection->GetType(pAttr->GetSettingsType());
 		entry.extensions = pAttr->GetExtensions();
 
 		m_typeToPipelineLookup[pAttr->GetWorkingAssetType()] = m_pipelines.GetCount();
@@ -136,7 +128,7 @@ namespace Horizon::Editor
 		usize removedIndex = m_pipelines.GetCount();
 		for (usize i = 0; i < m_pipelines.GetCount(); ++i)
 		{
-			if (m_pipelines[i].pType == pType)
+			if (m_pipelines[i].pPipelineType == pType)
 			{
 				removedIndex = i;
 				break;
@@ -205,9 +197,10 @@ namespace Horizon::Editor
 			return false;
 		}
 
-		ImporterEntry entry = {};
+		AssetImporterEntry entry = {};
 		entry.pImporter = pObject;
-		entry.pType = pType;
+		entry.pImportType = const_cast<Reflect::Type*>(pType);
+		entry.pAssetType = m_reflection->GetType(pAttr->GetAssetType());
 
 		m_typeToImporterLookup[pAttr->GetAssetType()] = m_importers.GetCount();
 		m_importers.PushBack(entry);
@@ -224,7 +217,7 @@ namespace Horizon::Editor
 		usize removedIndex = m_importers.GetCount();
 		for (usize i = 0; i < m_importers.GetCount(); ++i)
 		{
-			if (m_importers[i].pType == pType)
+			if (m_importers[i].pImportType == pType)
 			{
 				removedIndex = i;
 				break;

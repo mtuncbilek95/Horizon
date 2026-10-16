@@ -79,7 +79,6 @@ namespace Horizon::Editor
 
 		// Context Menu
 		ContextMenuRegistry<AssetBrowserContext> m_contextMenu;
-
 		DomainFolder* m_currentFolder = nullptr;
 
 		// Safe-use entries

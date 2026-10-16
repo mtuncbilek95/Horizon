@@ -56,7 +56,7 @@ namespace Horizon::Editor
 				{ "InputMapAsset", ICON_FA_GAMEPAD }
 			};
 
-			auto it = nameMap.find(pFile->GetAssetTypeName());
+			auto it = nameMap.find(pFile->GetAssetType()->GetName());
 			if (it == nameMap.end())
 				return ICON_FA_FILE;
 
@@ -195,6 +195,9 @@ namespace Horizon::Editor
 			BeginRename(browserContext.renamePath);
 
 		RenderRenameModal();
+
+		for (const auto& entry : m_pendingImportList)
+			RenderDialog(entry);
 	}
 
 	void AssetBrowserView::RenderToolbar(DomainFolder* pFolder)
@@ -319,10 +322,10 @@ namespace Horizon::Editor
 
 		if (pOpenFile != nullptr)
 		{
-			auto it = m_actionNameLookup.find(pOpenFile->GetAssetTypeName());
+			auto it = m_actionNameLookup.find(pOpenFile->GetAssetType()->GetName());
 			if (it == m_actionNameLookup.end())
 			{
-				Terminal::Warn(StringOps::GetName(this), "{} is {} and there is no action for this asset.", pOpenFile->GetName(), pOpenFile->GetAssetTypeName());
+				Terminal::Warn(StringOps::GetName(this), "{} is {} and there is no action for this asset.", pOpenFile->GetName(), pOpenFile->GetAssetType()->GetName());
 				return;
 			}
 
@@ -443,6 +446,17 @@ namespace Horizon::Editor
 	{
 		auto* pDomain = GetContext()->pEngine->RequestService<DomainService>();
 
-		std::string extension = entry.fileToImport.substr(entry.fileToImport.rfind('.'));
+		// Check if entry is a registered asset. If not, pop-up a warning about missing registered asset.
+		// After click ImGui::Button("Okay"), remove pop the entry from list.
+
+		// Check if it's already importer. If so, pop-up a warning about already imported. And ask to change name.
+		// After click ImGui::Button("Okay"), remove pop the entry from list.
+
+		// If its not imported already, pop up the settings of the asset
+		// So user can decide what to do with the asset
+		// Multi-staged assets with other assets will use the default settings of the staged part in cooker (be careful for this)
+
+		// TODO: Till I find a better way just auto-process the files
+		pDomain->ImportFile(entry.currentPath, entry.fileToImport);
 	}
 }

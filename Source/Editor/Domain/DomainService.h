@@ -1,10 +1,13 @@
 #pragma once
 
 #include <Editor/ImportPipeline/ImporterRegistry.h>
+#include <Editor/Domain/DomainImportTask.h>
 #include <Engine/Core/Service.h>
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
 #include <Runtime/Containers/Guid.h>
 #include <Runtime/Containers/List.h>
+#include <Runtime/Serialization/JsonArchive.h>
+#include <Runtime/PAL/Sync/Atomic.h>
 
 #include <string>
 #include <string_view>
@@ -15,7 +18,6 @@ namespace Horizon::Editor
 	class DomainFile;
 	struct DomainMeta;
 	class AssetImporter;
-	class ImporterContext;
 
 	class EDITOR_API DomainService : public Engine::Service
 	{
@@ -38,9 +40,13 @@ namespace Horizon::Editor
 		PAL::DirectoryWatcher& GetWatcher() { return m_watcher; }
 		const std::string& GetAssetPath() const { return m_assetPath; }
 
-		u64 GetRevision() const { return m_revision; }
+		u64 GetRevision() const { return m_revision.Load(); }
+
+		// Could be a temporary function
+		void ImportFile(const std::string& targetFolder, const std::string& importTarget);
 
 	private:
+		void BuildRootTree();
 		void BindWatcher();
 
 		void OnEntryAdded(const PAL::DirectoryWatcher::Event& event);
@@ -55,15 +61,22 @@ namespace Horizon::Editor
 		void ForgetFolder(DomainFolder* pFolder);
 		void ForgetFile(DomainFile* pFile);
 
+		DomainFile* ProcessSourceFile(DomainFolder* pParent, const std::string& relativePath, const std::string& parentPath, const std::string& name);
+		
+		void QueueImport(DomainFile* pFile, const std::string& path);
+		void StartImport() {}
+		void EndImport() {}
+
 	private:
 		std::string m_assetPath;
 		std::string m_cookPath;
 		DomainFolder* m_root = nullptr;
 
 		ImporterRegistry m_importPipelineRegistry;
-		ImporterContext* m_importerContext = nullptr;
 
 		PAL::DirectoryWatcher m_watcher;
-		u64 m_revision = 0;
+		PAL::Atomic<u64> m_revision = 0;
+
+		List<DomainImportTask> m_importTaskList;
 	};
 }

@@ -32,16 +32,18 @@ namespace Horizon::Editor
 
 	DomainFile* DomainFolder::FindFile(std::string_view name) const
 	{
+		std::string cleanName = std::string(name.substr(0, name.rfind('.')));
+
 		for (DomainFile* pFile : m_files)
 		{
-			if (StringOps::EqualsNoCase(pFile->GetName(), name))
+			if (StringOps::EqualsNoCase(pFile->GetName(), cleanName))
 				return pFile;
 		}
 
 		return nullptr;
 	}
 
-	DomainFolder* DomainFolder::ResolveFolder(std::string_view relativePath) const
+	DomainFolder* DomainFolder::ConfirmAndFindFolder(std::string_view relativePath) const
 	{
 		const DomainFolder* pCurrent = this;
 		usize offset = 0;
@@ -82,7 +84,7 @@ namespace Horizon::Editor
 		return pChild;
 	}
 
-	DomainFile* DomainFolder::AddFile(const std::string& name, const std::string& assetTypeName)
+	DomainFile* DomainFolder::AddFile(const Guid& id, const std::string& name, Reflect::Type* pAssetType)
 	{
 		DomainFile* pExisting = FindFile(name);
 
@@ -91,8 +93,8 @@ namespace Horizon::Editor
 
 		const std::string absolutePath = m_absolutePath + "/" + name;
 
-		DomainFile* pFile = Memory::Allocator::Create<DomainFile>(Memory::CurrLoc(), this, name,
-			absolutePath + std::string(DomainFile::MetaSuffix), absolutePath, m_connectedCookPath, assetTypeName);
+		DomainFile* pFile = Memory::Allocator::Create<DomainFile>(Memory::CurrLoc(), this, id, name,
+			absolutePath + std::string(DomainFile::MetaSuffix), absolutePath, m_connectedCookPath, pAssetType);
 
 		usize index = 0;
 

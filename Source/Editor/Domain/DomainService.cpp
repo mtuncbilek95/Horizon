@@ -2,14 +2,16 @@
 
 #include <Editor/Domain/DomainFolder.h>
 #include <Editor/Domain/DomainFile.h>
-#include <Editor/Domain/DomainMeta.h>
 #include <Editor/Project/ProjectContext.h>
+#include <Editor/ImportPipeline/ImporterRegistry.h>
 
 #include <Engine/Core/ModuleGraph.h>
+#include <Engine/Core/Engine.h>
 #include <Engine/Asset/AssetService.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/Job/JobSystem.h>
 
+#include <Runtime/Serialization/Serializer.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
@@ -18,6 +20,19 @@
 
 namespace Horizon::Editor
 {
+	namespace
+	{
+		const Reflect::Type* ResolveType(void* pUserData, Reflect::TypeHandle handle)
+		{
+			return static_cast<Engine::ReflectionSystem*>(pUserData)->GetType(handle);
+		}
+
+		const Reflect::Type* ResolveTypeByName(void* pUserData, const std::string& name)
+		{
+			return static_cast<Engine::ReflectionSystem*>(pUserData)->GetTypeByName(name);
+		}
+	}
+
 	Engine::ModuleReport DomainService::OnInitialize()
 	{
 		Engine::AssetService* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
@@ -32,7 +47,10 @@ namespace Horizon::Editor
 		m_assetPath = pProjectCtx->GetAssetPath();
 		m_cookPath = pProjectCtx->GetCookPath();
 
+		m_importPipelineRegistry.BootstrapViews(GetEngine());
+
 		m_root = Memory::Allocator::Create<DomainFolder>(Memory::CurrLoc(), nullptr, "Assets", m_assetPath, m_cookPath);
+		BuildRootTree();
 
 		m_watcher = PAL::DirectoryWatcher(m_assetPath, true);
 		BindWatcher();
@@ -43,7 +61,7 @@ namespace Horizon::Editor
 
 	void DomainService::OnExecute(const Engine::EngineFrame& ctx)
 	{
-		if(m_watcher.IsValid())
+		if (m_watcher.IsValid())
 			m_watcher.Dispatch();
 	}
 
@@ -72,6 +90,30 @@ namespace Horizon::Editor
 	void DomainService::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
 	{
 		m_importPipelineRegistry.OnLibraryUnregistered(library);
+	}
+
+
+	void DomainService::BuildRootTree()
+	{
+		List<std::string> sources;
+		m_root->Refresh(sources);
+
+		for (const std::string& relativePath : sources)
+		{
+			const usize separator = relativePath.rfind('/');
+			std::string parentPath = separator == std::string::npos ? std::string() : std::string(relativePath.substr(0, separator));
+			std::string fileName = separator == std::string::npos ? relativePath : std::string(relativePath.substr(separator + 1));
+
+			DomainFolder* pParent = m_root->ConfirmAndFindFolder(parentPath);
+			if (!pParent)
+			{
+				Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", parentPath);
+				return;
+			}
+
+			if (ProcessSourceFile(pParent, relativePath, parentPath, fileName))
+				m_revision.Add(1);
+		}
 	}
 
 	void DomainService::BindWatcher()
@@ -110,7 +152,7 @@ namespace Horizon::Editor
 			return nullptr;
 		}
 
-		return m_root->ResolveFolder(relativePath);
+		return m_root->ConfirmAndFindFolder(relativePath);
 	}
 
 	DomainFile* DomainService::FindFileByGuid(const Guid& guid) const
@@ -181,9 +223,42 @@ namespace Horizon::Editor
 		if (event.GetName().ends_with(DomainFile::MetaSuffix))
 			return;
 
-		// Create the hmeta with ImportPipelineSettings
+		DomainFolder* pParent = m_root->ConfirmAndFindFolder(event.GetParent());
+		if (!pParent)
+		{
+			Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", event.GetParent());
+			return;
+		}
+
+		// Just add the folder and mock with everyone for recursive folder tracking.
+		if (event.kind == PAL::WatcherEntryKind::Directory)
+		{
+			if (pParent->FindFolder(event.GetName()) != nullptr)
+				return;
+
+			List<PAL::Directory::Entry> iterator = PAL::Directory::Iterate(event.absolutePath);
+			if (iterator.GetCount())
+			{
+				Terminal::Warn(StringOps::GetName(this), "{} has multiple items in it and till I add recursive addition, it will skip!", event.absolutePath);
+				return;
+			}
+
+			DomainFolder* pFolder = pParent->AddFolder(std::string(event.GetName()));
+			if (!pFolder)
+				return;
+
+			m_revision.Add(1);
+			return;
+		}
 
 		// Cook the asset file. If it's a success ? add to the domain tree : remove everything created.
+		const usize separator = event.relativePath.rfind('/');
+		std::string parentPath = separator == std::string::npos ? std::string() : std::string(event.relativePath.substr(0, separator));
+		std::string fileName = separator == std::string::npos ? event.relativePath : std::string(event.relativePath.substr(separator + 1));
+
+		// Process the file here
+		if (ProcessSourceFile(pParent, event.relativePath, parentPath, fileName))
+			m_revision.Add(1);
 	}
 
 	void DomainService::OnEntryModified(const PAL::DirectoryWatcher::Event& event)
@@ -241,5 +316,128 @@ namespace Horizon::Editor
 
 		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
 			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
+	}
+
+	DomainFile* DomainService::ProcessSourceFile(DomainFolder* pParent, const std::string& relativePath, const std::string& parentPath, const std::string& name)
+	{
+		if (!pParent)
+			return nullptr;
+
+		// If its already there
+		if (pParent->FindFile(name))
+			return nullptr;
+
+		// Check if it's put on the import already
+
+
+		// Find the correct import pipeline 
+		ImportPipelineEntry* pImportPipelineEntry = m_importPipelineRegistry.GetImportPipelineEntry(name.substr(name.rfind('.')));
+
+		std::string sourcePath = pParent->GetAbsolutePath() + "/" + name;
+		std::string metaPath = sourcePath + ".hmeta";
+
+		if (!pImportPipelineEntry)
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} has no registered import pipeline.", name);
+			return nullptr;
+		}
+
+		if (!PAL::File::Exists(sourcePath))
+			return nullptr;
+
+		// Start processing the condition "If meta is exists" then inner side check for "if source exists"
+		if (PAL::File::Exists(metaPath))
+		{
+			// Get meta
+			PAL::FileAccessRequest fileAccess = PAL::File::RequestAccess(metaPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
+
+			std::string outStr;
+			PAL::File::ReadString(fileAccess, outStr);
+			PAL::File::ReleaseAccess(fileAccess);
+
+			JsonArchiveReader jsonReader(outStr);
+			jsonReader.BeginObject();
+
+			std::string id;
+			if (jsonReader.Key("id"))
+				id = jsonReader.ReadString();
+
+			// Cooked asset path
+			std::string cookedPath = m_cookPath + "/" + id + ".hasset";
+			if (PAL::File::Exists(cookedPath))
+			{
+				// Register to the asset service
+				auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
+				if (!pAssetService->RegisterAsset({ Guid(id), cookedPath, pImportPipelineEntry->pAssetType->GetTypeId() }))
+				{
+					Terminal::Error(StringOps::GetName(this), "{} has not been able to registered as {} to AssetService", name, id);
+					return nullptr;
+				}
+
+				//  Create file then create settings
+				DomainFile* pFile = pParent->AddFile(Guid(id), name, pImportPipelineEntry->pAssetType);
+				if (!pFile->CreateSettings(pImportPipelineEntry->pSettingsType))
+				{
+					pParent->RemoveEntry(name.substr(name.rfind('.') + 1));
+					return nullptr;
+				}
+
+				// Deserialize the settings so we can have easy access on editor side
+				Serializer settingsSerializer(GetEngine()->GetReflectionSystem(), ResolveType, ResolveTypeByName);
+
+				if (jsonReader.Key("settings"))
+				{
+					settingsSerializer.Deserialize(pFile->GetSettings(), *pImportPipelineEntry->pSettingsType, jsonReader);
+				}
+				else
+				{
+					Terminal::Warn(StringOps::GetName(this), "{} carries no import settings, reimporting with defaults", metaPath);
+					QueueImport(pFile, relativePath);
+				}
+
+				jsonReader.EndObject();
+
+				if (jsonReader.HasError())
+				{
+					Terminal::Warn(StringOps::GetName(this), "{} has malformed import settings, reimporting with defaults", metaPath);
+					QueueImport(pFile, relativePath);
+				}
+
+				return pFile;
+			}
+
+			jsonReader.EndObject();
+
+			// Create and send it to queue
+			DomainFile* pFile = pParent->AddFile(Guid(id), name, pImportPipelineEntry->pAssetType);
+			if (!pFile->CreateSettings(pImportPipelineEntry->pSettingsType))
+			{
+				pParent->RemoveEntry(name.substr(name.rfind('.') + 1));
+				return nullptr;
+			}
+
+			QueueImport(pFile, relativePath);
+			return nullptr;
+		}
+
+		// If not exist, lets have some fun
+		Guid newId = Guid::Generate();
+		DomainFile* pFile = pParent->AddFile(newId, name, pImportPipelineEntry->pAssetType);
+		if (!pFile->CreateSettings(pImportPipelineEntry->pSettingsType))
+		{
+			pParent->RemoveEntry(name.substr(name.rfind('.') + 1));
+			return nullptr;
+		}
+
+		QueueImport(pFile, relativePath);
+		return nullptr;
+	}
+
+	void DomainService::QueueImport(DomainFile* pFile, const std::string& path)
+	{
+	}
+
+	void DomainService::ImportFile(const std::string& targetFolder, const std::string& importTarget)
+	{
 	}
 }

@@ -78,7 +78,7 @@ namespace Horizon::Editor
 			if (pPayload->DataSize == sizeof(DomainFile*))
 			{
 				DomainFile* pDropped = *static_cast<DomainFile* const*>(pPayload->Data);
-				const b8 acceptable = pDropped->GetAssetTypeName() == pAssetType->GetName();
+				const b8 acceptable = pDropped->GetAssetType() == pAssetType;
 
 				if (acceptable && pPayload->IsDelivery())
 				{
@@ -172,7 +172,7 @@ namespace Horizon::Editor
 	{
 		for (DomainFile* pFile : pFolder->GetFiles())
 		{
-			if (pFile->GetAssetTypeName() == pAssetType->GetName())
+			if (pFile->GetAssetType() == pAssetType)
 				m_candidates.PushBack(pFile);
 		}
 

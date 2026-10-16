@@ -10,6 +10,7 @@
 namespace Horizon::Editor
 {
 	class DomainFolder;
+	class AssetImportSettings;
 
 	class EDITOR_API DomainFile
 	{
@@ -18,14 +19,14 @@ namespace Horizon::Editor
 		static constexpr std::string_view CookSuffix = ".hasset";
 
 	public:
-		DomainFile(DomainFolder* pParent, const std::string& name, const std::string& metaPath, 
-			const std::string& sourcePath, const std::string& cookFolder, const std::string& assetType);
+		DomainFile(DomainFolder* pParent, const Guid& id, const std::string& name, const std::string& metaPath, 
+			const std::string& sourcePath, const std::string& cookFolder, Reflect::Type* pAssetType);
 		~DomainFile();
 
 		DomainFolder* GetParent() const { return m_parent; }
 
 		const Guid& GetID() const { return m_id; }
-		const std::string& GetAssetTypeName() { return m_assetTypeName; }
+		Reflect::Type* GetAssetType() { return m_assetType; }
 
 		const std::string& GetName() const { return m_name; }
 		std::string GetExtension() const { return m_extension; }
@@ -37,12 +38,17 @@ namespace Horizon::Editor
 		std::string GetCookedPath() const { return m_cookFolder + "/" + m_id.ToString() + std::string(CookSuffix); }
 
 		void Rename(const std::string& newName);
+		
+		b8 CreateSettings(Reflect::Type* pType);
+		AssetImportSettings* GetSettings() const { return m_settings; }
+		void ReleaseSettings();
 
 	private:
 		DomainFolder* m_parent = nullptr;
 
 		Guid m_id;
-		std::string m_assetTypeName;
+		Reflect::Type* m_assetType;
+		AssetImportSettings* m_settings = nullptr;
 
 		std::string m_name;
 		std::string m_extension;
