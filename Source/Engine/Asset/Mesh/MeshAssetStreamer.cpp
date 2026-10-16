@@ -111,9 +111,9 @@ namespace Horizon::Engine
 			return;
 		}
 
-		if (header.propertySize != sizeof(MeshProperties))
+		if (header.propertySize != sizeof(MeshAssetProperties))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "MeshProperties are not matching!", pAsset->m_ownerEntry.assetId.ToString());
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "MeshAssetProperties are not matching!", pAsset->m_ownerEntry.assetId.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
@@ -151,8 +151,8 @@ namespace Horizon::Engine
 
 		pAsset->m_residency.Store(AssetResidency::Decoding, PAL::MemoryOrder::Relaxed);
 
-		MeshProperties props;
-		std::memcpy(&props, view.GetData() + header.propertyOffset, sizeof(MeshProperties));
+		MeshAssetProperties props;
+		std::memcpy(&props, view.GetData() + header.propertyOffset, sizeof(MeshAssetProperties));
 
 		if (props.vertexStride != sizeof(MeshVertex) || props.indexStride != sizeof(u32))
 		{
@@ -168,7 +168,7 @@ namespace Horizon::Engine
 
 		if (subMeshTable + vertBlock + indexBlock != header.payloadSize)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Payload size does not match MeshProperties", pAsset->m_ownerEntry.assetId.ToString());
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Payload size does not match MeshAssetProperties", pAsset->m_ownerEntry.assetId.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;

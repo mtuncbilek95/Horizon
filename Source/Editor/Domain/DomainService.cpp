@@ -4,6 +4,7 @@
 #include <Editor/Domain/DomainFile.h>
 #include <Editor/Project/ProjectContext.h>
 #include <Editor/ImportPipeline/ImporterRegistry.h>
+#include <Editor/ImportPipeline/AssetImportSettings.h>
 
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Core/Engine.h>
@@ -55,7 +56,6 @@ namespace Horizon::Editor
 		m_watcher = PAL::DirectoryWatcher(m_assetPath, true);
 		BindWatcher();
 
-		m_importPipelineRegistry.BootstrapViews(GetEngine());
 		return Engine::ModuleReport();
 	}
 
@@ -327,9 +327,6 @@ namespace Horizon::Editor
 		if (pParent->FindFile(name))
 			return nullptr;
 
-		// Check if it's put on the import already
-
-
 		// Find the correct import pipeline 
 		ImportPipelineEntry* pImportPipelineEntry = m_importPipelineRegistry.GetImportPipelineEntry(name.substr(name.rfind('.')));
 
@@ -345,99 +342,203 @@ namespace Horizon::Editor
 		if (!PAL::File::Exists(sourcePath))
 			return nullptr;
 
-		// Start processing the condition "If meta is exists" then inner side check for "if source exists"
-		if (PAL::File::Exists(metaPath))
+		const std::string stem = name.substr(0, name.rfind('.'));
+
+		// If not exist, lets have some fun
+		if (!PAL::File::Exists(metaPath))
 		{
-			// Get meta
-			PAL::FileAccessRequest fileAccess = PAL::File::RequestAccess(metaPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
-
-			std::string outStr;
-			PAL::File::ReadString(fileAccess, outStr);
-			PAL::File::ReleaseAccess(fileAccess);
-
-			JsonArchiveReader jsonReader(outStr);
-			jsonReader.BeginObject();
-
-			std::string id;
-			if (jsonReader.Key("id"))
-				id = jsonReader.ReadString();
-
-			// Cooked asset path
-			std::string cookedPath = m_cookPath + "/" + id + ".hasset";
-			if (PAL::File::Exists(cookedPath))
-			{
-				// Register to the asset service
-				auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
-				if (!pAssetService->RegisterAsset({ Guid(id), cookedPath, pImportPipelineEntry->pAssetType->GetTypeId() }))
-				{
-					Terminal::Error(StringOps::GetName(this), "{} has not been able to registered as {} to AssetService", name, id);
-					return nullptr;
-				}
-
-				//  Create file then create settings
-				DomainFile* pFile = pParent->AddFile(Guid(id), name, pImportPipelineEntry->pAssetType);
-				if (!pFile->CreateSettings(pImportPipelineEntry->pSettingsType))
-				{
-					pParent->RemoveEntry(name.substr(name.rfind('.') + 1));
-					return nullptr;
-				}
-
-				// Deserialize the settings so we can have easy access on editor side
-				Serializer settingsSerializer(GetEngine()->GetReflectionSystem(), ResolveType, ResolveTypeByName);
-
-				if (jsonReader.Key("settings"))
-				{
-					settingsSerializer.Deserialize(pFile->GetSettings(), *pImportPipelineEntry->pSettingsType, jsonReader);
-				}
-				else
-				{
-					Terminal::Warn(StringOps::GetName(this), "{} carries no import settings, reimporting with defaults", metaPath);
-					QueueImport(pFile, relativePath);
-				}
-
-				jsonReader.EndObject();
-
-				if (jsonReader.HasError())
-				{
-					Terminal::Warn(StringOps::GetName(this), "{} has malformed import settings, reimporting with defaults", metaPath);
-					QueueImport(pFile, relativePath);
-				}
-
-				return pFile;
-			}
-
-			jsonReader.EndObject();
-
-			// Create and send it to queue
-			DomainFile* pFile = pParent->AddFile(Guid(id), name, pImportPipelineEntry->pAssetType);
+			DomainFile* pFile = pParent->AddFile(Guid::Generate(), name, pImportPipelineEntry->pAssetType);
 			if (!pFile->CreateSettings(pImportPipelineEntry->pSettingsType))
 			{
-				pParent->RemoveEntry(name.substr(name.rfind('.') + 1));
+				pParent->RemoveEntry(stem);
 				return nullptr;
 			}
 
-			QueueImport(pFile, relativePath);
-			return nullptr;
+			QueueImport(pFile, ImportReason::Fresh);
+			return pFile;
 		}
 
-		// If not exist, lets have some fun
-		Guid newId = Guid::Generate();
-		DomainFile* pFile = pParent->AddFile(newId, name, pImportPipelineEntry->pAssetType);
+		// Get meta
+		PAL::FileAccessRequest fileAccess = PAL::File::RequestAccess(metaPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
+
+		std::string outStr;
+		PAL::File::ReadString(fileAccess, outStr);
+		PAL::File::ReleaseAccess(fileAccess);
+
+		JsonArchiveReader jsonReader(outStr);
+		jsonReader.BeginObject();
+
+		Guid id;
+		if (jsonReader.Key("id"))
+			id = Guid(jsonReader.ReadString());
+
+		if (!id.IsValid())
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} carries no valid id, a new one is generated", metaPath);
+			id = Guid::Generate();
+		}
+
+		//  Create file then create settings
+		DomainFile* pFile = pParent->AddFile(id, name, pImportPipelineEntry->pAssetType);
 		if (!pFile->CreateSettings(pImportPipelineEntry->pSettingsType))
 		{
-			pParent->RemoveEntry(name.substr(name.rfind('.') + 1));
+			pParent->RemoveEntry(stem);
 			return nullptr;
 		}
 
-		QueueImport(pFile, relativePath);
-		return nullptr;
+		// Deserialize the settings so we can have easy access on editor side
+		const b8 settingsValid = ReadSettings(pFile, pImportPipelineEntry->pSettingsType, jsonReader);
+		jsonReader.EndObject();
+
+		// Cooked asset path
+		const std::string cookedPath = pFile->GetCookedPath();
+		if (!PAL::File::Exists(cookedPath) || !settingsValid)
+		{
+			//return pFile;
+			/*QueueImport(pFile, ImportReason::Fresh);
+			return pFile;*/
+		}
+
+		// Register to the asset service
+		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
+		if (!pAssetService->RegisterAsset({ id, cookedPath, pImportPipelineEntry->pAssetType->GetTypeId() }))
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has not been able to registered as {} to AssetService", name, id.ToString());
+			pParent->RemoveEntry(stem);
+			return nullptr;
+		}
+
+		return pFile;
 	}
 
-	void DomainService::QueueImport(DomainFile* pFile, const std::string& path)
+	b8 DomainService::ReadSettings(DomainFile* pFile, Reflect::Type* pSettingsType, JsonArchiveReader& reader)
 	{
+		if (!reader.Key("settings"))
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} carries no import settings, defaults are used", pFile->GetMetaPath());
+			return false;
+		}
+
+		Serializer serializer(GetEngine()->GetReflectionSystem(), ResolveType, ResolveTypeByName);
+		serializer.Deserialize(pFile->GetSettings(), *pSettingsType, reader);
+
+		if (reader.HasError())
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} has malformed import settings, defaults are used", pFile->GetMetaPath());
+			return false;
+		}
+
+		return true;
+	}
+
+	void DomainService::QueueImport(DomainFile* pFile, ImportReason reason)
+	{
+		// Check if file is a valid one
+		if (!pFile || !pFile->GetSettings())
+		{
+			Terminal::Error(StringOps::GetName(this), "Import requested for a file without settings");
+			return;
+		}
+
+		// Check if the requested one is in queue already.
+		const Guid& id = pFile->GetID();
+		if (DomainImportTask* pRunning = FindRunningImport(id))
+		{
+			pRunning->requeue = true;
+			return;
+		}
+
+		// Check if its in pending
+		if (IsImportPending(id))
+			return;
+
+		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(pFile->GetExtension());
+		if (!pEntry)
+			return;
+
+		AssetImporterEntry* pImporterEntry = m_importPipelineRegistry.GetAssetImporterEntry(pEntry->pAssetType->GetTypeId());
+		if (!pImporterEntry)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has a pipeline but no importer for {}", pFile->GetName(), pEntry->pAssetType->GetName());
+			return;
+		}
+
+		AssetImportSettings* pSnapshot = CloneSettings(pFile->GetSettings(), pEntry->pSettingsType);
+		if (!pSnapshot)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} import settings could not be snapshotted", pFile->GetName());
+			return;
+		}
+
+		DomainImportTask task;
+		task.id = id;
+		task.relativePath = pFile->GetRelativePath() + pFile->GetExtension();
+		task.sourcePath = pFile->GetSourcePath();
+		task.cookedPath = pFile->GetCookedPath();
+		task.pPipeline = pEntry->pPipeline;
+		task.pImporter = pImporterEntry->pImporter;
+		task.pAssetType = pEntry->pAssetType;
+		task.pSettingsType = pEntry->pSettingsType;
+		task.pSettings = pSnapshot;
+		task.reason = reason;
+
+		m_pendingImports.PushBack(std::move(task));
 	}
 
 	void DomainService::ImportFile(const std::string& targetFolder, const std::string& importTarget)
 	{
+	}
+
+	void DomainService::StartImport()
+	{
+	}
+
+	void DomainService::EndImport()
+	{
+	}
+
+	DomainImportTask* DomainService::FindRunningImport(const Guid& id)
+	{
+		for (DomainImportTask& task : m_runningImports)
+		{
+			if (task.ticket != Engine::InvalidSubmitTicket && task.id == id)
+				return &task;
+		}
+
+		return nullptr;
+	}
+
+	b8 DomainService::IsImportPending(const Guid& id) const
+	{
+		for (const DomainImportTask& task : m_pendingImports)
+		{
+			if (task.id == id)
+				return true;
+		}
+
+		return false;
+	}
+
+	AssetImportSettings* DomainService::CloneSettings(const AssetImportSettings* pSource, Reflect::Type* pType)
+	{
+		auto* pClone = (AssetImportSettings*)pType->Create();
+		if (!pClone)
+			return nullptr;
+
+		Serializer serializer(GetEngine()->GetReflectionSystem(), ResolveType, ResolveTypeByName);
+
+		JsonArchiveWriter writer;
+		serializer.Serialize(pSource, *pType, writer);
+
+		JsonArchiveReader reader(writer.ToString());
+		serializer.Deserialize(pClone, *pType, reader);
+
+		if (reader.HasError())
+		{
+			Memory::Allocator::Delete(pClone);
+			return nullptr;
+		}
+
+		return pClone;
 	}
 }

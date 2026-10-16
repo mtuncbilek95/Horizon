@@ -4,7 +4,8 @@
 
 namespace Horizon::Editor
 {
-	class AssetImportSettings : Reflect::Base
+	HCLASS();
+	class AssetImportSettings : public Reflect::Base
 	{
 	};
 }

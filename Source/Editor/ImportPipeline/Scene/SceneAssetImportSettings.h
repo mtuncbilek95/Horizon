@@ -10,6 +10,7 @@ namespace Horizon::Editor
 	{
 		HORIZON_TYPE_REFLECT(SceneAssetImportSettings);
 	public:
-
+		SceneAssetImportSettings() = default;
+		~SceneAssetImportSettings() = default;
 	};
 }

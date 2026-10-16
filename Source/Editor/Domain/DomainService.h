@@ -42,7 +42,6 @@ namespace Horizon::Editor
 
 		u64 GetRevision() const { return m_revision.Load(); }
 
-		// Could be a temporary function
 		void ImportFile(const std::string& targetFolder, const std::string& importTarget);
 
 	private:
@@ -63,10 +62,15 @@ namespace Horizon::Editor
 
 		DomainFile* ProcessSourceFile(DomainFolder* pParent, const std::string& relativePath, const std::string& parentPath, const std::string& name);
 		
-		void QueueImport(DomainFile* pFile, const std::string& path);
-		void StartImport() {}
-		void EndImport() {}
+		void QueueImport(DomainFile* pFile, ImportReason reason);
+		void StartImport();
+		void EndImport();
 
+		DomainImportTask* FindRunningImport(const Guid& id);
+		b8 IsImportPending(const Guid& id) const;
+
+		AssetImportSettings* CloneSettings(const AssetImportSettings* pSource, Reflect::Type* pType);
+		b8 ReadSettings(DomainFile* pFile, Reflect::Type* pSettingsType, JsonArchiveReader& reader);
 	private:
 		std::string m_assetPath;
 		std::string m_cookPath;
@@ -77,6 +81,7 @@ namespace Horizon::Editor
 		PAL::DirectoryWatcher m_watcher;
 		PAL::Atomic<u64> m_revision = 0;
 
-		List<DomainImportTask> m_importTaskList;
+		List<DomainImportTask> m_pendingImports;
+		DomainImportTask m_runningImports[MaxConcurrentImports];
 	};
 }

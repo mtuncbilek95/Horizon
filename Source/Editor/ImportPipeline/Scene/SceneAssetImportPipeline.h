@@ -13,5 +13,7 @@ namespace Horizon::Editor
 	{
 		HORIZON_TYPE_REFLECT(SceneAssetImportPipeline);
 	public:
+		SceneAssetImportPipeline() = default;
+		~SceneAssetImportPipeline() = default;
 	};
 }

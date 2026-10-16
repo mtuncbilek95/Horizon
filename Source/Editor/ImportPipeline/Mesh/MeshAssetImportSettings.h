@@ -10,6 +10,8 @@ namespace Horizon::Editor
 	{
 		HORIZON_TYPE_REFLECT(MeshAssetImportSettings);
 	public:
+		MeshAssetImportSettings() = default;
+		~MeshAssetImportSettings() = default;
 
 		HFIELD();
 		b8 m_importMaterials = true;

@@ -2,7 +2,7 @@
 
 #include <Engine/Asset/AssetStreamer.h>
 #include <Engine/Asset/Mesh/MeshAsset.h>
-#include <Engine/Asset/Mesh/MeshProperties.h>
+#include <Engine/Asset/Mesh/MeshAssetProperties.h>
 
 #include <Runtime/Containers/List.h>
 #include <Runtime/RHI/Buffer/GfxBufferArena.h>

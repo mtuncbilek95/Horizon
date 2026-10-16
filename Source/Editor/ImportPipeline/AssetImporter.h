@@ -3,6 +3,7 @@
 #include <Editor/ImportPipeline/ImportPipelineInfoAttribute.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
 #include <Editor/ImportPipeline/AssetImportResult.h>
+#include <Engine/Core/Engine.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/Containers/ReadOnlyList.h>
 #include <Runtime/RTTR/Reflection.h>
@@ -11,7 +12,7 @@
 
 namespace Horizon::Editor
 {
-	class EDITOR_API AssetImporter : Reflect::Base
+	class EDITOR_API AssetImporter : public Reflect::Base
 	{
 	public:
 		virtual AssetImportResult CookAsset(Engine::Engine* pEngine, ReadOnlyList<u8> fileBytes, AssetImportSettings* pSettings, List<u8>& outBytes, usize& outPropertySize) = 0;

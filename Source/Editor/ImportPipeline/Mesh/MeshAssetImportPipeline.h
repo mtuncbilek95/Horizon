@@ -13,5 +13,7 @@ namespace Horizon::Editor
 	{
 		HORIZON_TYPE_REFLECT(MeshAssetImportPipeline);
 	public:
+		MeshAssetImportPipeline() = default;
+		~MeshAssetImportPipeline() = default;
 	};
 }

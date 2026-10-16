@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Engine/Asset/AssetObject.h>
-#include <Engine/Asset/Mesh/MeshProperties.h>
+#include <Engine/Asset/Mesh/MeshAssetProperties.h>
 #include <Engine/Asset/Mesh/MeshSubMesh.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
 #include <Engine/Job/JobSystem.h>
@@ -38,7 +38,7 @@ namespace Horizon::Engine
 
 		List<MeshSubMesh> m_submeshes;
 
-		MeshProperties m_properties;
+		MeshAssetProperties m_properties;
 		RHI::GfxBufferRange m_vertexRange;
 		RHI::GfxBufferRange m_indexRange;
 	};

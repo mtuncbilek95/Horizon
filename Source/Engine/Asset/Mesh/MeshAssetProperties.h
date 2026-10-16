@@ -4,7 +4,7 @@
 
 namespace Horizon::Engine
 {
-	struct MeshProperties
+	struct MeshAssetProperties
 	{
 		u32 vertexCount;
 		u32 indexCount;

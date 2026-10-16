@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
-#include <Runtime/Math/Vec3f.h>
+#include <Runtime/Math/BoundingBox.h>
 
 namespace Horizon::Engine
 {
@@ -11,7 +11,6 @@ namespace Horizon::Engine
 		u32 indexCount;
 		u32 vertexOffset;
 		u32 vertexCount;
-		Math::Vec3f boundsMin;
-		Math::Vec3f boundsMax;
+		Math::BoundingBox boundingBox;
 	};
 }
