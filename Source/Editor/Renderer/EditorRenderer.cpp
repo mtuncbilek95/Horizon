@@ -3,6 +3,8 @@
 #include <Editor/Font/IconsFontAudio.h>
 #include <Editor/Font/IconsFontAwesome6.h>
 #include <Editor/Font/IconsKenney.h>
+#include <Editor/Font/IconsMaterialDesignIcons.h>
+#include <Editor/Font/IconsCodicons.h>
 #include <Editor/Renderer/EditorPlatform.h>
 #include <Editor/Renderer/Utils/ImGuiUtils.h>
 
@@ -152,16 +154,20 @@ namespace Horizon::Editor
 		const std::string fontDir = std::string(HORIZON_RESOURCE_DIR) + "/Fonts/";
 		constexpr f32 fontSize = 16.0f;
 
-		static const ImWchar faRange[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-		static const ImWchar kiRange[] = { ICON_MIN_KI, ICON_MAX_KI, 0 };
+		static const ImWchar faRange[] = { ICON_MIN_FA,  ICON_MAX_FA,  0 };
+		static const ImWchar faExclude[] = { ICON_MIN_CI,  ICON_MAX_CI,  0 };
+		static const ImWchar ciRange[] = { ICON_MIN_CI,  ICON_MAX_CI,  0 };
+		static const ImWchar mdiRange[] = { ICON_MIN_MDI, ICON_MAX_MDI, 0 };
 
-		const auto mergeIconFont = [&](const char* pFile, const ImWchar* pRange)
+		const auto mergeIconFont = [&](const char* pFile, const ImWchar* pRange,
+			const ImWchar* pExclude = nullptr)
 			{
 				ImFontConfig iconCfg = {};
 				iconCfg.MergeMode = true;
 				iconCfg.PixelSnapH = true;
 				iconCfg.ExtraSizeScale = 0.85f;
 				iconCfg.GlyphMinAdvanceX = fontSize;
+				iconCfg.GlyphExcludeRanges = pExclude;   // ImGui 1.92+
 
 				const std::string path = fontDir + pFile;
 				if (!io.Fonts->AddFontFromFileTTF(path.c_str(), fontSize, &iconCfg, pRange))
@@ -179,8 +185,9 @@ namespace Horizon::Editor
 					pFont = io.Fonts->AddFontDefault();
 				}
 
-				mergeIconFont("fa-solid-900.ttf", faRange);
-				mergeIconFont("kenney-icon-font.ttf", kiRange);
+				mergeIconFont("codicon.ttf", ciRange);
+				mergeIconFont("fa-solid-900.ttf", faRange, faExclude);
+				mergeIconFont("materialdesignicons-webfont.ttf", mdiRange);
 
 				return pFont;
 			};

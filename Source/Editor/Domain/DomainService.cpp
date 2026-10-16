@@ -95,25 +95,7 @@ namespace Horizon::Editor
 
 	void DomainService::BuildRootTree()
 	{
-		List<std::string> sources;
-		m_root->Refresh(sources);
-
-		for (const std::string& relativePath : sources)
-		{
-			const usize separator = relativePath.rfind('/');
-			std::string parentPath = separator == std::string::npos ? std::string() : std::string(relativePath.substr(0, separator));
-			std::string fileName = separator == std::string::npos ? relativePath : std::string(relativePath.substr(separator + 1));
-
-			DomainFolder* pParent = m_root->ConfirmAndFindFolder(parentPath);
-			if (!pParent)
-			{
-				Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", parentPath);
-				return;
-			}
-
-			if (ProcessSourceFile(pParent, relativePath, parentPath, fileName))
-				m_revision.Add(1);
-		}
+		ProcessFolder(m_root);
 	}
 
 	void DomainService::BindWatcher()
@@ -230,23 +212,16 @@ namespace Horizon::Editor
 			return;
 		}
 
-		// Just add the folder and mock with everyone for recursive folder tracking.
 		if (event.kind == PAL::WatcherEntryKind::Directory)
 		{
 			if (pParent->FindFolder(event.GetName()) != nullptr)
 				return;
 
-			List<PAL::Directory::Entry> iterator = PAL::Directory::Iterate(event.absolutePath);
-			if (iterator.GetCount())
-			{
-				Terminal::Warn(StringOps::GetName(this), "{} has multiple items in it and till I add recursive addition, it will skip!", event.absolutePath);
-				return;
-			}
-
 			DomainFolder* pFolder = pParent->AddFolder(std::string(event.GetName()));
 			if (!pFolder)
 				return;
 
+			ProcessFolder(pFolder);
 			m_revision.Add(1);
 			return;
 		}
@@ -257,7 +232,7 @@ namespace Horizon::Editor
 		std::string fileName = separator == std::string::npos ? event.relativePath : std::string(event.relativePath.substr(separator + 1));
 
 		// Process the file here
-		if (ProcessSourceFile(pParent, event.relativePath, parentPath, fileName))
+		if (ProcessSourceFile(pParent, fileName))
 			m_revision.Add(1);
 	}
 
@@ -317,8 +292,33 @@ namespace Horizon::Editor
 		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
 			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
 	}
+	
+	void DomainService::ProcessFolder(DomainFolder* pFolder)
+	{
+		// Refresh the target folder, it will process the folders by itself.
+		List<std::string> sources;
+		pFolder->Refresh(sources);
 
-	DomainFile* DomainService::ProcessSourceFile(DomainFolder* pParent, const std::string& relativePath, const std::string& parentPath, const std::string& name)
+		// Resolve the sources 
+		for (const std::string& relativePath : sources)
+		{
+			const usize separator = relativePath.rfind('/');
+			std::string parentPath = separator == std::string::npos ? std::string() : std::string(relativePath.substr(0, separator));
+			std::string fileName = separator == std::string::npos ? relativePath : std::string(relativePath.substr(separator + 1));
+
+			DomainFolder* pParent = m_root->ConfirmAndFindFolder(parentPath);
+			if (!pParent)
+			{
+				Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", parentPath);
+				continue;
+			}
+
+			if (ProcessSourceFile(pParent, fileName))
+				m_revision.Add(1);
+		}
+	}
+
+	DomainFile* DomainService::ProcessSourceFile(DomainFolder* pParent, const std::string& name)
 	{
 		if (!pParent)
 			return nullptr;
@@ -457,8 +457,8 @@ namespace Horizon::Editor
 		if (!pEntry)
 			return;
 
-		AssetImporterEntry* pImporterEntry = m_importPipelineRegistry.GetAssetImporterEntry(pEntry->pAssetType->GetTypeId());
-		if (!pImporterEntry)
+		AssetImporter* pImporter = m_importPipelineRegistry.CreateImporterInstance(pFile->GetExtension());
+		if (!pImporter)
 		{
 			Terminal::Error(StringOps::GetName(this), "{} has a pipeline but no importer for {}", pFile->GetName(), pEntry->pAssetType->GetName());
 			return;
@@ -479,7 +479,7 @@ namespace Horizon::Editor
 		task.sourcePath = pFile->GetSourcePath();
 		task.cookedPath = pFile->GetCookedPath();
 		task.pPipeline = pEntry->pPipeline;
-		task.pImporter = pImporterEntry->pImporter;
+		task.pImporter = pImporter; // DomainImportTask is responsible for removing this otherwise it will leak.
 		task.pAssetType = pEntry->pAssetType;
 		task.pSettingsType = pEntry->pSettingsType;
 		task.pSettings = pSnapshot;
@@ -544,4 +544,7 @@ namespace Horizon::Editor
 
 		return pClone;
 	}
+
+
+
 }

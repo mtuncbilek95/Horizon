@@ -308,7 +308,7 @@ Game modules don't link against the Editor, so these are for engine/editor devel
 | `EditorView` | View class | `HCLASS(EditorView[ICON_FA_EYE, "Inspector", DockZone::Right, EditorViewFlags::OpenOnStart])` | Registers a dockable editor window: icon, title, dock zone, flags |
 | `MainMenuItem` | Menu class | `HCLASS(MainMenuItem["File", 0])` | Top-level main menu entry and its order |
 | `MenuItem` | Menu item class | `HCLASS(MenuItem["File/Save", 10, false])` | Entry under a main menu. The last argument makes it a checkbox |
-| `ContextMenuItem` | Context menu class | `HCLASS(ContextMenuItem["AssetBrowserView", "Create/Folder", 0])` | Right-click entry: owner view, path, order |
+| `ContextMenuItem` | Context menu class | `HCLASS(ContextMenuItem["ContentBrowserView", "Create/Folder", 0])` | Right-click entry: owner view, path, order |
 | `ToolBarItem` | Toolbar class | `HCLASS(ToolBarItem[ToolBarSection::Center, 0])` | Toolbar button: section and order |
 | `ImportType` | Importer class | `HCLASS(ImportType[Reflect::TypeOf<Engine::MeshAsset>(), { ".fbx" }])` | Which asset type this importer produces and from which extensions |
 | `ImportPipelineInfo` | Import pipeline class | `HCLASS(ImportPipelineInfo[{ ".fbx", ".glb", ".gltf" }])` | Extensions this import pipeline handles |

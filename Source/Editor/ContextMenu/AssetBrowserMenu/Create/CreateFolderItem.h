@@ -5,7 +5,7 @@
 
 namespace Horizon::Editor
 {
-	HCLASS(ContextMenuItem["AssetBrowserView", "Create/Folder", 0]);
+	HCLASS(ContextMenuItem["ContentBrowserView", "Create/Folder", 0]);
 	class EDITOR_API CreateFolderItem : public AssetBrowserMenuItem
 	{
 		HORIZON_TYPE_REFLECT(CreateFolderItem);

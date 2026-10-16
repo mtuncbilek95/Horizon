@@ -83,6 +83,7 @@ target_include_directories(Imgui PUBLIC
     "${imgui_SOURCE_DIR}"
     "${imgui_SOURCE_DIR}/backends"
 )
+target_compile_definitions(Imgui PUBLIC IMGUI_USE_WCHAR32)
 
 file(GLOB TARGET_IMNODE_FILES
     "${imnodes_SOURCE_DIR}/imnodes.h"

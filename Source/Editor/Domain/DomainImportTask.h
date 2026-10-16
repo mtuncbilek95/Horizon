@@ -1,18 +1,18 @@
 #pragma once
 
 #include <Editor/ImportPipeline/AssetImportResult.h>
+#include <Editor/ImportPipeline/ImportPipeline.h>
+#include <Editor/ImportPipeline/AssetImporter.h>
+#include <Editor/ImportPipeline/AssetImportSettings.h>
 #include <Engine/Job/JobTicket.h>
 #include <Runtime/Containers/Guid.h>
+#include <Runtime/Definitions/Allocator.h>
 #include <Runtime/RTTR/Reflection.h>
 
 #include <string>
 
 namespace Horizon::Editor
 {
-	class ImportPipeline;
-	class AssetImporter;
-	class AssetImportSettings;
-
 	enum class ImportReason : u8
 	{
 		Fresh,
@@ -22,6 +22,12 @@ namespace Horizon::Editor
 
 	struct DomainImportTask
 	{
+		~DomainImportTask()
+		{
+			Memory::Allocator::Delete(pImporter);
+			Memory::Allocator::Delete(pSettings);
+		}
+
 		Guid id;
 		std::string relativePath;
 		std::string sourcePath;

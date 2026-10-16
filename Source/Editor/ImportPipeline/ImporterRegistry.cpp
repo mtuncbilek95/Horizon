@@ -15,15 +15,13 @@ namespace Horizon::Editor
 		for (const auto& entry : m_pipelines)
 			Memory::Allocator::Delete(entry.pPipeline);
 
-		for (const auto& entry : m_importers)
-			Memory::Allocator::Delete(entry.pImporter);
-
 		m_pipelines.Clear();
-		m_pipelineLookup.clear();
+		m_extToPipelineLookup.clear();
 		m_typeToPipelineLookup.clear();
 
 		m_importers.Clear();
 		m_typeToImporterLookup.clear();
+		m_extToImporterLookup.clear();
 	}
 
 	void ImporterRegistry::BootstrapViews(Engine::Engine* ctx)
@@ -65,8 +63,8 @@ namespace Horizon::Editor
 
 	ImportPipelineEntry* ImporterRegistry::GetImportPipelineEntry(const std::string& extension)
 	{
-		auto it = m_pipelineLookup.find(extension);
-		if (it == m_pipelineLookup.end())
+		auto it = m_extToPipelineLookup.find(extension);
+		if (it == m_extToPipelineLookup.end())
 		{
 			Terminal::Error(StringOps::GetName(this), "{} has no pipeline entry", extension);
 			return nullptr;
@@ -82,6 +80,25 @@ namespace Horizon::Editor
 			return nullptr;
 
 		return &m_importers[it->second];
+	}
+
+	AssetImporter* ImporterRegistry::CreateImporterInstance(const std::string& ext)
+	{
+		auto it = m_extToImporterLookup.find(ext);
+		if (it == m_extToImporterLookup.end())
+			return nullptr;
+
+		auto* pType = m_importers[it->second].pImportType;
+
+		// Create one instance for each call to use importers freely.
+		auto* pAssetImporter = (AssetImporter*)pType->Create();
+		if (!pAssetImporter)
+		{
+			Terminal::Warn(StringOps::GetName(this), "This could be about missing virtual functions, check interface's virtuals then check if your importer has HORIZON_TYPE_REFLECT");
+			return nullptr;
+		}
+
+		return pAssetImporter;
 	}
 
 	b8 ImporterRegistry::AddPipelineType(const Reflect::Type* pType)
@@ -112,7 +129,7 @@ namespace Horizon::Editor
 
 		m_typeToPipelineLookup[pAttr->GetWorkingAssetType()] = m_pipelines.GetCount();
 		for (const auto& ext : pAttr->GetExtensions())
-			m_pipelineLookup[ext] = m_pipelines.GetCount();
+			m_extToPipelineLookup[ext] = m_pipelines.GetCount();
 
 		m_pipelines.PushBack(entry);
 		Terminal::Info(StringOps::GetName(this), "{} has been registered", pType->GetName());
@@ -145,11 +162,11 @@ namespace Horizon::Editor
 		m_pipelines.RemoveAt(removedIndex);
 
 		// Clear the ext lookup as well
-		for (auto it = m_pipelineLookup.begin(); it != m_pipelineLookup.end();)
+		for (auto it = m_extToPipelineLookup.begin(); it != m_extToPipelineLookup.end();)
 		{
 			if (it->second == removedIndex)
 			{
-				it = m_pipelineLookup.erase(it);
+				it = m_extToPipelineLookup.erase(it);
 				continue;
 			}
 
@@ -190,17 +207,13 @@ namespace Horizon::Editor
 			return false;
 		}
 
-		auto* pObject = (AssetImporter*)pType->Create();
-		if (!pObject)
-		{
-			Terminal::Error(StringOps::GetName(this), "{} has virtual function issues. You won't have this importer.", pType->GetName());
-			return false;
-		}
-
 		AssetImporterEntry entry = {};
-		entry.pImporter = pObject;
 		entry.pImportType = const_cast<Reflect::Type*>(pType);
 		entry.pAssetType = m_reflection->GetType(pAttr->GetAssetType());
+		entry.extensions = pAttr->GetExtensions();
+		
+		for (const auto& ext : pAttr->GetExtensions())
+			m_extToImporterLookup[ext] = m_importers.GetCount();
 
 		m_typeToImporterLookup[pAttr->GetAssetType()] = m_importers.GetCount();
 		m_importers.PushBack(entry);
@@ -230,7 +243,6 @@ namespace Horizon::Editor
 			return false;
 		}
 
-		Memory::Allocator::Delete(m_importers[removedIndex].pImporter);
 		m_importers.RemoveAt(removedIndex);
 
 		for (auto it = m_typeToImporterLookup.begin(); it != m_typeToImporterLookup.end();)
@@ -238,6 +250,20 @@ namespace Horizon::Editor
 			if (it->second == removedIndex)
 			{
 				it = m_typeToImporterLookup.erase(it);
+				continue;
+			}
+
+			if (it->second > removedIndex)
+				--it->second;
+
+			++it;
+		}
+
+		for (auto it = m_extToImporterLookup.begin(); it != m_extToImporterLookup.end();)
+		{
+			if (it->second == removedIndex)
+			{
+				it = m_extToImporterLookup.erase(it);
 				continue;
 			}
 

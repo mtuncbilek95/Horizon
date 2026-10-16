@@ -37,6 +37,7 @@ target_link_libraries(Runtime
 target_include_directories(Runtime PUBLIC $<TARGET_PROPERTY:Imgui,INTERFACE_INCLUDE_DIRECTORIES>)
 target_include_directories(Runtime PUBLIC $<TARGET_PROPERTY:ImGuizmo,INTERFACE_INCLUDE_DIRECTORIES>)
 target_include_directories(Runtime PUBLIC $<TARGET_PROPERTY:ImNodeEditor,INTERFACE_INCLUDE_DIRECTORIES>)
+target_compile_definitions(Runtime PUBLIC IMGUI_USE_WCHAR32)
 
 if(WIN32)
 	ConfigureWindowsLibrary(Runtime)

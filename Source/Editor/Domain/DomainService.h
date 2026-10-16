@@ -60,7 +60,8 @@ namespace Horizon::Editor
 		void ForgetFolder(DomainFolder* pFolder);
 		void ForgetFile(DomainFile* pFile);
 
-		DomainFile* ProcessSourceFile(DomainFolder* pParent, const std::string& relativePath, const std::string& parentPath, const std::string& name);
+		void ProcessFolder(DomainFolder* pFolder);
+		DomainFile* ProcessSourceFile(DomainFolder* pParent, const std::string& name);
 		
 		void QueueImport(DomainFile* pFile, ImportReason reason);
 		void StartImport();

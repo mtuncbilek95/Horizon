@@ -21,9 +21,9 @@ namespace Horizon::Editor
 
 	struct AssetImporterEntry
 	{
-		AssetImporter* pImporter = nullptr;
 		Reflect::Type* pImportType = nullptr;
 		Reflect::Type* pAssetType = nullptr;
+		List<std::string> extensions;
 	};
 
 	class ImporterRegistry
@@ -39,6 +39,8 @@ namespace Horizon::Editor
 		ImportPipelineEntry* GetImportPipelineEntry(const std::string& extension);
 		AssetImporterEntry* GetAssetImporterEntry(Reflect::TypeHandle handle);
 
+		AssetImporter* CreateImporterInstance(const std::string& ext);
+		
 	private:
 		b8 AddPipelineType(const Reflect::Type* pType);
 		b8 RemovePipelineType(const Reflect::Type* pType);
@@ -51,10 +53,11 @@ namespace Horizon::Editor
 		Engine::ReflectionSystem* m_reflection = nullptr;
 
 		List<ImportPipelineEntry> m_pipelines;
-		std::unordered_map<std::string, usize> m_pipelineLookup;
+		std::unordered_map<std::string, usize> m_extToPipelineLookup;
 		std::unordered_map<Reflect::TypeHandle, usize> m_typeToPipelineLookup;
 
 		List<AssetImporterEntry> m_importers;
 		std::unordered_map<Reflect::TypeHandle, usize> m_typeToImporterLookup;
+		std::unordered_map<std::string, usize> m_extToImporterLookup;
 	};
 }

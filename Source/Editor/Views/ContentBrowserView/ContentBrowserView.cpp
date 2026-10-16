@@ -1,8 +1,9 @@
-#include "AssetBrowserView.h"
+#include "ContentBrowserView.h"
 
 #include <Editor/AssetAction/ActionTypeAttribute.h>
 #include <Editor/Renderer/EditorContext.h>
 #include <Editor/Domain/DomainService.h>
+#include <Editor/Font/IconsMaterialDesignIcons.h>
 #include <Engine/Core/Engine.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
@@ -48,12 +49,16 @@ namespace Horizon::Editor
 		{
 			static std::map<std::string, std::string> nameMap =
 			{
-				{ "ScriptAsset", ICON_FA_CODE },
-				{ "TextureAsset", ICON_FA_IMAGE_PORTRAIT },
-				{ "MeshAsset", ICON_FA_DRAW_POLYGON },
-				{ "SceneAsset", ICON_FA_EARTH_AMERICAS },
-				{ "AudioAsset", ICON_FA_AUDIO_DESCRIPTION },
-				{ "InputMapAsset", ICON_FA_GAMEPAD }
+				{ "ScriptAsset",	ICON_MDI_CODE_BRACES },
+				{ "TextureAsset",	ICON_MDI_CHECKERBOARD },
+				{ "MeshAsset",		ICON_FA_CUBES },
+				{ "SceneAsset",		ICON_FA_EARTH_AMERICAS },
+				{ "AudioAsset",		ICON_MDI_WAVEFORM },
+				{ "MaterialAsset",  ICON_MDI_SPHERE },
+				{ "ShaderAsset",    ICON_MDI_LAYERS_TRIPLE_OUTLINE },
+				{ "PrefabAsset",    ICON_MDI_CUBE_OUTLINE },
+				{ "AnimationAsset", ICON_MDI_RUN },
+				{ "FontAsset",      ICON_MDI_FORMAT_FONT },
 			};
 
 			auto it = nameMap.find(pFile->GetAssetType()->GetName());
@@ -64,23 +69,23 @@ namespace Horizon::Editor
 		}
 	}
 
-	const std::string& AssetBrowserView::BrowserEntry::GetPath() const
+	const std::string& ContentBrowserView::BrowserEntry::GetPath() const
 	{
 		return pFolder ? pFolder->GetAbsolutePath() : pFile->GetSourcePath();
 	}
 
-	const std::string& AssetBrowserView::BrowserEntry::GetName() const
+	const std::string& ContentBrowserView::BrowserEntry::GetName() const
 	{
 		return pFolder ? pFolder->GetName() : pFile->GetName();
 	}
 
-	AssetBrowserView::~AssetBrowserView()
+	ContentBrowserView::~ContentBrowserView()
 	{
 		for (ActionEntry& entry : m_openActions)
 			Memory::Allocator::Delete(entry.pAction);
 	}
 
-	void AssetBrowserView::OnInvoke()
+	void ContentBrowserView::OnInvoke()
 	{
 		auto* pDomain = GetContext()->pEngine->RequestService<DomainService>();
 		m_currentFolder = pDomain->GetRoot();
@@ -90,10 +95,10 @@ namespace Horizon::Editor
 		for (const Reflect::Type* pType : pReflect->GetTypeByBase(Reflect::TypeOf<AssetAction>()))
 			AddAction(pType);
 
-		m_contextMenu.BootstrapContext(GetContext()->pEngine, "AssetBrowserView");
+		m_contextMenu.BootstrapContext(GetContext()->pEngine, "ContentBrowserView");
 	}
 
-	void AssetBrowserView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
+	void ContentBrowserView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
 	{
 		for (const Reflect::Type& type : library.types)
 		{
@@ -104,7 +109,7 @@ namespace Horizon::Editor
 		m_contextMenu.OnLibraryRegistered(library);
 	}
 
-	void AssetBrowserView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
+	void ContentBrowserView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
 	{
 		m_contextMenu.OnLibraryUnregistered(library);
 
@@ -112,7 +117,7 @@ namespace Horizon::Editor
 			RemoveAction(&type);
 	}
 
-	b8 AssetBrowserView::AddAction(const Reflect::Type* pType)
+	b8 ContentBrowserView::AddAction(const Reflect::Type* pType)
 	{
 		auto* pAttr = pType->GetCustomAttribute<ActionTypeAttribute>();
 
@@ -146,7 +151,7 @@ namespace Horizon::Editor
 		return true;
 	}
 
-	void AssetBrowserView::RemoveAction(const Reflect::Type* pType)
+	void ContentBrowserView::RemoveAction(const Reflect::Type* pType)
 	{
 		for (usize i = m_openActions.GetCount(); i > 0; --i)
 		{
@@ -161,7 +166,7 @@ namespace Horizon::Editor
 		}
 	}
 
-	void AssetBrowserView::OnRender(const Engine::EngineFrame& context)
+	void ContentBrowserView::OnRender(const Engine::EngineFrame& context)
 	{
 		if (m_currentFolder == nullptr)
 		{
@@ -200,7 +205,7 @@ namespace Horizon::Editor
 			RenderDialog(entry);
 	}
 
-	void AssetBrowserView::RenderToolbar(DomainFolder* pFolder)
+	void ContentBrowserView::RenderToolbar(DomainFolder* pFolder)
 	{
 		ImGui::BeginDisabled(pFolder->IsRoot());
 
@@ -233,7 +238,7 @@ namespace Horizon::Editor
 		ImGui::PopStyleColor();
 	}
 
-	void AssetBrowserView::RebuildEntries(DomainFolder* pFolder)
+	void ContentBrowserView::RebuildEntries(DomainFolder* pFolder)
 	{
 		m_entries.Clear();
 
@@ -250,7 +255,7 @@ namespace Horizon::Editor
 		}
 	}
 
-	void AssetBrowserView::RenderGrid()
+	void ContentBrowserView::RenderGrid()
 	{
 		const f32 cell = ImGui::GetFontSize() * 6.f;
 		const f32 step = cell + ImGui::GetStyle().ItemSpacing.x;
@@ -267,7 +272,7 @@ namespace Horizon::Editor
 		m_selection.UserData = this;
 		m_selection.AdapterIndexToStorageId = [](ImGuiSelectionBasicStorage* pSelf, int index)
 			{
-				AssetBrowserView* pView = static_cast<AssetBrowserView*>(pSelf->UserData);
+				ContentBrowserView* pView = static_cast<ContentBrowserView*>(pSelf->UserData);
 				return pView->m_entries[static_cast<usize>(index)].id;
 			};
 
@@ -333,7 +338,7 @@ namespace Horizon::Editor
 		}	
 	}
 
-	void AssetBrowserView::DrawCell(ImDrawList* pDrawList, const BrowserEntry& entry, const ImVec2& cellMin, f32 cell)
+	void ContentBrowserView::DrawCell(ImDrawList* pDrawList, const BrowserEntry& entry, const ImVec2& cellMin, f32 cell)
 	{
 		std::string fileIcon = entry.IsFolder() ? ICON_FA_FOLDER : DomainToAssetIcon(entry.pFile);
 		const ImU32 textColor = ImGui::GetColorU32(ImGuiCol_Text);
@@ -356,7 +361,7 @@ namespace Horizon::Editor
 			ImGui::SetTooltip("%s", entry.GetName().c_str());
 	}
 
-	void AssetBrowserView::CollectSelected(AssetBrowserContext& context)
+	void ContentBrowserView::CollectSelected(AssetBrowserContext& context)
 	{
 		for (const BrowserEntry& entry : m_entries)
 		{
@@ -370,7 +375,7 @@ namespace Horizon::Editor
 		}
 	}
 
-	void AssetBrowserView::Navigate(DomainFolder* pTarget)
+	void ContentBrowserView::Navigate(DomainFolder* pTarget)
 	{
 		if (pTarget == nullptr)
 			return;
@@ -379,7 +384,7 @@ namespace Horizon::Editor
 		m_selection.Clear();
 	}
 
-	void AssetBrowserView::BeginRename(const std::string& sourcePath)
+	void ContentBrowserView::BeginRename(const std::string& sourcePath)
 	{
 		if (!m_renamePath.empty())
 			return;
@@ -399,7 +404,7 @@ namespace Horizon::Editor
 		ImGui::OpenPopup("Rename - Asset Browser");
 	}
 
-	void AssetBrowserView::RenderRenameModal()
+	void ContentBrowserView::RenderRenameModal()
 	{
 		if (!ImGui::BeginPopupModal("Rename - Asset Browser", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 			return;
@@ -425,7 +430,7 @@ namespace Horizon::Editor
 		ImGui::EndPopup();
 	}
 
-	AssetBrowserView::BrowserEntry* AssetBrowserView::FindEntry(const std::string& path)
+	ContentBrowserView::BrowserEntry* ContentBrowserView::FindEntry(const std::string& path)
 	{
 		for (auto& entry : m_entries)
 		{
@@ -436,13 +441,13 @@ namespace Horizon::Editor
 		return nullptr;
 	}
 
-	void AssetBrowserView::ImportFiles(const List<std::string>& files)
+	void ContentBrowserView::ImportFiles(const List<std::string>& files)
 	{
 		for (const auto& filePath : files)
 			m_pendingImportList.PushBack({ filePath, m_currentFolder->GetAbsolutePath() });
 	}
 
-	void AssetBrowserView::RenderDialog(const ImportEntry& entry)
+	void ContentBrowserView::RenderDialog(const ImportEntry& entry)
 	{
 		auto* pDomain = GetContext()->pEngine->RequestService<DomainService>();
 

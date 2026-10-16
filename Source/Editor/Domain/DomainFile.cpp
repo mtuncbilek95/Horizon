@@ -71,4 +71,15 @@ namespace Horizon::Editor
 		m_settings = nullptr;
 	}
 
+	DomainFile::DomainSubAsset* DomainFile::FindSubAsset(std::string_view key)
+	{
+		for (auto& subAsset : m_subAssets)
+		{
+			if (subAsset.key == key)
+				return &subAsset;
+		}
+
+		Terminal::Error(StringOps::GetName(this), "Could not find {} in {}", key, m_name);
+		return nullptr;
+	}
 }
