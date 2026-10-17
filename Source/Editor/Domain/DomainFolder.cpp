@@ -43,6 +43,26 @@ namespace Horizon::Editor
 		return nullptr;
 	}
 
+	DomainFile* DomainFolder::FindFileWithExtension(std::string_view nameWithExtension) const
+	{
+		const usize dot = nameWithExtension.rfind('.');
+		const std::string_view stem = dot == std::string_view::npos ? nameWithExtension : nameWithExtension.substr(0, dot);
+		const std::string_view extension = dot == std::string_view::npos ? std::string_view() : nameWithExtension.substr(dot);
+
+		for (DomainFile* pFile : m_files)
+		{
+			if (!StringOps::EqualsNoCase(pFile->GetName(), stem))
+				continue;
+
+			if (!StringOps::EqualsNoCase(pFile->GetExtension(), extension))
+				continue;
+
+			return pFile;
+		}
+
+		return nullptr;
+	}
+
 	DomainFolder* DomainFolder::ConfirmAndFindFolder(std::string_view relativePath) const
 	{
 		const DomainFolder* pCurrent = this;

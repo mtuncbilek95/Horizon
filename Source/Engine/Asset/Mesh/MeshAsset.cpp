@@ -15,4 +15,8 @@ namespace Horizon::Engine
 	void MeshAsset::UnloadAsync()
 	{
 	}
+
+	void MeshAsset::OnPropertiesLoaded(ReadOnlyList<u8> propertyBytes)
+	{
+	}
 }

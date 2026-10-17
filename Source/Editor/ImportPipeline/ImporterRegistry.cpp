@@ -65,10 +65,16 @@ namespace Horizon::Editor
 	{
 		auto it = m_extToPipelineLookup.find(extension);
 		if (it == m_extToPipelineLookup.end())
-		{
-			Terminal::Error(StringOps::GetName(this), "{} has no pipeline entry", extension);
 			return nullptr;
-		}
+
+		return &m_pipelines[it->second];
+	}
+
+	ImportPipelineEntry* ImporterRegistry::GetImportPipelineEntry(Reflect::TypeHandle handle)
+	{
+		auto it = m_typeToPipelineLookup.find(handle);
+		if (it == m_typeToPipelineLookup.end())
+			return nullptr;
 
 		return &m_pipelines[it->second];
 	}

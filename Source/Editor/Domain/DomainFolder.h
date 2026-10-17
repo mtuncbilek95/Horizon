@@ -34,6 +34,7 @@ namespace Horizon::Editor
 
 		DomainFolder* FindFolder(std::string_view name) const;
 		DomainFile* FindFile(std::string_view name) const;
+		DomainFile* FindFileWithExtension(std::string_view nameWithExtension) const;
 		DomainFolder* ConfirmAndFindFolder(std::string_view relativePath) const;
 
 		DomainFolder* AddFolder(const std::string& name);

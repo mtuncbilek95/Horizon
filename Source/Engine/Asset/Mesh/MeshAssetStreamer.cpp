@@ -162,7 +162,7 @@ namespace Horizon::Engine
 			return;
 		}
 
-		usize subMeshTable = props.subMeshCount * sizeof(MeshSubMesh);
+		usize subMeshTable = props.subMeshCount * sizeof(MeshAssetSubmesh);
 		usize vertBlock = props.vertexCount * props.vertexStride;
 		usize indexBlock = props.indexCount * props.indexStride;
 
@@ -176,12 +176,12 @@ namespace Horizon::Engine
 
 		const u8* pPayload = view.GetData() + header.payloadOffset;
 
-		List<MeshSubMesh> subMeshes(props.subMeshCount);
+		List<MeshAssetSubmesh> subMeshes(props.subMeshCount);
 		std::memcpy(subMeshes.GetData(), pPayload, subMeshTable);
 
 		for (usize i = 0; i < subMeshes.GetCount(); ++i)
 		{
-			const MeshSubMesh& subMesh = subMeshes[i];
+			const MeshAssetSubmesh& subMesh = subMeshes[i];
 
 			const b8 hasValidIndices = subMesh.indexCount != 0 && (u64)subMesh.indexOffset + subMesh.indexCount <= props.indexCount;
 			const b8 hasValidVertices = subMesh.vertexCount != 0 && (u64)subMesh.vertexOffset + subMesh.vertexCount <= props.vertexCount;

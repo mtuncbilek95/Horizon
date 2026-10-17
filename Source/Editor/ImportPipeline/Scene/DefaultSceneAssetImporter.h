@@ -17,7 +17,7 @@ namespace Horizon::Editor
 		DefaultSceneAssetImporter() = default;
 		~DefaultSceneAssetImporter() = default;
 
-		AssetImportResult CookBinary(Engine::Engine* pEngine, ReadOnlyList<u8> fileBytes, AssetImportSettings* pSettings, List<u8>& outBytes, usize& outPropertySize) final;
+		AssetImportResult CookAsset(Engine::Engine* pEngine, ReadOnlyList<u8> fileBytes, AssetImportSettings* pSettings, List<u8>& outBytes, usize& outPropertySize) final;
 		b8 PatchCook(const AssetImportSettings* pPrevious, const AssetImportSettings* pCurrent, const std::string cookedPath) final;
 	};
 }

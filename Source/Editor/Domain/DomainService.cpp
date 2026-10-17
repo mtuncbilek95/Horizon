@@ -36,10 +36,7 @@ namespace Horizon::Editor
 
 	Engine::ModuleReport DomainService::OnInitialize()
 	{
-		Engine::AssetService* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
-
-		if (pAssetService == nullptr)
-			return Engine::ModuleReport("Asset service cannot be reached");
+		m_jobSystem = GetEngine()->GetJobSystem();
 
 		auto* pProjectCtx = GetEngine()->RequestContext<ProjectContext>();
 		if (pProjectCtx == nullptr)
@@ -63,6 +60,9 @@ namespace Horizon::Editor
 	{
 		if (m_watcher.IsValid())
 			m_watcher.Dispatch();
+
+		EndImport();
+		StartImport();
 	}
 
 	void DomainService::OnFinalize()
@@ -91,7 +91,6 @@ namespace Horizon::Editor
 	{
 		m_importPipelineRegistry.OnLibraryUnregistered(library);
 	}
-
 
 	void DomainService::BuildRootTree()
 	{
@@ -200,6 +199,52 @@ namespace Horizon::Editor
 		return nullptr;
 	}
 
+	DomainFile* DomainService::FindDomainFile(const std::string& relativePathWithExtension) const
+	{
+		if (m_root == nullptr)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has no domain root", m_assetPath);
+			return nullptr;
+		}
+
+		const usize separator = relativePathWithExtension.rfind('/');
+		const std::string parentPath = separator == std::string::npos ? std::string() : relativePathWithExtension.substr(0, separator);
+		const std::string fileName = separator == std::string::npos ? relativePathWithExtension : relativePathWithExtension.substr(separator + 1);
+
+		DomainFolder* pFolder = m_root->ConfirmAndFindFolder(parentPath);
+		if (!pFolder)
+			return nullptr;
+
+		return pFolder->FindFileWithExtension(fileName);
+	}
+
+	DomainFile* DomainService::FindSourceFile(const std::string& relativePathWithExtension)
+	{
+		if (!PAL::File::Exists(m_assetPath + "/" + relativePathWithExtension))
+			return nullptr;
+
+		const usize separator = relativePathWithExtension.rfind('/');
+		const std::string parentPath = separator == std::string::npos ? std::string() : relativePathWithExtension.substr(0, separator);
+		const std::string fileName = separator == std::string::npos ? relativePathWithExtension : relativePathWithExtension.substr(separator + 1);
+
+		DomainFolder* pFolder = m_root;
+		usize offset = 0;
+
+		while (offset < parentPath.size())
+		{
+			const usize next = parentPath.find('/', offset);
+			const usize count = next == std::string::npos ? parentPath.size() - offset : next - offset;
+
+			pFolder = pFolder->AddFolder(parentPath.substr(offset, count));
+			if (!pFolder)
+				return nullptr;
+
+			offset = next == std::string::npos ? parentPath.size() : next + 1;
+		}
+
+		return ProcessSourceFile(pFolder, fileName);
+	}
+
 	void DomainService::OnEntryAdded(const PAL::DirectoryWatcher::Event& event)
 	{
 		if (event.GetName().ends_with(DomainFile::MetaSuffix))
@@ -268,6 +313,134 @@ namespace Horizon::Editor
 	{
 	}
 
+	void DomainService::RunParseAsset(DomainFileImportContext& task)
+	{
+	}
+
+	void DomainService::OnParseAssetFinished(usize slot)
+	{
+		DomainFileImportContext& task = m_runningImports[slot];
+		
+		// If its not succeeded something happened.
+		if (task.result != AssetImportResult::Success)
+		{
+			Terminal::Error(StringOps::GetName(this), "Parse task for {} has failed with result {}", task.relativePath, u8(task.result));
+			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
+			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+			task = DomainFileImportContext();
+
+			return;
+		}
+
+		// If it can't be found, then its deleted.
+		auto* pFile = FindFileByGuid(task.id);
+		if (!pFile)
+		{
+			Terminal::Warn(StringOps::GetName(this), "DomainFile for {} has been deleted during parse", task.relativePath);
+			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
+			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+			task = DomainFileImportContext();
+
+			return;
+		}
+
+		std::string folderRelative = pFile->GetParent()->GetRelativePath();
+		List<DomainFile::DomainDependency> entries;
+
+		for (ImportDependency& dependency : task.dependencies)
+		{
+			// Resolve the path via DomainFile's relativePath like "../textures/myTexture.png" to "TestObjects/MyObject/textures/myTexture.png",
+			// so we can refer them and their guid properly get in the meta file and other places.
+			dependency.targetRelativePath = StringOps::ResolveRelativePath(folderRelative, dependency.sourceRelativePath);
+
+			DomainFile::DomainDependency entry;
+			entry.relativePath = dependency.targetRelativePath;
+			entry.isAsset = dependency.kind == ImportDependencyKind::Asset;
+
+			if (dependency.kind == ImportDependencyKind::Data)
+			{
+				entry.resolved = true;
+				entries.PushBack(std::move(entry));
+				continue;
+			}
+
+			DomainFile* pDependency = FindFileByRelative(dependency.targetRelativePath);
+
+			// If dependent domain file is not there, try to find in the path in case its not become a DomainFile yet.
+			if (!pDependency)
+				pDependency = FindSourceFile(dependency.targetRelativePath);
+
+			if (pDependency)
+				dependency.resolvedId = pDependency->GetSubAssetId(dependency.subAssetKey);
+
+			entry.resolved = dependency.resolvedId.IsValid();
+			if (!entry.resolved)
+				Terminal::Warn(StringOps::GetName(this), "{} depends on {} which is not available yet, cooked with an empty reference", task.relativePath, dependency.targetRelativePath);
+
+			entries.PushBack(std::move(entry));
+		}
+
+		// Dependencies are ready
+		pFile->SetDependencies(entries);
+
+		List<Guid> removed;
+		// Renew the sub assets
+		pFile->SyncSubAssets(task.expectedProducts, GetEngine()->GetReflectionSystem(), removed);
+
+		// Unregister the removed ones
+		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
+		for (const Guid& id : removed)
+		{
+			pAssetService->UnregisterAsset(id);
+
+			const std::string cookedPath = pFile->GetSubAssetCookedPath(id);
+			if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
+				Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
+		}
+
+		task.cookedProducts.Clear();
+		task.cookedProducts.Reserve(task.expectedProducts.GetCount());
+
+		// Get the expected products to cooked ones 
+		for (const ImportDeclaredProduct& declared : task.expectedProducts)
+		{
+			DomainCookedProduct product;
+			product.key = declared.key;
+			product.id = pFile->GetSubAssetId(declared.key);
+			product.pAssetType = GetEngine()->GetReflectionSystem()->GetType(declared.assetType);
+			product.cookedPath = pFile->GetSubAssetCookedPath(product.id);
+
+			ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(declared.assetType);
+			product.pPipeline = pEntry ? pEntry->pPipeline : nullptr;
+
+			task.cookedProducts.PushBack(std::move(product));
+		}
+
+		// Start cooking
+		task.phase = ImportPhase::Cooking;
+		task.ticket = m_jobSystem->SubmitJob(Engine::JobLane::Background, Engine::Job([this, &task]()
+			{
+				RunCookAsset(task);
+			}));
+
+		// Clean the shit up
+		if (task.ticket == Engine::InvalidSubmitTicket)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} cook job could not be submitted", task.relativePath);
+			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
+			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+			task = DomainFileImportContext();
+		}
+	}
+
+	void DomainService::RunCookAsset(DomainFileImportContext& task)
+	{
+	}
+
+	void DomainService::OnCookAssetFinished(usize slot)
+	{
+	}
+
 	void DomainService::ForgetFolder(DomainFolder* pFolder)
 	{
 		for (DomainFile* pFile : pFolder->GetFiles())
@@ -292,7 +465,7 @@ namespace Horizon::Editor
 		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
 			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
 	}
-	
+
 	void DomainService::ProcessFolder(DomainFolder* pFolder)
 	{
 		// Refresh the target folder, it will process the folders by itself.
@@ -335,7 +508,7 @@ namespace Horizon::Editor
 
 		if (!pImportPipelineEntry)
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} has no registered import pipeline.", name);
+			Terminal::Debug(StringOps::GetName(this), "{} has no registered import pipeline.", name);
 			return nullptr;
 		}
 
@@ -442,17 +615,17 @@ namespace Horizon::Editor
 
 		// Check if the requested one is in queue already.
 		const Guid& id = pFile->GetID();
-		if (DomainImportTask* pRunning = FindRunningImport(id))
+		/*if (DomainFileImportContext* pRunning = FindRunningImport(id))
 		{
 			pRunning->requeue = true;
 			return;
-		}
+		}*/
 
 		// Check if its in pending
-		if (IsImportPending(id))
-			return;
+		/*if (IsImportPending(id))
+			return;*/
 
-		// Gather everything, we're going to the war
+			// Gather everything, we're going to the war
 		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(pFile->GetExtension());
 		if (!pEntry)
 			return;
@@ -464,7 +637,7 @@ namespace Horizon::Editor
 			return;
 		}
 
-		// Take a snapshot, to save your ass.
+		// Take a snapshot, to save your ass for main thread fuckery.
 		AssetImportSettings* pSnapshot = CloneSettings(pFile->GetSettings(), pEntry->pSettingsType);
 		if (!pSnapshot)
 		{
@@ -473,13 +646,13 @@ namespace Horizon::Editor
 		}
 
 		// Create a pending
-		DomainImportTask task;
+		DomainFileImportContext task;
 		task.id = id;
 		task.relativePath = pFile->GetRelativePath() + pFile->GetExtension();
 		task.sourcePath = pFile->GetSourcePath();
 		task.cookedPath = pFile->GetCookedPath();
 		task.pPipeline = pEntry->pPipeline;
-		task.pImporter = pImporter; // DomainImportTask is responsible for removing this otherwise it will leak.
+		task.pImporter = pImporter;
 		task.pAssetType = pEntry->pAssetType;
 		task.pSettingsType = pEntry->pSettingsType;
 		task.pSettings = pSnapshot;
@@ -494,15 +667,68 @@ namespace Horizon::Editor
 
 	void DomainService::StartImport()
 	{
+		for (usize slot = 0; slot < MaxConcurrentImports; slot++)
+		{
+			if (m_pendingImports.GetCount() == 0)
+				return;
+
+			DomainFileImportContext& task = m_runningImports[slot];
+
+			if (task.ticket != Engine::InvalidSubmitTicket)
+				continue;
+
+			task = std::move(m_pendingImports.Front());
+			m_pendingImports.PopFront();
+
+			task.phase = ImportPhase::Parsing;
+			task.ticket = m_jobSystem->SubmitJob(Engine::JobLane::Background, Engine::Job([this, &task]()
+				{
+					// Run the fuckin parser
+				}));
+
+			if (task.ticket == Engine::InvalidSubmitTicket)
+			{
+				Terminal::Error(StringOps::GetName(this), "{} import job could not be submitted", task.relativePath);
+				Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
+				Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+				task = DomainFileImportContext();
+			}
+		}
 	}
 
 	void DomainService::EndImport()
 	{
+		for (usize slot = 0; slot < MaxConcurrentImports; slot++)
+		{
+			DomainFileImportContext& task = m_runningImports[slot];
+
+			// If its still invalid, move on
+			if (task.ticket == Engine::InvalidSubmitTicket)
+				continue;
+
+			// Not finished, move on
+			if (m_jobSystem->GetTicketState(task.ticket) != Engine::CompletionState::Completed)
+				continue;
+
+			// Tag as invalid for weird corruptions
+			task.ticket = Engine::InvalidSubmitTicket;
+
+			// If in loading state
+			if (task.phase == ImportPhase::Parsing)
+			{
+				OnParseAssetFinished(slot);
+				continue;
+			}
+
+			// If its cooking
+			if (task.phase == ImportPhase::Cooking)
+				OnParseAssetFinished(slot);
+		}
 	}
 
-	DomainImportTask* DomainService::FindRunningImport(const Guid& id)
+	DomainFileImportContext* DomainService::FindRunningImport(const Guid& id)
 	{
-		for (DomainImportTask& task : m_runningImports)
+		for (DomainFileImportContext& task : m_runningImports)
 		{
 			if (task.ticket != Engine::InvalidSubmitTicket && task.id == id)
 				return &task;
@@ -513,7 +739,7 @@ namespace Horizon::Editor
 
 	b8 DomainService::IsImportPending(const Guid& id) const
 	{
-		for (const DomainImportTask& task : m_pendingImports)
+		for (const DomainFileImportContext& task : m_pendingImports)
 		{
 			if (task.id == id)
 				return true;

@@ -2,7 +2,6 @@
 
 #include <Engine/Asset/AssetObject.h>
 #include <Engine/Asset/Mesh/MeshAssetProperties.h>
-#include <Engine/Asset/Mesh/MeshSubMesh.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
 #include <Engine/Job/JobSystem.h>
 
@@ -25,18 +24,18 @@ namespace Horizon::Engine
 		void LoadAsync();
 		void UnloadAsync();
 
-		const List<MeshSubMesh>& GetSubmeshes() const { return m_submeshes; }
+		const List<MeshAssetSubmesh>& GetSubmeshes() const { return m_submeshes; }
 
 		u32 GetFirstVertex() const { return m_vertexRange.offset / sizeof(MeshVertex); }
 		u32 GetFirstIndex() const { return m_indexRange.offset / sizeof(u32); }
 
 	protected:
-		void OnPropertiesLoaded(ReadOnlyList<u8> propertyBytes) {}
+		void OnPropertiesLoaded(ReadOnlyList<u8> propertyBytes);
 
 	private:
 		SubmitTicket m_ticket = InvalidSubmitTicket;
 
-		List<MeshSubMesh> m_submeshes;
+		List<MeshAssetSubmesh> m_submeshes;
 
 		MeshAssetProperties m_properties;
 		RHI::GfxBufferRange m_vertexRange;

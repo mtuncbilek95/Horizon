@@ -322,13 +322,13 @@ namespace Horizon::Engine
 				constants.vertexBufferIndex = sFunVertexSrv;
 				slot.pTargetCmd->SetGraphicsConstants(&constants, sizeof(FunPushConstant) / sizeof(u32));
 
-				const List<MeshSubMesh>& subMeshes = pAsset->GetSubmeshes();
+				const List<MeshAssetSubmesh>& subMeshes = pAsset->GetSubmeshes();
 				const u32 meshFirstVertex = pAsset->GetFirstVertex();
 				const u32 meshFirstIndex = pAsset->GetFirstIndex();
 
 				for (usize i = 0; i < subMeshes.GetCount(); ++i)
 				{
-					const MeshSubMesh& subMesh = subMeshes[i];
+					const MeshAssetSubmesh& subMesh = subMeshes[i];
 					const u32 firstVertex = meshFirstVertex + subMesh.vertexOffset;
 
 					slot.pTargetCmd->SetGraphicsConstants(&firstVertex, 1, offsetof(FunPushConstant, firstVertex) / sizeof(u32));

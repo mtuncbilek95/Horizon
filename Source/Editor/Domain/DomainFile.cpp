@@ -82,4 +82,92 @@ namespace Horizon::Editor
 		Terminal::Error(StringOps::GetName(this), "Could not find {} in {}", key, m_name);
 		return nullptr;
 	}
+
+	Guid DomainFile::GetSubAssetId(std::string_view key) const
+	{
+		if (key.empty())
+			return m_id;
+
+		for (const DomainSubAsset& subAsset : m_subAssets)
+		{
+			if (subAsset.key == key)
+				return subAsset.id;
+		}
+
+		return Guid();
+	}
+
+	void DomainFile::RestoreSubAsset(const std::string& key, const Guid& id, Reflect::Type* pAssetType)
+	{
+		for (DomainSubAsset& subAsset : m_subAssets)
+		{
+			if (subAsset.key != key)
+				continue;
+
+			subAsset.id = id;
+			subAsset.pAssetType = pAssetType;
+			return;
+		}
+
+		DomainSubAsset subAsset;
+		subAsset.key = key;
+		subAsset.id = key.empty() ? m_id : id;
+		subAsset.pAssetType = pAssetType;
+		m_subAssets.PushBack(std::move(subAsset));
+	}
+
+	void DomainFile::SyncSubAssets(const List<ImportDeclaredProduct>& newProducts, Engine::ReflectionSystem* pReflection, List<Guid>& outGuids)
+	{
+		List<DomainSubAsset> next;
+		next.Reserve(newProducts.GetCount());
+
+		for (const ImportDeclaredProduct& decl : newProducts)
+		{
+			Reflect::Type* pType = pReflection->GetType(decl.assetType);
+			if (!pType)
+			{
+				Terminal::Error(StringOps::GetName(this), "{} product {} has an unknown asset type, skipped", m_name, decl.key);
+				continue;
+			}
+
+			DomainSubAsset subAsset;
+			subAsset.key = decl.key;
+			subAsset.pAssetType = pType;
+			subAsset.id = GetSubAssetId(decl.key);
+
+			if (!subAsset.id.IsValid())
+				subAsset.id = Guid::Generate();
+
+			next.PushBack(std::move(subAsset));
+		}
+
+		for (const DomainSubAsset& old : m_subAssets)
+		{
+			b8 stillThere = false;
+			for (const DomainSubAsset& fresh : next)
+			{
+				if (fresh.key == old.key)
+				{
+					stillThere = true;
+					break;
+				}
+			}
+
+			if (!stillThere)
+				outGuids.PushBack(old.id);
+		}
+
+		m_subAssets = std::move(next);
+	}
+
+	b8 DomainFile::GetDependsOn(std::string_view relativePath) const
+	{
+		for (const DomainDependency& dependency : m_dependencies)
+		{
+			if (StringOps::EqualsNoCase(dependency.relativePath, relativePath))
+				return true;
+		}
+
+		return false;
+	}
 }

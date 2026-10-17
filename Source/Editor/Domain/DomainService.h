@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Editor/ImportPipeline/ImporterRegistry.h>
-#include <Editor/Domain/DomainImportTask.h>
+#include <Editor/Domain/DomainFileImportContext.h>
 #include <Engine/Core/Service.h>
+#include <Engine/Job/JobSystem.h>
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
 #include <Runtime/Containers/Guid.h>
 #include <Runtime/Containers/List.h>
@@ -16,12 +17,11 @@ namespace Horizon::Editor
 {
 	class DomainFolder;
 	class DomainFile;
-	struct DomainMeta;
 	class AssetImporter;
 
 	class EDITOR_API DomainService : public Engine::Service
 	{
-		static constexpr usize MaxConcurrentImports = 4;
+		static constexpr usize MaxConcurrentImports = 8;
 	public:
 		Engine::ModuleReport OnInitialize() final;
 		void OnExecute(const Engine::EngineFrame& ctx) final;
@@ -54,8 +54,16 @@ namespace Horizon::Editor
 		void OnEntryRenamed(const PAL::DirectoryWatcher::Event& event);
 		void OnWatcherOverflow();
 
+		void RunParseAsset(DomainFileImportContext& task);
+		void OnParseAssetFinished(usize slot);
+
+		void RunCookAsset(DomainFileImportContext& task);
+		void OnCookAssetFinished(usize slot);
+
 		DomainFile* FindFileByGuid(DomainFolder* pFolder, const Guid& guid) const;
 		DomainFile* FindFileByRelative(DomainFolder* pFolder, const std::string& relative) const;
+		DomainFile* FindDomainFile(const std::string& relativePathWithExtension) const;
+		DomainFile* FindSourceFile(const std::string& relativePathWithExtension);
 
 		void ForgetFolder(DomainFolder* pFolder);
 		void ForgetFile(DomainFile* pFile);
@@ -67,22 +75,26 @@ namespace Horizon::Editor
 		void StartImport();
 		void EndImport();
 
-		DomainImportTask* FindRunningImport(const Guid& id);
+		DomainFileImportContext* FindRunningImport(const Guid& id);
 		b8 IsImportPending(const Guid& id) const;
 
 		AssetImportSettings* CloneSettings(const AssetImportSettings* pSource, Reflect::Type* pType);
 		b8 ReadSettings(DomainFile* pFile, Reflect::Type* pSettingsType, JsonArchiveReader& reader);
+
+
 	private:
 		std::string m_assetPath;
 		std::string m_cookPath;
 		DomainFolder* m_root = nullptr;
 
 		ImporterRegistry m_importPipelineRegistry;
+		Engine::JobSystem* m_jobSystem = nullptr;
 
 		PAL::DirectoryWatcher m_watcher;
 		PAL::Atomic<u64> m_revision = 0;
 
-		List<DomainImportTask> m_pendingImports;
-		DomainImportTask m_runningImports[MaxConcurrentImports];
+		List<std::string> m_waitingOnPath;
+		List<DomainFileImportContext> m_pendingImports;
+		DomainFileImportContext m_runningImports[MaxConcurrentImports];
 	};
 }

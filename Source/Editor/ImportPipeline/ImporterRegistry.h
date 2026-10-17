@@ -37,6 +37,7 @@ namespace Horizon::Editor
 		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library);
 
 		ImportPipelineEntry* GetImportPipelineEntry(const std::string& extension);
+		ImportPipelineEntry* GetImportPipelineEntry(Reflect::TypeHandle handle);
 		AssetImporterEntry* GetAssetImporterEntry(Reflect::TypeHandle handle);
 
 		AssetImporter* CreateImporterInstance(const std::string& ext);

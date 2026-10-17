@@ -1,5 +1,7 @@
 #include "StringOps.h"
 
+#include <Runtime/Containers/List.h>
+
 namespace Horizon
 {
 	void StringOps::CopyToChar(c8* pDst, const std::string& src)
@@ -136,6 +138,62 @@ namespace Horizon
 			return std::string();
 
 		return relativePath.substr(0, close + 2);
+	}
+
+	std::string StringOps::ResolveRelativePath(const std::string& relativeParent, const std::string& path)
+	{
+		auto collapse = [](const std::string& raw)
+			{
+				const std::string normalized = NormalizePath(raw);
+				const b8 isRooted = !normalized.empty() && normalized[0] == '/';
+
+				List<std::string> segments;
+				usize offset = 0;
+
+				while (offset <= normalized.size())
+				{
+					usize separator = normalized.find('/', offset);
+					if (separator == std::string::npos)
+						separator = normalized.size();
+
+					const std::string segment = normalized.substr(offset, separator - offset);
+					offset = separator + 1;
+
+					if (segment.empty() || segment == ".")
+						continue;
+
+					if (segment == "..")
+					{
+						if (segments.GetCount() > 0)
+							segments.RemoveAt(segments.GetCount() - 1);
+
+						continue;
+					}
+
+					segments.PushBack(segment);
+				}
+
+				std::string result = isRooted ? "/" : "";
+				for (usize i = 0; i < segments.GetCount(); ++i)
+				{
+					if (i > 0)
+						result += "/";
+
+					result += segments[i];
+				}
+
+				return result;
+			};
+
+		const std::string normalized = NormalizePath(path);
+
+		const b8 isAbsolute = (!normalized.empty() && normalized[0] == '/') ||
+			(normalized.size() > 1 && normalized[1] == ':');
+
+		if (isAbsolute || relativeParent.empty())
+			return collapse(normalized);
+
+		return collapse(relativeParent + "/" + normalized);
 	}
 
 	std::string_view StringOps::GetNameString(std::string_view name)
