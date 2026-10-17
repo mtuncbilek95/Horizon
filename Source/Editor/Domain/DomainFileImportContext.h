@@ -20,7 +20,8 @@ namespace Horizon::Editor
 	{
 		Fresh,
 		SourceChanged,
-		SettingsChanged
+		SettingsChanged,
+		DependencyChanged
 	};
 
 	enum class ImportPhase : u8
@@ -39,9 +40,9 @@ namespace Horizon::Editor
 
 		ImportPipeline* pPipeline = nullptr;
 		AssetImporter* pImporter = nullptr;
+		AssetImportSettings* pSettings = nullptr;
 		Reflect::Type* pAssetType = nullptr;
 		Reflect::Type* pSettingsType = nullptr;
-		AssetImportSettings* pSettings = nullptr;
 
 		List<ImportDeclaredProduct> expectedProducts;
 		List<ImportDependency> dependencies;

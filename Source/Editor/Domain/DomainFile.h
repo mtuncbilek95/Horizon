@@ -65,6 +65,7 @@ namespace Horizon::Editor
 		const List<DomainDependency>& GetDependencies() const { return m_dependencies; }
 		void SetDependencies(const List<DomainDependency>& dependencies) { m_dependencies = dependencies; }
 		b8 GetDependsOn(std::string_view relativePath) const;
+		b8 HasUnresolvedDependency(std::string_view relativePath) const;
 
 		void Rename(const std::string& newName);
 		

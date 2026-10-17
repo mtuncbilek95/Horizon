@@ -170,4 +170,15 @@ namespace Horizon::Editor
 
 		return false;
 	}
+
+	b8 DomainFile::HasUnresolvedDependency(std::string_view relativePath) const
+	{
+		for (const DomainDependency& dependency : m_dependencies)
+		{
+			if (!dependency.resolved && dependency.relativePath == relativePath)
+				return true;
+		}
+
+		return false;
+	}
 }

@@ -81,6 +81,12 @@ namespace Horizon::Editor
 		AssetImportSettings* CloneSettings(const AssetImportSettings* pSource, Reflect::Type* pType);
 		b8 ReadSettings(DomainFile* pFile, Reflect::Type* pSettingsType, JsonArchiveReader& reader);
 
+		b8 WriteMetaFile(DomainFile* pFile, Reflect::Type* pSettingsType);
+		b8 ReadProducts(DomainFile* pFile, JsonArchiveReader& reader);
+
+		void ReadDependencies(DomainFile* pFile, JsonArchiveReader& reader);
+		void CollectDependencies(DomainFolder* pFolder, const std::string& relativePath, List<DomainFile*>& outFiles) const;
+		void WakeDependencies(const std::string& relativePath);
 
 	private:
 		std::string m_assetPath;
