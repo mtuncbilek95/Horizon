@@ -902,7 +902,7 @@ namespace Horizon::Editor
 			task.phase = ImportPhase::Parsing;
 			task.ticket = m_jobSystem->SubmitJob(Engine::JobLane::Background, Engine::Job([this, &task]()
 				{
-					// Run the fuckin parser
+					RunParseAsset(task);
 				}));
 
 			if (task.ticket == Engine::InvalidSubmitTicket)
