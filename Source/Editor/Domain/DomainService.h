@@ -22,6 +22,8 @@ namespace Horizon::Editor
 	class EDITOR_API DomainService : public Engine::Service
 	{
 		static constexpr usize MaxConcurrentImports = 8;
+		static constexpr auto IgnoredAddList = std::to_array<std::string_view>({ ".hmeta", ".bin" });
+
 	public:
 		Engine::ModuleReport OnInitialize() final;
 		void OnExecute(const Engine::EngineFrame& ctx) final;
@@ -70,7 +72,7 @@ namespace Horizon::Editor
 
 		void ProcessFolder(DomainFolder* pFolder);
 		DomainFile* ProcessSourceFile(DomainFolder* pParent, const std::string& name);
-		
+
 		void QueueImport(DomainFile* pFile, ImportReason reason);
 		void StartImport();
 		void EndImport();

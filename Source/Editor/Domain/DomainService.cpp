@@ -247,8 +247,11 @@ namespace Horizon::Editor
 
 	void DomainService::OnEntryAdded(const PAL::DirectoryWatcher::Event& event)
 	{
-		if (event.GetName().ends_with(DomainFile::MetaSuffix))
-			return;
+		for (const auto& suffix : IgnoredAddList)
+		{
+			if (event.GetName().ends_with(suffix))
+				return;
+		}
 
 		DomainFolder* pParent = m_root->ConfirmAndFindFolder(event.GetParent());
 		if (!pParent)
@@ -295,16 +298,22 @@ namespace Horizon::Editor
 
 	void DomainService::OnEntryRemoved(const PAL::DirectoryWatcher::Event& event)
 	{
-		if (event.GetName().ends_with(DomainFile::MetaSuffix))
-			return;
+		for (const auto& suffix : IgnoredAddList)
+		{
+			if (event.GetName().ends_with(suffix))
+				return;
+		}
 
 		// Just go nuts and delete the fuck out everything.
 	}
 
 	void DomainService::OnEntryRenamed(const PAL::DirectoryWatcher::Event& event)
 	{
-		if (event.GetName().ends_with(DomainFile::MetaSuffix))
-			return;
+		for (const auto& suffix : IgnoredAddList)
+		{
+			if (event.GetName().ends_with(suffix))
+				return;
+		}
 
 		// Rename meta and source, then change the list for easy access of assets on AssetService.
 	}
@@ -315,6 +324,39 @@ namespace Horizon::Editor
 
 	void DomainService::RunParseAsset(DomainFileImportContext& task)
 	{
+		PAL::FileAccessRequest request = PAL::File::RequestAccess(task.context.sourcePath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
+		if (!request.IsValid())
+		{
+			task.result = AssetImportResult::FileNotFound;
+			return;
+		}
+
+		List<u8> bytes;
+		const b8 wasRead = PAL::File::ReadMemory(request, bytes);
+		PAL::File::ReleaseAccess(request);
+
+		if (!wasRead)
+		{
+			task.result = AssetImportResult::FileReadFailed;
+			return;
+		}
+
+		task.result = task.pImporter->Parse(task.context, ReadOnlyList<u8>(bytes));
+		if (task.result != AssetImportResult::Success)
+			return;
+
+		const usize count = task.pImporter->GetProductCount();
+		task.expectedProducts.Clear();
+		task.expectedProducts.Reserve(count);
+
+		for (usize i = 0; i < count; ++i)
+			task.expectedProducts.PushBack(task.pImporter->GetProduct(i));
+
+		task.dependencies.Clear();
+		task.pImporter->GatherDependencies(task.context, task.dependencies);
+
+		if (task.expectedProducts.GetCount() == 0)
+			task.result = AssetImportResult::NoImportableData;
 	}
 
 	void DomainService::OnParseAssetFinished(usize slot)
@@ -324,7 +366,8 @@ namespace Horizon::Editor
 		// If its not succeeded something happened.
 		if (task.result != AssetImportResult::Success)
 		{
-			Terminal::Error(StringOps::GetName(this), "Parse task for {} has failed with result {}", task.relativePath, u8(task.result));
+			auto* pType = GetEngine()->GetReflectionSystem()->GetType(Reflect::TypeOf<AssetImportResult>());
+			Terminal::Error(StringOps::GetName(this), "Parse task for {} has failed with result {}", task.relativePath, pType->GetEnumName(task.result));
 			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
 			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
 			task = DomainFileImportContext();
@@ -482,7 +525,8 @@ namespace Horizon::Editor
 
 			if (product.result != AssetImportResult::Success)
 			{
-				Terminal::Error(StringOps::GetName(this), "{} product {} failed with code {}", task.relativePath, product.key, u8(product.result));
+				auto* pType = GetEngine()->GetReflectionSystem()->GetType(Reflect::TypeOf<AssetImportResult>());
+				Terminal::Error(StringOps::GetName(this), "{} product {} failed with code {}", task.relativePath, product.key, pType->GetEnumName(product.result));
 				overall = product.result;
 			}
 		}
@@ -518,7 +562,8 @@ namespace Horizon::Editor
 		{
 			if (product.result != AssetImportResult::Success)
 			{
-				Terminal::Error(StringOps::GetName(this), "{} has failed on import with code: {}", product.cookedPath, u8(product.result));
+				auto* pType = GetEngine()->GetReflectionSystem()->GetType(Reflect::TypeOf<AssetImportResult>());
+				Terminal::Error(StringOps::GetName(this), "{} has failed on import with code: {}", product.cookedPath, pType->GetEnumName(product.result));
 				continue;
 			}
 
@@ -929,6 +974,7 @@ namespace Horizon::Editor
 		task.context.sourceFolder = pFile->GetParent()->GetAbsolutePath();
 		task.context.reason = reason;
 		task.context.pSettings = pSnapshot;
+		task.context.pReflection = GetEngine()->GetReflectionSystem();
 
 		m_pendingImports.PushBack(std::move(task));
 	}

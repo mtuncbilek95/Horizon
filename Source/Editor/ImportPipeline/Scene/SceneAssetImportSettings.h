@@ -12,5 +12,6 @@ namespace Horizon::Editor
 	public:
 		SceneAssetImportSettings() = default;
 		~SceneAssetImportSettings() = default;
+
 	};
 }

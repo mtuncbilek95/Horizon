@@ -6,6 +6,7 @@
 #include <Engine/Core/Engine.h>
 #include <Runtime/Containers/Guid.h>
 #include <Runtime/Containers/List.h>
+#include <Runtime/RTTR/Reflection.h>
 
 #include <string>
 #include <string_view>
@@ -20,6 +21,7 @@ namespace Horizon::Editor
 		ImportReason reason = ImportReason::Fresh;
 		const AssetImportSettings* pSettings = nullptr;
 		const List<ImportDependency>* pDependencies = nullptr; // Easy way out
+		Engine::ReflectionSystem* pReflection = nullptr;
 
 		Guid ResolveAssetRef(std::string_view sourceRelativePath, std::string_view subAssetKey = {}) const;
 	};
