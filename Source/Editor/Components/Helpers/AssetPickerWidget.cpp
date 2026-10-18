@@ -57,7 +57,7 @@ namespace Horizon::Editor
 			ImGui::EndPopup();
 		}
 
-		changed |= DrawDropTarget(pId, pAssetType);
+		changed |= DrawDropTarget(pId, pAssetType, pDomain);
 
 		ImGui::SameLine(0.f, style.ItemInnerSpacing.x);
 
@@ -79,7 +79,7 @@ namespace Horizon::Editor
 		return changed;
 	}
 
-	b8 AssetPickerWidget::DrawDropTarget(Guid* pId, Reflect::Type* pAssetType)
+	b8 AssetPickerWidget::DrawDropTarget(Guid* pId, Reflect::Type* pAssetType, DomainService* pDomain)
 	{
 		if (!ImGui::BeginDragDropTarget())
 			return false;
@@ -109,6 +109,32 @@ namespace Horizon::Editor
 						m_search = pDropped->GetName();
 						m_openPickerRequest = true;
 					}
+				}
+			}
+		}
+
+		if (const ImGuiPayload* pPayload = ImGui::AcceptDragDropPayload("HZ_ASSET_PRODUCT"))
+		{
+			if (pPayload->DataSize == sizeof(Guid))
+			{
+				const Guid droppedId = *static_cast<const Guid*>(pPayload->Data);
+				const DomainFile::DomainSubAsset* pSubAsset = nullptr;
+				DomainFile* pFile = pDomain->FindFileBySubAssetId(droppedId, &pSubAsset);
+
+				if (!pFile)
+				{
+					Terminal::Warn("AssetPickerWidget", "{} is not a tracked sub asset", droppedId.ToString());
+				}
+				else if (pSubAsset->pAssetType != pAssetType)
+				{
+					Terminal::Warn("AssetPickerWidget", "{} / {} is not {}", pFile->GetName(), pSubAsset->key, pAssetType->GetName());
+				}
+				else
+				{
+					*pId = droppedId;
+					changed = true;
+
+					Terminal::Info("AssetPickerWidget", "{} / {} dropped as {}", pFile->GetName(), pSubAsset->key, pAssetType->GetName());
 				}
 			}
 		}

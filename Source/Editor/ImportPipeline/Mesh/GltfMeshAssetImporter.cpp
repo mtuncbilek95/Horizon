@@ -15,10 +15,34 @@
 #include <cstring>
 #include <filesystem>
 #include <format>
+#include <utility>
 #include <variant>
 
 namespace Horizon::Editor
 {
+	namespace
+	{
+		fastgltf::math::fmat4x4 FindMeshTransform(fastgltf::Asset& asset, usize meshIndex)
+		{
+			fastgltf::math::fmat4x4 result;
+			b8 isFound = false;
+
+			for (usize sceneIndex = 0; sceneIndex < asset.scenes.size() && !isFound; ++sceneIndex)
+			{
+				fastgltf::iterateSceneNodes(asset, sceneIndex, fastgltf::math::fmat4x4(), [&](fastgltf::Node& node, const fastgltf::math::fmat4x4& matrix)
+					{
+						if (isFound || !node.meshIndex.has_value() || node.meshIndex.value() != meshIndex)
+							return;
+
+						result = matrix;
+						isFound = true;
+					});
+			}
+
+			return result;
+		}
+	}
+
 	AssetImportResult GltfMeshAssetImporter::Parse(const ImportPipelineContext& ctx, ReadOnlyList<u8> fileBytes)
 	{
 		if (fileBytes.GetCount() == 0)
@@ -236,6 +260,12 @@ namespace Horizon::Editor
 
 		const auto* pSettings = static_cast<const MeshAssetImportSettings*>(ctx.pSettings);
 		const f32 scale = pSettings ? (f32)pSettings->m_importScale : 1.0f;
+		const b8 isApplyingTransform = pSettings && pSettings->m_applyTransform;
+
+		const fastgltf::math::fmat4x4 transform = isApplyingTransform ? FindMeshTransform(*m_asset, product) : fastgltf::math::fmat4x4();
+		const fastgltf::math::fmat3x3 linear = fastgltf::math::fmat3x3(transform);
+		const fastgltf::math::fmat3x3 normalMatrix = fastgltf::math::transpose(fastgltf::math::inverse(linear));
+		const b8 isMirrored = fastgltf::math::determinant(linear) < 0.0f;
 
 		const fastgltf::Asset& asset = *m_asset;
 		const fastgltf::Mesh& mesh = asset.meshes[product];
@@ -280,8 +310,10 @@ namespace Horizon::Editor
 
 			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, positions, [&](fastgltf::math::fvec3 value, usize index)
 				{
+					const fastgltf::math::fvec4 world = transform * fastgltf::math::fvec4(value.x(), value.y(), value.z(), 1.0f);
+
 					Engine::MeshVertex& vertex = m_vertices[base + index];
-					vertex.position = Math::Vec3f(value.x() * scale, value.y() * scale, value.z() * scale);
+					vertex.position = Math::Vec3f(world.x() * scale, world.y() * scale, world.z() * scale);
 					subMesh.boundingBox.Expand(vertex.position);
 				});
 
@@ -290,7 +322,8 @@ namespace Horizon::Editor
 			{
 				fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, asset.accessors[normalIt->accessorIndex], [&](fastgltf::math::fvec3 value, usize index)
 					{
-						m_vertices[base + index].normal = Math::Vec3f(value.x(), value.y(), value.z());
+						const fastgltf::math::fvec3 normal = fastgltf::math::normalize(normalMatrix * value);
+						m_vertices[base + index].normal = Math::Vec3f(normal.x(), normal.y(), normal.z());
 					});
 			}
 
@@ -299,7 +332,9 @@ namespace Horizon::Editor
 			{
 				fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, asset.accessors[tangentIt->accessorIndex], [&](fastgltf::math::fvec4 value, usize index)
 					{
-						m_vertices[base + index].tangent = Math::Vec4f(value.x(), value.y(), value.z(), value.w());
+						const fastgltf::math::fvec3 tangent = fastgltf::math::normalize(linear * fastgltf::math::fvec3(value.x(), value.y(), value.z()));
+						const f32 handedness = isMirrored ? -value.w() : value.w();
+						m_vertices[base + index].tangent = Math::Vec4f(tangent.x(), tangent.y(), tangent.z(), handedness);
 					});
 			}
 
@@ -357,6 +392,14 @@ namespace Horizon::Editor
 
 			if (subMesh.indexCount == 0)
 				continue;
+
+			if (isMirrored)
+			{
+				const u32 indexEnd = subMesh.indexOffset + subMesh.indexCount;
+
+				for (u32 i = subMesh.indexOffset; i + 2 < indexEnd; i += 3)
+					std::swap(m_indices[i + 1], m_indices[i + 2]);
+			}
 
 			m_subMeshes.PushBack(subMesh);
 		}

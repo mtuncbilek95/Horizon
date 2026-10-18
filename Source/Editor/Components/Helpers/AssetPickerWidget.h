@@ -29,7 +29,7 @@ namespace Horizon::Editor
 		b8 Draw(Guid* pId, Reflect::Type* pAssetType, DomainService* pDomain);
 
 	private:
-		b8 DrawDropTarget(Guid* pId, Reflect::Type* pAssetType);
+		b8 DrawDropTarget(Guid* pId, Reflect::Type* pAssetType, DomainService* pDomain);
 		b8 DrawPicker(Guid* pId, DomainService* pDomain, Reflect::Type* pAssetType);
 
 		void RefreshCandidates(DomainService* pDomain, Reflect::Type* pAssetType);

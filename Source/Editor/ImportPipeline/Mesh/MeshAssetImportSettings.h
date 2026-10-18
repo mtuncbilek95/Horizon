@@ -27,5 +27,8 @@ namespace Horizon::Editor
 
 		HFIELD();
 		b8 m_importAnimations = false;
+
+		HFIELD();
+		b8 m_applyTransform = true;
 	};
 }
