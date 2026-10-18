@@ -140,8 +140,9 @@ namespace Horizon::Engine
 		}
 
 		const usize propertyEnd = header.propertyOffset + header.propertySize;
+		const usize tableEnd = header.tableOffset + header.tableSize;
 		const usize payloadEnd = header.payloadOffset + header.payloadSize;
-		if (propertyEnd > view.GetSize() || payloadEnd > view.GetSize())
+		if (propertyEnd > view.GetSize() || tableEnd > view.GetSize() || payloadEnd > view.GetSize())
 		{
 			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Header offsets point outside of the cook file", pAsset->m_ownerEntry.assetId.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
@@ -162,11 +163,19 @@ namespace Horizon::Engine
 			return;
 		}
 
-		usize subMeshTable = props.subMeshCount * sizeof(MeshAssetSubmesh);
-		usize vertBlock = props.vertexCount * props.vertexStride;
-		usize indexBlock = props.indexCount * props.indexStride;
+		const usize subMeshTable = props.subMeshCount * sizeof(MeshAssetSubmesh);
+		const usize vertBlock = props.vertexCount * props.vertexStride;
+		const usize indexBlock = props.indexCount * props.indexStride;
 
-		if (subMeshTable + vertBlock + indexBlock != header.payloadSize)
+		if (subMeshTable != header.tableSize)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Table size does not match MeshAssetProperties", pAsset->m_ownerEntry.assetId.ToString());
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+			PAL::File::CloseMap(view);
+			return;
+		}
+
+		if (vertBlock + indexBlock != header.payloadSize)
 		{
 			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Payload size does not match MeshAssetProperties", pAsset->m_ownerEntry.assetId.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
@@ -174,10 +183,8 @@ namespace Horizon::Engine
 			return;
 		}
 
-		const u8* pPayload = view.GetData() + header.payloadOffset;
-
 		List<MeshAssetSubmesh> subMeshes(props.subMeshCount);
-		std::memcpy(subMeshes.GetData(), pPayload, subMeshTable);
+		std::memcpy(subMeshes.GetData(), view.GetData() + header.tableOffset, subMeshTable);
 
 		for (usize i = 0; i < subMeshes.GetCount(); ++i)
 		{
@@ -195,7 +202,7 @@ namespace Horizon::Engine
 			}
 		}
 
-		const u8* pVertexData = pPayload + subMeshTable;
+		const u8* pVertexData = view.GetData() + header.payloadOffset;
 		const u8* pIndexData = pVertexData + vertBlock;
 
 		pAsset->m_residency.Store(AssetResidency::Uploading, PAL::MemoryOrder::Relaxed);

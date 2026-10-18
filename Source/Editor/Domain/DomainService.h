@@ -2,6 +2,7 @@
 
 #include <Editor/ImportPipeline/ImporterRegistry.h>
 #include <Editor/Domain/DomainFileImportContext.h>
+#include <Editor/Domain/DomainFile.h>
 #include <Engine/Core/Service.h>
 #include <Engine/Job/JobSystem.h>
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
@@ -16,7 +17,6 @@
 namespace Horizon::Editor
 {
 	class DomainFolder;
-	class DomainFile;
 	class AssetImporter;
 
 	class EDITOR_API DomainService : public Engine::Service
@@ -38,6 +38,7 @@ namespace Horizon::Editor
 		DomainFolder* FindFolder(std::string_view relativePath) const;
 		DomainFile* FindFileByGuid(const Guid& guid) const;
 		DomainFile* FindFileByRelative(const std::string& relative);
+		DomainFile* FindFileBySubAssetId(const Guid& guid, const DomainFile::DomainSubAsset** ppOutSubAsset = nullptr) const;
 
 		PAL::DirectoryWatcher& GetWatcher() { return m_watcher; }
 		const std::string& GetAssetPath() const { return m_assetPath; }
@@ -64,6 +65,7 @@ namespace Horizon::Editor
 
 		DomainFile* FindFileByGuid(DomainFolder* pFolder, const Guid& guid) const;
 		DomainFile* FindFileByRelative(DomainFolder* pFolder, const std::string& relative) const;
+		DomainFile* FindFileBySubAssetId(DomainFolder* pFolder, const Guid& guid, const DomainFile::DomainSubAsset** ppOutSubAsset) const;
 		DomainFile* FindDomainFile(const std::string& relativePathWithExtension) const;
 		DomainFile* FindSourceFile(const std::string& relativePathWithExtension);
 

@@ -14,6 +14,14 @@ namespace Horizon::Editor
 
 	class EDITOR_API AssetPickerWidget
 	{
+		struct Candidate
+		{
+			DomainFile* pFile = nullptr;
+			Guid id;
+			std::string label;
+			std::string tooltip;
+		};
+
 	public:
 		AssetPickerWidget() = default;
 		~AssetPickerWidget() = default;
@@ -25,12 +33,14 @@ namespace Horizon::Editor
 		b8 DrawPicker(Guid* pId, DomainService* pDomain, Reflect::Type* pAssetType);
 
 		void RefreshCandidates(DomainService* pDomain, Reflect::Type* pAssetType);
-		void CollectFiles(DomainFolder* pFolder, Reflect::Type* pAssetType);
+		void CollectProducts(DomainFolder* pFolder, Reflect::Type* pAssetType);
+		void CollectProducts(DomainFile* pFile, Reflect::Type* pAssetType, List<Candidate>& outCandidates) const;
 
 	private:
 		std::string m_search;
-		List<DomainFile*> m_candidates;
+		List<Candidate> m_candidates;
 		std::string m_candidateTypeName;
 		u64 m_candidateRevision = 0;
+		b8 m_openPickerRequest = false;
 	};
 }

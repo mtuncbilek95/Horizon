@@ -1,7 +1,6 @@
 #include "DomainService.h"
 
 #include <Editor/Domain/DomainFolder.h>
-#include <Editor/Domain/DomainFile.h>
 #include <Editor/Project/ProjectContext.h>
 #include <Editor/ImportPipeline/ImporterRegistry.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
@@ -161,6 +160,15 @@ namespace Horizon::Editor
 		return pFile;
 	}
 
+	DomainFile* DomainService::FindFileBySubAssetId(const Guid& guid, const DomainFile::DomainSubAsset** ppOutSubAsset) const
+	{
+		if (m_root == nullptr)
+			return nullptr;
+
+		return FindFileBySubAssetId(m_root, guid, ppOutSubAsset);
+	}
+
+
 	DomainFile* DomainService::FindFileByGuid(DomainFolder* pFolder, const Guid& guid) const
 	{
 		for (DomainFile* pFile : pFolder->GetFiles())
@@ -193,6 +201,32 @@ namespace Horizon::Editor
 			DomainFile* pFile = FindFileByRelative(pChild, relative);
 
 			if (pFile != nullptr)
+				return pFile;
+		}
+
+		return nullptr;
+	}
+
+	DomainFile* DomainService::FindFileBySubAssetId(DomainFolder* pFolder, const Guid& guid, const DomainFile::DomainSubAsset** ppOutSubAsset) const
+	{
+		for (DomainFile* pFile : pFolder->GetFiles())
+		{
+			for (const DomainFile::DomainSubAsset& subAsset : pFile->GetSubAssets())
+			{
+				if (subAsset.id != guid)
+					continue;
+
+				if (ppOutSubAsset)
+					*ppOutSubAsset = &subAsset;
+
+				return pFile;
+			}
+		}
+
+		for (DomainFolder* pChild : pFolder->GetFolders())
+		{
+			DomainFile* pFile = FindFileBySubAssetId(pChild, guid, ppOutSubAsset);
+			if (pFile)
 				return pFile;
 		}
 
