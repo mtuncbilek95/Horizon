@@ -17,7 +17,15 @@ namespace Horizon::Editor
 		DefaultSceneAssetImporter() = default;
 		~DefaultSceneAssetImporter() = default;
 
-		AssetImportResult CookAsset(Engine::Engine* pEngine, ReadOnlyList<u8> fileBytes, AssetImportSettings* pSettings, List<u8>& outBytes, usize& outPropertySize) final;
-		b8 PatchCook(const AssetImportSettings* pPrevious, const AssetImportSettings* pCurrent, const std::string cookedPath) final;
+		AssetImportResult Parse(const ImportPipelineContext& ctx, ReadOnlyList<u8> fileBytes) final;
+		void Release() final;
+
+		usize GetProductCount() const final;
+		ImportDeclaredProduct GetProduct(usize index) const final;
+		void GatherDependencies(const ImportPipelineContext& ctx, List<ImportDependency>& outDependencies) final;
+
+		AssetImportResult GenerateProperties(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes) final;
+		AssetImportResult GenerateTable(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes) final;
+		AssetImportResult GenerateBinary(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes) final;
 	};
 }

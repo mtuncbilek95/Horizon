@@ -1,21 +1,28 @@
 #pragma once
 
-#include <Editor/ImportPipeline/ImportPipelineInfoAttribute.h>
-#include <Editor/ImportPipeline/AssetImportSettings.h>
+#include <Editor/ImportPipeline/AssetImporterTypeAttribute.h>
 #include <Editor/ImportPipeline/AssetImportResult.h>
-#include <Engine/Core/Engine.h>
+#include <Editor/ImportPipeline/ImportPipelineContext.h>
+#include <Editor/ImportPipeline/ImportDeclaredProduct.h>
+#include <Editor/ImportPipeline/ImportDependency.h>
 #include <Runtime/Containers/List.h>
 #include <Runtime/Containers/ReadOnlyList.h>
 #include <Runtime/RTTR/Reflection.h>
 
-#include <string>
-
 namespace Horizon::Editor
 {
-	class EDITOR_API AssetImporter : public Reflect::Base
+	class AssetImporter : public Reflect::Base
 	{
 	public:
-		virtual AssetImportResult CookAsset(Engine::Engine* pEngine, ReadOnlyList<u8> fileBytes, AssetImportSettings* pSettings, List<u8>& outBytes, usize& outPropertySize) = 0;
-		virtual b8 PatchCook(const AssetImportSettings* pPrevious, const AssetImportSettings* pCurrent, const std::string cookedPath) = 0;
+		virtual AssetImportResult Parse(const ImportPipelineContext& ctx, ReadOnlyList<u8> fileBytes) = 0;
+		virtual void Release() = 0;
+
+		virtual usize GetProductCount() const = 0;
+		virtual ImportDeclaredProduct GetProduct(usize index) const = 0;
+		virtual void GatherDependencies(const ImportPipelineContext& ctx, List<ImportDependency>& outDependencies) {}
+
+		virtual AssetImportResult GenerateProperties(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes) = 0;
+		virtual AssetImportResult GenerateTable(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes) = 0;
+		virtual AssetImportResult GenerateBinary(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes) = 0;
 	};
 }

@@ -17,9 +17,9 @@
 namespace Horizon::Editor
 {
 	HCLASS(EditorView[ICON_FA_FOLDER_TREE, "Content Browser", DockZone::Bottom, EditorViewFlags::OpenOnStart]);
-	class EDITOR_API ContentBrowserView : public ViewObject
+	class EDITOR_API AssetContentView : public ViewObject
 	{
-		HORIZON_TYPE_REFLECT(ContentBrowserView);
+		HORIZON_TYPE_REFLECT(AssetContentView);
 
 		struct BrowserEntry
 		{
@@ -46,8 +46,8 @@ namespace Horizon::Editor
 		};
 
 	public:
-		ContentBrowserView() = default;
-		~ContentBrowserView() final;
+		AssetContentView() = default;
+		~AssetContentView() final;
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;

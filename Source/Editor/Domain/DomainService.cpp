@@ -333,7 +333,7 @@ namespace Horizon::Editor
 		}
 
 		// If it can't be found, then its deleted.
-		auto* pFile = FindFileByGuid(task.id);
+		auto* pFile = FindFileByGuid(task.context.fileId);
 		if (!pFile)
 		{
 			Terminal::Warn(StringOps::GetName(this), "DomainFile for {} has been deleted during parse", task.relativePath);
@@ -364,6 +364,13 @@ namespace Horizon::Editor
 				continue;
 			}
 
+			//  Dependency needs to know that if we have the pipeline for the proper asset type.
+			if (!m_importPipelineRegistry.GetImportPipelineEntry(dependency.assetType))
+			{
+				Terminal::Debug(StringOps::GetName(this), "{} depends on {} but there is no pipeline for that asset type yet", task.relativePath, dependency.targetRelativePath);
+				continue;
+			}
+
 			DomainFile* pDependency = FindFileByRelative(dependency.targetRelativePath);
 
 			// If dependent domain file is not there, try to find in the path in case its not become a DomainFile yet.
@@ -382,6 +389,17 @@ namespace Horizon::Editor
 
 		// Dependencies are ready
 		pFile->SetDependencies(entries);
+
+		// If the pipeline is not there, skip it!
+		for (usize i = task.expectedProducts.GetCount(); i > 0; --i)
+		{
+			const ImportDeclaredProduct& declared = task.expectedProducts[i - 1];
+			if (m_importPipelineRegistry.GetImportPipelineEntry(declared.assetType))
+				continue;
+
+			Terminal::Warn(StringOps::GetName(this), "{} product {} has no pipeline for its asset type, skipped", task.relativePath, declared.key);
+			task.expectedProducts.RemoveAt(i - 1);
+		}
 
 		List<Guid> removed;
 		// Renew the sub assets
@@ -435,6 +453,41 @@ namespace Horizon::Editor
 
 	void DomainService::RunCookAsset(DomainFileImportContext& task)
 	{
+		AssetImportResult overall = AssetImportResult::Success;
+
+		for (usize i = 0; i < task.cookedProducts.GetCount(); ++i)
+		{
+			DomainCookedProduct& product = task.cookedProducts[i];
+			const ImportDeclaredProduct& declared = task.expectedProducts[i];
+			ImportProductBytes bytes;
+
+			if (!product.pPipeline)
+			{
+				product.result = AssetImportResult::UnsupportedFeature;
+				Terminal::Error(StringOps::GetName(this), "{} product {} has no pipeline for its asset type", task.relativePath, product.key);
+				overall = product.result;
+				continue;
+			}
+
+			product.result = task.pImporter->GenerateProperties(task.context, i, bytes.properties);
+
+			if (product.result == AssetImportResult::Success)
+				product.result = task.pImporter->GenerateTable(task.context, i, bytes.table);
+
+			if (product.result == AssetImportResult::Success)
+				product.result = task.pImporter->GenerateBinary(task.context, i, bytes.binary);
+
+			if (product.result == AssetImportResult::Success)
+				product.result = product.pPipeline->Cook(declared, task.context, product.id, product.pAssetType, product.cookedPath, bytes);
+
+			if (product.result != AssetImportResult::Success)
+			{
+				Terminal::Error(StringOps::GetName(this), "{} product {} failed with code {}", task.relativePath, product.key, u8(product.result));
+				overall = product.result;
+			}
+		}
+
+		task.result = overall;
 	}
 
 	void DomainService::OnCookAssetFinished(usize slot)
@@ -442,7 +495,7 @@ namespace Horizon::Editor
 		DomainFileImportContext& task = m_runningImports[slot];
 
 		// If file is not there, blow it up
-		DomainFile* pFile = FindFileByGuid(task.id);
+		DomainFile* pFile = FindFileByGuid(task.context.fileId);
 		if (!pFile)
 		{
 			Terminal::Error(StringOps::GetName(this), "{} has no domain file anymore. Cleaning up the desk!", task.relativePath);
@@ -866,16 +919,16 @@ namespace Horizon::Editor
 
 		// Create a pending
 		DomainFileImportContext task;
-		task.id = id;
-		task.relativePath = pFile->GetRelativePath() + pFile->GetExtension();
-		task.sourcePath = pFile->GetSourcePath();
-		task.cookedPath = pFile->GetCookedPath();
-		task.pPipeline = pEntry->pPipeline;
+		task.relativePath = pFile->GetSourceRelativePath();
 		task.pImporter = pImporter;
-		task.pAssetType = pEntry->pAssetType;
-		task.pSettingsType = pEntry->pSettingsType;
 		task.pSettings = pSnapshot;
-		task.reason = reason;
+		task.pSettingsType = pEntry->pSettingsType;
+
+		task.context.fileId = id;
+		task.context.sourcePath = pFile->GetSourcePath();
+		task.context.sourceFolder = pFile->GetParent()->GetAbsolutePath();
+		task.context.reason = reason;
+		task.context.pSettings = pSnapshot;
 
 		m_pendingImports.PushBack(std::move(task));
 	}
@@ -899,6 +952,7 @@ namespace Horizon::Editor
 			task = std::move(m_pendingImports.Front());
 			m_pendingImports.PopFront();
 
+			task.context.pDependencies = &task.dependencies;
 			task.phase = ImportPhase::Parsing;
 			task.ticket = m_jobSystem->SubmitJob(Engine::JobLane::Background, Engine::Job([this, &task]()
 				{
@@ -949,7 +1003,7 @@ namespace Horizon::Editor
 	{
 		for (DomainFileImportContext& task : m_runningImports)
 		{
-			if (task.ticket != Engine::InvalidSubmitTicket && task.id == id)
+			if (task.ticket != Engine::InvalidSubmitTicket && task.context.fileId == id)
 				return &task;
 		}
 
@@ -960,7 +1014,7 @@ namespace Horizon::Editor
 	{
 		for (const DomainFileImportContext& task : m_pendingImports)
 		{
-			if (task.id == id)
+			if (task.context.fileId == id)
 				return true;
 		}
 

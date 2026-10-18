@@ -18,8 +18,16 @@ namespace Horizon::Editor
 		FbxMeshAssetImporter() = default;
 		~FbxMeshAssetImporter() = default;
 
-		AssetImportResult CookAsset(Engine::Engine* pEngine, ReadOnlyList<u8> fileBytes, AssetImportSettings* pSettings, List<u8>& outBytes, usize& outPropertySize) final;
-		b8 PatchCook(const AssetImportSettings* pPrevious, const AssetImportSettings* pCurrent, const std::string cookedPath) final;
+		AssetImportResult Parse(const ImportPipelineContext& ctx, ReadOnlyList<u8> fileBytes) final;
+		void Release() final;
+
+		usize GetProductCount() const;
+		ImportDeclaredProduct GetProduct(usize index) const;
+		void GatherDependencies(const ImportPipelineContext& ctx, List<ImportDependency>& outDependencies);
+
+		AssetImportResult GenerateProperties(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes);
+		AssetImportResult GenerateTable(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes);
+		AssetImportResult GenerateBinary(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes);
 
 	private:
 		ufbxScenePtr m_sceneNode;

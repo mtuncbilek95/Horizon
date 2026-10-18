@@ -2,13 +2,41 @@
 
 namespace Horizon::Editor
 {
-	AssetImportResult GltfMeshAssetImporter::CookAsset(Engine::Engine* pEngine, ReadOnlyList<u8> fileBytes, AssetImportSettings* pSettings, List<u8>& outBytes, usize& outPropertySize)
+	AssetImportResult GltfMeshAssetImporter::Parse(const ImportPipelineContext& ctx, ReadOnlyList<u8> fileBytes)
 	{
 		return AssetImportResult::Success;
 	}
 
-	b8 GltfMeshAssetImporter::PatchCook(const AssetImportSettings* pPrevious, const AssetImportSettings* pCurrent, const std::string cookedPath)
+	void GltfMeshAssetImporter::Release()
 	{
-		return true;
+	}
+
+	usize GltfMeshAssetImporter::GetProductCount() const
+	{
+		return 0;
+	}
+
+	ImportDeclaredProduct GltfMeshAssetImporter::GetProduct(usize index) const
+	{
+		return {};
+	}
+
+	void GltfMeshAssetImporter::GatherDependencies(const ImportPipelineContext& ctx, List<ImportDependency>& outDependencies)
+	{
+	}
+
+	AssetImportResult GltfMeshAssetImporter::GenerateProperties(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes)
+	{
+		return AssetImportResult::Success;
+	}
+
+	AssetImportResult GltfMeshAssetImporter::GenerateTable(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes)
+	{
+		return AssetImportResult::Success;
+	}
+
+	AssetImportResult GltfMeshAssetImporter::GenerateBinary(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes)
+	{
+		return AssetImportResult::Success;
 	}
 }

@@ -7,6 +7,7 @@
 #include <Editor/ImportPipeline/AssetImportSettings.h>
 #include <Editor/ImportPipeline/ImportDependency.h>
 #include <Editor/ImportPipeline/ImportDeclaredProduct.h>
+#include <Editor/ImportPipeline/ImportReason.h>
 #include <Engine/Job/JobTicket.h>
 #include <Runtime/Containers/Guid.h>
 #include <Runtime/Definitions/Allocator.h>
@@ -16,14 +17,6 @@
 
 namespace Horizon::Editor
 {
-	enum class ImportReason : u8
-	{
-		Fresh,
-		SourceChanged,
-		SettingsChanged,
-		DependencyChanged
-	};
-
 	enum class ImportPhase : u8
 	{
 		Pending,
@@ -33,22 +26,17 @@ namespace Horizon::Editor
 
 	struct DomainFileImportContext
 	{
-		Guid id;
 		std::string relativePath;
-		std::string sourcePath;
-		std::string cookedPath;
 
-		ImportPipeline* pPipeline = nullptr;
 		AssetImporter* pImporter = nullptr;
 		AssetImportSettings* pSettings = nullptr;
-		Reflect::Type* pAssetType = nullptr;
 		Reflect::Type* pSettingsType = nullptr;
 
+		ImportPipelineContext context;
 		List<ImportDeclaredProduct> expectedProducts;
 		List<ImportDependency> dependencies;
 		List<DomainCookedProduct> cookedProducts;
 
-		ImportReason reason = ImportReason::Fresh;
 		ImportPhase phase = ImportPhase::Pending;
 		Engine::SubmitTicket ticket = Engine::InvalidSubmitTicket;
 		AssetImportResult result = AssetImportResult::InternalError;
