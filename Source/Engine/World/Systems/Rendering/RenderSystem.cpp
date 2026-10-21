@@ -5,10 +5,13 @@
 #include <Engine/World/Components/Rendering/MeshComponent.h>
 #include <Engine/World/Components/PostProcess/FogComponent.h>
 #include <Engine/World/Systems/Rendering/CameraSystem.h>
+#include <Engine/World/Systems/Rendering/MeshSystem.h>
 
 #include <Engine/Asset/AssetService.h>
 #include <Engine/Asset/Mesh/MeshAssetStreamer.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
+
+#include <Engine/Rendering/MeshDrawItem.h>
 
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/RHI/Buffer/GfxBuffer.h>
@@ -44,6 +47,11 @@ namespace Horizon::Engine
 		Math::Vec3f fogColor;
 		f32 fogMaxOpacity = 0;
 		u32 fogMode = 0;
+		u32 albedoTex = kInvalid32;
+		u32 normalTex = kInvalid32;
+		u32 metallicRoughnessTex = kInvalid32;
+		u32 occlusionTex = kInvalid32;
+		u32 emissiveTex = kInvalid32;
 	};
 
 	u32 sFunVertexSrv = kInvalid32;
@@ -269,7 +277,6 @@ namespace Horizon::Engine
 		slot.pTargetCmd->BeginRendering(renderDesc);
 		slot.pTargetCmd->SetScissor({ 0, 0, (i32)slot.pTargetTexture->GetDesc().width, (i32)slot.pTargetTexture->GetDesc().height });
 		slot.pTargetCmd->SetViewport({ 0, 0, (f32)slot.pTargetTexture->GetDesc().width, (f32)slot.pTargetTexture->GetDesc().height, 0.f, 1.f });
-		slot.pTargetCmd->BindPipeline(sFunPipeline);
 
 		AssetService* pAssetService = GetEngine()->RequestService<AssetService>();
 		auto* pMeshStreamer = pAssetService->FindLoader<MeshAssetStreamer>(Reflect::TypeOf<MeshAsset>());
@@ -296,35 +303,86 @@ namespace Horizon::Engine
 				hasFog = true;
 			});
 
-		currentScene.ForEach<MeshComponent, TransformComponent>([&](EntityHandle handl, MeshComponent& mesh, TransformComponent& worldMat)
-			{
-				if (mesh.m_hideInRender)
-					return;
+		constants.viewProj = viewProj;
+		constants.cameraPos = camPos;
+		constants.vertexBufferIndex = sFunVertexSrv;
 
-				MeshAsset* pAsset = mesh.m_meshHandle.GetAsset();
 
-				if (pAsset == nullptr || pAsset->GetResidency() != AssetResidency::Resident)
-					return;
+		MeshSystem* pMeshSystem = RequestSystem<MeshSystem>();
+		const b8 hasDrawLists = pMeshSystem != nullptr && pMeshSystem->GetDrawListFrame() == ctx.GetFrameIndex();
 
-				constants.viewProj = viewProj;
-				constants.model = worldMat.m_worldMatrix;
-				constants.cameraPos = camPos;
-				constants.vertexBufferIndex = sFunVertexSrv;
-				slot.pTargetCmd->SetGraphicsConstants(&constants, sizeof(FunPushConstant) / sizeof(u32));
+		if (hasDrawLists)
+		{
+			List<const MeshDrawItem*> opaqueOrder;
+			opaqueOrder.Reserve(pMeshSystem->GetOpaqueItems().GetCount());
+			for (const MeshDrawItem& item : pMeshSystem->GetOpaqueItems())
+				opaqueOrder.PushBack(&item);
 
-				const List<MeshAssetSubmesh>& subMeshes = pAsset->GetSubmeshes();
-				const u32 meshFirstVertex = pAsset->GetFirstVertex();
-				const u32 meshFirstIndex = pAsset->GetFirstIndex();
+			List<const MeshDrawItem*> maskedOrder;
+			maskedOrder.Reserve(pMeshSystem->GetMaskedItems().GetCount());
+			for (const MeshDrawItem& item : pMeshSystem->GetMaskedItems())
+				maskedOrder.PushBack(&item);
 
-				for (usize i = 0; i < subMeshes.GetCount(); ++i)
+			List<const MeshDrawItem*> translucentOrder;
+			translucentOrder.Reserve(pMeshSystem->GetTranslucentItems().GetCount());
+			for (const MeshDrawItem& item : pMeshSystem->GetTranslucentItems())
+				translucentOrder.PushBack(&item);
+
+			const auto byPipeline = [](const MeshDrawItem* pLeft, const MeshDrawItem* pRight)
 				{
-					const MeshAssetSubmesh& subMesh = subMeshes[i];
-					const u32 firstVertex = meshFirstVertex + subMesh.vertexOffset;
+					return pLeft->pPipeline < pRight->pPipeline;
+				};
 
-					slot.pTargetCmd->SetGraphicsConstants(&firstVertex, 1, offsetof(FunPushConstant, firstVertex) / sizeof(u32));
-					slot.pTargetCmd->DrawIndexed(subMesh.indexCount, 1, meshFirstIndex + subMesh.indexOffset, 0);
-				}
-			});
+			const auto distanceToCamera = [&camPos](const MeshDrawItem* pItem)
+				{
+					const f32 dx = pItem->worldPosition.X() - camPos.X();
+					const f32 dy = pItem->worldPosition.Y() - camPos.Y();
+					const f32 dz = pItem->worldPosition.Z() - camPos.Z();
+					return dx * dx + dy * dy + dz * dz;
+				};
+
+			opaqueOrder.Sort(byPipeline);
+			maskedOrder.Sort(byPipeline);
+			translucentOrder.Sort([&distanceToCamera](const MeshDrawItem* pLeft, const MeshDrawItem* pRight)
+				{
+					return distanceToCamera(pLeft) > distanceToCamera(pRight);
+				});
+
+			RHI::GfxPipeline* pBoundPipeline = nullptr;
+
+			const auto drawItem = [&](const MeshDrawItem* pItem)
+				{
+					RHI::GfxPipeline* pPipeline = pItem->pPipeline ? pItem->pPipeline : sFunPipeline;
+
+					if (pPipeline != pBoundPipeline)
+					{
+						slot.pTargetCmd->BindPipeline(pPipeline);
+						pBoundPipeline = pPipeline;
+					}
+
+					const MeshAssetSubmesh& subMesh = pItem->pMesh->GetSubmeshes()[pItem->submeshIndex];
+
+					constants.model = pItem->model;
+					constants.firstVertex = pItem->pMesh->GetFirstVertex() + subMesh.vertexOffset;
+					constants.albedoTex = pItem->albedoTex;
+					constants.normalTex = pItem->normalTex;
+					constants.metallicRoughnessTex = pItem->metallicRoughnessTex;
+					constants.occlusionTex = pItem->occlusionTex;
+					constants.emissiveTex = pItem->emissiveTex;
+
+					slot.pTargetCmd->SetGraphicsConstants(&constants, sizeof(FunPushConstant) / sizeof(u32));
+					slot.pTargetCmd->DrawIndexed(subMesh.indexCount, 1, pItem->pMesh->GetFirstIndex() + subMesh.indexOffset, 0);
+				};
+
+			for (const MeshDrawItem* pItem : opaqueOrder)
+				drawItem(pItem);
+
+			for (const MeshDrawItem* pItem : maskedOrder)
+				drawItem(pItem);
+
+			for (const MeshDrawItem* pItem : translucentOrder)
+				drawItem(pItem);
+		}
 
 		slot.pTargetCmd->EndRendering();
 		{

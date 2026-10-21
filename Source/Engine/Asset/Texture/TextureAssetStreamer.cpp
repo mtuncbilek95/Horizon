@@ -295,6 +295,8 @@ namespace Horizon::Engine
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
+		
+		pTexture->SetDebugName(pAsset->m_id.ToString().c_str());
 
 		RHI::GfxBufferDesc stagingDesc = {};
 		stagingDesc.usage = RHI::GfxBufferUsage::TransferSrc;

@@ -192,6 +192,7 @@ namespace Horizon::Engine
 
 		pipelineDesc.rasterizer.fillMode = RHI::GfxFillMode::Solid;
 		pipelineDesc.rasterizer.cullMode = state.twoSided ? RHI::GfxCullMode::None : RHI::GfxCullMode::Back;
+		pipelineDesc.rasterizer.frontFace = RHI::GfxFrontFace::CCW;
 
 		pipelineDesc.depthStencil.depthTest = true;
 		pipelineDesc.depthStencil.depthWrite = !isTranslucent;
