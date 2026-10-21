@@ -70,19 +70,6 @@ namespace Horizon::Editor
 
 			return it->second;
 		}
-
-		usize CountSubAssets(DomainFile* pFile)
-		{
-			usize count = 0;
-
-			for (const DomainFile::DomainSubAsset& subAsset : pFile->GetSubAssets())
-			{
-				if (!subAsset.key.empty())
-					count++;
-			}
-
-			return count;
-		}
 	}
 
 	const std::string& AssetContentView::BrowserEntry::GetPath() const
@@ -94,9 +81,6 @@ namespace Horizon::Editor
 	{
 		if (pFolder)
 			return pFolder->GetName();
-
-		if (pSubAsset)
-			return pSubAsset->key;
 
 		return pFile->GetName();
 	}
@@ -266,26 +250,14 @@ namespace Horizon::Editor
 
 		for (DomainFolder* pSubFolder : pFolder->GetFolders())
 		{
-			BrowserEntry& entry = m_entries.EmplaceBack(pSubFolder, nullptr, nullptr, 0);
+			BrowserEntry& entry = m_entries.EmplaceBack(pSubFolder, nullptr, 0);
 			entry.id = HashPath(entry.GetPath());
 		}
 
 		for (DomainFile* pFile : pFolder->GetFiles())
 		{
-			BrowserEntry& entry = m_entries.EmplaceBack(nullptr, pFile, nullptr, 0);
+			BrowserEntry& entry = m_entries.EmplaceBack(nullptr, pFile, 0);
 			entry.id = HashPath(entry.GetPath());
-
-			if (!m_expandedFiles.contains(pFile->GetID()))
-				continue;
-
-			for (const DomainFile::DomainSubAsset& subAsset : pFile->GetSubAssets())
-			{
-				if (subAsset.key.empty())
-					continue;
-
-				BrowserEntry& subEntry = m_entries.EmplaceBack(nullptr, pFile, &subAsset, 0);
-				subEntry.id = HashPath(pFile->GetSourcePath() + "#" + subAsset.key);
-			}
 		}
 	}
 
@@ -320,10 +292,6 @@ namespace Horizon::Editor
 		{
 			const BrowserEntry& entry = m_entries[i];
 			const ImVec2 cellMin = ImVec2(startPos.x + (i % columnCount) * step, startPos.y + (i / columnCount) * step);
-			const b8 grouped = entry.IsSubAsset() || (!entry.IsFolder() && m_expandedFiles.contains(entry.pFile->GetID()));
-
-			if (grouped)
-				pDrawList->AddRectFilled(cellMin, ImVec2(cellMin.x + cell, cellMin.y + cell), ImGui::GetColorU32(ImGuiCol_FrameBg), ImGui::GetStyle().FrameRounding);
 
 			ImGui::SetCursorScreenPos(cellMin);
 			ImGui::PushID(static_cast<i32>(entry.id));
@@ -335,10 +303,10 @@ namespace Horizon::Editor
 			if (entry.IsFolder() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				pEnterFolder = entry.pFolder;
 
-			if (!entry.IsFolder() && !entry.IsSubAsset() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+			if (!entry.IsFolder() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 				pOpenFile = entry.pFile;
 
-			if (!entry.IsFolder() && !entry.IsSubAsset() && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover))
+			if (!entry.IsFolder() && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover))
 			{
 				ImGui::SetDragDropPayload("HZ_ASSET_FILE", &entry.pFile, sizeof(DomainFile*));
 
@@ -349,19 +317,7 @@ namespace Horizon::Editor
 				ImGui::EndDragDropSource();
 			}
 
-			if (entry.IsSubAsset() && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover))
-			{
-				ImGui::SetDragDropPayload("HZ_ASSET_PRODUCT", &entry.pSubAsset->id, sizeof(Guid));
-
-				ImGui::TextUnformatted(DomainToAssetIcon(entry.pSubAsset->pAssetType).c_str());
-				ImGui::SameLine();
-				ImGui::Text("%s / %s", entry.pFile->GetName().c_str(), entry.pSubAsset->key.c_str());
-
-				ImGui::EndDragDropSource();
-			}
-
 			DrawCell(pDrawList, entry, cellMin, cell);
-			DrawExpandButton(entry, cellMin, cell);
 
 			ImGui::PopID();
 		}
@@ -393,9 +349,7 @@ namespace Horizon::Editor
 	{
 		std::string fileIcon = ICON_FA_FOLDER;
 
-		if (entry.IsSubAsset())
-			fileIcon = DomainToAssetIcon(entry.pSubAsset->pAssetType);
-		else if (!entry.IsFolder())
+		if (!entry.IsFolder())
 			fileIcon = DomainToAssetIcon(entry.pFile->GetAssetType());
 
 		const ImU32 textColor = ImGui::GetColorU32(ImGuiCol_Text);
@@ -418,44 +372,11 @@ namespace Horizon::Editor
 			ImGui::SetTooltip("%s", entry.GetName().c_str());
 	}
 
-	void AssetContentView::DrawExpandButton(const BrowserEntry& entry, const ImVec2& cellMin, f32 cell)
-	{
-		if (entry.IsFolder() || entry.IsSubAsset() || CountSubAssets(entry.pFile) == 0)
-			return;
-
-		const Guid& fileId = entry.pFile->GetID();
-		const b8 expanded = m_expandedFiles.contains(fileId);
-		const c8* icon = expanded ? ICON_FA_CHEVRON_LEFT : ICON_FA_CHEVRON_RIGHT;
-
-		const f32 size = ImGui::GetFontSize();
-		const ImVec2 buttonPos = ImVec2(cellMin.x + cell - size - 2.f, cellMin.y + (cell - size) * 0.5f);
-
-		ImGui::SetCursorScreenPos(buttonPos);
-
-		if (ImGui::InvisibleButton("##expand", ImVec2(size, size)))
-		{
-			if (expanded)
-				m_expandedFiles.erase(fileId);
-			else
-				m_expandedFiles.insert(fileId);
-		}
-
-		const b8 hovered = ImGui::IsItemHovered();
-		const ImU32 iconColor = ImGui::GetColorU32(hovered ? ImGuiCol_Text : ImGuiCol_TextDisabled);
-		const ImVec2 iconSize = ImGui::CalcTextSize(icon);
-		const ImVec2 iconPos = ImVec2(buttonPos.x + (size - iconSize.x) * 0.5f, buttonPos.y + (size - iconSize.y) * 0.5f);
-
-		ImGui::GetWindowDrawList()->AddText(iconPos, iconColor, icon);
-
-		if (hovered)
-			ImGui::SetTooltip("%s", expanded ? "Hide sub assets" : "Show sub assets");
-	}
-
 	void AssetContentView::CollectSelected(AssetBrowserContext& context)
 	{
 		for (const BrowserEntry& entry : m_entries)
 		{
-			if (!m_selection.Contains(entry.id) || entry.IsSubAsset())
+			if (!m_selection.Contains(entry.id))
 				continue;
 
 			if (entry.IsFolder())
@@ -524,7 +445,7 @@ namespace Horizon::Editor
 	{
 		for (auto& entry : m_entries)
 		{
-			if (!entry.IsSubAsset() && entry.GetPath() == path)
+			if (entry.GetPath() == path)
 				return &entry;
 		}
 

@@ -25,13 +25,9 @@ namespace Horizon::Editor
 		AssetImportResult Parse(const ImportPipelineContext& ctx, ReadOnlyList<u8> fileBytes) final;
 		void Release() final;
 
-		usize GetProductCount() const final;
-		ImportDeclaredProduct GetProduct(usize index) const final;
-		void GatherDependencies(const ImportPipelineContext& ctx, List<ImportDependency>& outDependencies) final;
-
-		AssetImportResult GenerateProperties(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes) final;
-		AssetImportResult GenerateTable(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes) final;
-		AssetImportResult GenerateBinary(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes) final;
+		AssetImportResult GenerateProperties(const ImportPipelineContext& ctx, List<u8>& outBytes) final;
+		AssetImportResult GenerateTable(const ImportPipelineContext& ctx, List<u8>& outBytes) final;
+		AssetImportResult GenerateBinary(const ImportPipelineContext& ctx, List<u8>& outBytes) final;
 
 	private:
 		Engine::Scene* m_scene = nullptr;

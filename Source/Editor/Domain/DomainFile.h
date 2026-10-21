@@ -1,10 +1,8 @@
 #pragma once
 
-#include <Editor/ImportPipeline/ImportDeclaredProduct.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/Containers/Guid.h>
-#include <Runtime/Containers/List.h>
 
 #include <string>
 #include <string_view>
@@ -19,23 +17,9 @@ namespace Horizon::Editor
 	public:
 		static constexpr std::string_view MetaSuffix = ".hmeta";
 		static constexpr std::string_view CookSuffix = ".hasset";
-		
-		struct DomainSubAsset
-		{
-			std::string key;
-			Guid id;
-			Reflect::Type* pAssetType = nullptr;
-		};
-
-		struct DomainDependency
-		{
-			std::string relativePath;
-			b8 isAsset = false;
-			b8 resolved = false;
-		};
 
 	public:
-		DomainFile(DomainFolder* pParent, const Guid& id, const std::string& name, const std::string& metaPath, 
+		DomainFile(DomainFolder* pParent, const Guid& id, const std::string& name, const std::string& metaPath,
 			const std::string& sourcePath, const std::string& cookFolder, Reflect::Type* pAssetType);
 		~DomainFile();
 
@@ -53,24 +37,11 @@ namespace Horizon::Editor
 		const std::string& GetCookFolder() const { return m_cookFolder; }
 		std::string GetSourceRelativePath() const { return GetRelativePath() + m_extension; }
 		std::string GetCookedPath() const { return m_cookFolder + "/" + m_id.ToString() + std::string(CookSuffix); }
-
-		const List<DomainSubAsset>& GetSubAssets() const { return m_subAssets; }
-		DomainSubAsset* FindSubAsset(std::string_view key);
-		std::string GetSubAssetCookedPath(const Guid& id) const { return m_cookFolder + "/" + id.ToString() + std::string(CookSuffix); }
-		std::string GetSubAssetCallPath(std::string_view key) const;
-		std::string GetSubAssetName(std::string_view key) const;
-
-		Guid GetSubAssetId(std::string_view key) const;
-		void RestoreSubAsset(const std::string& key, const Guid& id, Reflect::Type* pAssetType);
-		void SyncSubAssets(const List<ImportDeclaredProduct>& newProducts, Engine::ReflectionSystem* pReflection, List<Guid>& outGuids);
-
-		const List<DomainDependency>& GetDependencies() const { return m_dependencies; }
-		void SetDependencies(const List<DomainDependency>& dependencies) { m_dependencies = dependencies; }
-		b8 GetDependsOn(std::string_view relativePath) const;
-		b8 HasUnresolvedDependency(std::string_view relativePath) const;
+		std::string GetCallPath() const { return "/" + GetRelativePath(); }
+		std::string GetAssetName() const;
 
 		void Rename(const std::string& newName);
-		
+
 		b8 CreateSettings(Reflect::Type* pType);
 		AssetImportSettings* GetSettings() const { return m_settings; }
 		void ReleaseSettings();
@@ -88,8 +59,5 @@ namespace Horizon::Editor
 		std::string m_metaPath;
 		std::string m_sourcePath;
 		std::string m_cookFolder;
-
-		List<DomainSubAsset> m_subAssets;
-		List<DomainDependency> m_dependencies;
 	};
 }

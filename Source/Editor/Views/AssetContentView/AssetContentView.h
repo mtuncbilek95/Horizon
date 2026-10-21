@@ -13,7 +13,6 @@
 #include <imgui.h>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 
 namespace Horizon::Editor
 {
@@ -26,11 +25,9 @@ namespace Horizon::Editor
 		{
 			DomainFolder* pFolder = nullptr;
 			DomainFile* pFile = nullptr;
-			const DomainFile::DomainSubAsset* pSubAsset = nullptr;
 			u32 id;
 
 			b8 IsFolder() const { return pFolder; }
-			b8 IsSubAsset() const { return pSubAsset; }
 
 			const std::string& GetPath() const;
 			const std::string& GetName() const;
@@ -66,7 +63,6 @@ namespace Horizon::Editor
 		void RebuildEntries(DomainFolder* pFolder);
 		void RenderGrid();
 		void DrawCell(ImDrawList* pDrawList, const BrowserEntry& entry, const ImVec2& cellMin, f32 cell);
-		void DrawExpandButton(const BrowserEntry& entry, const ImVec2& cellMin, f32 cell);
 		void CollectSelected(AssetBrowserContext& context);
 		void Navigate(DomainFolder* pTarget);
 		void BeginRename(const std::string& sourcePath);
@@ -89,7 +85,6 @@ namespace Horizon::Editor
 		List<BrowserEntry> m_entries;
 		List<ImportEntry> m_pendingImportList;
 		ImGuiSelectionBasicStorage m_selection;
-		std::unordered_set<Guid> m_expandedFiles;
 
 		// Rename misc.
 		std::string m_renamePath;

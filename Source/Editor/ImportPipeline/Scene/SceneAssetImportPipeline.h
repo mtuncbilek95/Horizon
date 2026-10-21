@@ -17,7 +17,7 @@ namespace Horizon::Editor
 		~SceneAssetImportPipeline() = default;
 
 	protected:
-		void PostProcess(const ImportDeclaredProduct& product, const ImportPipelineContext& ctx, ImportProductBytes& bytes) final;
-		AssetImportResult Validate(const ImportDeclaredProduct& product, const ImportProductBytes& bytes) final;
+		void PostProcess(const ImportPipelineContext& ctx, ImportProductBytes& bytes) final;
+		AssetImportResult Validate(const ImportPipelineContext& ctx, const ImportProductBytes& bytes) final;
 	};
 }

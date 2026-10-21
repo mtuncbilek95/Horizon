@@ -27,15 +27,8 @@ namespace Horizon::Editor
 
 		if (pId->IsValid())
 		{
-			const DomainFile::DomainSubAsset* pSubAsset = nullptr;
-			DomainFile* pFile = pDomain->FindFileBySubAssetId(*pId, &pSubAsset);
-
-			if (!pFile)
-				label = pId->ToString();
-			else if (pSubAsset->key.empty())
-				label = pFile->GetName();
-			else
-				label = pFile->GetName() + " / " + pSubAsset->key;
+			DomainFile* pFile = pDomain->FindFileByGuid(*pId);
+			label = pFile ? pFile->GetName() : pId->ToString();
 		}
 
 		const ImGuiStyle& style = ImGui::GetStyle();
@@ -86,55 +79,22 @@ namespace Horizon::Editor
 
 		b8 changed = false;
 
-		if (const ImGuiPayload* pPayload = ImGui::AcceptDragDropPayload("HZ_ASSET_FILE", ImGuiDragDropFlags_AcceptBeforeDelivery))
+		if (const ImGuiPayload* pPayload = ImGui::AcceptDragDropPayload("HZ_ASSET_FILE"))
 		{
 			if (pPayload->DataSize == sizeof(DomainFile*))
 			{
 				DomainFile* pDropped = *static_cast<DomainFile* const*>(pPayload->Data);
 
-				List<Candidate> matches;
-				CollectProducts(pDropped, pAssetType, matches);
-
-				if (matches.GetCount() > 0 && pPayload->IsDelivery())
+				if (pDropped->GetAssetType() != pAssetType)
 				{
-					if (matches.GetCount() == 1)
-					{
-						*pId = matches[0].id;
-						changed = true;
-
-						Terminal::Info("AssetPickerWidget", "{} dropped as {}", matches[0].label, pAssetType->GetName());
-					}
-					else
-					{
-						m_search = pDropped->GetName();
-						m_openPickerRequest = true;
-					}
-				}
-			}
-		}
-
-		if (const ImGuiPayload* pPayload = ImGui::AcceptDragDropPayload("HZ_ASSET_PRODUCT"))
-		{
-			if (pPayload->DataSize == sizeof(Guid))
-			{
-				const Guid droppedId = *static_cast<const Guid*>(pPayload->Data);
-				const DomainFile::DomainSubAsset* pSubAsset = nullptr;
-				DomainFile* pFile = pDomain->FindFileBySubAssetId(droppedId, &pSubAsset);
-
-				if (!pFile)
-				{
-					Terminal::Warn("AssetPickerWidget", "{} is not a tracked sub asset", droppedId.ToString());
-				}
-				else if (pSubAsset->pAssetType != pAssetType)
-				{
-					Terminal::Warn("AssetPickerWidget", "{} / {} is not {}", pFile->GetName(), pSubAsset->key, pAssetType->GetName());
+					Terminal::Warn("AssetPickerWidget", "{} is not {}", pDropped->GetName(), pAssetType->GetName());
 				}
 				else
 				{
-					*pId = droppedId;
+					*pId = pDropped->GetID();
 					changed = true;
 
-					Terminal::Info("AssetPickerWidget", "{} / {} dropped as {}", pFile->GetName(), pSubAsset->key, pAssetType->GetName());
+					Terminal::Info("AssetPickerWidget", "{} dropped as {}", pDropped->GetName(), pAssetType->GetName());
 				}
 			}
 		}
@@ -214,31 +174,25 @@ namespace Horizon::Editor
 		m_candidateRevision = pDomain->GetRevision();
 
 		if (DomainFolder* pRoot = pDomain->GetRoot())
-			CollectProducts(pRoot, pAssetType);
+			CollectCandidates(pRoot, pAssetType);
 	}
 
-	void AssetPickerWidget::CollectProducts(DomainFolder* pFolder, Reflect::Type* pAssetType)
+	void AssetPickerWidget::CollectCandidates(DomainFolder* pFolder, Reflect::Type* pAssetType)
 	{
 		for (DomainFile* pFile : pFolder->GetFiles())
-			CollectProducts(pFile, pAssetType, m_candidates);
-
-		for (DomainFolder* pChild : pFolder->GetFolders())
-			CollectProducts(pChild, pAssetType);
-	}
-
-	void AssetPickerWidget::CollectProducts(DomainFile* pFile, Reflect::Type* pAssetType, List<Candidate>& outCandidates) const
-	{
-		for (const DomainFile::DomainSubAsset& subAsset : pFile->GetSubAssets())
 		{
-			if (subAsset.pAssetType != pAssetType)
+			if (pFile->GetAssetType() != pAssetType)
 				continue;
 
 			Candidate candidate;
 			candidate.pFile = pFile;
-			candidate.id = subAsset.id;
-			candidate.label = subAsset.key.empty() ? pFile->GetName() : pFile->GetName() + " / " + subAsset.key;
-			candidate.tooltip = pFile->GetRelativePath() + (subAsset.key.empty() ? std::string() : " / " + subAsset.key);
-			outCandidates.PushBack(std::move(candidate));
+			candidate.id = pFile->GetID();
+			candidate.label = pFile->GetName();
+			candidate.tooltip = pFile->GetRelativePath();
+			m_candidates.PushBack(std::move(candidate));
 		}
+
+		for (DomainFolder* pChild : pFolder->GetFolders())
+			CollectCandidates(pChild, pAssetType);
 	}
 }

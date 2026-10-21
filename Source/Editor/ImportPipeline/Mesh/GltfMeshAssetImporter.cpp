@@ -13,7 +13,6 @@
 
 #include <cstring>
 #include <filesystem>
-#include <format>
 #include <utility>
 #include <variant>
 
@@ -21,24 +20,41 @@ namespace Horizon::Editor
 {
 	namespace
 	{
-		fastgltf::math::fmat4x4 FindMeshTransform(fastgltf::Asset& asset, usize meshIndex)
+		struct MeshInstance
 		{
-			fastgltf::math::fmat4x4 result;
-			b8 isFound = false;
+			usize meshIndex = 0;
+			fastgltf::math::fmat4x4 transform;
+		};
 
-			for (usize sceneIndex = 0; sceneIndex < asset.scenes.size() && !isFound; ++sceneIndex)
+		List<MeshInstance> CollectMeshInstances(fastgltf::Asset& asset, b8 isApplyingTransform)
+		{
+			List<MeshInstance> instances;
+
+			if (!isApplyingTransform || asset.scenes.empty())
 			{
-				fastgltf::iterateSceneNodes(asset, sceneIndex, fastgltf::math::fmat4x4(), [&](fastgltf::Node& node, const fastgltf::math::fmat4x4& matrix)
-					{
-						if (isFound || !node.meshIndex.has_value() || node.meshIndex.value() != meshIndex)
-							return;
+				for (usize i = 0; i < asset.meshes.size(); ++i)
+				{
+					MeshInstance instance;
+					instance.meshIndex = i;
+					instances.PushBack(instance);
+				}
 
-						result = matrix;
-						isFound = true;
-					});
+				return instances;
 			}
 
-			return result;
+			const usize sceneIndex = asset.defaultScene.value_or(0);
+			fastgltf::iterateSceneNodes(asset, sceneIndex, fastgltf::math::fmat4x4(), [&](fastgltf::Node& node, const fastgltf::math::fmat4x4& matrix)
+				{
+					if (!node.meshIndex.has_value())
+						return;
+
+					MeshInstance instance;
+					instance.meshIndex = node.meshIndex.value();
+					instance.transform = matrix;
+					instances.PushBack(instance);
+				});
+
+			return instances;
 		}
 	}
 
@@ -68,7 +84,12 @@ namespace Horizon::Editor
 		if (!LoadExternalBuffers(ctx))
 			return AssetImportResult::ExternalDataRequired;
 
-		BuildProductKeys();
+		if (m_asset->meshes.empty())
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has no meshes", ctx.sourcePath);
+			return AssetImportResult::NoImportableData;
+		}
+
 		return AssetImportResult::Success;
 	}
 
@@ -79,39 +100,13 @@ namespace Horizon::Editor
 		m_subMeshes.Clear();
 		m_hasBuilt = false;
 
-		m_productKeys.Clear();
-		m_bufferPaths.Clear();
 		m_asset.reset();
 		m_parser.reset();
 	}
 
-	usize GltfMeshAssetImporter::GetProductCount() const
+	AssetImportResult GltfMeshAssetImporter::GenerateProperties(const ImportPipelineContext& ctx, List<u8>& outBytes)
 	{
-		return m_productKeys.GetCount();
-	}
-
-	ImportDeclaredProduct GltfMeshAssetImporter::GetProduct(usize index) const
-	{
-		ImportDeclaredProduct product;
-		product.key = m_productKeys[index];
-		product.assetType = Reflect::TypeOf<Engine::MeshAsset>();
-		return product;
-	}
-
-	void GltfMeshAssetImporter::GatherDependencies(const ImportPipelineContext& ctx, List<ImportDependency>& outDependencies)
-	{
-		for (const std::string& path : m_bufferPaths)
-		{
-			ImportDependency dependency;
-			dependency.kind = ImportDependencyKind::Data;
-			dependency.sourceRelativePath = path;
-			outDependencies.PushBack(std::move(dependency));
-		}
-	}
-
-	AssetImportResult GltfMeshAssetImporter::GenerateProperties(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes)
-	{
-		const AssetImportResult result = BuildMesh(ctx, product);
+		const AssetImportResult result = BuildMesh(ctx);
 		if (result != AssetImportResult::Success)
 			return result;
 
@@ -127,9 +122,9 @@ namespace Horizon::Editor
 		return AssetImportResult::Success;
 	}
 
-	AssetImportResult GltfMeshAssetImporter::GenerateTable(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes)
+	AssetImportResult GltfMeshAssetImporter::GenerateTable(const ImportPipelineContext& ctx, List<u8>& outBytes)
 	{
-		const AssetImportResult result = BuildMesh(ctx, product);
+		const AssetImportResult result = BuildMesh(ctx);
 		if (result != AssetImportResult::Success)
 			return result;
 
@@ -139,9 +134,9 @@ namespace Horizon::Editor
 		return AssetImportResult::Success;
 	}
 
-	AssetImportResult GltfMeshAssetImporter::GenerateBinary(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes)
+	AssetImportResult GltfMeshAssetImporter::GenerateBinary(const ImportPipelineContext& ctx, List<u8>& outBytes)
 	{
-		const AssetImportResult result = BuildMesh(ctx, product);
+		const AssetImportResult result = BuildMesh(ctx);
 		if (result != AssetImportResult::Success)
 			return result;
 
@@ -189,210 +184,178 @@ namespace Horizon::Editor
 			std::memcpy(vector.bytes.data(), bytes.GetData() + pUri->fileByteOffset, count);
 			vector.mimeType = fastgltf::MimeType::GltfBuffer;
 
-			m_bufferPaths.PushBack(relative);
 			buffer.data = std::move(vector);
 		}
 
 		return true;
 	}
 
-	void GltfMeshAssetImporter::BuildProductKeys()
+	AssetImportResult GltfMeshAssetImporter::BuildMesh(const ImportPipelineContext& ctx)
 	{
-		m_productKeys.Clear();
-		m_productKeys.Reserve(m_asset->meshes.size());
-
-		for (usize i = 0; i < m_asset->meshes.size(); ++i)
-		{
-			const fastgltf::Mesh& mesh = m_asset->meshes[i];
-
-			std::string key = mesh.name.empty() ? std::format("meshes/{}", i) : std::format("meshes/{}", std::string_view(mesh.name));
-			std::string unique = key;
-			u32 suffix = 1;
-
-			while (HasProductKey(unique))
-				unique = std::format("{}#{}", key, suffix++);
-
-			m_productKeys.PushBack(std::move(unique));
-		}
-	}
-
-	b8 GltfMeshAssetImporter::HasProductKey(const std::string& key) const
-	{
-		for (const std::string& existing : m_productKeys)
-		{
-			if (existing == key)
-				return true;
-		}
-
-		return false;
-	}
-
-	AssetImportResult GltfMeshAssetImporter::BuildMesh(const ImportPipelineContext& ctx, usize product)
-	{
-		if (m_hasBuilt && m_builtProduct == product)
+		if (m_hasBuilt)
 			return AssetImportResult::Success;
 
 		m_vertices.Clear();
 		m_indices.Clear();
 		m_subMeshes.Clear();
-		m_hasBuilt = false;
-
-		if (product >= m_asset->meshes.size())
-			return AssetImportResult::InternalError;
 
 		const auto* pSettings = static_cast<const MeshAssetImportSettings*>(ctx.pSettings);
 		const f32 scale = pSettings ? (f32)pSettings->m_importScale : 1.0f;
 		const b8 isApplyingTransform = pSettings && pSettings->m_applyTransform;
 
-		const fastgltf::math::fmat4x4 transform = isApplyingTransform ? FindMeshTransform(*m_asset, product) : fastgltf::math::fmat4x4();
-		const fastgltf::math::fmat3x3 linear = fastgltf::math::fmat3x3(transform);
-		const fastgltf::math::fmat3x3 normalMatrix = fastgltf::math::transpose(fastgltf::math::inverse(linear));
-		const b8 isMirrored = fastgltf::math::determinant(linear) < 0.0f;
-
+		const List<MeshInstance> instances = CollectMeshInstances(*m_asset, isApplyingTransform);
 		const fastgltf::Asset& asset = *m_asset;
-		const fastgltf::Mesh& mesh = asset.meshes[product];
 
-		for (const fastgltf::Primitive& primitive : mesh.primitives)
+		for (const MeshInstance& instance : instances)
 		{
-			if (primitive.type != fastgltf::PrimitiveType::Triangles)
+			const fastgltf::math::fmat4x4& transform = instance.transform;
+			const fastgltf::math::fmat3x3 linear = fastgltf::math::fmat3x3(transform);
+			const fastgltf::math::fmat3x3 normalMatrix = fastgltf::math::transpose(fastgltf::math::inverse(linear));
+			const b8 isMirrored = fastgltf::math::determinant(linear) < 0.0f;
+
+			const fastgltf::Mesh& mesh = asset.meshes[instance.meshIndex];
+
+			for (const fastgltf::Primitive& primitive : mesh.primitives)
 			{
-				Terminal::Warn(StringOps::GetName(this), "{} has a non-triangle primitive, skipped", m_productKeys[product]);
-				continue;
-			}
-
-			auto positionIt = primitive.findAttribute("POSITION");
-			if (positionIt == primitive.attributes.end())
-			{
-				Terminal::Error(StringOps::GetName(this), "{} has a primitive without positions", m_productKeys[product]);
-				return AssetImportResult::InvalidData;
-			}
-
-			const fastgltf::Accessor& positions = asset.accessors[positionIt->accessorIndex];
-			if (positions.count == 0)
-				continue;
-
-			const usize base = m_vertices.GetCount();
-			m_vertices.Resize(base + positions.count);
-
-			Engine::MeshAssetSubmesh subMesh = {};
-			subMesh.vertexOffset = (u32)base;
-			subMesh.vertexCount = (u32)positions.count;
-			subMesh.indexOffset = (u32)m_indices.GetCount();
-			subMesh.materialSlotIndex = (u32)primitive.materialIndex.value_or(0);
-			subMesh.boundingBox = Math::BoundingBox::Empty();
-
-			for (usize v = base; v < m_vertices.GetCount(); ++v)
-			{
-				Engine::MeshVertex& vertex = m_vertices[v];
-				vertex.normal = Math::Vec3f(0.0f, 1.0f, 0.0f);
-				vertex.tangent = Math::Vec4f(1.0f, 0.0f, 0.0f, 1.0f);
-				vertex.color = Math::Vec4f::One();
-				vertex.uv = Math::Vec2f::Zero();
-			}
-
-			fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, positions, [&](fastgltf::math::fvec3 value, usize index)
+				if (primitive.type != fastgltf::PrimitiveType::Triangles)
 				{
-					const fastgltf::math::fvec4 world = transform * fastgltf::math::fvec4(value.x(), value.y(), value.z(), 1.0f);
+					Terminal::Warn(StringOps::GetName(this), "{} has a non-triangle primitive, skipped", ctx.sourcePath);
+					continue;
+				}
 
-					Engine::MeshVertex& vertex = m_vertices[base + index];
-					vertex.position = Math::Vec3f(world.x() * scale, world.y() * scale, world.z() * scale);
-					subMesh.boundingBox.Expand(vertex.position);
-				});
-
-			auto normalIt = primitive.findAttribute("NORMAL");
-			if (normalIt != primitive.attributes.end())
-			{
-				fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, asset.accessors[normalIt->accessorIndex], [&](fastgltf::math::fvec3 value, usize index)
-					{
-						const fastgltf::math::fvec3 normal = fastgltf::math::normalize(normalMatrix * value);
-						m_vertices[base + index].normal = Math::Vec3f(normal.x(), normal.y(), normal.z());
-					});
-			}
-
-			auto tangentIt = primitive.findAttribute("TANGENT");
-			if (tangentIt != primitive.attributes.end())
-			{
-				fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, asset.accessors[tangentIt->accessorIndex], [&](fastgltf::math::fvec4 value, usize index)
-					{
-						const fastgltf::math::fvec3 tangent = fastgltf::math::normalize(linear * fastgltf::math::fvec3(value.x(), value.y(), value.z()));
-						const f32 handedness = isMirrored ? -value.w() : value.w();
-						m_vertices[base + index].tangent = Math::Vec4f(tangent.x(), tangent.y(), tangent.z(), handedness);
-					});
-			}
-
-			auto uvIt = primitive.findAttribute("TEXCOORD_0");
-			if (uvIt != primitive.attributes.end())
-			{
-				fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec2>(asset, asset.accessors[uvIt->accessorIndex], [&](fastgltf::math::fvec2 value, usize index)
-					{
-						m_vertices[base + index].uv = Math::Vec2f(value.x(), value.y());
-					});
-			}
-
-			auto colorIt = primitive.findAttribute("COLOR_0");
-			if (colorIt != primitive.attributes.end())
-			{
-				const fastgltf::Accessor& colors = asset.accessors[colorIt->accessorIndex];
-
-				if (colors.type == fastgltf::AccessorType::Vec4)
+				auto positionIt = primitive.findAttribute("POSITION");
+				if (positionIt == primitive.attributes.end())
 				{
-					fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, colors, [&](fastgltf::math::fvec4 value, usize index)
+					Terminal::Error(StringOps::GetName(this), "{} has a primitive without positions", ctx.sourcePath);
+					return AssetImportResult::InvalidData;
+				}
+
+				const fastgltf::Accessor& positions = asset.accessors[positionIt->accessorIndex];
+				if (positions.count == 0)
+					continue;
+
+				const usize base = m_vertices.GetCount();
+				m_vertices.Resize(base + positions.count);
+
+				Engine::MeshAssetSubmesh subMesh = {};
+				subMesh.vertexOffset = (u32)base;
+				subMesh.vertexCount = (u32)positions.count;
+				subMesh.indexOffset = (u32)m_indices.GetCount();
+				subMesh.materialSlotIndex = (u32)primitive.materialIndex.value_or(0);
+				subMesh.boundingBox = Math::BoundingBox::Empty();
+
+				for (usize v = base; v < m_vertices.GetCount(); ++v)
+				{
+					Engine::MeshVertex& vertex = m_vertices[v];
+					vertex.normal = Math::Vec3f(0.0f, 1.0f, 0.0f);
+					vertex.tangent = Math::Vec4f(1.0f, 0.0f, 0.0f, 1.0f);
+					vertex.color = Math::Vec4f::One();
+					vertex.uv = Math::Vec2f::Zero();
+				}
+
+				fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, positions, [&](fastgltf::math::fvec3 value, usize index)
+					{
+						const fastgltf::math::fvec4 world = transform * fastgltf::math::fvec4(value.x(), value.y(), value.z(), 1.0f);
+
+						Engine::MeshVertex& vertex = m_vertices[base + index];
+						vertex.position = Math::Vec3f(world.x() * scale, world.y() * scale, world.z() * scale);
+						subMesh.boundingBox.Expand(vertex.position);
+					});
+
+				auto normalIt = primitive.findAttribute("NORMAL");
+				if (normalIt != primitive.attributes.end())
+				{
+					fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, asset.accessors[normalIt->accessorIndex], [&](fastgltf::math::fvec3 value, usize index)
 						{
-							m_vertices[base + index].color = Math::Vec4f(value.x(), value.y(), value.z(), value.w());
+							const fastgltf::math::fvec3 normal = fastgltf::math::normalize(normalMatrix * value);
+							m_vertices[base + index].normal = Math::Vec3f(normal.x(), normal.y(), normal.z());
 						});
 				}
-				else if (colors.type == fastgltf::AccessorType::Vec3)
+
+				auto tangentIt = primitive.findAttribute("TANGENT");
+				if (tangentIt != primitive.attributes.end())
 				{
-					fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, colors, [&](fastgltf::math::fvec3 value, usize index)
+					fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, asset.accessors[tangentIt->accessorIndex], [&](fastgltf::math::fvec4 value, usize index)
 						{
-							m_vertices[base + index].color = Math::Vec4f(value.x(), value.y(), value.z(), 1.0f);
+							const fastgltf::math::fvec3 tangent = fastgltf::math::normalize(linear * fastgltf::math::fvec3(value.x(), value.y(), value.z()));
+							const f32 handedness = isMirrored ? -value.w() : value.w();
+							m_vertices[base + index].tangent = Math::Vec4f(tangent.x(), tangent.y(), tangent.z(), handedness);
 						});
 				}
-			}
 
-			if (primitive.indicesAccessor.has_value())
-			{
-				const fastgltf::Accessor& indices = asset.accessors[primitive.indicesAccessor.value()];
-				const usize indexBase = m_indices.GetCount();
+				auto uvIt = primitive.findAttribute("TEXCOORD_0");
+				if (uvIt != primitive.attributes.end())
+				{
+					fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec2>(asset, asset.accessors[uvIt->accessorIndex], [&](fastgltf::math::fvec2 value, usize index)
+						{
+							m_vertices[base + index].uv = Math::Vec2f(value.x(), value.y());
+						});
+				}
 
-				m_indices.Resize(indexBase + indices.count);
-				subMesh.indexCount = (u32)indices.count;
+				auto colorIt = primitive.findAttribute("COLOR_0");
+				if (colorIt != primitive.attributes.end())
+				{
+					const fastgltf::Accessor& colors = asset.accessors[colorIt->accessorIndex];
 
-				fastgltf::iterateAccessorWithIndex<std::uint32_t>(asset, indices, [&](std::uint32_t value, usize index)
+					if (colors.type == fastgltf::AccessorType::Vec4)
 					{
-						m_indices[indexBase + index] = value;
-					});
+						fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, colors, [&](fastgltf::math::fvec4 value, usize index)
+							{
+								m_vertices[base + index].color = Math::Vec4f(value.x(), value.y(), value.z(), value.w());
+							});
+					}
+					else if (colors.type == fastgltf::AccessorType::Vec3)
+					{
+						fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec3>(asset, colors, [&](fastgltf::math::fvec3 value, usize index)
+							{
+								m_vertices[base + index].color = Math::Vec4f(value.x(), value.y(), value.z(), 1.0f);
+							});
+					}
+				}
+
+				if (primitive.indicesAccessor.has_value())
+				{
+					const fastgltf::Accessor& indices = asset.accessors[primitive.indicesAccessor.value()];
+					const usize indexBase = m_indices.GetCount();
+
+					m_indices.Resize(indexBase + indices.count);
+					subMesh.indexCount = (u32)indices.count;
+
+					fastgltf::iterateAccessorWithIndex<std::uint32_t>(asset, indices, [&](std::uint32_t value, usize index)
+						{
+							m_indices[indexBase + index] = value;
+						});
+				}
+				else
+				{
+					subMesh.indexCount = subMesh.vertexCount;
+					m_indices.Reserve(m_indices.GetCount() + subMesh.vertexCount);
+
+					for (u32 i = 0; i < subMesh.vertexCount; ++i)
+						m_indices.PushBack(i);
+				}
+
+				if (subMesh.indexCount == 0)
+					continue;
+
+				if (isMirrored)
+				{
+					const u32 indexEnd = subMesh.indexOffset + subMesh.indexCount;
+
+					for (u32 i = subMesh.indexOffset; i + 2 < indexEnd; i += 3)
+						std::swap(m_indices[i + 1], m_indices[i + 2]);
+				}
+
+				m_subMeshes.PushBack(subMesh);
 			}
-			else
-			{
-				subMesh.indexCount = subMesh.vertexCount;
-				m_indices.Reserve(m_indices.GetCount() + subMesh.vertexCount);
-
-				for (u32 i = 0; i < subMesh.vertexCount; ++i)
-					m_indices.PushBack(i);
-			}
-
-			if (subMesh.indexCount == 0)
-				continue;
-
-			if (isMirrored)
-			{
-				const u32 indexEnd = subMesh.indexOffset + subMesh.indexCount;
-
-				for (u32 i = subMesh.indexOffset; i + 2 < indexEnd; i += 3)
-					std::swap(m_indices[i + 1], m_indices[i + 2]);
-			}
-
-			m_subMeshes.PushBack(subMesh);
 		}
 
 		if (m_subMeshes.GetCount() == 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} produced no sub-meshes", m_productKeys[product]);
+			Terminal::Error(StringOps::GetName(this), "{} produced no sub-meshes", ctx.sourcePath);
 			return AssetImportResult::NoImportableData;
 		}
 
-		m_builtProduct = product;
 		m_hasBuilt = true;
 		return AssetImportResult::Success;
 	}

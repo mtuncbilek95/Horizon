@@ -14,9 +14,6 @@ namespace Horizon::Editor
 		~MeshAssetImportSettings() = default;
 
 		HFIELD();
-		b8 m_importMeshes = true;
-
-		HFIELD();
 		b8 m_importMaterials = true;
 
 		HFIELD();

@@ -8,7 +8,6 @@ namespace Horizon::Editor
 	{
 		Fresh,
 		SourceChanged,
-		SettingsChanged,
-		DependencyChanged
+		SettingsChanged
 	};
 }

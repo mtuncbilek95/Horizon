@@ -1,12 +1,9 @@
 #pragma once
 
-#include <Editor/Domain/DomainCookedProduct.h>
 #include <Editor/ImportPipeline/AssetImportResult.h>
 #include <Editor/ImportPipeline/ImportPipeline.h>
 #include <Editor/ImportPipeline/AssetImporter.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
-#include <Editor/ImportPipeline/ImportDependency.h>
-#include <Editor/ImportPipeline/ImportDeclaredProduct.h>
 #include <Editor/ImportPipeline/ImportReason.h>
 #include <Engine/Job/JobTicket.h>
 #include <Runtime/Containers/Guid.h>
@@ -32,10 +29,11 @@ namespace Horizon::Editor
 		AssetImportSettings* pSettings = nullptr;
 		Reflect::Type* pSettingsType = nullptr;
 
+		ImportPipeline* pPipeline = nullptr;
+		Reflect::Type* pAssetType = nullptr;
+		std::string cookedPath;
+
 		ImportPipelineContext context;
-		List<ImportDeclaredProduct> expectedProducts;
-		List<ImportDependency> dependencies;
-		List<DomainCookedProduct> cookedProducts;
 
 		ImportPhase phase = ImportPhase::Pending;
 		Engine::SubmitTicket ticket = Engine::InvalidSubmitTicket;

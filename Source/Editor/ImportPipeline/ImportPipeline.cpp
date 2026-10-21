@@ -9,12 +9,12 @@
 
 namespace Horizon::Editor
 {
-	AssetImportResult ImportPipeline::Cook(const ImportDeclaredProduct& product, const ImportPipelineContext& ctx, const Guid& id, 
-		const Reflect::Type* pAssetType, const std::string& cookedPath, ImportProductBytes& bytes)
+	AssetImportResult ImportPipeline::Cook(const ImportPipelineContext& ctx, const Guid& id, const Reflect::Type* pAssetType,
+		const std::string& cookedPath, ImportProductBytes& bytes)
 	{
-		PostProcess(product, ctx, bytes);
+		PostProcess(ctx, bytes);
 
-		const AssetImportResult result = Validate(product, bytes);
+		const AssetImportResult result = Validate(ctx, bytes);
 		if (result != AssetImportResult::Success)
 			return result;
 

@@ -55,23 +55,7 @@ namespace Horizon::Editor
 		m_scene = nullptr;
 	}
 
-	usize DefaultSceneAssetImporter::GetProductCount() const
-	{
-		return m_scene ? 1 : 0;
-	}
-
-	ImportDeclaredProduct DefaultSceneAssetImporter::GetProduct(usize index) const
-	{
-		ImportDeclaredProduct product;
-		product.assetType = Reflect::TypeOf<Engine::SceneAsset>();
-		return product;
-	}
-
-	void DefaultSceneAssetImporter::GatherDependencies(const ImportPipelineContext& ctx, List<ImportDependency>& outDependencies)
-	{
-	}
-
-	AssetImportResult DefaultSceneAssetImporter::GenerateProperties(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes)
+	AssetImportResult DefaultSceneAssetImporter::GenerateProperties(const ImportPipelineContext& ctx, List<u8>& outBytes)
 	{
 		if (!m_scene)
 			return AssetImportResult::InternalError;
@@ -84,13 +68,13 @@ namespace Horizon::Editor
 		return AssetImportResult::Success;
 	}
 
-	AssetImportResult DefaultSceneAssetImporter::GenerateTable(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes)
+	AssetImportResult DefaultSceneAssetImporter::GenerateTable(const ImportPipelineContext& ctx, List<u8>& outBytes)
 	{
 		outBytes.Clear();
 		return AssetImportResult::Success;
 	}
 
-	AssetImportResult DefaultSceneAssetImporter::GenerateBinary(const ImportPipelineContext& ctx, usize product, List<u8>& outBytes)
+	AssetImportResult DefaultSceneAssetImporter::GenerateBinary(const ImportPipelineContext& ctx, List<u8>& outBytes)
 	{
 		if (!m_scene)
 			return AssetImportResult::InternalError;

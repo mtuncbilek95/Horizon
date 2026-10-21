@@ -160,15 +160,6 @@ namespace Horizon::Editor
 		return pFile;
 	}
 
-	DomainFile* DomainService::FindFileBySubAssetId(const Guid& guid, const DomainFile::DomainSubAsset** ppOutSubAsset) const
-	{
-		if (m_root == nullptr)
-			return nullptr;
-
-		return FindFileBySubAssetId(m_root, guid, ppOutSubAsset);
-	}
-
-
 	DomainFile* DomainService::FindFileByGuid(DomainFolder* pFolder, const Guid& guid) const
 	{
 		for (DomainFile* pFile : pFolder->GetFiles())
@@ -207,32 +198,6 @@ namespace Horizon::Editor
 		return nullptr;
 	}
 
-	DomainFile* DomainService::FindFileBySubAssetId(DomainFolder* pFolder, const Guid& guid, const DomainFile::DomainSubAsset** ppOutSubAsset) const
-	{
-		for (DomainFile* pFile : pFolder->GetFiles())
-		{
-			for (const DomainFile::DomainSubAsset& subAsset : pFile->GetSubAssets())
-			{
-				if (subAsset.id != guid)
-					continue;
-
-				if (ppOutSubAsset)
-					*ppOutSubAsset = &subAsset;
-
-				return pFile;
-			}
-		}
-
-		for (DomainFolder* pChild : pFolder->GetFolders())
-		{
-			DomainFile* pFile = FindFileBySubAssetId(pChild, guid, ppOutSubAsset);
-			if (pFile)
-				return pFile;
-		}
-
-		return nullptr;
-	}
-
 	DomainFile* DomainService::FindDomainFile(const std::string& relativePathWithExtension) const
 	{
 		if (m_root == nullptr)
@@ -250,33 +215,6 @@ namespace Horizon::Editor
 			return nullptr;
 
 		return pFolder->FindFileWithExtension(fileName);
-	}
-
-	DomainFile* DomainService::FindSourceFile(const std::string& relativePathWithExtension)
-	{
-		if (!PAL::File::Exists(m_assetPath + "/" + relativePathWithExtension))
-			return nullptr;
-
-		const usize separator = relativePathWithExtension.rfind('/');
-		const std::string parentPath = separator == std::string::npos ? std::string() : relativePathWithExtension.substr(0, separator);
-		const std::string fileName = separator == std::string::npos ? relativePathWithExtension : relativePathWithExtension.substr(separator + 1);
-
-		DomainFolder* pFolder = m_root;
-		usize offset = 0;
-
-		while (offset < parentPath.size())
-		{
-			const usize next = parentPath.find('/', offset);
-			const usize count = next == std::string::npos ? parentPath.size() - offset : next - offset;
-
-			pFolder = pFolder->AddFolder(parentPath.substr(offset, count));
-			if (!pFolder)
-				return nullptr;
-
-			offset = next == std::string::npos ? parentPath.size() : next + 1;
-		}
-
-		return ProcessSourceFile(pFolder, fileName);
 	}
 
 	void DomainService::OnEntryAdded(const PAL::DirectoryWatcher::Event& event)
@@ -376,21 +314,6 @@ namespace Horizon::Editor
 		}
 
 		task.result = task.pImporter->Parse(task.context, ReadOnlyList<u8>(bytes));
-		if (task.result != AssetImportResult::Success)
-			return;
-
-		const usize count = task.pImporter->GetProductCount();
-		task.expectedProducts.Clear();
-		task.expectedProducts.Reserve(count);
-
-		for (usize i = 0; i < count; ++i)
-			task.expectedProducts.PushBack(task.pImporter->GetProduct(i));
-
-		task.dependencies.Clear();
-		task.pImporter->GatherDependencies(task.context, task.dependencies);
-
-		if (task.expectedProducts.GetCount() == 0)
-			task.result = AssetImportResult::NoImportableData;
 	}
 
 	void DomainService::OnParseAssetFinished(usize slot)
@@ -421,95 +344,21 @@ namespace Horizon::Editor
 			return;
 		}
 
-		std::string folderRelative = pFile->GetParent()->GetRelativePath();
-		List<DomainFile::DomainDependency> entries;
-
-		for (ImportDependency& dependency : task.dependencies)
-		{
-			// Resolve the path via DomainFile's relativePath like "../textures/myTexture.png" to "TestObjects/MyObject/textures/myTexture.png",
-			// so we can refer them and their guid properly get in the meta file and other places.
-			dependency.targetRelativePath = StringOps::ResolveRelativePath(folderRelative, dependency.sourceRelativePath);
-
-			DomainFile::DomainDependency entry;
-			entry.relativePath = dependency.targetRelativePath;
-			entry.isAsset = dependency.kind == ImportDependencyKind::Asset;
-
-			if (dependency.kind == ImportDependencyKind::Data)
-			{
-				entry.resolved = true;
-				entries.PushBack(std::move(entry));
-				continue;
-			}
-
-			//  Dependency needs to know that if we have the pipeline for the proper asset type.
-			if (!m_importPipelineRegistry.GetImportPipelineEntry(dependency.assetType))
-			{
-				Terminal::Debug(StringOps::GetName(this), "{} depends on {} but there is no pipeline for that asset type yet", task.relativePath, dependency.targetRelativePath);
-				continue;
-			}
-
-			DomainFile* pDependency = FindFileByRelative(dependency.targetRelativePath);
-
-			// If dependent domain file is not there, try to find in the path in case its not become a DomainFile yet.
-			if (!pDependency)
-				pDependency = FindSourceFile(dependency.targetRelativePath);
-
-			if (pDependency)
-				dependency.resolvedId = pDependency->GetSubAssetId(dependency.subAssetKey);
-
-			entry.resolved = dependency.resolvedId.IsValid();
-			if (!entry.resolved)
-				Terminal::Warn(StringOps::GetName(this), "{} depends on {} which is not available yet, cooked with an empty reference", task.relativePath, dependency.targetRelativePath);
-
-			entries.PushBack(std::move(entry));
-		}
-
-		// Dependencies are ready
-		pFile->SetDependencies(entries);
-
 		// If the pipeline is not there, skip it!
-		for (usize i = task.expectedProducts.GetCount(); i > 0; --i)
+		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(pFile->GetExtension());
+		if (!pEntry)
 		{
-			const ImportDeclaredProduct& declared = task.expectedProducts[i - 1];
-			if (m_importPipelineRegistry.GetImportPipelineEntry(declared.assetType))
-				continue;
+			Terminal::Warn(StringOps::GetName(this), "{} has no pipeline for its asset type, skipped", task.relativePath);
+			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
+			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+			task = DomainFileImportContext();
 
-			Terminal::Warn(StringOps::GetName(this), "{} product {} has no pipeline for its asset type, skipped", task.relativePath, declared.key);
-			task.expectedProducts.RemoveAt(i - 1);
+			return;
 		}
 
-		List<Guid> removed;
-		// Renew the sub assets
-		pFile->SyncSubAssets(task.expectedProducts, GetEngine()->GetReflectionSystem(), removed);
-
-		// Unregister the removed ones
-		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
-		for (const Guid& id : removed)
-		{
-			pAssetService->UnregisterAsset(id);
-
-			const std::string cookedPath = pFile->GetSubAssetCookedPath(id);
-			if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
-				Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
-		}
-
-		task.cookedProducts.Clear();
-		task.cookedProducts.Reserve(task.expectedProducts.GetCount());
-
-		// Get the expected products to cooked ones 
-		for (const ImportDeclaredProduct& declared : task.expectedProducts)
-		{
-			DomainCookedProduct product;
-			product.key = declared.key;
-			product.id = pFile->GetSubAssetId(declared.key);
-			product.pAssetType = GetEngine()->GetReflectionSystem()->GetType(declared.assetType);
-			product.cookedPath = pFile->GetSubAssetCookedPath(product.id);
-
-			ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(declared.assetType);
-			product.pPipeline = pEntry ? pEntry->pPipeline : nullptr;
-
-			task.cookedProducts.PushBack(std::move(product));
-		}
+		task.pPipeline = pEntry->pPipeline;
+		task.pAssetType = pFile->GetAssetType();
+		task.cookedPath = pFile->GetCookedPath();
 
 		// Start cooking
 		task.phase = ImportPhase::Cooking;
@@ -530,42 +379,18 @@ namespace Horizon::Editor
 
 	void DomainService::RunCookAsset(DomainFileImportContext& task)
 	{
-		AssetImportResult overall = AssetImportResult::Success;
+		ImportProductBytes bytes;
 
-		for (usize i = 0; i < task.cookedProducts.GetCount(); ++i)
-		{
-			DomainCookedProduct& product = task.cookedProducts[i];
-			const ImportDeclaredProduct& declared = task.expectedProducts[i];
-			ImportProductBytes bytes;
+		task.result = task.pImporter->GenerateProperties(task.context, bytes.properties);
 
-			if (!product.pPipeline)
-			{
-				product.result = AssetImportResult::UnsupportedFeature;
-				Terminal::Error(StringOps::GetName(this), "{} product {} has no pipeline for its asset type", task.relativePath, product.key);
-				overall = product.result;
-				continue;
-			}
+		if (task.result == AssetImportResult::Success)
+			task.result = task.pImporter->GenerateTable(task.context, bytes.table);
 
-			product.result = task.pImporter->GenerateProperties(task.context, i, bytes.properties);
+		if (task.result == AssetImportResult::Success)
+			task.result = task.pImporter->GenerateBinary(task.context, bytes.binary);
 
-			if (product.result == AssetImportResult::Success)
-				product.result = task.pImporter->GenerateTable(task.context, i, bytes.table);
-
-			if (product.result == AssetImportResult::Success)
-				product.result = task.pImporter->GenerateBinary(task.context, i, bytes.binary);
-
-			if (product.result == AssetImportResult::Success)
-				product.result = product.pPipeline->Cook(declared, task.context, product.id, product.pAssetType, product.cookedPath, bytes);
-
-			if (product.result != AssetImportResult::Success)
-			{
-				auto* pType = GetEngine()->GetReflectionSystem()->GetType(Reflect::TypeOf<AssetImportResult>());
-				Terminal::Error(StringOps::GetName(this), "{} product {} failed with code {}", task.relativePath, product.key, pType->GetEnumName(product.result));
-				overall = product.result;
-			}
-		}
-
-		task.result = overall;
+		if (task.result == AssetImportResult::Success)
+			task.result = task.pPipeline->Cook(task.context, task.context.fileId, task.pAssetType, task.cookedPath, bytes);
 	}
 
 	void DomainService::OnCookAssetFinished(usize slot)
@@ -578,11 +403,8 @@ namespace Horizon::Editor
 		{
 			Terminal::Error(StringOps::GetName(this), "{} has no domain file anymore. Cleaning up the desk!", task.relativePath);
 
-			for (const DomainCookedProduct& product : task.cookedProducts)
-			{
-				if (PAL::File::Exists(product.cookedPath) && !PAL::File::Delete(product.cookedPath))
-					Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", product.cookedPath);
-			}
+			if (PAL::File::Exists(task.cookedPath) && !PAL::File::Delete(task.cookedPath))
+				Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", task.cookedPath);
 
 			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
 			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
@@ -590,30 +412,19 @@ namespace Horizon::Editor
 			return;
 		}
 
-		// Check each cooked product
 		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
-		for (const DomainCookedProduct& product : task.cookedProducts)
+		if (task.result != AssetImportResult::Success)
 		{
-			if (product.result != AssetImportResult::Success)
-			{
-				auto* pType = GetEngine()->GetReflectionSystem()->GetType(Reflect::TypeOf<AssetImportResult>());
-				Terminal::Error(StringOps::GetName(this), "{} has failed on import with code: {}", product.cookedPath, pType->GetEnumName(product.result));
-				continue;
-			}
-
-			if (pAssetService->HasAsset(product.id))
-			{
-				pAssetService->RefreshAsset(product.id);
-				continue;
-			}
-
-			if (!pAssetService->RegisterAsset(product.id, product.cookedPath, pFile->GetSubAssetCallPath(product.key), pFile->GetSubAssetName(product.key), product.pAssetType->GetTypeId()))
-				Terminal::Error(StringOps::GetName(this), "{} could not be registered to AssetService", product.cookedPath);
+			auto* pType = GetEngine()->GetReflectionSystem()->GetType(Reflect::TypeOf<AssetImportResult>());
+			Terminal::Error(StringOps::GetName(this), "{} has failed on import with code: {}", task.relativePath, pType->GetEnumName(task.result));
 		}
+		else if (pAssetService->HasAsset(pFile->GetID()))
+			pAssetService->RefreshAsset(pFile->GetID());
+		else if (!pAssetService->RegisterAsset(pFile->GetID(), task.cookedPath, pFile->GetCallPath(), pFile->GetAssetName(), task.pAssetType->GetTypeId()))
+			Terminal::Error(StringOps::GetName(this), "{} could not be registered to AssetService", task.cookedPath);
 
 		// Write hmeta
 		WriteMetaFile(pFile, task.pSettingsType);
-		WakeDependencies(task.relativePath);
 		m_revision.Add(1);
 
 		// Get ready to release the task
@@ -642,16 +453,12 @@ namespace Horizon::Editor
 			return;
 
 		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
+		pAssetService->UnregisterAsset(pFile->GetID());
 
-		for (const DomainFile::DomainSubAsset& subAsset : pFile->GetSubAssets())
-		{
-			pAssetService->UnregisterAsset(subAsset.id);
+		const std::string cookedPath = pFile->GetCookedPath();
 
-			const std::string cookedPath = pFile->GetSubAssetCookedPath(subAsset.id);
-
-			if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
-				Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
-		}
+		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
+			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
 	}
 
 	void DomainService::ProcessFolder(DomainFolder* pFolder)
@@ -716,7 +523,6 @@ namespace Horizon::Editor
 			}
 
 			QueueImport(pFile, ImportReason::Fresh);
-			WakeDependencies(pFile->GetSourceRelativePath());
 			return pFile;
 		}
 
@@ -748,42 +554,29 @@ namespace Horizon::Editor
 			return nullptr;
 		}
 
-		WakeDependencies(pFile->GetSourceRelativePath());
-
 		// Deserialize the settings so we can have easy access on editor side
 		const b8 settingsValid = ReadSettings(pFile, pImportPipelineEntry->pSettingsType, jsonReader);
-		const b8 productsValid = ReadProducts(pFile, jsonReader);
-		ReadDependencies(pFile, jsonReader);
 		jsonReader.EndObject();
 
-		if (!settingsValid || !productsValid)
+		if (!settingsValid)
 		{
 			QueueImport(pFile, ImportReason::Fresh);
 			return pFile;
 		}
 
 		// Every product needs its cook on disk, otherwise the whole file goes back to the oven
-		for (const DomainFile::DomainSubAsset& subAsset : pFile->GetSubAssets())
+		if (!PAL::File::Exists(pFile->GetCookedPath()))
 		{
-			if (PAL::File::Exists(pFile->GetSubAssetCookedPath(subAsset.id)))
-				continue;
-
 			QueueImport(pFile, ImportReason::Fresh);
 			return pFile;
 		}
 
 		// Register to the asset service
 		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
-		for (const DomainFile::DomainSubAsset& subAsset : pFile->GetSubAssets())
+		if (!pAssetService->RegisterAsset(pFile->GetID(), pFile->GetCookedPath(), pFile->GetCallPath(), pFile->GetAssetName(), pFile->GetAssetType()->GetTypeId()))
 		{
-			const std::string cookedPath = pFile->GetSubAssetCookedPath(subAsset.id);
-
-			if (pAssetService->RegisterAsset(subAsset.id, cookedPath, pFile->GetSubAssetCallPath(subAsset.key), pFile->GetSubAssetName(subAsset.key), subAsset.pAssetType->GetTypeId()))
-				continue;
-
-			Terminal::Error(StringOps::GetName(this), "{} product {} could not be registered to AssetService", pFile->GetName(), subAsset.key);
+			Terminal::Error(StringOps::GetName(this), "{} could not be registered to AssetService", pFile->GetName());
 			QueueImport(pFile, ImportReason::Fresh);
-			return pFile;
 		}
 
 		return pFile;
@@ -823,38 +616,6 @@ namespace Horizon::Editor
 		writer.Key("settings");
 		serializer.Serialize(pFile->GetSettings(), *pSettingsType, writer);
 
-		writer.Key("products");
-		writer.BeginArray(pFile->GetSubAssets().GetCount());
-
-		// Didn't add reflection for sub asset thats why this function is so heavy
-		for (const DomainFile::DomainSubAsset& subAsset : pFile->GetSubAssets())
-		{
-			writer.BeginObject();
-			writer.Key("key");
-			writer.WriteString(subAsset.key);
-			writer.Key("id");
-			writer.WriteString(subAsset.id.ToString());
-			writer.Key("type");
-			writer.WriteString(subAsset.pAssetType->GetName());
-			writer.EndObject();
-		}
-
-		writer.EndArray();
-
-		writer.Key("dependencies");
-		writer.BeginArray(pFile->GetDependencies().GetCount());
-
-		for (const DomainFile::DomainDependency& dependency : pFile->GetDependencies())
-		{
-			writer.BeginObject();
-			writer.Key("path");
-			writer.WriteString(dependency.relativePath);
-			writer.Key("asset");
-			writer.WriteBool(dependency.isAsset);
-			writer.EndObject();
-		}
-
-		writer.EndArray();
 		writer.EndObject();
 
 		const std::string& metaPath = pFile->GetMetaPath();
@@ -878,83 +639,6 @@ namespace Horizon::Editor
 			Terminal::Error(StringOps::GetName(this), "{} could not be written", metaPath);
 
 		return wasWritten;
-	}
-
-	b8 DomainService::ReadProducts(DomainFile* pFile, JsonArchiveReader& reader)
-	{
-		if (!reader.Key("products"))
-			return false;
-
-		auto* pReflect = GetEngine()->GetReflectionSystem();
-		const usize count = reader.BeginArray();
-
-		for (usize i = 0; i < count; ++i)
-		{
-			reader.BeginObject();
-
-			std::string key;
-			std::string idText;
-			std::string typeName;
-
-			if (reader.Key("key"))
-				key = reader.ReadString();
-
-			if (reader.Key("id"))
-				idText = reader.ReadString();
-
-			if (reader.Key("type"))
-				typeName = reader.ReadString();
-
-			reader.EndObject();
-
-			Reflect::Type* pType = pReflect->GetTypeByName(typeName);
-			const Guid id(idText);
-
-			if (!pType || !id.IsValid())
-			{
-				Terminal::Warn(StringOps::GetName(this), "{} product {} is malformed, it will be re-imported", pFile->GetMetaPath(), key);
-				continue;
-			}
-
-			pFile->RestoreSubAsset(key, id, pType);
-		}
-
-		reader.EndArray();
-
-		if (reader.HasError())
-			return false;
-
-		return pFile->GetSubAssets().GetCount() > 0;
-	}
-
-	void DomainService::ReadDependencies(DomainFile* pFile, JsonArchiveReader& reader)
-	{
-		if (!reader.Key("dependencies"))
-			return;
-
-		List<DomainFile::DomainDependency> dependencies;
-		const usize count = reader.BeginArray();
-
-		for (usize i = 0; i < count; ++i)
-		{
-			reader.BeginObject();
-
-			DomainFile::DomainDependency dependency;
-
-			if (reader.Key("path"))
-				dependency.relativePath = reader.ReadString();
-
-			if (reader.Key("asset"))
-				dependency.isAsset = reader.ReadBool();
-
-			reader.EndObject();
-
-			if (!dependency.relativePath.empty())
-				dependencies.PushBack(std::move(dependency));
-		}
-
-		reader.EndArray();
-		pFile->SetDependencies(dependencies);
 	}
 
 	void DomainService::QueueImport(DomainFile* pFile, ImportReason reason)
@@ -1129,26 +813,5 @@ namespace Horizon::Editor
 		}
 
 		return pClone;
-	}
-
-	void DomainService::CollectDependencies(DomainFolder* pFolder, const std::string& relativePath, List<DomainFile*>& outFiles) const
-	{
-		for (DomainFile* pFile : pFolder->GetFiles())
-		{
-			if (pFile->HasUnresolvedDependency(relativePath))
-				outFiles.PushBack(pFile);
-		}
-
-		for (DomainFolder* pChild : pFolder->GetFolders())
-			CollectDependencies(pChild, relativePath, outFiles);
-	}
-
-	void DomainService::WakeDependencies(const std::string& relativePath)
-	{
-		List<DomainFile*> dependents;
-		CollectDependencies(m_root, relativePath, dependents);
-
-		for (DomainFile* pFile : dependents)
-			QueueImport(pFile, ImportReason::DependencyChanged);
 	}
 }

@@ -33,8 +33,7 @@ namespace Horizon::Editor
 		b8 DrawPicker(Guid* pId, DomainService* pDomain, Reflect::Type* pAssetType);
 
 		void RefreshCandidates(DomainService* pDomain, Reflect::Type* pAssetType);
-		void CollectProducts(DomainFolder* pFolder, Reflect::Type* pAssetType);
-		void CollectProducts(DomainFile* pFile, Reflect::Type* pAssetType, List<Candidate>& outCandidates) const;
+		void CollectCandidates(DomainFolder* pFolder, Reflect::Type* pAssetType);
 
 	private:
 		std::string m_search;

@@ -7,11 +7,11 @@
 
 namespace Horizon::Editor
 {
-	void SceneAssetImportPipeline::PostProcess(const ImportDeclaredProduct& product, const ImportPipelineContext& ctx, ImportProductBytes& bytes)
+	void SceneAssetImportPipeline::PostProcess(const ImportPipelineContext& ctx, ImportProductBytes& bytes)
 	{
 	}
 
-	AssetImportResult SceneAssetImportPipeline::Validate(const ImportDeclaredProduct& product, const ImportProductBytes& bytes)
+	AssetImportResult SceneAssetImportPipeline::Validate(const ImportPipelineContext& ctx, const ImportProductBytes& bytes)
 	{
 		return AssetImportResult::Success;
 	}

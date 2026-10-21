@@ -38,7 +38,6 @@ namespace Horizon::Editor
 		DomainFolder* FindFolder(std::string_view relativePath) const;
 		DomainFile* FindFileByGuid(const Guid& guid) const;
 		DomainFile* FindFileByRelative(const std::string& relative);
-		DomainFile* FindFileBySubAssetId(const Guid& guid, const DomainFile::DomainSubAsset** ppOutSubAsset = nullptr) const;
 
 		PAL::DirectoryWatcher& GetWatcher() { return m_watcher; }
 		const std::string& GetAssetPath() const { return m_assetPath; }
@@ -65,9 +64,7 @@ namespace Horizon::Editor
 
 		DomainFile* FindFileByGuid(DomainFolder* pFolder, const Guid& guid) const;
 		DomainFile* FindFileByRelative(DomainFolder* pFolder, const std::string& relative) const;
-		DomainFile* FindFileBySubAssetId(DomainFolder* pFolder, const Guid& guid, const DomainFile::DomainSubAsset** ppOutSubAsset) const;
 		DomainFile* FindDomainFile(const std::string& relativePathWithExtension) const;
-		DomainFile* FindSourceFile(const std::string& relativePathWithExtension);
 
 		void ForgetFolder(DomainFolder* pFolder);
 		void ForgetFile(DomainFile* pFile);
@@ -86,11 +83,6 @@ namespace Horizon::Editor
 		b8 ReadSettings(DomainFile* pFile, Reflect::Type* pSettingsType, JsonArchiveReader& reader);
 
 		b8 WriteMetaFile(DomainFile* pFile, Reflect::Type* pSettingsType);
-		b8 ReadProducts(DomainFile* pFile, JsonArchiveReader& reader);
-
-		void ReadDependencies(DomainFile* pFile, JsonArchiveReader& reader);
-		void CollectDependencies(DomainFolder* pFolder, const std::string& relativePath, List<DomainFile*>& outFiles) const;
-		void WakeDependencies(const std::string& relativePath);
 
 	private:
 		std::string m_assetPath;
@@ -103,7 +95,6 @@ namespace Horizon::Editor
 		PAL::DirectoryWatcher m_watcher;
 		PAL::Atomic<u64> m_revision = 0;
 
-		List<std::string> m_waitingOnPath;
 		List<DomainFileImportContext> m_pendingImports;
 		DomainFileImportContext m_runningImports[MaxConcurrentImports];
 	};
