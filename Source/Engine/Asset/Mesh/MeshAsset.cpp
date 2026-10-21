@@ -9,14 +9,18 @@ namespace Horizon::Engine
 		if (m_residency.CompareExchange(AssetResidency::Unloaded, AssetResidency::Pending) != AssetResidency::Unloaded)
 			return;
 
-		m_streamer->LoadAsync(this);
+		GetLoader<MeshAssetStreamer>()->LoadAsync(this);
 	}
 
 	void MeshAsset::UnloadAsync()
 	{
+		if (m_residency.CompareExchange(AssetResidency::Resident, AssetResidency::Evicting) != AssetResidency::Resident)
+			return;
+
+		GetLoader<MeshAssetStreamer>()->UnloadAsync(this);
 	}
 
-	void MeshAsset::OnPropertiesLoaded(ReadOnlyList<u8> propertyBytes)
+	void MeshAsset::OnPropertiesChanged(ReadOnlyList<u8> propertyBytes)
 	{
 	}
 }
