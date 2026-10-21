@@ -44,7 +44,8 @@ namespace Horizon::Editor
 
 		u64 GetRevision() const { return m_revision.Load(); }
 
-		void ImportFile(const std::string& targetFolder, const std::string& importTarget);
+		Reflect::Type* GetImportSettingsType(const std::string& extension);
+		void ImportFile(const std::string& targetFolder, const std::string& sourcePath, const AssetImportSettings* pSettings);
 
 	private:
 		void BuildRootTree();
@@ -68,6 +69,7 @@ namespace Horizon::Editor
 
 		void ForgetFolder(DomainFolder* pFolder);
 		void ForgetFile(DomainFile* pFile);
+		void DiscardFile(DomainFile* pFile);
 
 		void ProcessFolder(DomainFolder* pFolder);
 		DomainFile* ProcessSourceFile(DomainFolder* pParent, const std::string& name);
@@ -83,6 +85,8 @@ namespace Horizon::Editor
 		b8 ReadSettings(DomainFile* pFile, Reflect::Type* pSettingsType, JsonArchiveReader& reader);
 
 		b8 WriteMetaFile(DomainFile* pFile, Reflect::Type* pSettingsType);
+		void ReconcilePath(const std::string& relativePath);
+		void ReconcileMeta(const std::string& relativePath);
 
 	private:
 		std::string m_assetPath;

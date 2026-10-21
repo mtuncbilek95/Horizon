@@ -180,11 +180,8 @@ namespace Horizon::Editor
 			return;
 		}
 
-		if (!GetContext()->upComingFiles.IsEmpty())
-		{
-			ImportFiles(GetContext()->upComingFiles);
-			GetContext()->upComingFiles.Clear();
-		}
+		if (!GetContext()->upcomingFiles.IsEmpty())
+			GetContext()->upcomingFiles.Clear();
 
 		DomainFolder* pFolder = m_currentFolder;
 
@@ -206,9 +203,7 @@ namespace Horizon::Editor
 			BeginRename(browserContext.renamePath);
 
 		RenderRenameModal();
-
-		for (const auto& entry : m_pendingImportList)
-			RenderDialog(entry);
+		RenderDialog();
 	}
 
 	void AssetContentView::RenderToolbar(DomainFolder* pFolder)
@@ -454,25 +449,9 @@ namespace Horizon::Editor
 
 	void AssetContentView::ImportFiles(const List<std::string>& files)
 	{
-		for (const auto& filePath : files)
-			m_pendingImportList.PushBack({ filePath, m_currentFolder->GetAbsolutePath() });
 	}
 
-	void AssetContentView::RenderDialog(const ImportEntry& entry)
+	void AssetContentView::RenderDialog()
 	{
-		auto* pDomain = GetContext()->pEngine->RequestService<DomainService>();
-
-		// Check if entry is a registered asset. If not, pop-up a warning about missing registered asset.
-		// After click ImGui::Button("Okay"), remove pop the entry from list.
-
-		// Check if it's already importer. If so, pop-up a warning about already imported. And ask to change name.
-		// After click ImGui::Button("Okay"), remove pop the entry from list.
-
-		// If its not imported already, pop up the settings of the asset
-		// So user can decide what to do with the asset
-		// Multi-staged assets with other assets will use the default settings of the staged part in cooker (be careful for this)
-
-		// TODO: Till I find a better way just auto-process the files
-		pDomain->ImportFile(entry.currentPath, entry.fileToImport);
 	}
 }

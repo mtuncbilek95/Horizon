@@ -40,6 +40,7 @@ namespace Horizon::Editor
 		DomainFolder* AddFolder(const std::string& name);
 		DomainFile* AddFile(const Guid& id, const std::string& name, Reflect::Type* pAssetType);
 		b8 RemoveEntry(std::string_view name);
+		b8 RemoveFile(DomainFile* pFile);
 
 		void Refresh(List<std::string>& outSources);
 		void Clear();
