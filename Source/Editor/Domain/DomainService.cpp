@@ -269,12 +269,7 @@ namespace Horizon::Editor
 
 	void DomainService::OnEntryRemoved(const PAL::DirectoryWatcher::Event& event)
 	{
-		for (const auto& suffix : IgnoredAddList)
-		{
-			if (event.GetName().ends_with(suffix))
-				return;
-		}
-
+		// Just go nuts and delete the fuck out everything.
 		if (event.relativePath.ends_with(DomainFile::MetaSuffix))
 			ReconcileMeta(event.relativePath);
 		else
@@ -290,6 +285,80 @@ namespace Horizon::Editor
 		}
 
 		// Rename meta and source, then change the list for easy access of assets on AssetService.
+		DomainFolder* pOldParent = m_root->ConfirmAndFindFolder(event.GetOldParent());
+		DomainFolder* pNewParent = m_root->ConfirmAndFindFolder(event.GetParent());
+
+		if (!pOldParent || !pNewParent)
+		{
+			Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", event.relativePath);
+			return;
+		}
+
+		const std::string oldName = std::string(event.GetOldName());
+		const std::string newName = std::string(event.GetName());
+		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
+
+		if (event.kind == PAL::WatcherEntryKind::Directory)
+		{
+			// I really dont wanna write a priv function for this motherfucker
+			auto unregisterFolder = [pAssetService](this auto& self, DomainFolder* pFolder) -> void
+				{
+					for (DomainFile* pFile : pFolder->GetFiles())
+					{
+						if (pAssetService->HasAsset(pFile->GetID()))
+							pAssetService->UnregisterAsset(pFile->GetID());
+					}
+
+					for (DomainFolder* pChild : pFolder->GetFolders())
+						self(pChild);
+				};
+
+			if (DomainFolder* pFolder = pOldParent->FindFolder(oldName))
+			{
+				unregisterFolder(pFolder);
+				pOldParent->RemoveEntry(oldName);
+			}
+
+			ProcessFolder(pNewParent->AddFolder(newName));
+			m_revision.Add(1);
+			return;
+		}
+
+		DomainFile* pFile = pOldParent->FindFileWithExtension(oldName);
+		if (!pFile)
+		{
+			ReconcilePath(event.relativePath);
+			return;
+		}
+
+		ImportPipelineEntry* pOldEntry = m_importPipelineRegistry.GetImportPipelineEntry(pFile->GetExtension());
+		ImportPipelineEntry* pNewEntry = m_importPipelineRegistry.GetImportPipelineEntry(StringOps::OnlyExtension(newName));
+
+		if (!pNewEntry || pNewEntry != pOldEntry)
+		{
+			ReconcilePath(event.oldRelativePath);
+			ReconcilePath(event.relativePath);
+			return;
+		}
+
+		const std::string& oldMetaPath = pFile->GetMetaPath();
+		const std::string newMetaPath = m_assetPath + "/" + event.relativePath + std::string(DomainFile::MetaSuffix);
+
+		if (!PAL::File::Exists(newMetaPath))
+		{
+			if (!PAL::File::Exists(oldMetaPath))
+				WriteMetaFile(pFile, pNewEntry->pSettingsType);
+			else if (!PAL::File::Rename(oldMetaPath, newMetaPath))
+				Terminal::Warn(StringOps::GetName(this), "{} could not be renamed to {}", oldMetaPath, newMetaPath);
+		}
+
+		if (pAssetService->HasAsset(pFile->GetID()))
+			pAssetService->UnregisterAsset(pFile->GetID());
+
+		pOldParent->RemoveFile(pFile);
+
+		if (ProcessSourceFile(pNewParent, newName))
+			m_revision.Add(1);
 	}
 
 	void DomainService::OnWatcherOverflow()
