@@ -22,7 +22,5 @@ namespace Horizon::Editor
 		const AssetImportSettings* pSettings = nullptr;
 		const List<ImportDependency>* pDependencies = nullptr; // Easy way out
 		Engine::ReflectionSystem* pReflection = nullptr;
-
-		Guid ResolveAssetRef(std::string_view sourceRelativePath, std::string_view subAssetKey = {}) const;
 	};
 }

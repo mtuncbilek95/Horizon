@@ -1035,7 +1035,6 @@ namespace Horizon::Editor
 			task = std::move(m_pendingImports.Front());
 			m_pendingImports.PopFront();
 
-			task.context.pDependencies = &task.dependencies;
 			task.phase = ImportPhase::Parsing;
 			task.ticket = m_jobSystem->SubmitJob(Engine::JobLane::Background, Engine::Job([this, &task]()
 				{

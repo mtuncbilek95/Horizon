@@ -1,7 +1,6 @@
 #include "GltfMeshAssetImporter.h"
 
 #include <Editor/ImportPipeline/Mesh/MeshAssetImportSettings.h>
-#include <Engine/Asset/Texture/TextureAsset.h>
 #include <Runtime/Containers/StringOps.h>
 #include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
@@ -106,23 +105,6 @@ namespace Horizon::Editor
 			ImportDependency dependency;
 			dependency.kind = ImportDependencyKind::Data;
 			dependency.sourceRelativePath = path;
-			outDependencies.PushBack(std::move(dependency));
-		}
-
-		const auto* pSettings = static_cast<const MeshAssetImportSettings*>(ctx.pSettings);
-		if (!pSettings || !pSettings->m_importMaterials)
-			return;
-
-		for (const fastgltf::Image& image : m_asset->images)
-		{
-			const auto* pUri = std::get_if<fastgltf::sources::URI>(&image.data);
-			if (!pUri)
-				continue;
-
-			ImportDependency dependency;
-			dependency.kind = ImportDependencyKind::Asset;
-			dependency.sourceRelativePath = std::string(pUri->uri.path());
-			dependency.assetType = Reflect::TypeOf<Engine::TextureAsset>();
 			outDependencies.PushBack(std::move(dependency));
 		}
 	}
