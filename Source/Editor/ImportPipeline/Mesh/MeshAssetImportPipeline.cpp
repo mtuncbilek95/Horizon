@@ -36,7 +36,7 @@ namespace Horizon::Editor
 		if (bytes.properties.GetCount() != sizeof(Engine::MeshAssetProperties))
 		{
 			Terminal::Error(StringOps::GetName(this), "{} properties block has a wrong size", product.key);
-			return AssetImportResult::InvalidMeshData;
+			return AssetImportResult::InvalidData;
 		}
 
 		// Get MeshAssetProperties
@@ -46,19 +46,19 @@ namespace Horizon::Editor
 		if (props.vertexStride != sizeof(Engine::MeshVertex) || props.indexStride != sizeof(u32))
 		{
 			Terminal::Error(StringOps::GetName(this), "{} has a wrong vertex or index stride", product.key);
-			return AssetImportResult::InvalidMeshData;
+			return AssetImportResult::InvalidData;
 		}
 
 		if (props.vertexCount == 0 || props.indexCount == 0 || props.subMeshCount == 0)
 		{
 			Terminal::Error(StringOps::GetName(this), "{} has no geometry", product.key);
-			return AssetImportResult::InvalidMeshData;
+			return AssetImportResult::InvalidData;
 		}
 
 		if (bytes.table.GetCount() != props.subMeshCount * sizeof(Engine::MeshAssetSubmesh))
 		{
 			Terminal::Error(StringOps::GetName(this), "{} table size does not match subMeshCount", product.key);
-			return AssetImportResult::InvalidMeshData;
+			return AssetImportResult::InvalidData;
 		}
 
 		const usize vertexBlock = (usize)props.vertexCount * props.vertexStride;
@@ -67,7 +67,7 @@ namespace Horizon::Editor
 		if (bytes.binary.GetCount() != vertexBlock + indexBlock)
 		{
 			Terminal::Error(StringOps::GetName(this), "{} payload size does not match its properties", product.key);
-			return AssetImportResult::InvalidMeshData;
+			return AssetImportResult::InvalidData;
 		}
 
 		// Here comes the data table
@@ -82,13 +82,13 @@ namespace Horizon::Editor
 			if (!validIndices || !validVertices)
 			{
 				Terminal::Error(StringOps::GetName(this), "{} sub-mesh {} points outside of its buffers", product.key, i);
-				return AssetImportResult::InvalidMeshData;
+				return AssetImportResult::InvalidData;
 			}
 
 			if (!subMesh.boundingBox.IsValid())
 			{
 				Terminal::Error(StringOps::GetName(this), "{} sub-mesh {} has an empty bounding box", product.key, i);
-				return AssetImportResult::InvalidMeshData;
+				return AssetImportResult::InvalidData;
 			}
 		}
 

@@ -12,11 +12,19 @@ namespace Horizon::Editor
 	{
 		auto* pAssetService = pContext->pEngine->RequestService<Engine::AssetService>();
 		auto* pWorldService = pContext->pEngine->RequestService<Engine::WorldService>();
-		
-		auto* pSceneAsset = (Engine::SceneAsset*)pAssetService->FindAsset(pUsedAsset->GetID());
 
-		pSceneAsset->LoadAsync();
-		
+		auto* pSceneAsset = pAssetService->FindAsset<Engine::SceneAsset>(pUsedAsset->GetID());
+		if (!pSceneAsset)
+			return;
+
+		pSceneAsset->LoadSync();
+
+		if (pSceneAsset->GetResidency() != Engine::AssetResidency::Resident)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} could not be loaded, current world stays as it is", pUsedAsset->GetName());
+			return;
+		}
+
 		ViewObject* pViewer = pContext->pViews->GetViewObject(Reflect::TypeOf<SceneHierarchyView>());
 		pViewer->SetConnectedFile(pUsedAsset); // To be able to save
 

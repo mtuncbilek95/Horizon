@@ -282,7 +282,7 @@ namespace Horizon::Editor
 			if (positionIt == primitive.attributes.end())
 			{
 				Terminal::Error(StringOps::GetName(this), "{} has a primitive without positions", m_productKeys[product]);
-				return AssetImportResult::InvalidMeshData;
+				return AssetImportResult::InvalidData;
 			}
 
 			const fastgltf::Accessor& positions = asset.accessors[positionIt->accessorIndex];

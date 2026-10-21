@@ -4,7 +4,11 @@
 #include <Engine/World/System.h>
 #include <Engine/World/Components/Rendering/MeshComponent.h>
 #include <Engine/World/SystemOrderAttribute.h>
+#include <Runtime/Containers/Guid.h>
+#include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RTTR/Reflection.h>
+
+#include <unordered_set>
 
 namespace Horizon::Engine
 {
@@ -21,6 +25,13 @@ namespace Horizon::Engine
 		SystemGroup GetWorkingGroup() const final { return SystemGroup::General; }
 
 	private:
+		void UnloadSceneMeshes();
+
+	private:
 		AssetService* m_assetService = nullptr;
+		RHI::GfxDevice* m_device = nullptr;
+
+		Scene* m_lastScene = nullptr;
+		std::unordered_set<Guid> m_loadedMeshes;
 	};
 }

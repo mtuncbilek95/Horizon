@@ -30,6 +30,7 @@ namespace Horizon::Editor
 		header.magic = Engine::AssetHeader::Magic;
 		header.version = Engine::AssetHeader::Version;
 		header.id = id;
+
 		StringOps::CopyToChar(header.typeName, pAssetType->GetName());
 		header.propertyOffset = sizeof(Engine::AssetHeader);
 		header.propertySize = bytes.properties.GetCount();
@@ -41,6 +42,7 @@ namespace Horizon::Editor
 		List<u8> file(header.payloadOffset + header.payloadSize);
 		std::memcpy(file.GetData(), &header, sizeof(Engine::AssetHeader));
 
+		// Boring memcpy, if anyone knows a solution, hit me!
 		if (header.propertySize > 0)
 			std::memcpy(file.GetData() + header.propertyOffset, bytes.properties.GetData(), header.propertySize);
 

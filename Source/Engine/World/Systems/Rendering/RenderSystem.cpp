@@ -272,16 +272,16 @@ namespace Horizon::Engine
 		slot.pTargetCmd->BindPipeline(sFunPipeline);
 
 		AssetService* pAssetService = GetEngine()->RequestService<AssetService>();
-		auto* pMeshStreamer = static_cast<MeshAssetStreamer*>(pAssetService->FindStreamer(Reflect::TypeOf<MeshAsset>()));
+		auto* pMeshStreamer = pAssetService->FindLoader<MeshAssetStreamer>(Reflect::TypeOf<MeshAsset>());
 
 		if (sFunVertexSrv == kInvalid32)
 			sFunVertexSrv = m_resourceHeap->CreateShaderView(pMeshStreamer->GetVertexBuffer());
 
 		slot.pTargetCmd->BindIndexBuffer(pMeshStreamer->GetIndexBuffer(), RHI::GfxIndexType::Index32);
-		
+
 		FunPushConstant constants = {};
 		b8 hasFog = false;
-		currentScene.ForEach<FogComponent>([&](EntityHandle handl, FogComponent fogComp) 
+		currentScene.ForEach<FogComponent>([&](EntityHandle handl, FogComponent fogComp)
 			{
 				if (hasFog)
 					return;
@@ -303,18 +303,8 @@ namespace Horizon::Engine
 
 				MeshAsset* pAsset = mesh.m_meshHandle.GetAsset();
 
-				if (pAsset == nullptr || pAsset->GetPhysicalEntry().assetId != mesh.m_meshHandle.GetId())
+				if (pAsset == nullptr || pAsset->GetResidency() != AssetResidency::Resident)
 					return;
-
-				const AssetResidency residency = pAsset->GetResidencyState();
-
-				if (residency != AssetResidency::Resident)
-				{
-					if (residency == AssetResidency::Unloaded)
-						pAsset->LoadAsync();
-
-					return;
-				}
 
 				constants.viewProj = viewProj;
 				constants.model = worldMat.m_worldMatrix;

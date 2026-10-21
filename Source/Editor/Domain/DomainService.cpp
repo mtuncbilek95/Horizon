@@ -607,7 +607,7 @@ namespace Horizon::Editor
 				continue;
 			}
 
-			if (!pAssetService->RegisterAsset({ product.id, product.cookedPath, product.pAssetType->GetTypeId() }))
+			if (!pAssetService->RegisterAsset(product.id, product.cookedPath, pFile->GetSubAssetCallPath(product.key), pFile->GetSubAssetName(product.key), product.pAssetType->GetTypeId()))
 				Terminal::Error(StringOps::GetName(this), "{} could not be registered to AssetService", product.cookedPath);
 		}
 
@@ -638,18 +638,20 @@ namespace Horizon::Editor
 
 	void DomainService::ForgetFile(DomainFile* pFile)
 	{
-		const Guid id = pFile->GetID();
-
-		if (!id.IsValid())
+		if (!pFile->GetID().IsValid())
 			return;
 
 		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
-		pAssetService->UnregisterAsset(id);
 
-		const std::string cookedPath = m_cookPath + "/" + id.ToString();
+		for (const DomainFile::DomainSubAsset& subAsset : pFile->GetSubAssets())
+		{
+			pAssetService->UnregisterAsset(subAsset.id);
 
-		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
-			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
+			const std::string cookedPath = pFile->GetSubAssetCookedPath(subAsset.id);
+
+			if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
+				Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
+		}
 	}
 
 	void DomainService::ProcessFolder(DomainFolder* pFolder)
@@ -776,7 +778,7 @@ namespace Horizon::Editor
 		{
 			const std::string cookedPath = pFile->GetSubAssetCookedPath(subAsset.id);
 
-			if (pAssetService->RegisterAsset({ subAsset.id, cookedPath, subAsset.pAssetType->GetTypeId() }))
+			if (pAssetService->RegisterAsset(subAsset.id, cookedPath, pFile->GetSubAssetCallPath(subAsset.key), pFile->GetSubAssetName(subAsset.key), subAsset.pAssetType->GetTypeId()))
 				continue;
 
 			Terminal::Error(StringOps::GetName(this), "{} product {} could not be registered to AssetService", pFile->GetName(), subAsset.key);
@@ -1019,6 +1021,7 @@ namespace Horizon::Editor
 
 	void DomainService::StartImport()
 	{
+		// Here we go
 		for (usize slot = 0; slot < MaxConcurrentImports; slot++)
 		{
 			if (m_pendingImports.GetCount() == 0)
@@ -1103,12 +1106,17 @@ namespace Horizon::Editor
 
 	AssetImportSettings* DomainService::CloneSettings(const AssetImportSettings* pSource, Reflect::Type* pType)
 	{
+		// Dont forget to create and check if its created properly
 		auto* pClone = (AssetImportSettings*)pType->Create();
 		if (!pClone)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has virtual function issues. Check out your settings", pType->GetName());
 			return nullptr;
+		}
 
 		Serializer serializer(GetEngine()->GetReflectionSystem(), ResolveType, ResolveTypeByName);
 
+		// Some read and write, huh?
 		JsonArchiveWriter writer;
 		serializer.Serialize(pSource, *pType, writer);
 

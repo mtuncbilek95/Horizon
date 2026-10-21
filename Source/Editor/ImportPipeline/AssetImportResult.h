@@ -18,7 +18,7 @@ namespace Horizon::Editor
 		UnsupportedFeature,
 		ExternalDataRequired,
 		NoImportableData,
-		InvalidMeshData,
+		InvalidData,
 		SerializationFailed,
 		InternalError
 	};

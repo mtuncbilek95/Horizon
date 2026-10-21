@@ -57,6 +57,8 @@ namespace Horizon::Editor
 		const List<DomainSubAsset>& GetSubAssets() const { return m_subAssets; }
 		DomainSubAsset* FindSubAsset(std::string_view key);
 		std::string GetSubAssetCookedPath(const Guid& id) const { return m_cookFolder + "/" + id.ToString() + std::string(CookSuffix); }
+		std::string GetSubAssetCallPath(std::string_view key) const;
+		std::string GetSubAssetName(std::string_view key) const;
 
 		Guid GetSubAssetId(std::string_view key) const;
 		void RestoreSubAsset(const std::string& key, const Guid& id, Reflect::Type* pAssetType);

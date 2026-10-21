@@ -83,6 +83,25 @@ namespace Horizon::Editor
 		return nullptr;
 	}
 
+	std::string DomainFile::GetSubAssetCallPath(std::string_view key) const
+	{
+		if (key.empty())
+			return "/" + GetRelativePath();
+
+		return "/" + GetRelativePath() + "/" + std::string(key);
+	}
+
+	std::string DomainFile::GetSubAssetName(std::string_view key) const
+	{
+		if (!key.empty())
+			return m_name + "/" + std::string(key);
+
+		if (!m_parent || !m_parent->GetParent())
+			return m_name;
+
+		return m_parent->GetName() + "/" + m_name;
+	}
+
 	Guid DomainFile::GetSubAssetId(std::string_view key) const
 	{
 		if (key.empty())
