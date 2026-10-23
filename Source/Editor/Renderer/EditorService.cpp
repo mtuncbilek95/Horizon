@@ -90,7 +90,7 @@ namespace Horizon::Editor
 				break;
 			}
 			case PAL::InputMessageType::DropFiles:
-				m_editorContext.upComingFiles = message.filePaths;
+				m_editorContext.upcomingFiles = message.filePaths;
 				break;
 			default:
 				break;

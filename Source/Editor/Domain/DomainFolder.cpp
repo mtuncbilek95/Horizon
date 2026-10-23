@@ -151,6 +151,21 @@ namespace Horizon::Editor
 		return false;
 	}
 
+	b8 DomainFolder::RemoveFile(DomainFile* pFile)
+	{
+		for (usize i = 0; i < m_files.GetCount(); ++i)
+		{
+			if (m_files[i] != pFile)
+				continue;
+
+			Memory::Allocator::Delete(m_files[i]);
+			m_files.RemoveAt(i);
+			return true;
+		}
+
+		return false;
+	}
+
 	void DomainFolder::Refresh(List<std::string>& outSources)
 	{
 		Clear();

@@ -8,6 +8,8 @@
 #include <Editor/Domain/DomainFile.h>
 #include <Editor/ContextMenu/ContextMenuRegistry.h>
 #include <Editor/ContextMenu/AssetBrowserMenu/AssetBrowserContext.h>
+#include <Editor/Components/PropertyRenderer.h>
+#include <Editor/ImportPipeline/AssetImportSettings.h>
 #include <Runtime/Containers/List.h>
 
 #include <imgui.h>
@@ -39,12 +41,6 @@ namespace Horizon::Editor
 			AssetAction* pAction = nullptr;
 		};
 
-		struct ImportEntry
-		{
-			std::string fileToImport;
-			std::string currentPath;
-		};
-
 	public:
 		AssetContentView() = default;
 		~AssetContentView() final;
@@ -71,7 +67,7 @@ namespace Horizon::Editor
 
 		// Import action
 		void ImportFiles(const List<std::string>& files);
-		void RenderDialog(const ImportEntry& entry);
+		void RenderDialog();
 	private:
 		// Asset Open Actions
 		List<ActionEntry> m_openActions;
@@ -83,7 +79,6 @@ namespace Horizon::Editor
 
 		// Safe-use entries
 		List<BrowserEntry> m_entries;
-		List<ImportEntry> m_pendingImportList;
 		ImGuiSelectionBasicStorage m_selection;
 
 		// Rename misc.

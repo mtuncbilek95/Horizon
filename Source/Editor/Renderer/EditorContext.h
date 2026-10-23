@@ -24,6 +24,6 @@ namespace Horizon::Editor
 		MenuRegistry* pMenus = nullptr;
 		ToolBarRegistry* pTools = nullptr;
 
-		List<std::string> upComingFiles;
+		List<std::string> upcomingFiles;
 	};
 }

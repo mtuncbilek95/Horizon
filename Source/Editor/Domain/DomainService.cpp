@@ -261,22 +261,19 @@ namespace Horizon::Editor
 		if (event.kind == PAL::WatcherEntryKind::Directory)
 			return;
 
-		// Check if the source or meta file has modified.
-
-		// If source file has modified: Re-cook
-
-		// If meta file has modified: Trigger Re-configure which modifies the AssetProperties.
+		if (event.relativePath.ends_with(DomainFile::MetaSuffix))
+			ReconcileMeta(event.relativePath);
+		else
+			ReconcilePath(event.relativePath);
 	}
 
 	void DomainService::OnEntryRemoved(const PAL::DirectoryWatcher::Event& event)
 	{
-		for (const auto& suffix : IgnoredAddList)
-		{
-			if (event.GetName().ends_with(suffix))
-				return;
-		}
-
 		// Just go nuts and delete the fuck out everything.
+		if (event.relativePath.ends_with(DomainFile::MetaSuffix))
+			ReconcileMeta(event.relativePath);
+		else
+			ReconcilePath(event.relativePath);
 	}
 
 	void DomainService::OnEntryRenamed(const PAL::DirectoryWatcher::Event& event)
@@ -288,6 +285,80 @@ namespace Horizon::Editor
 		}
 
 		// Rename meta and source, then change the list for easy access of assets on AssetService.
+		DomainFolder* pOldParent = m_root->ConfirmAndFindFolder(event.GetOldParent());
+		DomainFolder* pNewParent = m_root->ConfirmAndFindFolder(event.GetParent());
+
+		if (!pOldParent || !pNewParent)
+		{
+			Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", event.relativePath);
+			return;
+		}
+
+		const std::string oldName = std::string(event.GetOldName());
+		const std::string newName = std::string(event.GetName());
+		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
+
+		if (event.kind == PAL::WatcherEntryKind::Directory)
+		{
+			// I really dont wanna write a priv function for this motherfucker
+			auto unregisterFolder = [pAssetService](this auto& self, DomainFolder* pFolder) -> void
+				{
+					for (DomainFile* pFile : pFolder->GetFiles())
+					{
+						if (pAssetService->HasAsset(pFile->GetID()))
+							pAssetService->UnregisterAsset(pFile->GetID());
+					}
+
+					for (DomainFolder* pChild : pFolder->GetFolders())
+						self(pChild);
+				};
+
+			if (DomainFolder* pFolder = pOldParent->FindFolder(oldName))
+			{
+				unregisterFolder(pFolder);
+				pOldParent->RemoveEntry(oldName);
+			}
+
+			ProcessFolder(pNewParent->AddFolder(newName));
+			m_revision.Add(1);
+			return;
+		}
+
+		DomainFile* pFile = pOldParent->FindFileWithExtension(oldName);
+		if (!pFile)
+		{
+			ReconcilePath(event.relativePath);
+			return;
+		}
+
+		ImportPipelineEntry* pOldEntry = m_importPipelineRegistry.GetImportPipelineEntry(pFile->GetExtension());
+		ImportPipelineEntry* pNewEntry = m_importPipelineRegistry.GetImportPipelineEntry(StringOps::OnlyExtension(newName));
+
+		if (!pNewEntry || pNewEntry != pOldEntry)
+		{
+			ReconcilePath(event.oldRelativePath);
+			ReconcilePath(event.relativePath);
+			return;
+		}
+
+		const std::string& oldMetaPath = pFile->GetMetaPath();
+		const std::string newMetaPath = m_assetPath + "/" + event.relativePath + std::string(DomainFile::MetaSuffix);
+
+		if (!PAL::File::Exists(newMetaPath))
+		{
+			if (!PAL::File::Exists(oldMetaPath))
+				WriteMetaFile(pFile, pNewEntry->pSettingsType);
+			else if (!PAL::File::Rename(oldMetaPath, newMetaPath))
+				Terminal::Warn(StringOps::GetName(this), "{} could not be renamed to {}", oldMetaPath, newMetaPath);
+		}
+
+		if (pAssetService->HasAsset(pFile->GetID()))
+			pAssetService->UnregisterAsset(pFile->GetID());
+
+		pOldParent->RemoveFile(pFile);
+
+		if (ProcessSourceFile(pNewParent, newName))
+			m_revision.Add(1);
 	}
 
 	void DomainService::OnWatcherOverflow()
@@ -325,9 +396,22 @@ namespace Horizon::Editor
 		{
 			auto* pType = GetEngine()->GetReflectionSystem()->GetType(Reflect::TypeOf<AssetImportResult>());
 			Terminal::Error(StringOps::GetName(this), "Parse task for {} has failed with result {}", task.relativePath, pType->GetEnumName(task.result));
+
+			// Since we already created it, re-find the failed domain file.
+			DomainFile* pFailed = FindFileByGuid(task.context.fileId);
+			const b8 requeue = task.requeue;
+
 			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
 			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
 			task = DomainFileImportContext();
+
+			if (!pFailed)
+				return;
+
+			if (requeue)
+				QueueImport(pFailed, ImportReason::SourceChanged);
+			else if (!GetEngine()->RequestService<Engine::AssetService>()->HasAsset(pFailed->GetID()))
+				DiscardFile(pFailed);
 
 			return;
 		}
@@ -423,15 +507,26 @@ namespace Horizon::Editor
 		else if (!pAssetService->RegisterAsset(pFile->GetID(), task.cookedPath, pFile->GetCallPath(), pFile->GetAssetName(), task.pAssetType->GetTypeId()))
 			Terminal::Error(StringOps::GetName(this), "{} could not be registered to AssetService", task.cookedPath);
 
+		const b8 requeue = task.requeue;
+		const b8 isDiscarded = task.result != AssetImportResult::Success && !requeue && !pAssetService->HasAsset(pFile->GetID());
+
 		// Write hmeta
-		WriteMetaFile(pFile, task.pSettingsType);
+		if (!isDiscarded)
+			WriteMetaFile(pFile, task.pSettingsType);
+
 		m_revision.Add(1);
 
 		// Get ready to release the task
-		const b8 requeue = task.requeue;
 		Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
 		Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
 		task = DomainFileImportContext();
+
+		// Discard the file since requeue is also screwed
+		if (isDiscarded)
+		{
+			DiscardFile(pFile);
+			return;
+		}
 
 		// If there is a requeue, means source file has changed
 		if (requeue)
@@ -459,6 +554,22 @@ namespace Horizon::Editor
 
 		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
 			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
+	}
+
+	void DomainService::DiscardFile(DomainFile* pFile)
+	{
+		const std::string cookedPath = pFile->GetCookedPath();
+		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
+			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
+
+		const std::string& metaPath = pFile->GetMetaPath();
+		if (PAL::File::Exists(metaPath) && !PAL::File::Delete(metaPath))
+			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", metaPath);
+
+		Terminal::Warn(StringOps::GetName(this), "{} could not be imported and is removed from the domain", pFile->GetSourceRelativePath());
+
+		pFile->GetParent()->RemoveFile(pFile);
+		m_revision.Add(1);
 	}
 
 	void DomainService::ProcessFolder(DomainFolder* pFolder)
@@ -613,6 +724,9 @@ namespace Horizon::Editor
 		writer.Key("id");
 		writer.WriteString(pFile->GetID().ToString());
 
+		writer.Key("assetType");
+		writer.WriteString(pFile->GetAssetType()->GetName());
+
 		writer.Key("settings");
 		serializer.Serialize(pFile->GetSettings(), *pSettingsType, writer);
 
@@ -639,6 +753,119 @@ namespace Horizon::Editor
 			Terminal::Error(StringOps::GetName(this), "{} could not be written", metaPath);
 
 		return wasWritten;
+	}
+
+	void DomainService::ReconcilePath(const std::string& relativePath)
+	{
+		const usize separator = relativePath.rfind('/');
+		const std::string parentPath = separator == std::string::npos ? std::string() : relativePath.substr(0, separator);
+		const std::string name = separator == std::string::npos ? relativePath : relativePath.substr(separator + 1);
+
+		DomainFolder* pParent = m_root->ConfirmAndFindFolder(parentPath);
+		if (!pParent)
+		{
+			Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", parentPath);
+			return;
+		}
+
+		const std::string absolutePath = m_assetPath + "/" + relativePath;
+
+		if (DomainFolder* pFolder = pParent->FindFolder(name))
+		{
+			if (PAL::Directory::Exists(absolutePath))
+				return;
+
+			ForgetFolder(pFolder);
+			pParent->RemoveEntry(name);
+			m_revision.Add(1);
+			return;
+		}
+
+		DomainFile* pFile = pParent->FindFileWithExtension(name);
+		const b8 isOnDisk = PAL::File::Exists(absolutePath);
+
+		if (!pFile)
+		{
+			if (isOnDisk && ProcessSourceFile(pParent, name))
+				m_revision.Add(1);
+
+			return;
+		}
+
+		if (isOnDisk)
+		{
+			QueueImport(pFile, ImportReason::SourceChanged);
+			return;
+		}
+
+		ForgetFile(pFile);
+
+		const std::string& metaPath = pFile->GetMetaPath();
+		if (PAL::File::Exists(metaPath) && !PAL::File::Delete(metaPath))
+			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", metaPath);
+
+		pParent->RemoveFile(pFile);
+		m_revision.Add(1);
+	}
+
+	void DomainService::ReconcileMeta(const std::string& relativePath)
+	{
+		DomainFile* pFile = FindDomainFile(relativePath.substr(0, relativePath.size() - DomainFile::MetaSuffix.size()));
+		if (!pFile)
+			return;
+
+		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(pFile->GetExtension());
+		if (!pEntry)
+		{
+			Terminal::Debug(StringOps::GetName(this), "{} has no registered import pipeline.", pFile->GetName());
+			return;
+		}
+
+		if (!PAL::File::Exists(pFile->GetMetaPath()))
+		{
+			if (!PAL::File::Exists(pFile->GetSourcePath()))
+				return;
+
+			Terminal::Warn(StringOps::GetName(this), "{} is deleted while its source is tracked, it is written back", pFile->GetMetaPath());
+			WriteMetaFile(pFile, pEntry->pSettingsType);
+			return;
+		}
+
+		PAL::FileAccessRequest request = PAL::File::RequestAccess(pFile->GetMetaPath(), PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
+		if (!request.IsValid())
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} could not be opened for reading", pFile->GetMetaPath());
+			return;
+		}
+
+		std::string text;
+		PAL::File::ReadString(request, text);
+		PAL::File::ReleaseAccess(request);
+
+		Serializer serializer(GetEngine()->GetReflectionSystem(), ResolveType, ResolveTypeByName);
+
+		JsonArchiveWriter before;
+		serializer.Serialize(pFile->GetSettings(), *pEntry->pSettingsType, before);
+
+		JsonArchiveReader reader(text);
+		reader.BeginObject();
+		const b8 isValid = ReadSettings(pFile, pEntry->pSettingsType, reader);
+		reader.EndObject();
+
+		if (!isValid)
+		{
+			JsonArchiveReader restore(before.ToString());
+			serializer.Deserialize(pFile->GetSettings(), *pEntry->pSettingsType, restore);
+			return;
+		}
+
+		JsonArchiveWriter after;
+		serializer.Serialize(pFile->GetSettings(), *pEntry->pSettingsType, after);
+
+		if (before.ToString() == after.ToString())
+			return;
+
+		QueueImport(pFile, ImportReason::SettingsChanged);
 	}
 
 	void DomainService::QueueImport(DomainFile* pFile, ImportReason reason)
@@ -699,8 +926,48 @@ namespace Horizon::Editor
 		m_pendingImports.PushBack(std::move(task));
 	}
 
-	void DomainService::ImportFile(const std::string& targetFolder, const std::string& importTarget)
+	Reflect::Type* DomainService::GetImportSettingsType(const std::string& extension)
 	{
+		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(extension);
+		if (!pEntry)
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} has no registered import pipeline", extension);
+			return nullptr;
+		}
+
+		return pEntry->pSettingsType;
+	}
+
+	void DomainService::ImportFile(const std::string& targetFolder, const std::string& sourcePath, const AssetImportSettings* pSettings)
+	{
+		/*const std::string source = StringOps::NormalizePath(sourcePath);
+		const usize separator = source.rfind('/');
+		const std::string name = separator == std::string::npos ? source : source.substr(separator + 1);
+
+		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(StringOps::OnlyExtension(name));
+		if (!pEntry)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has no registered import pipeline", name);
+			return;
+		}
+
+		const std::string targetPath = targetFolder + "/" + name;
+		const std::string metaPath = targetPath + std::string(DomainFile::MetaSuffix);
+
+		if (PAL::File::Exists(targetPath) || PAL::File::Exists(metaPath))
+		{
+			Terminal::Error(StringOps::GetName(this), "{} already exists in {}", name, targetFolder);
+			return;
+		}
+
+		if (!WriteMetaFile(metaPath, Guid::Generate(), pEntry->pAssetType, pSettings, pEntry->pSettingsType))
+			return;
+
+		if (PAL::File::Copy(source, targetFolder))
+			return;
+
+		if (!PAL::File::Delete(metaPath))
+			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", metaPath);*/
 	}
 
 	void DomainService::StartImport()
