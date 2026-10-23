@@ -30,6 +30,7 @@ namespace Horizon::Editor
 	{
 		RHI::GfxDevice* pDevice = nullptr;
 		RHI::GfxQueue* pQueue = nullptr;
+		RHI::GfxDescriptorHeap* pResourceHeap = nullptr;
 		RHI::GfxTextureFormat colorFormat = RHI::GfxTextureFormat::RGBA8_UNORM;
 		Engine::WindowService* pWindowService = nullptr;
 	};
@@ -57,8 +58,6 @@ namespace Horizon::Editor
 		void DefaultStyle();
 
 	private:
-		static constexpr u32 kImGuiHeapCapacity = 64;
-
 		RenderContext m_context;
 		EditorPlatform* m_platform = nullptr;
 

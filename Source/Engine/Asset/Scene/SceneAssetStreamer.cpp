@@ -10,8 +10,6 @@
 #include <Runtime/PAL/File/File.h>
 #include <Runtime/Serialization/BinaryArchive.h>
 
-#include <cstring>
-
 namespace Horizon::Engine
 {
 	void SceneAssetStreamer::OnInitialize()

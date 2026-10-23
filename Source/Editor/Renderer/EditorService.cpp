@@ -43,6 +43,7 @@ namespace Horizon::Editor
 		EditorRendererDesc renderDesc = {};
 		renderDesc.pDevice = pGraphSub->GetDevice();
 		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
+		renderDesc.pResourceHeap = pGraphSub->GetResourceHeap();
 		renderDesc.colorFormat = m_swapchain->GetDesc().format;
 		renderDesc.pWindowService = pWindowSub;
 

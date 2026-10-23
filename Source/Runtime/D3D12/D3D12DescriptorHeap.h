@@ -33,6 +33,7 @@ namespace Horizon::RHI
 
 		u32 CreateShaderView(GfxBuffer* pBuffer) final;
 		u32 CreateStorageView(GfxBuffer* pBuffer) final;
+		u32 CreateConstantView(GfxBuffer* pBuffer, usize offset = 0, u32 size = 0) final;
 
 		u64 GetGpuHandle(u32 index) const final { return GpuAt(index).ptr; }
 

@@ -125,7 +125,7 @@ namespace Horizon::Editor
 		if (pCamera->m_targetScreen != requested)
 			pCamera->m_targetScreen = requested;
 
-		const u64 handle = m_renderer->GetSceneView();
+		const u64 handle = m_renderer->GetOutputView();
 
 		if (handle == kInvalid64)
 			return;

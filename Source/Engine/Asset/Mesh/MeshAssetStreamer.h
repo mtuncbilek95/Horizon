@@ -29,6 +29,7 @@ namespace Horizon::Engine
 
 		RHI::GfxBuffer* GetVertexBuffer() const { return m_vertexArena->GetBuffer(); }
 		RHI::GfxBuffer* GetIndexBuffer() const { return m_indexArena->GetBuffer(); }
+		u32 GetVertexBufferView() const { return m_vertexBufferView; }
 
 	protected:
 		void OnInitialize() final;
@@ -44,6 +45,8 @@ namespace Horizon::Engine
 
 	private:
 		RHI::GfxDevice* m_device = nullptr;
+		RHI::GfxDescriptorHeap* m_resourceHeap = nullptr;
+		u32 m_vertexBufferView = kInvalid32;
 
 		RHI::GfxBufferArena* m_vertexArena = nullptr;
 		u8* m_vertexMap = nullptr;

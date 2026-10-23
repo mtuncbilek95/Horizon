@@ -5,6 +5,9 @@
 #include <Engine/World/Components/Rendering/MeshComponent.h>
 #include <Engine/World/Components/PostProcess/FogComponent.h>
 #include <Engine/World/Systems/Rendering/CameraSystem.h>
+#include <Engine/Rendering/RenderGraph/RenderPass.h>
+#include <Engine/Rendering/RenderGraph/RenderFrameData.h>
+#include <Engine/Rendering/RenderGraph/RenderOrderAttribute.h>
 #include <Engine/Asset/AssetService.h>
 #include <Engine/Asset/Mesh/MeshAssetStreamer.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
@@ -21,6 +24,12 @@
 
 namespace Horizon::Engine
 {
+	struct PassEntry
+	{
+		RenderPass* pPass = nullptr;
+		i32 order = 0;
+	};
+
 	b8 RenderSystem::OnInitialize()
 	{
 		m_context = GetEngine()->RequestContext<GraphicsContext>();
@@ -34,30 +43,76 @@ namespace Horizon::Engine
 		m_device = m_context->GetDevice();
 		m_queue = m_context->GetGraphicsQueue();
 
-		if (m_resourceHeap == nullptr || m_colorHeap == nullptr)
+		m_colorTargetHeap = m_context->GetColorTargetHeap();
+		m_depthTargetHeap = m_context->GetDepthTargetHeap();
+		m_resourceHeap = m_context->GetResourceHeap();
+
+		m_frameDataStride = (sizeof(RenderFrameData) + 255) & ~255u;
+
+		RHI::GfxBufferDesc frameDataDesc = {};
+		frameDataDesc.usage = RHI::GfxBufferUsage::Constant;
+		frameDataDesc.memory = RHI::GfxMemoryType::GpuUpload;
+		frameDataDesc.size = usize(m_frameDataStride) * GraphicsContext::MaxFramesInFlight;
+
+		m_frameDataBuffer = m_device->CreateBuffer(frameDataDesc);
+		if (!m_frameDataBuffer)
 		{
-			Terminal::Error(StringOps::GetName(this), "Descriptor heaps are unavailable, render system stays down");
+			Terminal::Error(StringOps::GetName(this), "FrameData buffer could not be created, render system stays down");
 			return false;
 		}
 
+		m_frameDataBuffer->SetDebugName("RenderSystem_FrameData");
+		m_frameDataMap = (u8*)m_frameDataBuffer->Map();
+
+		for (u32 i = 0; i < GraphicsContext::MaxFramesInFlight; i++)
+			m_frameDataViews[i] = m_resourceHeap->CreateConstantView(m_frameDataBuffer, usize(i) * m_frameDataStride, m_frameDataStride);
+
 		ResizeImage({ 1280, 720 });
 		m_slots.Resize(GraphicsContext::MaxFramesInFlight);
-		for (u32 i = 0; i < GraphicsContext::MaxFramesInFlight; i++)
+		m_fence = m_device->CreateFence();
+
+		auto* pReflection = GetEngine()->GetReflectionSystem();
+
+		// TODO: This is not a correct solution. 
+		List<Reflect::Type*> types = pReflection->GetTypeByBase(Reflect::TypeOf<RenderPass>());
+
+		List<PassEntry> entries;
+		for (auto* pType : types)
 		{
-			if (!RecreateSlot(i))
-				return false;
+			auto* pAttr = pType->GetCustomAttribute<RenderOrderAttribute>();
+			if (!pAttr)
+				continue;
+
+			RenderPass* pPass = (RenderPass*)pType->Create();
+			if (!pPass)
+			{
+				Terminal::Warn(StringOps::GetName(this), "{} may have virtual function issues.", pType->GetName());
+				continue;
+			}
+			pPass->m_engine = GetEngine();
+
+			PassEntry entry = {};
+			entry.pPass = pPass;
+			entry.order = pAttr->GetOrder();
+			entries.PushBack(entry);
 		}
 
-		m_fence = m_device->CreateFence();
+		entries.Sort([](const PassEntry& left, const PassEntry& right)
+			{
+				return left.order < right.order;
+			});
+
+		for (const PassEntry& entry : entries)
+		{
+			entry.pPass->OnInitialize();
+			m_renderPasses.PushBack(entry.pPass);
+		}
 
 		return true;
 	}
 
 	void RenderSystem::OnExecute(const EngineFrame& ctx, Scene& currentScene)
 	{
-		Math::Mat4f viewProj = Math::Mat4f::Identity();
-		Math::Vec3f camPos = Math::Vec3f::Zero();
-
 		CameraSystem* pCameraSystem = RequestSystem<CameraSystem>();
 		CameraComponent* pCamera = nullptr;
 
@@ -66,24 +121,90 @@ namespace Horizon::Engine
 			pCamera = currentScene.FindComponent<CameraComponent>(pCameraSystem->GetActiveCamera());
 
 		if (pCamera != nullptr && pCamera->m_targetScreen.X() >= 1.0f && pCamera->m_targetScreen.Y() >= 1.0f)
-		{
-			viewProj = pCamera->m_viewProjection;
-			camPos = pCamera->m_worldPosition;
 			ResizeImage({ u32(pCamera->m_targetScreen.X()), u32(pCamera->m_targetScreen.Y()) });
+
+		if (!pCamera)
+		{
+			Terminal::Error(StringOps::GetName(this), "There is no valid camera somehow");
+			return;
 		}
 
-		// Resize if needed
 		RenderSlot& slot = m_slots[m_frameIndex];
+
 		if (slot.currSize != m_targetSize)
 		{
-			if (!RecreateSlot(m_frameIndex))
-			{
-				Terminal::Error(StringOps::GetName(this), "Failed to resize color target slot {}", m_frameIndex);
+			DestroySlot(m_frameIndex);
+			CreateSlot(m_frameIndex);
+
+			if (!slot.pTargetTexture)
 				return;
-			}
 		}
 
+		AssetService* pAssetService = GetEngine()->RequestService<AssetService>();
+		MeshAssetStreamer* pMeshStreamer = pAssetService->FindLoader<MeshAssetStreamer>(Reflect::TypeOf<MeshAsset>());
+
+		RenderPassFrame currentFrame = {};
+		currentFrame.cameraPosition = pCamera->m_worldPosition;
+		currentFrame.viewMatrix = pCamera->m_view;
+		currentFrame.projMatrix = pCamera->m_projection;
+		currentFrame.projMatrix = pCamera->m_viewProjection;
+		currentFrame.targetSize = m_targetSize;
+		currentFrame.frameIndex = m_frameIndex;
+		currentFrame.pEngineFrame = &const_cast<EngineFrame&>(ctx);
+		currentFrame.pColorTarget = slot.pTargetTexture;
+		currentFrame.pCmdList = slot.pTargetCmd;
+		currentFrame.pDepthTarget = slot.pTargetDepth;
+		currentFrame.pIndexBuffer = pMeshStreamer->GetIndexBuffer();
+		currentFrame.vertexBufferIndex = pMeshStreamer->GetVertexBufferView();
+
+		// TODO: Gather all the renderable objects here?
+		currentScene.ForEach<TransformComponent, MeshComponent>([&](EntityHandle entity, TransformComponent& transComp, MeshComponent& meshComp)
+			{
+				if (meshComp.m_hideInRender)
+				{
+					Terminal::Log(StringOps::GetName(this), "WILL HIDE STOP?");
+					return;
+				}
+
+				MeshAsset* pMesh = meshComp.m_meshHandle.GetAsset();
+
+				if (!pMesh)
+				{
+					Terminal::Log(StringOps::GetName(this), "WILL NULLPTR STOP?");
+					return;
+				}
+
+				if (pMesh->GetResidency() != AssetResidency::Resident)
+				{
+					Terminal::Log(StringOps::GetName(this), "WILL LOAD STOP?");
+					pMesh->LoadAsync();
+					return;
+				}
+
+				for (const MeshAssetSubmesh& submesh : pMesh->GetSubmeshes())
+				{
+					RenderableObject object = {};
+					object.firstVertex = pMesh->GetFirstVertex() + submesh.vertexOffset;
+					object.firstIndex = pMesh->GetFirstIndex() + submesh.indexOffset;
+					object.indexCount = submesh.indexCount;
+					object.worldMatrix = transComp.m_worldMatrix;
+
+					currentFrame.graphReadyObjects.PushBack(object);
+					Terminal::Log(StringOps::GetName(this), "PUSHING THE MESH");
+				}
+			});
+
 		m_fence->WaitCPU(slot.fenceValue);
+
+		RenderFrameData frameData = {};
+		frameData.view = pCamera->m_view;
+		frameData.proj = pCamera->m_projection;
+		frameData.viewProj = pCamera->m_viewProjection;
+		frameData.cameraPosition = pCamera->m_worldPosition;
+		frameData.time = f32(ctx.GetTotalSeconds());
+
+		std::memcpy(m_frameDataMap + usize(m_frameIndex) * m_frameDataStride, &frameData, sizeof(RenderFrameData));
+		currentFrame.frameDataIndex = m_frameDataViews[m_frameIndex];
 
 		slot.pTargetCmd->Begin();
 		slot.pTargetCmd->BindDescriptorHeaps(m_resourceHeap, nullptr);
@@ -98,16 +219,10 @@ namespace Horizon::Engine
 			beginBarrier.sliceCount = 1;
 			slot.pTargetCmd->Barrier(&beginBarrier, 1);
 		}
-		RHI::GfxRenderBeginDesc renderDesc = RHI::GfxRenderBeginDesc()
-			.AddColorTarget(slot.pTargetTexture, RHI::GfxLoadOp::Clear, { 0.0f, 0.0f, 0.0f, 1.f })
-			/*.SetDepth(sFunDepthTextures[m_frameIndex], RHI::GfxLoadOp::Clear, 0.0f)*/
-			.SetSize(slot.pTargetTexture->GetDesc().width, slot.pTargetTexture->GetDesc().height);
 
-		slot.pTargetCmd->BeginRendering(renderDesc);
-		slot.pTargetCmd->SetScissor({ 0, 0, (i32)slot.pTargetTexture->GetDesc().width, (i32)slot.pTargetTexture->GetDesc().height });
-		slot.pTargetCmd->SetViewport({ 0, 0, (f32)slot.pTargetTexture->GetDesc().width, (f32)slot.pTargetTexture->GetDesc().height, 0.f, 1.f });
+		for (auto* pPass : m_renderPasses)
+			pPass->RenderFrame(currentFrame);
 
-		slot.pTargetCmd->EndRendering();
 		{
 			RHI::GfxTextureBarrier endBarrier = {};
 			endBarrier.pTexture = slot.pTargetTexture;
@@ -121,48 +236,57 @@ namespace Horizon::Engine
 		}
 
 		slot.pTargetCmd->End();
-		m_queue->Submit(&slot.pTargetCmd, 1);
 
+		m_queue->Submit(&slot.pTargetCmd, 1);
 		slot.fenceValue = m_queue->Signal(m_fence);
+
 		m_frameIndex = (m_frameIndex + 1) % GraphicsContext::MaxFramesInFlight;
 	}
 
 	void RenderSystem::OnFinalize()
 	{
+		if (!m_device)
+			return;
+
 		m_device->WaitIdle();
 
-		Memory::Allocator::Delete(m_fence);
+		if (m_frameDataBuffer)
+		{
+			for (u32 i = 0; i < GraphicsContext::MaxFramesInFlight; i++)
+			{
+				if (m_frameDataViews[i] != kInvalid32)
+					m_resourceHeap->Free(m_frameDataViews[i]);
+			}
+
+			m_frameDataBuffer->Unmap();
+			Memory::Allocator::Delete(m_frameDataBuffer);
+			m_frameDataBuffer = nullptr;
+			m_frameDataMap = nullptr;
+		}
+
+		for (auto* pPass : m_renderPasses)
+			pPass->OnFinalize();
+
+		for (auto* pPass : m_renderPasses)
+			Memory::Allocator::Delete(pPass);
+
+		m_renderPasses.Clear();
 
 		for (usize i = 0; i < m_slots.GetCount(); i++)
-		{
-			ClearSlot(i);
-			Memory::Allocator::Delete(m_slots[i].pTargetCmd);
-		}
+			DestroySlot(i);
 
-		if (m_colorHeap)
-		{
-			Memory::Allocator::Delete(m_colorHeap);
-			m_colorHeap = nullptr;
-		}
+		m_slots.Clear();
 
-		if (m_resourceHeap)
-		{
-			Memory::Allocator::Delete(m_resourceHeap);
-			m_resourceHeap = nullptr;
-		}
+		Memory::Allocator::Delete(m_fence);
+		m_fence = nullptr;
 
+		m_resourceHeap = nullptr;
+		m_depthTargetHeap = nullptr;
+		m_colorTargetHeap = nullptr;
 	}
 
 	void RenderSystem::OnGroupsChanged(SystemGroup previous, SystemGroup current)
 	{
-	}
-
-	u64 RenderSystem::GetSceneView() const
-	{
-		if (!m_slots[m_frameIndex].pTargetTexture)
-			return kInvalid64;
-
-		return m_resourceHeap->GetGpuHandle(m_slots[m_frameIndex].shaderView);
 	}
 
 	void RenderSystem::ResizeImage(const Math::Vec2u& imgSize)
@@ -176,70 +300,75 @@ namespace Horizon::Engine
 		m_targetSize = { width, height };
 	}
 
-	b8 RenderSystem::RecreateSlot(u32 imageIndex)
+	void RenderSystem::CreateSlot(usize index)
 	{
-		RenderSlot& slot = m_slots[imageIndex];
+		RenderSlot& slot = m_slots[index];
 
-		if (slot.currSize == m_targetSize)
+		slot.pTargetCmd = m_device->CreateCommandList(RHI::GfxQueueType::Graphics);
+
+		RHI::GfxTextureDesc colorDesc = {};
+		colorDesc.width = m_targetSize.X();
+		colorDesc.height = m_targetSize.Y();
+		colorDesc.type = RHI::GfxTextureType::Tex2D;
+		colorDesc.format = RHI::GfxTextureFormat::RGBA8_UNORM;
+		colorDesc.usage = RHI::GfxTextureUsage::RenderTarget | RHI::GfxTextureUsage::Sampled;
+		colorDesc.clearColor = { 0.0f, 0.0f, 0.0f, 1.f };
+
+		RHI::GfxTextureDesc depthDesc = {};
+		depthDesc.width = m_targetSize.X();
+		depthDesc.height = m_targetSize.Y();
+		depthDesc.type = RHI::GfxTextureType::Tex2D;
+		depthDesc.format = RHI::GfxTextureFormat::D32_FLOAT;
+		depthDesc.usage = RHI::GfxTextureUsage::DepthStencil;
+
+		slot.pTargetTexture = m_device->CreateTexture(colorDesc);
+		slot.pTargetDepth = m_device->CreateTexture(depthDesc);
+
+		if (!slot.pTargetCmd || !slot.pTargetTexture || !slot.pTargetDepth)
 		{
-			Terminal::Error(StringOps::GetName(this), "It should not be able to come here");
-			return false;
+			Terminal::Error(StringOps::GetName(this), "Slot {} could not be created with {}x{}", index, m_targetSize.X(), m_targetSize.Y());
+			return;
 		}
+
+		slot.pTargetTexture->SetDebugName("Scene - ColorTarget");
+		slot.pTargetDepth->SetDebugName("Scene - DepthTarget");
+
+		slot.renderTargetView = m_colorTargetHeap->CreateRenderTargetView(slot.pTargetTexture);
+		slot.depthView = m_depthTargetHeap->CreateDepthStencilView(slot.pTargetDepth);
+		slot.shaderView = m_resourceHeap->CreateShaderView(slot.pTargetTexture);
+
+		slot.currState = RHI::GfxResourceState::Common;
+		slot.currSize = m_targetSize;
+		slot.fenceValue = 0;
+	}
+
+	void RenderSystem::DestroySlot(usize index)
+	{
+		RenderSlot& slot = m_slots[index];
 
 		m_device->WaitIdle();
 
-		if (!ClearSlot(imageIndex))
-			return false;
+		if (slot.renderTargetView != kInvalid32)
+			m_colorTargetHeap->Free(slot.renderTargetView);
 
-		if (slot.pTargetCmd == nullptr)
-			slot.pTargetCmd = m_device->CreateCommandList(RHI::GfxQueueType::Graphics);
+		if (slot.depthView != kInvalid32)
+			m_depthTargetHeap->Free(slot.depthView);
 
-		RHI::GfxTextureDesc texDesc = {};
-		texDesc.width = m_targetSize.X();
-		texDesc.height = m_targetSize.Y();
-		texDesc.type = RHI::GfxTextureType::Tex2D;
-		texDesc.format = RHI::GfxTextureFormat::RGBA8_UNORM;
-		texDesc.usage = RHI::GfxTextureUsage::RenderTarget | RHI::GfxTextureUsage::Sampled;
-		texDesc.clearColor = { 0.0f, 0.0f, 0.0f, 1.f };
-		texDesc.format = RHI::GfxTextureFormat::RGBA8_UNORM;
-
-		slot.pTargetTexture = m_device->CreateTexture(texDesc);
-		if (slot.pTargetTexture == nullptr)
-		{
-			Terminal::Error(StringOps::GetName(this), "Scene color target {}x{} could not be created",
-				m_targetSize.X(), m_targetSize.Y());
-			return false;
-		}
-
-		slot.pTargetTexture->SetDebugName("Scene - RenderTarget");
-
-		slot.renderTargetView = m_colorHeap->CreateRenderTargetView(slot.pTargetTexture);
-		slot.shaderView = m_resourceHeap->CreateShaderView(slot.pTargetTexture);
-
-		slot.currSize = m_targetSize;
-		slot.currState = RHI::GfxResourceState::Common;
-		slot.fenceValue = 0;
-
-		return true;
-	}
-
-	b8 RenderSystem::ClearSlot(u32 imageIndex)
-	{
-		RenderSlot& slot = m_slots[imageIndex];
-
-		if (!slot.pTargetTexture)
-			return true;
-
-		m_colorHeap->Free(slot.renderTargetView);
-		m_resourceHeap->Free(slot.shaderView);
-		slot.renderTargetView = kInvalid32;
-		slot.shaderView = kInvalid32;
+		if (slot.shaderView != kInvalid32)
+			m_resourceHeap->Free(slot.shaderView);
 
 		Memory::Allocator::Delete(slot.pTargetTexture);
-		slot.pTargetTexture = nullptr;
+		Memory::Allocator::Delete(slot.pTargetDepth);
+		Memory::Allocator::Delete(slot.pTargetCmd);
 
-		slot.fenceValue = 0;
+		slot = RenderSlot();
+	}
 
-		return true;
+	u64 RenderSystem::GetOutputView() const
+	{
+		if (!m_slots[m_frameIndex].pTargetTexture)
+			return kInvalid64;
+
+		return m_resourceHeap->GetGpuHandle(m_slots[m_frameIndex].shaderView);
 	}
 }

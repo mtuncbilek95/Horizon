@@ -23,6 +23,7 @@ namespace Horizon::RHI
 
 		virtual u32 CreateShaderView(GfxBuffer* pBuffer) = 0;
 		virtual u32 CreateStorageView(GfxBuffer* pBuffer) = 0;
+		virtual u32 CreateConstantView(GfxBuffer* pBuffer, usize offset = 0, u32 size = 0) = 0;
 
 		virtual u64 GetGpuHandle(u32 index) const = 0;
 

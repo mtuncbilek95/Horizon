@@ -32,6 +32,8 @@ namespace Horizon::Engine
 			return;
 		}
 
+		m_resourceHeap = pContext->GetResourceHeap();
+
 		RHI::GfxBufferArenaDesc vertArenaDesc = {};
 		vertArenaDesc.capacity = MibToByte(512ull);
 		vertArenaDesc.stride = sizeof(MeshVertex);
@@ -42,6 +44,7 @@ namespace Horizon::Engine
 		Terminal::Assert(m_vertexArena, StringOps::GetName(this), "Big fucked at some places");
 
 		m_vertexMap = (u8*)m_vertexArena->GetBuffer()->Map();
+		m_vertexBufferView = m_resourceHeap->CreateShaderView(m_vertexArena->GetBuffer());
 
 		RHI::GfxBufferArenaDesc indexArenaDesc = {};
 		indexArenaDesc.capacity = MibToByte(256ull);
@@ -57,6 +60,13 @@ namespace Horizon::Engine
 
 	void MeshAssetStreamer::OnFinalize()
 	{
+		if (m_vertexBufferView != kInvalid32)
+		{
+			m_resourceHeap->Free(m_vertexBufferView);
+			m_vertexBufferView = kInvalid32;
+		}
+
+		m_resourceHeap = nullptr;
 		m_device = nullptr;
 
 		Memory::Allocator::Delete(m_indexArena);

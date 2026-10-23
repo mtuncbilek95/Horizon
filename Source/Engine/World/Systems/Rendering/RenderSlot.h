@@ -10,9 +10,11 @@ namespace Horizon::Engine
 	struct RenderSlot
 	{
 		RHI::GfxTexture* pTargetTexture = nullptr;
+		RHI::GfxTexture* pTargetDepth = nullptr;
 		RHI::GfxCommandList* pTargetCmd = nullptr;
 
 		u32 renderTargetView = kInvalid32;
+		u32 depthView = kInvalid32;
 		u32 shaderView = kInvalid32;
 
 		RHI::GfxResourceState currState = RHI::GfxResourceState::Common;

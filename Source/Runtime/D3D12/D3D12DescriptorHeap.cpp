@@ -408,4 +408,50 @@ namespace Horizon::RHI
 
 		return index;
 	}
+
+	u32 D3D12DescriptorHeap::CreateConstantView(GfxBuffer* pBuffer, usize offset, u32 size)
+	{
+		if (!ExpectType(GfxDescriptorHeapType::Resource, "CreateConstantView"))
+			return kInvalid32;
+
+		auto* pD3DBuffer = static_cast<D3D12Buffer*>(pBuffer);
+		const GfxBufferDesc& bufDesc = pD3DBuffer->GetDesc();
+
+		if (offset % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT != 0)
+		{
+			Terminal::Error(StringOps::GetName(this), "Constant view offset {} is not {} byte aligned", offset, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+			return kInvalid32;
+		}
+
+		const usize viewSize = size > 0 ? usize(size) : bufDesc.size - offset;
+		const usize alignedSize = (viewSize + D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1) & ~usize(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT - 1);
+
+		if (offset + alignedSize > bufDesc.size)
+		{
+			Terminal::Error(StringOps::GetName(this), "Constant view {}..{} runs past the buffer size {}", offset, offset + alignedSize, bufDesc.size);
+			return kInvalid32;
+		}
+
+		if (alignedSize > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16)
+		{
+			Terminal::Error(StringOps::GetName(this), "Constant view size {} exceeds the 64KB limit", alignedSize);
+			return kInvalid32;
+		}
+
+		const u32 index = Allocate();
+
+		if (index == kInvalid32)
+			return kInvalid32;
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc = {};
+
+		viewDesc.BufferLocation = pD3DBuffer->m_resource->GetGPUVirtualAddress() + offset;
+		viewDesc.SizeInBytes = u32(alignedSize);
+
+		auto* pDevice = static_cast<D3D12Device*>(m_ownerDevice);
+
+		pDevice->Handle()->CreateConstantBufferView(&viewDesc, CpuAt(index));
+
+		return index;
+	}
 }

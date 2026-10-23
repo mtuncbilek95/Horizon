@@ -26,7 +26,7 @@ namespace Horizon::Editor
 		}
 
 		ViewObject* pViewer = pContext->pViews->GetViewObject(Reflect::TypeOf<SceneHierarchyView>());
-		pViewer->SetConnectedFile(pUsedAsset); // To be able to save
+		pViewer->SetConnectedFile(pUsedAsset);
 
 		pWorldService->SetCurrentWorld(pSceneAsset->GetScene());
 	}

@@ -30,7 +30,7 @@
 namespace Horizon::Editor
 {
 	EditorRenderer::EditorRenderer(const EditorRendererDesc& desc) : m_device(desc.pDevice),
-		m_graphicsQueue(desc.pQueue)
+		m_graphicsQueue(desc.pQueue), m_resourceHeap(desc.pResourceHeap)
 	{
 		m_context = ImGui::CreateContext();
 		ImGui::SetCurrentContext((ImGuiContext*)m_context);
@@ -46,15 +46,9 @@ namespace Horizon::Editor
 
 		LoadFonts();
 
-		RHI::GfxDescriptorHeapDesc heapDesc = {};
-		heapDesc.type = RHI::GfxDescriptorHeapType::Resource;
-		heapDesc.capacity = kImGuiHeapCapacity;
-
-		m_resourceHeap = m_device->CreateDescriptorHeap(heapDesc);
-
 		if (m_resourceHeap == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "ImGui resource heap with capacity {} could not be created", kImGuiHeapCapacity);
+			Terminal::Error(StringOps::GetName(this), "ImGui has no resource heap to work with");
 			return;
 		}
 
@@ -80,7 +74,6 @@ namespace Horizon::Editor
 		m_device->ShutdownImGui();
 
 		Memory::Allocator::Delete(m_platform);
-		Memory::Allocator::Delete(m_resourceHeap);
 
 		ImGui::DestroyContext((ImGuiContext*)m_context);
 	}

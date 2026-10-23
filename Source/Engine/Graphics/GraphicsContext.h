@@ -27,6 +27,10 @@ namespace Horizon::Engine
 		
 		RHI::GfxSwapchain* GetSwapchain() const { return m_swapchain; }
 
+		RHI::GfxDescriptorHeap* GetResourceHeap() const { return m_resourceTargetHeap; }
+		RHI::GfxDescriptorHeap* GetColorTargetHeap() const { return m_colorTargetHeap; }
+		RHI::GfxDescriptorHeap* GetDepthTargetHeap() const { return m_depthTargetHeap; }
+
 		ModuleReport OnInitialize() final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleGraph& graph) final;
@@ -42,5 +46,9 @@ namespace Horizon::Engine
 		RHI::GfxQueue* m_transferQueue = nullptr;
 
 		RHI::GfxSwapchain* m_swapchain = nullptr;
+
+		RHI::GfxDescriptorHeap* m_colorTargetHeap = nullptr;
+		RHI::GfxDescriptorHeap* m_depthTargetHeap = nullptr;
+		RHI::GfxDescriptorHeap* m_resourceTargetHeap = nullptr;
 	};
 }

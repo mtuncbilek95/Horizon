@@ -26,8 +26,6 @@ namespace Horizon::Engine
 		deviceDesc.enableDebugLayer = true;
 		deviceDesc.enableGpuValidation = true;
 #endif
-		deviceDesc.resourceDescriptorCapacity = 1 << 17;
-		deviceDesc.colorDescriptorCapacity = 1 << 10;
 
 		// Create device
 		m_device = RHI::CreateDevice(deviceDesc);
@@ -39,13 +37,33 @@ namespace Horizon::Engine
 		if (!m_graphicsQueue)
 			return ModuleReport("Failed to create GfxQueue(Graphics)");
 
-		/*m_computeQueue = m_device->CreateQueue(RHI::GfxQueueType::Compute);
+		m_computeQueue = m_device->CreateQueue(RHI::GfxQueueType::Compute);
 		if (!m_computeQueue)
-			return ModuleReport("Failed to create GfxQueue(Compute)");*/
+			return ModuleReport("Failed to create GfxQueue(Compute)");
 
-		/*m_transferQueue = m_device->CreateQueue(RHI::GfxQueueType::Transfer);
+		m_transferQueue = m_device->CreateQueue(RHI::GfxQueueType::Transfer);
 		if (!m_transferQueue)
-			return ModuleReport("Failed to create GfxQueue(Transfer)");*/
+			return ModuleReport("Failed to create GfxQueue(Transfer)");
+
+		RHI::GfxDescriptorHeapDesc heapDesc = {};
+
+		heapDesc.type = RHI::GfxDescriptorHeapType::Resource;
+		heapDesc.capacity = 1 << 16;
+		m_resourceTargetHeap = m_device->CreateDescriptorHeap(heapDesc);
+		if (!m_resourceTargetHeap)
+			return ModuleReport("Failed to create GfxDescriptorHeap(Resource)");
+
+		heapDesc.type = RHI::GfxDescriptorHeapType::Color;
+		heapDesc.capacity = 1 << 8;
+		m_colorTargetHeap = m_device->CreateDescriptorHeap(heapDesc);
+		if (!m_colorTargetHeap)
+			return ModuleReport("Failed to create GfxDescriptorHeap(Color)");
+
+		heapDesc.type = RHI::GfxDescriptorHeapType::Depth;
+		heapDesc.capacity = 1 << 7;
+		m_depthTargetHeap = m_device->CreateDescriptorHeap(heapDesc);
+		if (!m_depthTargetHeap)
+			return ModuleReport("Failed to create GfxDescriptorHeap(Depth)");
 
 		PAL::WindowRect windowRect = pWindowSub->GetWindow()->GetRect();
 
@@ -70,6 +88,10 @@ namespace Horizon::Engine
 		m_device->WaitIdle();
 
 		Memory::Allocator::Delete(m_swapchain);
+
+		Memory::Allocator::Delete(m_resourceTargetHeap);
+		Memory::Allocator::Delete(m_colorTargetHeap);
+		Memory::Allocator::Delete(m_depthTargetHeap);
 
 		Memory::Allocator::Delete(m_graphicsQueue);
 		Memory::Allocator::Delete(m_computeQueue);
