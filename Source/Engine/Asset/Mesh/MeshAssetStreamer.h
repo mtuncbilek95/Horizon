@@ -1,8 +1,11 @@
 #pragma once
 
-#include <Engine/Asset/AssetStreamer.h>
+#include <Engine/Asset/AssetEntry.h>
+#include <Engine/Core/Engine.h>
+#include <Engine/Core/EngineFrame.h>
+#include <Engine/Asset/AssetLoadSystem.h>
 #include <Engine/Asset/Mesh/MeshAsset.h>
-#include <Engine/Asset/Mesh/MeshProperties.h>
+#include <Engine/Asset/Mesh/MeshAssetProperties.h>
 
 #include <Runtime/Containers/List.h>
 #include <Runtime/RHI/Buffer/GfxBufferArena.h>
@@ -12,27 +15,32 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class ENGINE_API MeshAssetStreamer : public AssetStreamer
+	class ENGINE_API MeshAssetStreamer : public AssetLoadSystem
 	{
 		HORIZON_TYPE_REFLECT(MeshAssetStreamer);
 	public:
 		MeshAssetStreamer() = default;
 		~MeshAssetStreamer() = default;
 
-		void OnInitialize() final;
-		void OnSync(const EngineFrame& frameContext) final;
-		void OnFinalize() final;
+		Reflect::TypeHandle GetWorkingAssetType() const final { return Reflect::TypeOf<MeshAsset>(); }
 
-		void LoadAsync(AssetObject* pAsset) final;
-		void UnloadAsync(AssetObject* pAsset) final;
-
-		Reflect::TypeHandle GetAssetType() final { return Reflect::TypeOf<MeshAsset>(); }
+		void LoadAsync(MeshAsset* pAsset);
+		void UnloadAsync(MeshAsset* pAsset);
 
 		RHI::GfxBuffer* GetVertexBuffer() const { return m_vertexArena->GetBuffer(); }
 		RHI::GfxBuffer* GetIndexBuffer() const { return m_indexArena->GetBuffer(); }
 
+	protected:
+		void OnInitialize() final;
+		void OnFinalize() final;
+
+		void OnRegisteredAsset(const AssetEntry& entry) final;
+		void OnUnregisteredAsset(const AssetEntry& entry) final;
+		void OnRefreshAsset(const AssetEntry& entry) final;
+
 	private:
 		void RunLoadAsset(MeshAsset* pAsset);
+		void ReleaseAsset(MeshAsset* pAsset);
 
 	private:
 		RHI::GfxDevice* m_device = nullptr;

@@ -1,11 +1,15 @@
 #pragma once
 
-#include <Editor/Importer/AssetImportTask.h>
-#include <Editor/Domain/ImportPipeline/ImportPipelineRegistry.h>
+#include <Editor/ImportPipeline/ImporterRegistry.h>
+#include <Editor/Domain/DomainFileImportContext.h>
+#include <Editor/Domain/DomainFile.h>
 #include <Engine/Core/Service.h>
+#include <Engine/Job/JobSystem.h>
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
 #include <Runtime/Containers/Guid.h>
 #include <Runtime/Containers/List.h>
+#include <Runtime/Serialization/JsonArchive.h>
+#include <Runtime/PAL/Sync/Atomic.h>
 
 #include <string>
 #include <string_view>
@@ -13,16 +17,12 @@
 namespace Horizon::Editor
 {
 	class DomainFolder;
-	class DomainFile;
-	struct DomainMeta;
 	class AssetImporter;
-	class ImporterContext;
 
 	class EDITOR_API DomainService : public Engine::Service
 	{
-		static constexpr usize MaxConcurrentImports = 4;
-	public:
-		static void RunImport(ImportTask* pTask);
+		static constexpr usize MaxConcurrentImports = 8;
+		static constexpr auto IgnoredAddList = std::to_array<std::string_view>({ ".hmeta", ".bin" });
 
 	public:
 		Engine::ModuleReport OnInitialize() final;
@@ -34,22 +34,20 @@ namespace Horizon::Editor
 		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
 		DomainFolder* GetRoot() const { return m_root; }
+
 		DomainFolder* FindFolder(std::string_view relativePath) const;
 		DomainFile* FindFileByGuid(const Guid& guid) const;
+		DomainFile* FindFileByRelative(const std::string& relative);
 
 		PAL::DirectoryWatcher& GetWatcher() { return m_watcher; }
-
-		const std::string& GetProjectPath() const { return m_projectPath; }
 		const std::string& GetAssetPath() const { return m_assetPath; }
 
-		u64 GetRevision() const { return m_revision; }
+		u64 GetRevision() const { return m_revision.Load(); }
 
-		void ReimportAsset(DomainFile* pFile);
+		void ImportFile(const std::string& targetFolder, const std::string& importTarget);
 
 	private:
-		static void SplitPath(std::string_view relativePath, std::string& outParent, std::string& outName);
-		static std::string ExtensionOf(const std::string& name);
-
+		void BuildRootTree();
 		void BindWatcher();
 
 		void OnEntryAdded(const PAL::DirectoryWatcher::Event& event);
@@ -58,39 +56,46 @@ namespace Horizon::Editor
 		void OnEntryRenamed(const PAL::DirectoryWatcher::Event& event);
 		void OnWatcherOverflow();
 
-		DomainFile* FindFileByGuid(DomainFolder* pFolder, const Guid& guid) const;
+		void RunParseAsset(DomainFileImportContext& task);
+		void OnParseAssetFinished(usize slot);
 
-		void RebuildTree();
-		void TrackSources(const List<std::string>& relativePaths);
-		void TrackSource(const std::string& relativePath);
+		void RunCookAsset(DomainFileImportContext& task);
+		void OnCookAssetFinished(usize slot);
+
+		DomainFile* FindFileByGuid(DomainFolder* pFolder, const Guid& guid) const;
+		DomainFile* FindFileByRelative(DomainFolder* pFolder, const std::string& relative) const;
+		DomainFile* FindDomainFile(const std::string& relativePathWithExtension) const;
+
 		void ForgetFolder(DomainFolder* pFolder);
 		void ForgetFile(DomainFile* pFile);
 
-		b8 Materialize(DomainFolder* pParent, const std::string& name, const DomainMeta& meta, b8 writeMeta);
-		std::string ResolveAssetTypeName(AssetImporter* pImporter);
-		std::string CookedPathOf(const Guid& id) const;
-		void MoveMeta(const std::string& oldMetaPath, const std::string& newMetaPath);
+		void ProcessFolder(DomainFolder* pFolder);
+		DomainFile* ProcessSourceFile(DomainFolder* pParent, const std::string& name);
 
-		void ProcessPendingImports();
-		void CommitFinishedImports();
-		b8 IsImportActive(const std::string& relativePath) const;
-		b8 IsSourceReady(const std::string& sourcePath) const;
-		b8 StartImport(DomainFolder* pParent, const std::string& name, const std::string& relativePath);
+		void QueueImport(DomainFile* pFile, ImportReason reason);
+		void StartImport();
+		void EndImport();
+
+		DomainFileImportContext* FindRunningImport(const Guid& id);
+		b8 IsImportPending(const Guid& id) const;
+
+		AssetImportSettings* CloneSettings(const AssetImportSettings* pSource, Reflect::Type* pType);
+		b8 ReadSettings(DomainFile* pFile, Reflect::Type* pSettingsType, JsonArchiveReader& reader);
+
+		b8 WriteMetaFile(DomainFile* pFile, Reflect::Type* pSettingsType);
 
 	private:
-		std::string m_projectPath;
 		std::string m_assetPath;
 		std::string m_cookPath;
 		DomainFolder* m_root = nullptr;
 
-		ImportPipelineRegistry m_importPipelineRegistry;
-		ImporterContext* m_importerContext = nullptr;
-
-		List<std::string> m_pendingImports;
-		List<ImportTask*> m_activeImports;
+		ImporterRegistry m_importPipelineRegistry;
+		Engine::JobSystem* m_jobSystem = nullptr;
 
 		PAL::DirectoryWatcher m_watcher;
-		b8 m_watcherHealthy = false;
-		u64 m_revision = 0;
+		PAL::Atomic<u64> m_revision = 0;
+
+		List<DomainFileImportContext> m_pendingImports;
+		DomainFileImportContext m_runningImports[MaxConcurrentImports];
 	};
 }

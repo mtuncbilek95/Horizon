@@ -26,5 +26,5 @@ target_link_libraries(Editor
 	PUBLIC
 		Engine Runtime
 	PRIVATE
-		TinyFbx
+		ufbx fastgltf::fastgltf wuffs
 )

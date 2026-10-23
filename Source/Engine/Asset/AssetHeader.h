@@ -16,6 +16,8 @@ namespace Horizon::Engine
 		c8 typeName[MaxTypeBufferLength];
 		u64 propertyOffset;
 		u64 propertySize;
+		u64 tableOffset;
+		u64 tableSize;
 		u64 payloadOffset;
 		u64 payloadSize;
 	};

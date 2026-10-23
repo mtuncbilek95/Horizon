@@ -1,6 +1,6 @@
 #include "AssetService.h"
 
-#include <Engine/Asset/AssetStreamer.h>
+#include <Engine/Asset/AssetLoadSystem.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Graphics/GraphicsContext.h>
@@ -9,16 +9,14 @@
 #include <Runtime/PAL/File/File.h>
 #include <Runtime/Containers/StringOps.h>
 
-#include <cstring>
-
 namespace Horizon::Engine
 {
 	ModuleReport AssetService::OnInitialize()
 	{
-		auto* pReflect = GetEngine()->GetReflectionSystem();
+		m_reflection = GetEngine()->GetReflectionSystem();
 
-		for (const Reflect::Type* pType : pReflect->GetTypeByBase(Reflect::TypeOf<AssetStreamer>()))
-			AddStreamerType(pType);
+		for (const Reflect::Type* pType : m_reflection->GetTypeByBase(Reflect::TypeOf<AssetLoadSystem>()))
+			AddLoaderType(pType);
 
 		return ModuleReport();
 	}
@@ -26,19 +24,31 @@ namespace Horizon::Engine
 	void AssetService::OnExecute(const EngineFrame& ctx)
 	{
 		for (StreamerEntry& entry : m_streamers)
-			entry.pStreamer->OnSync(ctx);
+			entry.pLoader->OnExecute(ctx);
 	}
 
 	void AssetService::OnFinalize()
 	{
-		for (StreamerEntry& entry : m_streamers)
+		for (AssetEntry& entry : m_usableAssets)
 		{
-			entry.pStreamer->OnFinalize();
-			Memory::Allocator::Delete(entry.pStreamer);
+			if (entry.pAssetObject->m_loader)
+				entry.pAssetObject->m_loader->OnUnregisteredAsset(entry);
+
+			Memory::Allocator::Delete(entry.pAssetObject);
 		}
 
-		for (auto* pAsset : m_usableAssets)
-			Memory::Allocator::Delete(pAsset);
+		m_usableAssets.Clear();
+		m_idLookup.clear();
+		m_relativePathLookup.clear();
+
+		for (StreamerEntry& entry : m_streamers)
+		{
+			entry.pLoader->OnFinalize();
+			Memory::Allocator::Delete(entry.pLoader);
+		}
+
+		m_streamers.Clear();
+		m_streamerLookup.clear();
 	}
 
 	void AssetService::DeclareDependencies(ModuleGraph& graph)
@@ -50,49 +60,39 @@ namespace Horizon::Engine
 	{
 		for (const Reflect::Type& type : library.types)
 		{
-			if (type.GetBaseId() == Reflect::TypeOf<AssetStreamer>())
-				AddStreamerType(&type);
+			if (type.GetBaseId() == Reflect::TypeOf<AssetLoadSystem>())
+				AddLoaderType(&type);
 		}
 	}
 
 	void AssetService::OnLibraryUnregistered(const ReflectionLibrary& library)
 	{
 		for (const Reflect::Type& type : library.types)
-			RemoveStreamerType(&type);
+			RemoveLoaderType(&type);
 	}
 
-	AssetStreamer* AssetService::FindStreamer(Reflect::TypeHandle handle)
+	b8 AssetService::AddLoaderType(const Reflect::Type* pType)
 	{
-		auto it = m_streamerLookup.find(handle);
+		AssetLoadSystem* pLoader = (AssetLoadSystem*)pType->Create();
 
-		if (it == m_streamerLookup.end())
-			return nullptr;
-
-		return it->second;
-	}
-
-	b8 AssetService::AddStreamerType(const Reflect::Type* pType)
-	{
-		AssetStreamer* pStreamer = (AssetStreamer*)pType->Create();
-
-		if (!pStreamer)
+		if (!pLoader)
 		{
 			Terminal::Warn(StringOps::GetName(this), "Forgetting to implement a virtual function can cause the previous error!");
 			return false;
 		}
 
-		pStreamer->m_engine = GetEngine();
-		pStreamer->OnInitialize();
+		pLoader->m_engine = GetEngine();
+		pLoader->OnInitialize();
 
-		m_streamerLookup[pStreamer->GetAssetType()] = pStreamer;
-		m_streamers.EmplaceBack(pType, pStreamer);
+		m_streamerLookup[pLoader->GetWorkingAssetType()] = pLoader;
+		m_streamers.EmplaceBack(pType, pLoader);
 
-		auto* pAssetType = GetEngine()->GetReflectionSystem()->GetType(pStreamer->GetAssetType());
+		auto* pAssetType = GetEngine()->GetReflectionSystem()->GetType(pLoader->GetWorkingAssetType());
 		Terminal::Info(StringOps::GetName(this), "{} has been registered for the {} type", pType->GetName(), pAssetType ? pAssetType->GetName() : "unknown");
 		return true;
 	}
 
-	void AssetService::RemoveStreamerType(const Reflect::Type* pType)
+	void AssetService::RemoveLoaderType(const Reflect::Type* pType)
 	{
 		for (usize i = m_streamers.GetCount(); i > 0; --i)
 		{
@@ -101,99 +101,154 @@ namespace Horizon::Engine
 			if (entry.pType != pType)
 				continue;
 
-			m_streamerLookup.erase(entry.pStreamer->GetAssetType());
-			entry.pStreamer->OnFinalize();
-			Memory::Allocator::Delete(entry.pStreamer);
+			m_streamerLookup.erase(entry.pLoader->GetWorkingAssetType());
+			entry.pLoader->OnFinalize();
+			Memory::Allocator::Delete(entry.pLoader);
 			m_streamers.RemoveAt(i - 1);
 		}
 	}
 
-	b8 AssetService::RegisterAsset(const AssetPhysicalEntry& entry)
+	b8 AssetService::RegisterAsset(const Guid& id, const std::string& cookPath, const std::string& callPath, const std::string& name, Reflect::TypeHandle type)
 	{
-		if (m_idLookup.contains(entry.assetId))
+		auto itAsset = m_idLookup.find(id);
+		if (itAsset != m_idLookup.end())
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} | {} has been already registered", id.ToString(), cookPath);
 			return true;
+		}
 
-		auto* pReflect = GetEngine()->GetReflectionSystem();
-		auto* pType = pReflect->GetType(entry.assetType);
+		Reflect::Type* pType = m_reflection->GetType(type);
 
-		AssetObject* pNewAssetObject = (AssetObject*)pType->Create();
-		pNewAssetObject->m_streamer = FindStreamer(entry.assetType);
-		pNewAssetObject->m_ownerEntry = entry;
+		auto itStreamer = m_streamerLookup.find(type);
+		if (itStreamer == m_streamerLookup.end())
+		{
+			Terminal::Warn(StringOps::GetName(this), "{} has any type of loader", pType->GetName());
+			return false;
+		}
 
-		ReadHeader(pNewAssetObject);
+		AssetEntry entry = {};
+		entry.assetId = id;
+		entry.assetType = type;
+		entry.assetTypeName = pType->GetName();
+		entry.cookPath = cookPath;
+		entry.callPath = callPath;
+		entry.pAssetObject = (AssetObject*)pType->Create();
 
-		m_idLookup[entry.assetId] = m_usableAssets.GetCount();
-		m_usableAssets.PushBack(pNewAssetObject);
+		if (!entry.pAssetObject)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} | {} has virtual function issues. Please check it out", id.ToString(), pType->GetName());
+			return false;
+		}
+		entry.pAssetObject->m_loader = itStreamer->second;
 
+		m_relativePathLookup[callPath] = m_usableAssets.GetCount();
+		m_idLookup[id] = m_usableAssets.GetCount();
+		m_usableAssets.PushBack(entry);
+
+		itStreamer->second->OnRegisteredAsset(m_usableAssets.Back());
 		return true;
 	}
 
 	b8 AssetService::UnregisterAsset(const Guid& id)
 	{
-		auto it = m_idLookup.find(id);
-
-		if (it == m_idLookup.end())
+		auto itAsset = m_idLookup.find(id);
+		if (itAsset == m_idLookup.end())
+		{
+			Terminal::Error(StringOps::GetName(this), "{} is not registered, nothing to unregister", id.ToString());
 			return true;
+		}
 
-		Memory::Allocator::Delete(m_usableAssets[it->second]);
+		const usize index = itAsset->second;
+		AssetEntry& entry = m_usableAssets[index];
 
-		m_usableAssets.RemoveAt(it->second);
-		m_idLookup.erase(id);
+		if (entry.pAssetObject->m_loader)
+			entry.pAssetObject->m_loader->OnUnregisteredAsset(entry);
 
+		m_relativePathLookup.erase(entry.callPath);
+		m_idLookup.erase(itAsset);
+		Memory::Allocator::Delete(entry.pAssetObject);
+
+		const usize lastIndex = m_usableAssets.GetCount() - 1;
+		if (index != lastIndex)
+		{
+			m_usableAssets[index] = std::move(m_usableAssets[lastIndex]);
+			m_idLookup[m_usableAssets[index].assetId] = index;
+			m_relativePathLookup[m_usableAssets[index].callPath] = index;
+		}
+
+		m_usableAssets.PopBack();
 		return true;
 	}
 
 	b8 AssetService::RefreshAsset(const Guid& id)
 	{
-		auto it = m_idLookup.find(id);
-
-		if (it == m_idLookup.end())
+		auto itAsset = m_idLookup.find(id);
+		if (itAsset == m_idLookup.end())
 		{
 			Terminal::Error(StringOps::GetName(this), "{} is not registered, nothing to refresh", id.ToString());
 			return false;
 		}
 
-		AssetObject* pAsset = m_usableAssets[it->second];
+		AssetEntry& entry = m_usableAssets[itAsset->second];
 
-		if (!ReadHeader(pAsset))
-			return false;
+		if (entry.pAssetObject->m_loader)
+			entry.pAssetObject->m_loader->OnRefreshAsset(entry);
 
-		pAsset->m_revision.FetchAdd(1);
 		return true;
 	}
 
-	AssetObject* AssetService::FindAsset(const Guid& id)
+	AssetObject* AssetService::FindAsset(const Guid& id) const
 	{
-		auto it = m_idLookup.find(id);
-
-		if (it == m_idLookup.end())
+		auto itAsset = m_idLookup.find(id);
+		if (itAsset == m_idLookup.end())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has not been found in any of the sources.", id.ToString());
+			Terminal::Error(StringOps::GetName(this), "{} has not been found in any of the sources", id.ToString());
 			return nullptr;
 		}
 
-		return m_usableAssets[it->second];
+		return m_usableAssets[itAsset->second].pAssetObject;
 	}
 
-	b8 AssetService::ReadHeader(AssetObject* pAsset)
+	AssetObject* AssetService::FindAsset(const Guid& id, Reflect::TypeHandle type) const
 	{
-		List<u8> payload;
-
-		PAL::FileAccessRequest request = PAL::File::RequestAccess(pAsset->m_ownerEntry.cookPath, PAL::FileOperationAccessPolicy::Read,
-			PAL::FileOperationSharePolicy::SharedRead);
-
-		const b8 wasRead = PAL::File::ReadMemory(request, payload, 0, sizeof(AssetHeader));
-
-		PAL::File::ReleaseAccess(request);
-
-		if (!wasRead || payload.GetCount() < sizeof(AssetHeader))
+		auto itAsset = m_idLookup.find(id);
+		if (itAsset == m_idLookup.end())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has no readable header", pAsset->m_ownerEntry.cookPath);
-			return false;
+			Terminal::Error(StringOps::GetName(this), "{} has not been found in any of the sources", id.ToString());
+			return nullptr;
 		}
 
-		std::memcpy(&pAsset->m_header, payload.GetData(), sizeof(AssetHeader));
+		const AssetEntry& entry = m_usableAssets[itAsset->second];
+		if (entry.assetType != type)
+		{
+			Terminal::Error(StringOps::GetName(this), "{} is a {}, not the requested asset type", id.ToString(), entry.assetTypeName);
+			return nullptr;
+		}
 
-		return true;
+		return entry.pAssetObject;
+	}
+
+	AssetObject* AssetService::FindAssetByPath(const std::string& callPath) const
+	{
+		auto itAsset = m_relativePathLookup.find(callPath);
+		if (itAsset == m_relativePathLookup.end())
+		{
+			Terminal::Error(StringOps::GetName(this), "{} has not been found in any of the sources", callPath);
+			return nullptr;
+		}
+
+		return m_usableAssets[itAsset->second].pAssetObject;
+	}
+
+	AssetLoadSystem* AssetService::FindLoader(Reflect::TypeHandle assetType) const
+	{
+		auto itLoader = m_streamerLookup.find(assetType);
+		if (itLoader == m_streamerLookup.end())
+		{
+			Terminal::Error(StringOps::GetName(this), "No loader is registered for the requested asset type");
+			return nullptr;
+		}
+
+		return itLoader->second;
 	}
 }

@@ -4,6 +4,7 @@
 #include <Engine/Asset/Mesh/MeshAsset.h>
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
+#include <Runtime/Containers/List.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/RTTR/Attributes/AssetRefAttribute.h>
 
@@ -22,7 +23,5 @@ namespace Horizon::Engine
 
 		HFIELD();
 		b8 m_hideInRender = false;
-
-		Guid m_resolvedId;
 	};
 }

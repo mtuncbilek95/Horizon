@@ -11,7 +11,7 @@ namespace Horizon::Engine
 	SceneAsset::~SceneAsset()
 	{
 		// TODO: Temporary
-		if(m_scene)
+		if (m_scene)
 			Memory::Allocator::Delete(m_scene);
 	}
 
@@ -20,7 +20,7 @@ namespace Horizon::Engine
 		if (m_residency.CompareExchange(AssetResidency::Unloaded, AssetResidency::Pending) != AssetResidency::Unloaded)
 			return;
 
-		m_streamer->LoadAsync(this);
+		GetLoader<SceneAssetStreamer>()->LoadAsync(this);
 	}
 
 	void SceneAsset::UnloadAsync()
@@ -28,6 +28,19 @@ namespace Horizon::Engine
 		if (m_residency.CompareExchange(AssetResidency::Resident, AssetResidency::Pending) != AssetResidency::Resident)
 			return;
 
-		m_streamer->UnloadAsync(this);
+		GetLoader<SceneAssetStreamer>()->UnloadAsync(this);
+	}
+
+	void SceneAsset::LoadSync()
+	{
+		if (m_residency.CompareExchange(AssetResidency::Unloaded, AssetResidency::Pending) != AssetResidency::Unloaded)
+			return;
+
+		GetLoader<SceneAssetStreamer>()->LoadSync(this);
+	}
+
+	void SceneAsset::UnloadSync()
+	{
+
 	}
 }

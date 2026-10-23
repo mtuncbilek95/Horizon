@@ -119,7 +119,23 @@ namespace Horizon::Reflect
 		ReadOnlyList<const EnumValue> GetEnumValues() const { return m_enumValues; }
 		ReadOnlyList<const Field> GetFields() const { return m_fields; }
 
+		template<typename T>
+			requires std::is_enum_v<T>
+		std::string_view GetEnumName(T value)
+		{
+			const auto raw = static_cast<i64>(value);
+
+			for (const auto& enumVal : m_enumValues)
+			{
+				if (enumVal.value == raw)
+					return enumVal.name;
+			}
+
+			return "";
+		}
+
 		template<typename TAttr>
+			requires std::is_base_of_v<Attribute, TAttr>
 		b8 HasCustomAttribute()
 		{
 			for (Attribute* pAttr : m_attributes)
@@ -132,6 +148,7 @@ namespace Horizon::Reflect
 		}
 
 		template<typename TAttr>
+			requires std::is_base_of_v<Attribute, TAttr>
 		TAttr* GetCustomAttribute() const
 		{
 			for (Attribute* pAttr : m_attributes)
@@ -144,6 +161,7 @@ namespace Horizon::Reflect
 		}
 
 		template<typename TAttr>
+			requires std::is_base_of_v<Attribute, TAttr>
 		List<TAttr*> GetCustomAttributes() const
 		{
 			List<TAttr*> out;

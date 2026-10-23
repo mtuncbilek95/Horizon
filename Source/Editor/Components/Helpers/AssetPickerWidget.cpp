@@ -21,14 +21,14 @@ namespace Horizon::Editor
 		static constexpr const c8* sClearPopup = "##assetClear";
 	}
 
-	b8 AssetPickerWidget::Draw(Guid* pId, const std::string& assetTypeName, DomainService* pDomain)
+	b8 AssetPickerWidget::Draw(Guid* pId, Reflect::Type* pAssetType, DomainService* pDomain)
 	{
 		std::string label = "None";
 
 		if (pId->IsValid())
 		{
 			DomainFile* pFile = pDomain->FindFileByGuid(*pId);
-			label = pFile ? pFile->GetPureName() : pId->ToString();
+			label = pFile ? pFile->GetName() : pId->ToString();
 		}
 
 		const ImGuiStyle& style = ImGui::GetStyle();
@@ -50,42 +50,51 @@ namespace Horizon::Editor
 			ImGui::EndPopup();
 		}
 
-		changed |= DrawDropTarget(pId, assetTypeName);
+		changed |= DrawDropTarget(pId, pAssetType, pDomain);
 
 		ImGui::SameLine(0.f, style.ItemInnerSpacing.x);
 
 		if (ImGui::Button(ICON_FA_MAGNIFYING_GLASS, ImVec2(pickerWidth, 0.f)))
 		{
 			m_search.clear();
-			RefreshCandidates(pDomain, assetTypeName);
-			ImGui::OpenPopup(sPickerPopup);
+			m_openPickerRequest = true;
 		}
 
-		changed |= DrawPicker(pId, pDomain, assetTypeName);
+		if (m_openPickerRequest)
+		{
+			RefreshCandidates(pDomain, pAssetType);
+			ImGui::OpenPopup(sPickerPopup);
+			m_openPickerRequest = false;
+		}
+
+		changed |= DrawPicker(pId, pDomain, pAssetType);
 
 		return changed;
 	}
 
-	b8 AssetPickerWidget::DrawDropTarget(Guid* pId, const std::string& assetTypeName)
+	b8 AssetPickerWidget::DrawDropTarget(Guid* pId, Reflect::Type* pAssetType, DomainService* pDomain)
 	{
 		if (!ImGui::BeginDragDropTarget())
 			return false;
 
 		b8 changed = false;
 
-		if (const ImGuiPayload* pPayload = ImGui::AcceptDragDropPayload("HZ_ASSET_FILE", ImGuiDragDropFlags_AcceptBeforeDelivery))
+		if (const ImGuiPayload* pPayload = ImGui::AcceptDragDropPayload("HZ_ASSET_FILE"))
 		{
 			if (pPayload->DataSize == sizeof(DomainFile*))
 			{
 				DomainFile* pDropped = *static_cast<DomainFile* const*>(pPayload->Data);
-				const b8 acceptable = pDropped->GetMeta().assetTypeName == assetTypeName;
 
-				if (acceptable && pPayload->IsDelivery())
+				if (pDropped->GetAssetType() != pAssetType)
+				{
+					Terminal::Warn("AssetPickerWidget", "{} is not {}", pDropped->GetName(), pAssetType->GetName());
+				}
+				else
 				{
 					*pId = pDropped->GetID();
 					changed = true;
 
-					Terminal::Info("AssetPickerWidget", "{} dropped as {}", pDropped->GetID().ToString(), assetTypeName);
+					Terminal::Info("AssetPickerWidget", "{} dropped as {}", pDropped->GetName(), pAssetType->GetName());
 				}
 			}
 		}
@@ -94,15 +103,15 @@ namespace Horizon::Editor
 		return changed;
 	}
 
-	b8 AssetPickerWidget::DrawPicker(Guid* pId, DomainService* pDomain, const std::string& assetTypeName)
+	b8 AssetPickerWidget::DrawPicker(Guid* pId, DomainService* pDomain, Reflect::Type* pAssetType)
 	{
 		ImGui::SetNextWindowSize(ImVec2(320.f, 360.f), ImGuiCond_Appearing);
 
 		if (!ImGui::BeginPopup(sPickerPopup))
 			return false;
 
-		if (m_candidateRevision != pDomain->GetRevision() || m_candidateTypeName != assetTypeName)
-			RefreshCandidates(pDomain, assetTypeName);
+		if (m_candidateRevision != pDomain->GetRevision() || m_candidateTypeName != pAssetType->GetName())
+			RefreshCandidates(pDomain, pAssetType);
 
 		if (ImGui::IsWindowAppearing())
 			ImGui::SetKeyboardFocusHere();
@@ -130,24 +139,24 @@ namespace Horizon::Editor
 			}
 		}
 
-		for (DomainFile* pFile : m_candidates)
+		for (const Candidate& candidate : m_candidates)
 		{
-			if (!SearchFilter::Matches(pFile->GetPureName(), m_search))
+			if (!SearchFilter::Matches(candidate.label, m_search))
 				continue;
 
-			const b8 selected = pFile->GetID() == *pId;
+			const b8 selected = candidate.id == *pId;
 
-			ImGui::PushID(pFile);
+			ImGui::PushID(candidate.id.ToString().c_str());
 
-			if (ImGui::Selectable(pFile->GetPureName().c_str(), selected))
+			if (ImGui::Selectable(candidate.label.c_str(), selected))
 			{
-				*pId = pFile->GetID();
+				*pId = candidate.id;
 				changed = true;
 				ImGui::CloseCurrentPopup();
 			}
 
 			if (ImGui::IsItemHovered())
-				ImGui::SetTooltip("%s", pFile->GetRelativePath().c_str());
+				ImGui::SetTooltip("%s", candidate.tooltip.c_str());
 
 			ImGui::PopID();
 		}
@@ -158,25 +167,32 @@ namespace Horizon::Editor
 		return changed;
 	}
 
-	void AssetPickerWidget::RefreshCandidates(DomainService* pDomain, const std::string& assetTypeName)
+	void AssetPickerWidget::RefreshCandidates(DomainService* pDomain, Reflect::Type* pAssetType)
 	{
 		m_candidates.Clear();
-		m_candidateTypeName = assetTypeName;
+		m_candidateTypeName = pAssetType->GetName();
 		m_candidateRevision = pDomain->GetRevision();
 
 		if (DomainFolder* pRoot = pDomain->GetRoot())
-			CollectFiles(pRoot, assetTypeName);
+			CollectCandidates(pRoot, pAssetType);
 	}
 
-	void AssetPickerWidget::CollectFiles(DomainFolder* pFolder, const std::string& assetTypeName)
+	void AssetPickerWidget::CollectCandidates(DomainFolder* pFolder, Reflect::Type* pAssetType)
 	{
 		for (DomainFile* pFile : pFolder->GetFiles())
 		{
-			if (pFile->GetMeta().assetTypeName == assetTypeName)
-				m_candidates.PushBack(pFile);
+			if (pFile->GetAssetType() != pAssetType)
+				continue;
+
+			Candidate candidate;
+			candidate.pFile = pFile;
+			candidate.id = pFile->GetID();
+			candidate.label = pFile->GetName();
+			candidate.tooltip = pFile->GetRelativePath();
+			m_candidates.PushBack(std::move(candidate));
 		}
 
 		for (DomainFolder* pChild : pFolder->GetFolders())
-			CollectFiles(pChild, assetTypeName);
+			CollectCandidates(pChild, pAssetType);
 	}
 }

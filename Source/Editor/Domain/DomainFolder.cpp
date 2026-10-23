@@ -32,16 +32,38 @@ namespace Horizon::Editor
 
 	DomainFile* DomainFolder::FindFile(std::string_view name) const
 	{
+		std::string cleanName = std::string(name.substr(0, name.rfind('.')));
+
 		for (DomainFile* pFile : m_files)
 		{
-			if (StringOps::EqualsNoCase(pFile->GetName(), name))
+			if (StringOps::EqualsNoCase(pFile->GetName(), cleanName))
 				return pFile;
 		}
 
 		return nullptr;
 	}
 
-	DomainFolder* DomainFolder::ResolveFolder(std::string_view relativePath) const
+	DomainFile* DomainFolder::FindFileWithExtension(std::string_view nameWithExtension) const
+	{
+		const usize dot = nameWithExtension.rfind('.');
+		const std::string_view stem = dot == std::string_view::npos ? nameWithExtension : nameWithExtension.substr(0, dot);
+		const std::string_view extension = dot == std::string_view::npos ? std::string_view() : nameWithExtension.substr(dot);
+
+		for (DomainFile* pFile : m_files)
+		{
+			if (!StringOps::EqualsNoCase(pFile->GetName(), stem))
+				continue;
+
+			if (!StringOps::EqualsNoCase(pFile->GetExtension(), extension))
+				continue;
+
+			return pFile;
+		}
+
+		return nullptr;
+	}
+
+	DomainFolder* DomainFolder::ConfirmAndFindFolder(std::string_view relativePath) const
 	{
 		const DomainFolder* pCurrent = this;
 		usize offset = 0;
@@ -82,7 +104,7 @@ namespace Horizon::Editor
 		return pChild;
 	}
 
-	DomainFile* DomainFolder::AddFile(const std::string& name)
+	DomainFile* DomainFolder::AddFile(const Guid& id, const std::string& name, Reflect::Type* pAssetType)
 	{
 		DomainFile* pExisting = FindFile(name);
 
@@ -91,8 +113,8 @@ namespace Horizon::Editor
 
 		const std::string absolutePath = m_absolutePath + "/" + name;
 
-		DomainFile* pFile = Memory::Allocator::Create<DomainFile>(Memory::CurrLoc(), this, name,
-			absolutePath + std::string(DomainFile::MetaSuffix), absolutePath, m_connectedCookPath);
+		DomainFile* pFile = Memory::Allocator::Create<DomainFile>(Memory::CurrLoc(), this, id, name,
+			absolutePath + std::string(DomainFile::MetaSuffix), absolutePath, m_connectedCookPath, pAssetType);
 
 		usize index = 0;
 
