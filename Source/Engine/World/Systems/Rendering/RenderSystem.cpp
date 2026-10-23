@@ -157,26 +157,30 @@ namespace Horizon::Engine
 		currentFrame.pIndexBuffer = pMeshStreamer->GetIndexBuffer();
 		currentFrame.vertexBufferIndex = pMeshStreamer->GetVertexBufferView();
 
-		// TODO: Gather all the renderable objects here?
 		currentScene.ForEach<TransformComponent, MeshComponent>([&](EntityHandle entity, TransformComponent& transComp, MeshComponent& meshComp)
 			{
 				if (meshComp.m_hideInRender)
-				{
-					Terminal::Log(StringOps::GetName(this), "WILL HIDE STOP?");
 					return;
-				}
+
+				if (!meshComp.m_meshHandle.GetId().IsValid())
+					return;
 
 				MeshAsset* pMesh = meshComp.m_meshHandle.GetAsset();
-
 				if (!pMesh)
 				{
-					Terminal::Log(StringOps::GetName(this), "WILL NULLPTR STOP?");
-					return;
+					auto* pAsset = pAssetService->FindAsset(meshComp.m_meshHandle.GetId());
+					if (!pAsset)
+					{
+						Terminal::Error(StringOps::GetName(this), "{} is not a valid living mesh in the system", meshComp.m_meshHandle.GetId().ToString());
+						return;
+					}
+
+					meshComp.m_meshHandle.SetAsset(pAsset);
 				}
 
+				pMesh = meshComp.m_meshHandle.GetAsset();
 				if (pMesh->GetResidency() != AssetResidency::Resident)
 				{
-					Terminal::Log(StringOps::GetName(this), "WILL LOAD STOP?");
 					pMesh->LoadAsync();
 					return;
 				}
@@ -190,7 +194,6 @@ namespace Horizon::Engine
 					object.worldMatrix = transComp.m_worldMatrix;
 
 					currentFrame.graphReadyObjects.PushBack(object);
-					Terminal::Log(StringOps::GetName(this), "PUSHING THE MESH");
 				}
 			});
 
