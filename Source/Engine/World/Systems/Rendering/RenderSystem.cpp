@@ -147,7 +147,7 @@ namespace Horizon::Engine
 		currentFrame.cameraPosition = pCamera->m_worldPosition;
 		currentFrame.viewMatrix = pCamera->m_view;
 		currentFrame.projMatrix = pCamera->m_projection;
-		currentFrame.projMatrix = pCamera->m_viewProjection;
+		currentFrame.viewProjMatrix = pCamera->m_viewProjection;
 		currentFrame.targetSize = m_targetSize;
 		currentFrame.frameIndex = m_frameIndex;
 		currentFrame.pEngineFrame = &const_cast<EngineFrame&>(ctx);
