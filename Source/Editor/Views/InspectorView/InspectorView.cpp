@@ -28,12 +28,12 @@ namespace Horizon::Editor
 
 		b8 ContainsNoCase(std::string_view text, std::string_view pattern)
 		{
-			auto equalsNoCase = [](c8 lhs, c8 rhs)
+			auto CheckIfEquals = [](c8 lhs, c8 rhs)
 				{
 					return std::tolower((u8)lhs) == std::tolower((u8)rhs);
 				};
 
-			return std::search(text.begin(), text.end(), pattern.begin(), pattern.end(), equalsNoCase) != text.end();
+			return std::search(text.begin(), text.end(), pattern.begin(), pattern.end(), CheckIfEquals) != text.end();
 		}
 	}
 
@@ -80,7 +80,7 @@ namespace Horizon::Editor
 
 			if (!pType)
 			{
-				Terminal::Error(StringOps::GetName(this), "Component storage has an unregistered type");
+				Terminal::Error(StringHelper::GetTypeName(this), "Component storage has an unregistered type");
 				continue;
 			}
 
@@ -321,7 +321,7 @@ namespace Horizon::Editor
 		pScene->AddComponent(entity, entry.pType->GetTypeId());
 
 		auto* pNameComp = pScene->FindComponent<Engine::NameComponent>(entity);
-		Terminal::Info(StringOps::GetName(this), "{} has been added to {}", entry.label, pNameComp->m_name);
+		Terminal::Info(StringHelper::GetTypeName(this), "{} has been added to {}", entry.label, pNameComp->m_name);
 		ImGui::CloseCurrentPopup();
 	}
 }

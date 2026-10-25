@@ -459,10 +459,10 @@ namespace Horizon::PAL
 
 	b8 File::Copy(const std::string& sourcePath, const std::string& targetFolder)
 	{
-		const std::string source = StringOps::NormalizePath(sourcePath);
+		const std::string source = StringHelper::NormalizePath(sourcePath);
 		const usize slash = source.rfind('/');
 		const std::string fileName = slash == std::string::npos ? source : source.substr(slash + 1);
-		const std::string target = StringOps::NormalizePath(targetFolder) + "/" + fileName;
+		const std::string target = StringHelper::NormalizePath(targetFolder) + "/" + fileName;
 
 		if (!CopyFile(source.data(), target.data(), FALSE))
 		{

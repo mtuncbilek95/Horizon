@@ -1,7 +1,7 @@
 #include <Runtime/PAL/File/Directory.h>
 #include <Runtime/PAL/File/File.h>
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Win32/Helpers/Win32ErrorHelpers.h>
 
@@ -14,7 +14,7 @@ namespace Horizon::PAL
 		if (path.empty() || Exists(path))
 			return true;
 
-		const std::string parent = StringOps::ParentPathOf(path);
+		const std::string parent = StringHelper::FindParentPath(path);
 		if (!parent.empty() && !Create(parent))
 			return false;
 
@@ -77,7 +77,7 @@ namespace Horizon::PAL
 
 	b8 Directory::Copy(const std::string& sourcePath, const std::string& targetFolder)
 	{
-		const std::string source = StringOps::NormalizePath(sourcePath);
+		const std::string source = StringHelper::NormalizePath(sourcePath);
 
 		if (!Exists(source))
 		{
@@ -87,7 +87,7 @@ namespace Horizon::PAL
 
 		const usize slash = source.find_last_of('/');
 		const std::string name = slash == std::string::npos ? source : source.substr(slash + 1);
-		const std::string target = StringOps::NormalizePath(targetFolder) + "/" + name;
+		const std::string target = StringHelper::NormalizePath(targetFolder) + "/" + name;
 
 		if (target == source || target.starts_with(source + "/"))
 		{

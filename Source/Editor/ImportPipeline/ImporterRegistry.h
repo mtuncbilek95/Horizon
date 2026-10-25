@@ -3,7 +3,7 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionLibrary.h>
 #include <Engine/Reflection/ReflectionSystem.h>
-#include <Runtime/Containers/List.h>
+#include <Runtime/Containers/Vector/List.h>
 
 namespace Horizon::Editor
 {

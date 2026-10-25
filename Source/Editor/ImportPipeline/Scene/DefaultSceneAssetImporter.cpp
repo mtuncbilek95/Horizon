@@ -3,8 +3,7 @@
 #include <Engine/Asset/Scene/SceneProperties.h>
 #include <Engine/Asset/Scene/SceneSerializer.h>
 #include <Engine/World/ECS/Scene.h>
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Serialization/BinaryArchive.h>
 #include <Runtime/Serialization/JsonArchive.h>
@@ -26,19 +25,19 @@ namespace Horizon::Editor
 
 		if (!ctx.pReflection)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} cannot be parsed without a reflection system", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be parsed without a reflection system", ctx.sourcePath);
 			return AssetImportResult::InternalError;
 		}
 
 		Release();
-		m_scene = Memory::Allocator::Create<Engine::Scene>(Memory::CurrLoc(), ctx.pReflection);
+		m_scene = new Engine::Scene(ctx.pReflection);
 
 		const std::string_view text(reinterpret_cast<const c8*>(fileBytes.GetData()), fileBytes.GetCount());
 		JsonArchiveReader reader(text);
 
 		if (!Engine::SceneSerializer::Deserialize(*m_scene, ctx.pReflection, reader) || reader.HasError())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} is not a valid scene archive", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} is not a valid scene archive", ctx.sourcePath);
 			Release();
 			return AssetImportResult::CorruptedData;
 		}
@@ -51,7 +50,7 @@ namespace Horizon::Editor
 		if (!m_scene)
 			return;
 
-		Memory::Allocator::Delete(m_scene);
+		delete m_scene;
 		m_scene = nullptr;
 	}
 
@@ -84,7 +83,7 @@ namespace Horizon::Editor
 
 		if (!writer.IsComplete())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} scene could not be serialized to binary", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} scene could not be serialized to binary", ctx.sourcePath);
 			return AssetImportResult::SerializationFailed;
 		}
 

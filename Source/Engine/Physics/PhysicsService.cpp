@@ -5,8 +5,7 @@
 #include <Engine/Physics/JoltThreadBridge.h>
 #include <Engine/World/WorldService.h>
 
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <Jolt/Jolt.h>
@@ -72,33 +71,7 @@ namespace Horizon::Engine
 
 	static void BindJoltHooks()
 	{
-		JPH::Allocate = [](size_t size) -> void*
-			{
-				return Memory::Allocator::AllocateRaw(size, 16, Memory::CurrLoc());
-			};
-
-		JPH::Free = [](void* pBlock)
-			{
-				Memory::Allocator::FreeRaw(pBlock);
-			};
-
-		JPH::AlignedAllocate = [](size_t size, size_t alignment) -> void*
-			{
-				return Memory::Allocator::AllocateRaw(size, alignment, Memory::CurrLoc());
-			};
-
-		JPH::AlignedFree = [](void* pBlock)
-			{
-				Memory::Allocator::FreeRaw(pBlock);
-			};
-
-		JPH::Reallocate = [](void* pBlock, size_t oldSize, size_t newSize) -> void*
-			{
-				if (!pBlock)
-					return Memory::Allocator::AllocateRaw(newSize, 16, Memory::CurrLoc());
-
-				return Memory::Allocator::ReallocateRaw(pBlock, newSize, 16, Memory::CurrLoc());
-			};
+		JPH::RegisterDefaultAllocator();
 
 		JPH::Trace = [](const char* pFormat, ...)
 			{
@@ -126,19 +99,19 @@ namespace Horizon::Engine
 	{
 		BindJoltHooks();
 
-		JPH::Factory::sInstance = Memory::Allocator::Create<JPH::Factory>(Memory::CurrLoc());
+		JPH::Factory::sInstance = new JPH::Factory();
 		JPH::RegisterTypes();
 
-		m_impl = Memory::Allocator::Create<Impl>(Memory::CurrLoc());
+		m_impl = new Impl();
 		if (!m_impl)
 			return ModuleReport("Failed to allocate physics state");
 
-		m_impl->pTemp = Memory::Allocator::Create<JPH::TempAllocatorImpl>(Memory::CurrLoc(), MaxPreAllocatedMemory);
-		m_impl->pBridge = Memory::Allocator::Create<JoltThreadBridge>(Memory::CurrLoc(), GetEngine()->GetJobSystem(), MaxPhysicsBarrierCount);
+		m_impl->pTemp = new JPH::TempAllocatorImpl(MaxPreAllocatedMemory);
+		m_impl->pBridge = new JoltThreadBridge(GetEngine()->GetJobSystem(), MaxPhysicsBarrierCount);
 
 		m_impl->world.Init(MaxBodies, 0, MaxBodyPairs, MaxContactConstraints, m_impl->broadPhaseMap, m_impl->objectVsBroadPhase, m_impl->objectPair);
 
-		Terminal::Debug(StringOps::GetName(this), "Jolt world initialized with {} worker lanes", m_impl->pBridge->GetMaxConcurrency());
+		Terminal::Debug(StringHelper::GetTypeName(this), "Jolt world initialized with {} worker lanes", m_impl->pBridge->GetMaxConcurrency());
 		return ModuleReport();
 	}
 
@@ -150,15 +123,15 @@ namespace Horizon::Engine
 	{
 		if (m_impl)
 		{
-			Memory::Allocator::Delete(m_impl->pBridge);
-			Memory::Allocator::Delete(m_impl->pTemp);
-			Memory::Allocator::Delete(m_impl);
+			delete m_impl->pBridge;
+			delete m_impl->pTemp;
+			delete m_impl;
 			m_impl = nullptr;
 		}
 
 		JPH::UnregisterTypes();
 
-		Memory::Allocator::Delete(JPH::Factory::sInstance);
+		delete JPH::Factory::sInstance;
 		JPH::Factory::sInstance = nullptr;
 	}
 

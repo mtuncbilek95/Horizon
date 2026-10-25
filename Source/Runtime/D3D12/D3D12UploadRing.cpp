@@ -1,7 +1,6 @@
 #include "D3D12UploadRing.h"
 
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <Runtime/D3D12/D3D12Buffer.h>
@@ -24,7 +23,7 @@ namespace Horizon::RHI
 	D3D12UploadRing::~D3D12UploadRing()
 	{
 		if (m_buffer)
-			Memory::Allocator::Delete(m_buffer);
+			delete m_buffer;
 	}
 
 	b8 D3D12UploadRing::RetireOldest()
@@ -36,7 +35,7 @@ namespace Horizon::RHI
 
 		if (!m_fence)
 		{
-			Terminal::Error(StringOps::GetName(this), "Ring has markers but no fence to wait on");
+			Terminal::Error(StringHelper::GetTypeName(this), "Ring has markers but no fence to wait on");
 			return false;
 		}
 
@@ -52,7 +51,7 @@ namespace Horizon::RHI
 	{
 		if (size == 0 || size > m_desc.capacity)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} byte request does not fit the {} byte ring", size, m_desc.capacity);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} byte request does not fit the {} byte ring", size, m_desc.capacity);
 			return {};
 		}
 
@@ -69,7 +68,7 @@ namespace Horizon::RHI
 		{
 			if (!RetireOldest())
 			{
-				Terminal::Error(StringOps::GetName(this), "Ring is exhausted, {} bytes requested with {} in flight", size, m_usedBytes);
+				Terminal::Error(StringHelper::GetTypeName(this), "Ring is exhausted, {} bytes requested with {} in flight", size, m_usedBytes);
 				return {};
 			}
 		}

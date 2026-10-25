@@ -1,6 +1,6 @@
 #include "ModuleGraph.h"
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 namespace Horizon::Engine
@@ -23,13 +23,13 @@ namespace Horizon::Engine
 		{
 			if (satisfied.contains(edge.after))
 			{
-				Terminal::Warn(StringOps::GetName(this), "{} precedes {} but {} is already active, dropping the constraint", StringOps::GetNameString(edge.before.name()), StringOps::GetNameString(edge.after.name()), StringOps::GetNameString(edge.after.name()));
+				Terminal::Warn(StringHelper::GetTypeName(this), "{} precedes {} but {} is already active, dropping the constraint", StringHelper::GetNameString(edge.before.name()), StringHelper::GetNameString(edge.after.name()), StringHelper::GetNameString(edge.after.name()));
 				continue;
 			}
 
 			if (!pending.contains(edge.after))
 			{
-				Terminal::Warn(StringOps::GetName(this), "{} precedes unregistered module {}, dropping the constraint", StringOps::GetNameString(edge.before.name()), StringOps::GetNameString(edge.after.name()));
+				Terminal::Warn(StringHelper::GetTypeName(this), "{} precedes unregistered module {}, dropping the constraint", StringHelper::GetNameString(edge.before.name()), StringHelper::GetNameString(edge.after.name()));
 				continue;
 			}
 
@@ -50,7 +50,7 @@ namespace Horizon::Engine
 
 				if (!pending.contains(dependency))
 				{
-					Terminal::Error(StringOps::GetName(this), "{} depends on unregistered module {}", StringOps::GetNameString(node.name()), StringOps::GetNameString(dependency.name()));
+					Terminal::Error(StringHelper::GetTypeName(this), "{} depends on unregistered module {}", StringHelper::GetNameString(node.name()), StringHelper::GetNameString(dependency.name()));
 					return false;
 				}
 
@@ -88,7 +88,7 @@ namespace Horizon::Engine
 
 		if (outOrder.GetCount() != nodes.GetCount())
 		{
-			Terminal::Fatal(StringOps::GetName(this), "Cyclic dependency detected inside the pending module batch");
+			Terminal::Fatal(StringHelper::GetTypeName(this), "Cyclic dependency detected inside the pending module batch");
 			return false;
 		}
 

@@ -16,7 +16,7 @@ namespace Horizon::Editor
 
 		if (!pEnumType)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} enum type is not registered", field.GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} enum type is not registered", field.GetName());
 			return false;
 		}
 

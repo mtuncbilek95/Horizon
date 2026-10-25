@@ -1,8 +1,7 @@
 #include "GltfMeshAssetImporter.h"
 
 #include <Editor/ImportPipeline/Mesh/MeshAssetImportSettings.h>
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Math/BoundingBox.h>
 #include <Runtime/PAL/File/File.h>
@@ -66,27 +65,27 @@ namespace Horizon::Editor
 		auto data = fastgltf::GltfDataBuffer::FromBytes(reinterpret_cast<const std::byte*>(fileBytes.GetData()), fileBytes.GetCount());
 		if (data.error() != fastgltf::Error::None)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} is not a readable glTF buffer", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} is not a readable glTF buffer", ctx.sourcePath);
 			return AssetImportResult::InvalidFormat;
 		}
 
-		m_parser.reset(Memory::Allocator::Create<fastgltf::Parser>(Memory::CurrLoc()));
+		m_parser.reset(new fastgltf::Parser());
 
 		auto asset = m_parser->loadGltf(data.get(), std::filesystem::path(ctx.sourceFolder), fastgltf::Options::None);
 		if (asset.error() != fastgltf::Error::None)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be parsed: {}", ctx.sourcePath, fastgltf::getErrorMessage(asset.error()));
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be parsed: {}", ctx.sourcePath, fastgltf::getErrorMessage(asset.error()));
 			return AssetImportResult::CorruptedData;
 		}
 
-		m_asset.reset(Memory::Allocator::Create<fastgltf::Asset>(Memory::CurrLoc(), std::move(asset.get())));
+		m_asset.reset(new fastgltf::Asset(std::move(asset.get())));
 
 		if (!LoadExternalBuffers(ctx))
 			return AssetImportResult::ExternalDataRequired;
 
 		if (m_asset->meshes.empty())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has no meshes", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has no meshes", ctx.sourcePath);
 			return AssetImportResult::NoImportableData;
 		}
 
@@ -163,7 +162,7 @@ namespace Horizon::Editor
 			PAL::FileAccessRequest request = PAL::File::RequestAccess(path, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
 			if (!request.IsValid())
 			{
-				Terminal::Error(StringOps::GetName(this), "{} external buffer {} is missing", ctx.sourcePath, relative);
+				Terminal::Error(StringHelper::GetTypeName(this), "{} external buffer {} is missing", ctx.sourcePath, relative);
 				return false;
 			}
 
@@ -173,7 +172,7 @@ namespace Horizon::Editor
 
 			if (!wasRead || bytes.GetCount() < pUri->fileByteOffset)
 			{
-				Terminal::Error(StringOps::GetName(this), "{} external buffer {} could not be read", ctx.sourcePath, relative);
+				Terminal::Error(StringHelper::GetTypeName(this), "{} external buffer {} could not be read", ctx.sourcePath, relative);
 				return false;
 			}
 
@@ -219,14 +218,14 @@ namespace Horizon::Editor
 			{
 				if (primitive.type != fastgltf::PrimitiveType::Triangles)
 				{
-					Terminal::Warn(StringOps::GetName(this), "{} has a non-triangle primitive, skipped", ctx.sourcePath);
+					Terminal::Warn(StringHelper::GetTypeName(this), "{} has a non-triangle primitive, skipped", ctx.sourcePath);
 					continue;
 				}
 
 				auto positionIt = primitive.findAttribute("POSITION");
 				if (positionIt == primitive.attributes.end())
 				{
-					Terminal::Error(StringOps::GetName(this), "{} has a primitive without positions", ctx.sourcePath);
+					Terminal::Error(StringHelper::GetTypeName(this), "{} has a primitive without positions", ctx.sourcePath);
 					return AssetImportResult::InvalidData;
 				}
 
@@ -352,7 +351,7 @@ namespace Horizon::Editor
 
 		if (m_subMeshes.GetCount() == 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} produced no sub-meshes", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} produced no sub-meshes", ctx.sourcePath);
 			return AssetImportResult::NoImportableData;
 		}
 

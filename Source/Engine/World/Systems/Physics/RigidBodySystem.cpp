@@ -6,7 +6,7 @@
 #include <Engine/World/Components/Physics/TransformComponent.h>
 #include <Engine/World/Components/Physics/RigidBodyComponent.h>
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Math/Quat.h>
 #include <Runtime/Math/Vec3f.h>
@@ -105,7 +105,7 @@ namespace Horizon::Engine
 
 		const JPH::EPhysicsUpdateError error = pWorld->Update(steps * PhysicsService::FixedStep, (int)steps, m_physics->GetTempAllocator(), m_physics->GetJobBridge());
 		if (error != JPH::EPhysicsUpdateError::None)
-			Terminal::Warn(StringOps::GetName(this), "Jolt update reported error mask {:#x}", (u32)error);
+			Terminal::Warn(StringHelper::GetTypeName(this), "Jolt update reported error mask {:#x}", (u32)error);
 
 		currentScene.ForEach<TransformComponent, RigidBodyComponent>([&](EntityHandle entity, TransformComponent& transform, RigidBodyComponent& rigidBody)
 			{
@@ -132,7 +132,7 @@ namespace Horizon::Engine
 		const Math::Vec3f& half = rigidBody.m_halfExtents;
 		if (half.X() <= JPH::cDefaultConvexRadius || half.Y() <= JPH::cDefaultConvexRadius || half.Z() <= JPH::cDefaultConvexRadius)
 		{
-			Terminal::Warn(StringOps::GetName(this), "RigidBody half extents must exceed {} on every axis, body skipped", JPH::cDefaultConvexRadius);
+			Terminal::Warn(StringHelper::GetTypeName(this), "RigidBody half extents must exceed {} on every axis, body skipped", JPH::cDefaultConvexRadius);
 			return;
 		}
 
@@ -140,7 +140,7 @@ namespace Horizon::Engine
 		JPH::ShapeSettings::ShapeResult shapeResult = shapeSettings.Create();
 		if (shapeResult.HasError())
 		{
-			Terminal::Error(StringOps::GetName(this), "Shape creation failed: {}", shapeResult.GetError().c_str());
+			Terminal::Error(StringHelper::GetTypeName(this), "Shape creation failed: {}", shapeResult.GetError().c_str());
 			return;
 		}
 
@@ -157,7 +157,7 @@ namespace Horizon::Engine
 		JPH::Body* pBody = bodies.CreateBody(settings);
 		if (!pBody)
 		{
-			Terminal::Error(StringOps::GetName(this), "Jolt refused to create body, MaxBodies reached");
+			Terminal::Error(StringHelper::GetTypeName(this), "Jolt refused to create body, MaxBodies reached");
 			return;
 		}
 

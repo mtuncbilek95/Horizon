@@ -3,7 +3,7 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/World/SystemGroup.h>
 #include <Engine/World/WorldService.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
 #include <Runtime/PAL/File/File.h>
@@ -37,11 +37,11 @@ namespace Horizon::Engine
 	{
 		if (m_state == GameModuleState::Loaded)
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} is already loaded", m_moduleName);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} is already loaded", m_moduleName);
 			return true;
 		}
 
-		const std::string root = StringOps::NormalizePath(projectRoot);
+		const std::string root = StringHelper::NormalizePath(projectRoot);
 		const std::string binaries = std::format("{}/Binaries/{}", root, BuildConfigName());
 
 		m_moduleName = moduleName;
@@ -67,24 +67,24 @@ namespace Horizon::Engine
 			return;
 
 		m_engine->UnregisterLibrary(m_gameLibrary);
-		Memory::Allocator::Delete(m_gameLibrary);
+		delete m_gameLibrary;
 		m_gameLibrary = nullptr;
 		m_state = GameModuleState::None;
 
 		if (!PAL::File::Delete(m_shadowPath))
-			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted, library may still be alive", m_shadowPath);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be deleted, library may still be alive", m_shadowPath);
 
 		if (PAL::File::Exists(m_shadowSymbolPath))
 			PAL::File::Delete(m_shadowSymbolPath);
 
-		Terminal::Info(StringOps::GetName(this), "{} unloaded", m_moduleName);
+		Terminal::Info(StringHelper::GetTypeName(this), "{} unloaded", m_moduleName);
 	}
 
 	b8 GameSystem::Reload()
 	{
 		if (m_moduleName.empty())
 		{
-			Terminal::Warn(StringOps::GetName(this), "Reload requested before any load");
+			Terminal::Warn(StringHelper::GetTypeName(this), "Reload requested before any load");
 			return false;
 		}
 
@@ -109,7 +109,7 @@ namespace Horizon::Engine
 		{
 			if (!m_reloadDeferred)
 			{
-				Terminal::Info(StringOps::GetName(this), "New {} build is waiting for edit mode", m_moduleName);
+				Terminal::Info(StringHelper::GetTypeName(this), "New {} build is waiting for edit mode", m_moduleName);
 				m_reloadDeferred = true;
 			}
 			return;
@@ -128,24 +128,24 @@ namespace Horizon::Engine
 			return Fail("Library could not be shadow copied, previous copy may still be loaded");
 
 		if (PAL::File::Exists(m_symbolPath) && !PAL::File::Copy(m_symbolPath, m_shadowRoot))
-			Terminal::Warn(StringOps::GetName(this), "{} could not be copied, debugger may not resolve symbols of the new build", m_symbolPath);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be copied, debugger may not resolve symbols of the new build", m_symbolPath);
 
 		PAL::SymbolLibraryDesc desc;
 		desc.path = m_shadowPath;
 		desc.isMain = false;
 
-		m_gameLibrary = Memory::Allocator::Create<PAL::SymbolLibrary>(Memory::CurrLoc(), desc);
+		m_gameLibrary = new PAL::SymbolLibrary(desc);
 
 		if (m_gameLibrary->GetName().empty())
 		{
-			Memory::Allocator::Delete(m_gameLibrary);
+			delete m_gameLibrary;
 			m_gameLibrary = nullptr;
 			return Fail("Library could not be loaded");
 		}
 
 		if (!m_engine->RegisterLibrary(m_gameLibrary))
 		{
-			Memory::Allocator::Delete(m_gameLibrary);
+			delete m_gameLibrary;
 			m_gameLibrary = nullptr;
 			return Fail("Manifestation could not be registered");
 		}
@@ -153,7 +153,7 @@ namespace Horizon::Engine
 		m_state = GameModuleState::Loaded;
 		m_failReason.clear();
 
-		Terminal::Info(StringOps::GetName(this), "{} loaded from {}", m_moduleName, m_libraryPath);
+		Terminal::Info(StringHelper::GetTypeName(this), "{} loaded from {}", m_moduleName, m_libraryPath);
 		return true;
 	}
 
@@ -162,7 +162,7 @@ namespace Horizon::Engine
 		m_state = GameModuleState::Failed;
 		m_failReason = reason;
 
-		Terminal::Error(StringOps::GetName(this), "{} could not be loaded from {}, {}", m_moduleName, m_libraryPath, reason);
+		Terminal::Error(StringHelper::GetTypeName(this), "{} could not be loaded from {}, {}", m_moduleName, m_libraryPath, reason);
 		return false;
 	}
 }

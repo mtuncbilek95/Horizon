@@ -1,7 +1,6 @@
 #include "D3D12Swapchain.h"
 
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <Runtime/D3D12/D3D12Device.h>
@@ -20,7 +19,7 @@ namespace Horizon::RHI
 		ReleaseImages();
 
 		if (m_colorHeap)
-			Memory::Allocator::Delete(m_colorHeap);
+			delete m_colorHeap;
 
 		if (m_waitableObject)
 			CloseHandle(m_waitableObject);
@@ -36,7 +35,7 @@ namespace Horizon::RHI
 
 		for (u32 i = 0; i < m_desc.imageCount; i++)
 		{
-			auto* pImage = Memory::Allocator::Create<D3D12Texture>(Memory::CurrLoc());
+			auto* pImage = new D3D12Texture();
 
 			pImage->m_ownerDevice = m_device;
 			pImage->m_format = Helpers::ToFormat(m_desc.format);
@@ -67,7 +66,7 @@ namespace Horizon::RHI
 			if (!pImage)
 				continue;
 
-			Memory::Allocator::Delete(pImage);
+			delete pImage;
 		}
 
 		m_images.Clear();
@@ -77,7 +76,7 @@ namespace Horizon::RHI
 	{
 		if (index >= m_images.GetCount())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} image index is out of range, count {}", index, m_images.GetCount());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} image index is out of range, count {}", index, m_images.GetCount());
 			return nullptr;
 		}
 
@@ -88,14 +87,14 @@ namespace Horizon::RHI
 	{
 		if (m_images.IsEmpty())
 		{
-			Terminal::Error(StringOps::GetName(this), "Swapchain has no images to acquire");
+			Terminal::Error(StringHelper::GetTypeName(this), "Swapchain has no images to acquire");
 			return false;
 		}
 
 		if (m_waitableObject)
 		{
 			if (WaitForSingleObjectEx(m_waitableObject, 1000, TRUE) == WAIT_TIMEOUT)
-				Terminal::Warn(StringOps::GetName(this), "Frame latency waitable object timed out");
+				Terminal::Warn(StringHelper::GetTypeName(this), "Frame latency waitable object timed out");
 		}
 
 		m_imageIndex = m_swapchain->GetCurrentBackBufferIndex();

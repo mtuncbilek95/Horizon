@@ -5,8 +5,8 @@
 #include <Engine/World/ECS/ComponentRegistry.h>
 #include <Engine/World/ECS/ComponentObject.h>
 
-#include <Runtime/Containers/List.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/Vector/List.h>
+#include <Runtime/Containers/StringHelper.h>
 
 namespace Horizon::Engine
 {

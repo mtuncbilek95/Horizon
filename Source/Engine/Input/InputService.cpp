@@ -5,8 +5,7 @@
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/World/WorldService.h>
 
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Input/Gamepad.h>
 #include <Runtime/Input/Instance.h>
 #include <Runtime/Input/Keyboard.h>
@@ -127,7 +126,7 @@ namespace Horizon::Engine
 
 		if (m_devices)
 		{
-			Memory::Allocator::Delete(m_devices);
+			delete m_devices;
 			m_devices = nullptr;
 		}
 	}
@@ -149,7 +148,7 @@ namespace Horizon::Engine
 	{
 		if (!PAL::File::Exists(filePath))
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} does not exist, keeping the current input map", filePath);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} does not exist, keeping the current input map", filePath);
 			return false;
 		}
 
@@ -161,7 +160,7 @@ namespace Horizon::Engine
 
 		if (!wasRead)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be read", filePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be read", filePath);
 			return false;
 		}
 
@@ -170,7 +169,7 @@ namespace Horizon::Engine
 
 		if (!pType)
 		{
-			Terminal::Error(StringOps::GetName(this), "InputMap is not registered in reflection");
+			Terminal::Error(StringHelper::GetTypeName(this), "InputMap is not registered in reflection");
 			return false;
 		}
 
@@ -181,12 +180,12 @@ namespace Horizon::Engine
 
 		if (reader.HasError())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has invalid input map data", filePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has invalid input map data", filePath);
 			return false;
 		}
 
 		SetMap(loaded);
-		Terminal::Info(StringOps::GetName(this), "Input map loaded from {} with {} actions", filePath, m_compiled.GetCount());
+		Terminal::Info(StringHelper::GetTypeName(this), "Input map loaded from {} with {} actions", filePath, m_compiled.GetCount());
 		return true;
 	}
 
@@ -197,7 +196,7 @@ namespace Horizon::Engine
 
 		if (!pType)
 		{
-			Terminal::Error(StringOps::GetName(this), "InputMap is not registered in reflection");
+			Terminal::Error(StringHelper::GetTypeName(this), "InputMap is not registered in reflection");
 			return false;
 		}
 
@@ -207,7 +206,7 @@ namespace Horizon::Engine
 
 		if (!PAL::File::Exists(filePath) && !PAL::File::Create(filePath))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} cannot be created", filePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be created", filePath);
 			return false;
 		}
 
@@ -219,7 +218,7 @@ namespace Horizon::Engine
 
 		if (!wasWritten)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} cannot be written", filePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be written", filePath);
 			return false;
 		}
 
@@ -243,7 +242,7 @@ namespace Horizon::Engine
 			return true;
 		}
 
-		Terminal::Warn(StringOps::GetName(this), "{} is not a known action map", mapName);
+		Terminal::Warn(StringHelper::GetTypeName(this), "{} is not a known action map", mapName);
 		return false;
 	}
 
@@ -258,7 +257,7 @@ namespace Horizon::Engine
 
 		if (it == m_lookup.end())
 		{
-			Terminal::Warn(StringOps::GetName(this), "No input action with hash {:#x}", nameHash);
+			Terminal::Warn(StringHelper::GetTypeName(this), "No input action with hash {:#x}", nameHash);
 			return InvalidInputAction;
 		}
 
@@ -313,7 +312,7 @@ namespace Horizon::Engine
 
 				if (m_lookup.contains(hash))
 				{
-					Terminal::Warn(StringOps::GetName(this), "Input action '{}' is defined more than once, the later one is ignored", action.name);
+					Terminal::Warn(StringHelper::GetTypeName(this), "Input action '{}' is defined more than once, the later one is ignored", action.name);
 					continue;
 				}
 

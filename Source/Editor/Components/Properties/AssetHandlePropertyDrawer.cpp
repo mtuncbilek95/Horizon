@@ -5,7 +5,7 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/RTTR/Attributes/AssetRefAttribute.h>
 
@@ -28,7 +28,7 @@ namespace Horizon::Editor
 
 		if (!pAssetType)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} references an unregistered asset type", field.GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} references an unregistered asset type", field.GetName());
 			return false;
 		}
 

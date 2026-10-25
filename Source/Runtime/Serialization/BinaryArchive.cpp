@@ -1,6 +1,6 @@
 #include "BinaryArchive.h"
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 namespace Horizon
@@ -61,7 +61,7 @@ namespace Horizon
 	{
 		if (value > BinaryArchiveMaxField)
 		{
-			Terminal::Error(StringOps::GetName(this), "Count of {} does not fit a 32 bit field", value);
+			Terminal::Error(StringHelper::GetTypeName(this), "Count of {} does not fit a 32 bit field", value);
 			m_hasError = true;
 			value = 0;
 		}
@@ -81,7 +81,7 @@ namespace Horizon
 	{
 		if (value > BinaryArchiveMaxField)
 		{
-			Terminal::Error(StringOps::GetName(this), "Payload of {} bytes does not fit a 32 bit size field", value);
+			Terminal::Error(StringHelper::GetTypeName(this), "Payload of {} bytes does not fit a 32 bit size field", value);
 			m_hasError = true;
 			return false;
 		}
@@ -138,7 +138,7 @@ namespace Horizon
 	{
 		if (m_frames.IsEmpty())
 		{
-			Terminal::Error(StringOps::GetName(this), "EndObject without a matching BeginObject");
+			Terminal::Error(StringHelper::GetTypeName(this), "EndObject without a matching BeginObject");
 			m_hasError = true;
 			return;
 		}
@@ -176,7 +176,7 @@ namespace Horizon
 	{
 		if (m_frames.IsEmpty())
 		{
-			Terminal::Error(StringOps::GetName(this), "EndArray without a matching BeginArray");
+			Terminal::Error(StringHelper::GetTypeName(this), "EndArray without a matching BeginArray");
 			m_hasError = true;
 			return;
 		}
@@ -247,7 +247,7 @@ namespace Horizon
 	{
 		if (!m_data || m_size < 2 * sizeof(u32))
 		{
-			Terminal::Error(StringOps::GetName(this), "Archive is smaller than its own header");
+			Terminal::Error(StringHelper::GetTypeName(this), "Archive is smaller than its own header");
 			m_hasError = true;
 			return;
 		}
@@ -257,14 +257,14 @@ namespace Horizon
 
 		if (magic != BinaryArchiveMagic)
 		{
-			Terminal::Error(StringOps::GetName(this), "Archive magic {} does not match {}", magic, BinaryArchiveMagic);
+			Terminal::Error(StringHelper::GetTypeName(this), "Archive magic {} does not match {}", magic, BinaryArchiveMagic);
 			m_hasError = true;
 			return;
 		}
 
 		if (version > BinaryArchiveVersion)
 		{
-			Terminal::Error(StringOps::GetName(this), "Archive version {} is newer than the supported {}", version, BinaryArchiveVersion);
+			Terminal::Error(StringHelper::GetTypeName(this), "Archive version {} is newer than the supported {}", version, BinaryArchiveVersion);
 			m_hasError = true;
 			return;
 		}
@@ -285,7 +285,7 @@ namespace Horizon
 	{
 		if (!CanRead(m_cursor, size))
 		{
-			Terminal::Error(StringOps::GetName(this), "Read of {} bytes at {} runs past the archive", size, m_cursor);
+			Terminal::Error(StringHelper::GetTypeName(this), "Read of {} bytes at {} runs past the archive", size, m_cursor);
 			m_hasError = true;
 			return false;
 		}
@@ -325,7 +325,7 @@ namespace Horizon
 
 		if (!CanRead(m_cursor, storedSize))
 		{
-			Terminal::Error(StringOps::GetName(this), "Blob of {} bytes runs past the archive", storedSize);
+			Terminal::Error(StringHelper::GetTypeName(this), "Blob of {} bytes runs past the archive", storedSize);
 			m_hasError = true;
 			outSize = 0;
 			return BinaryArchiveInvalidOffset;
@@ -347,7 +347,7 @@ namespace Horizon
 
 		if (frame.endOffset > m_size)
 		{
-			Terminal::Error(StringOps::GetName(this), "Object payload of {} bytes runs past the archive", payloadSize);
+			Terminal::Error(StringHelper::GetTypeName(this), "Object payload of {} bytes runs past the archive", payloadSize);
 			m_hasError = true;
 			frame.endOffset = m_size;
 		}
@@ -359,7 +359,7 @@ namespace Horizon
 	{
 		if (m_frames.IsEmpty())
 		{
-			Terminal::Error(StringOps::GetName(this), "EndObject without a matching BeginObject");
+			Terminal::Error(StringHelper::GetTypeName(this), "EndObject without a matching BeginObject");
 			m_hasError = true;
 			return;
 		}
@@ -372,7 +372,7 @@ namespace Horizon
 	{
 		if (m_frames.IsEmpty() || !m_frames.Back().isObject)
 		{
-			Terminal::Error(StringOps::GetName(this), "Key '{}' was requested outside of an object", name);
+			Terminal::Error(StringHelper::GetTypeName(this), "Key '{}' was requested outside of an object", name);
 			return false;
 		}
 
@@ -414,7 +414,7 @@ namespace Horizon
 
 		if (frame.endOffset > m_size)
 		{
-			Terminal::Error(StringOps::GetName(this), "Array payload of {} bytes runs past the archive", payloadSize);
+			Terminal::Error(StringHelper::GetTypeName(this), "Array payload of {} bytes runs past the archive", payloadSize);
 			m_hasError = true;
 			frame.endOffset = m_size;
 		}
@@ -427,7 +427,7 @@ namespace Horizon
 	{
 		if (m_frames.IsEmpty())
 		{
-			Terminal::Error(StringOps::GetName(this), "EndArray without a matching BeginArray");
+			Terminal::Error(StringHelper::GetTypeName(this), "EndArray without a matching BeginArray");
 			m_hasError = true;
 			return;
 		}
@@ -440,13 +440,13 @@ namespace Horizon
 	{
 		if (!m_frames.IsEmpty())
 		{
-			Terminal::Error(StringOps::GetName(this), "Seek was requested while {} frames are still open", m_frames.GetCount());
+			Terminal::Error(StringHelper::GetTypeName(this), "Seek was requested while {} frames are still open", m_frames.GetCount());
 			return false;
 		}
 
 		if (offset > m_size)
 		{
-			Terminal::Error(StringOps::GetName(this), "Seek to {} runs past the archive", offset);
+			Terminal::Error(StringHelper::GetTypeName(this), "Seek to {} runs past the archive", offset);
 			m_hasError = true;
 			return false;
 		}
@@ -493,7 +493,7 @@ namespace Horizon
 
 		if (!CanRead(m_cursor, length))
 		{
-			Terminal::Error(StringOps::GetName(this), "String of {} bytes runs past the archive", length);
+			Terminal::Error(StringHelper::GetTypeName(this), "String of {} bytes runs past the archive", length);
 			m_hasError = true;
 			return {};
 		}
@@ -514,7 +514,7 @@ namespace Horizon
 
 		if (storedSize > size)
 		{
-			Terminal::Error(StringOps::GetName(this), "Blob of {} bytes does not fit the {} byte destination", storedSize, size);
+			Terminal::Error(StringHelper::GetTypeName(this), "Blob of {} bytes does not fit the {} byte destination", storedSize, size);
 			m_hasError = true;
 			m_cursor += storedSize;
 			return 0;

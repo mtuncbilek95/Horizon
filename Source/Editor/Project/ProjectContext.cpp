@@ -4,7 +4,7 @@
 #include <Engine/Input/InputService.h>
 #include <Engine/Game/GameSystem.h>
 #include <Engine/Window/WindowService.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/PAL/File/Directory.h>
 
 namespace Horizon::Editor
@@ -16,7 +16,7 @@ namespace Horizon::Editor
 
 	Engine::ModuleReport ProjectContext::OnInitialize()
 	{
-		m_projectPath = StringOps::NormalizePath(m_projectPath);
+		m_projectPath = StringHelper::NormalizePath(m_projectPath);
 
 		usize index = m_projectPath.rfind('/');
 		if (index != std::string::npos)

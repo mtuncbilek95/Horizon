@@ -8,7 +8,7 @@
 #include <Engine/Asset/Mesh/MeshAsset.h>
 #include <Engine/Asset/Mesh/MeshAssetProperties.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
-#include <Runtime/Containers/List.h>
+#include <Runtime/Containers/Vector/List.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor

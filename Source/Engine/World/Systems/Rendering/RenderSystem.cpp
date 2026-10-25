@@ -36,7 +36,7 @@ namespace Horizon::Engine
 
 		if (!m_context)
 		{
-			Terminal::Error(StringOps::GetName(this), "GraphicsContext is unavailable, render system stays down");
+			Terminal::Error(StringHelper::GetTypeName(this), "GraphicsContext is unavailable, render system stays down");
 			return false;
 		}
 
@@ -57,7 +57,7 @@ namespace Horizon::Engine
 		m_frameDataBuffer = m_device->CreateBuffer(frameDataDesc);
 		if (!m_frameDataBuffer)
 		{
-			Terminal::Error(StringOps::GetName(this), "FrameData buffer could not be created, render system stays down");
+			Terminal::Error(StringHelper::GetTypeName(this), "FrameData buffer could not be created, render system stays down");
 			return false;
 		}
 
@@ -86,7 +86,7 @@ namespace Horizon::Engine
 			RenderPass* pPass = (RenderPass*)pType->Create();
 			if (!pPass)
 			{
-				Terminal::Warn(StringOps::GetName(this), "{} may have virtual function issues.", pType->GetName());
+				Terminal::Warn(StringHelper::GetTypeName(this), "{} may have virtual function issues.", pType->GetName());
 				continue;
 			}
 			pPass->m_engine = GetEngine();
@@ -125,7 +125,7 @@ namespace Horizon::Engine
 
 		if (!pCamera)
 		{
-			Terminal::Error(StringOps::GetName(this), "There is no valid camera somehow");
+			Terminal::Error(StringHelper::GetTypeName(this), "There is no valid camera somehow");
 			return;
 		}
 
@@ -171,7 +171,7 @@ namespace Horizon::Engine
 					auto* pAsset = pAssetService->FindAsset(meshComp.m_meshHandle.GetId());
 					if (!pAsset)
 					{
-						Terminal::Error(StringOps::GetName(this), "{} is not a valid living mesh in the system", meshComp.m_meshHandle.GetId().ToString());
+						Terminal::Error(StringHelper::GetTypeName(this), "{} is not a valid living mesh in the system", meshComp.m_meshHandle.GetId().ToString());
 						return;
 					}
 
@@ -262,7 +262,7 @@ namespace Horizon::Engine
 			}
 
 			m_frameDataBuffer->Unmap();
-			Memory::Allocator::Delete(m_frameDataBuffer);
+			delete m_frameDataBuffer;
 			m_frameDataBuffer = nullptr;
 			m_frameDataMap = nullptr;
 		}
@@ -271,7 +271,7 @@ namespace Horizon::Engine
 			pPass->OnFinalize();
 
 		for (auto* pPass : m_renderPasses)
-			Memory::Allocator::Delete(pPass);
+			delete pPass;
 
 		m_renderPasses.Clear();
 
@@ -280,7 +280,7 @@ namespace Horizon::Engine
 
 		m_slots.Clear();
 
-		Memory::Allocator::Delete(m_fence);
+		delete m_fence;
 		m_fence = nullptr;
 
 		m_resourceHeap = nullptr;
@@ -329,7 +329,7 @@ namespace Horizon::Engine
 
 		if (!slot.pTargetCmd || !slot.pTargetTexture || !slot.pTargetDepth)
 		{
-			Terminal::Error(StringOps::GetName(this), "Slot {} could not be created with {}x{}", index, m_targetSize.X(), m_targetSize.Y());
+			Terminal::Error(StringHelper::GetTypeName(this), "Slot {} could not be created with {}x{}", index, m_targetSize.X(), m_targetSize.Y());
 			return;
 		}
 
@@ -360,9 +360,9 @@ namespace Horizon::Engine
 		if (slot.shaderView != kInvalid32)
 			m_resourceHeap->Free(slot.shaderView);
 
-		Memory::Allocator::Delete(slot.pTargetTexture);
-		Memory::Allocator::Delete(slot.pTargetDepth);
-		Memory::Allocator::Delete(slot.pTargetCmd);
+		delete slot.pTargetTexture;
+		delete slot.pTargetDepth;
+		delete slot.pTargetCmd;
 
 		slot = RenderSlot();
 	}

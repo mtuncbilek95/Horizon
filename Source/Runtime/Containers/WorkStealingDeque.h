@@ -1,9 +1,10 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
-#include <Runtime/Definitions/Allocator.h>
 #include <Runtime/PAL/Sync/Atomic.h>
-#include <Runtime/Containers/List.h>
+#include <Runtime/Containers/Vector/List.h>
+
+#include <new>
 
 namespace Horizon
 {
@@ -13,7 +14,7 @@ namespace Horizon
 		struct Buffer
 		{
 			Buffer(i64 capacity) : mask(capacity - 1),
-				pSlots((T*)Memory::Allocator::AllocateRaw(sizeof(T) * (usize)capacity, alignof(T), Memory::CurrLoc()))
+				pSlots((T*)::operator new(sizeof(T) * (usize)capacity, std::align_val_t(alignof(T))))
 			{
 				for (i64 i = 0; i < capacity; ++i)
 					::new (pSlots + i) T();
@@ -24,7 +25,7 @@ namespace Horizon
 				for (i64 i = 0; i <= mask; ++i)
 					pSlots[i].~T();
 
-				Memory::Allocator::FreeRaw(pSlots);
+				::operator delete(pSlots, std::align_val_t(alignof(T)));
 			}
 
 			i64 Capacity() const { return mask + 1; }
@@ -36,15 +37,15 @@ namespace Horizon
 		};
 	public:
 		WorkStealingDeque(i64 capacity = 256) : m_top(0), m_bottom(0),
-			m_buffer(Memory::Allocator::Create<Buffer>(Memory::CurrLoc(), capacity))
+			m_buffer(new Buffer(capacity))
 		{
 		}
 
 		~WorkStealingDeque()
 		{
 			for (Buffer* pOld : m_retired)
-				Memory::Allocator::Delete(pOld);
-			Memory::Allocator::Delete(m_buffer.Load());
+				delete pOld;
+			delete m_buffer.Load();
 		}
 
 		WorkStealingDeque(const WorkStealingDeque&) = delete;
@@ -107,7 +108,7 @@ namespace Horizon
 	private:
 		Buffer* Grow(Buffer* pOld, i64 bottom, i64 top)
 		{
-			Buffer* pFresh = Memory::Allocator::Create<Buffer>(Memory::CurrLoc(), pOld->Capacity() * 2);
+			Buffer* pFresh = new Buffer(pOld->Capacity() * 2);
 
 			for (i64 i = top; i < bottom; ++i)
 				pFresh->Put(i, pOld->Get(i));

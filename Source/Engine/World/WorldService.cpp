@@ -93,7 +93,7 @@ namespace Horizon::Engine
 
 		if (!pAttr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has no SystemOrderAttribute. You won't have this system.", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has no SystemOrderAttribute. You won't have this system.", pType->GetName());
 			return false;
 		}
 
@@ -101,7 +101,7 @@ namespace Horizon::Engine
 
 		if (!pSystem)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has virtual function issues. You won't have this system.", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has virtual function issues. You won't have this system.", pType->GetName());
 			return false;
 		}
 
@@ -110,7 +110,7 @@ namespace Horizon::Engine
 
 		if (!pSystem->OnInitialize())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} failed to initialize. You won't have this system.", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} failed to initialize. You won't have this system.", pType->GetName());
 			pType->Destroy(pSystem);
 			return false;
 		}
@@ -118,7 +118,7 @@ namespace Horizon::Engine
 		m_systemLookup[pSystem->GetTypeId()] = pSystem;
 		m_systems.EmplaceBack(pSystem, pType, pAttr->GetOrderNumber());
 
-		Terminal::Info(StringOps::GetName(this), "{} has been registered to WorldService.", pType->GetName());
+		Terminal::Info(StringHelper::GetTypeName(this), "{} has been registered to WorldService.", pType->GetName());
 		return true;
 	}
 
@@ -168,7 +168,7 @@ namespace Horizon::Engine
 
 		if (!writer.IsComplete())
 		{
-			Terminal::Error(StringOps::GetName(this), "Active world could not be captured, its content will be lost");
+			Terminal::Error(StringHelper::GetTypeName(this), "Active world could not be captured, its content will be lost");
 			m_snapshotWorld = m_activeWorld;
 			return;
 		}
@@ -187,7 +187,7 @@ namespace Horizon::Engine
 
 		if (pTarget != m_activeWorld)
 		{
-			Terminal::Warn(StringOps::GetName(this), "Active world changed before restore, snapshot is dropped");
+			Terminal::Warn(StringHelper::GetTypeName(this), "Active world changed before restore, snapshot is dropped");
 			m_snapshot.Clear();
 			return;
 		}
@@ -195,7 +195,7 @@ namespace Horizon::Engine
 		BinaryArchiveReader reader(m_snapshot.GetData(), m_snapshot.GetCount());
 
 		if (!SceneSerializer::Deserialize(*pTarget, m_reflection, reader))
-			Terminal::Error(StringOps::GetName(this), "Active world could not be restored completely");
+			Terminal::Error(StringHelper::GetTypeName(this), "Active world could not be restored completely");
 
 		m_snapshot.Clear();
 	}

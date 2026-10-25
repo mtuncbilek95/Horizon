@@ -22,7 +22,7 @@ namespace Horizon::Editor
 	ViewRegistry::~ViewRegistry()
 	{
 		for (auto* pView : m_createdViews)
-			Memory::Allocator::Delete(pView);
+			delete pView;
 
 		m_createdViews.Clear();
 		m_registeredViews.Clear();
@@ -34,12 +34,12 @@ namespace Horizon::Editor
 
 		if (!ctx->pEngine)
 		{
-			Terminal::Fatal(StringOps::GetName(this), "Somehow engine is not there!");
+			Terminal::Fatal(StringHelper::GetTypeName(this), "Somehow engine is not there!");
 			return;
 		}
 
 		for (auto* pView : m_createdViews)
-			Memory::Allocator::Delete(pView);
+			delete pView;
 
 		m_createdViews.Clear();
 		m_registeredViews.Clear();
@@ -269,7 +269,7 @@ namespace Horizon::Editor
 
 		auto* pReflect = m_context->pEngine->GetReflectionSystem();
 		std::string_view handlName = pReflect->GetType(handl)->GetName();
-		Terminal::Error(StringOps::GetName(this), "Could not find {}", handlName);
+		Terminal::Error(StringHelper::GetTypeName(this), "Could not find {}", handlName);
 		return nullptr;
 	}
 
@@ -279,7 +279,7 @@ namespace Horizon::Editor
 
 		if (!pDescriptor)
 		{
-			Terminal::Error(StringOps::GetName(this), "OpenView could not find a registered view for the given type");
+			Terminal::Error(StringHelper::GetTypeName(this), "OpenView could not find a registered view for the given type");
 			return nullptr;
 		}
 
@@ -307,18 +307,18 @@ namespace Horizon::Editor
 
 		if (!m_createdViews.Remove(pView))
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} is not an open view, nothing to close", pView->GetDisplayName());
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} is not an open view, nothing to close", pView->GetDisplayName());
 			return;
 		}
 
-		Memory::Allocator::Delete(pView);
+		delete pView;
 	}
 
 	b8 ViewRegistry::AddType(const Reflect::Type* pType)
 	{
 		if (pType->GetBaseId() != Reflect::TypeOf<ViewObject>())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has not inherited from ViewObject. Please inherit then restart engine!", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has not inherited from ViewObject. Please inherit then restart engine!", pType->GetName());
 			return false;
 		}
 
@@ -331,13 +331,13 @@ namespace Horizon::Editor
 
 		if (HasFlag(flags, EditorViewFlags::Mutable) && HasFlag(flags, EditorViewFlags::OpenOnStart))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} cannot be both Mutable & OpenOnStart. Wont have this view in the system", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be both Mutable & OpenOnStart. Wont have this view in the system", pType->GetName());
 			return false;
 		}
 
 		if (!HasFlag(flags, EditorViewFlags::Mutable) && !HasFlag(flags, EditorViewFlags::OpenOnStart))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} is neither Mutable nor OpenOnStart, it could never be closed once opened. Wont have this view in the system", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} is neither Mutable nor OpenOnStart, it could never be closed once opened. Wont have this view in the system", pType->GetName());
 			return false;
 		}
 

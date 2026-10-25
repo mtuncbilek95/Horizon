@@ -1,7 +1,6 @@
 #include "DomainFolder.h"
 
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/PAL/File/Directory.h>
 
 namespace Horizon::Editor
@@ -23,7 +22,7 @@ namespace Horizon::Editor
 	{
 		for (DomainFolder* pFolder : m_folders)
 		{
-			if (StringOps::EqualsNoCase(pFolder->GetName(), name))
+			if (StringHelper::CheckIfEquals(pFolder->GetName(), name))
 				return pFolder;
 		}
 
@@ -36,7 +35,7 @@ namespace Horizon::Editor
 
 		for (DomainFile* pFile : m_files)
 		{
-			if (StringOps::EqualsNoCase(pFile->GetName(), cleanName))
+			if (StringHelper::CheckIfEquals(pFile->GetName(), cleanName))
 				return pFile;
 		}
 
@@ -51,10 +50,10 @@ namespace Horizon::Editor
 
 		for (DomainFile* pFile : m_files)
 		{
-			if (!StringOps::EqualsNoCase(pFile->GetName(), stem))
+			if (!StringHelper::CheckIfEquals(pFile->GetName(), stem))
 				continue;
 
-			if (!StringOps::EqualsNoCase(pFile->GetExtension(), extension))
+			if (!StringHelper::CheckIfEquals(pFile->GetExtension(), extension))
 				continue;
 
 			return pFile;
@@ -91,7 +90,7 @@ namespace Horizon::Editor
 		if (pExisting != nullptr)
 			return pExisting;
 
-		DomainFolder* pChild = Memory::Allocator::Create<DomainFolder>(Memory::CurrLoc(), this, name,
+		DomainFolder* pChild = new DomainFolder(this, name,
 			m_absolutePath + "/" + name, m_connectedCookPath);
 
 		usize index = 0;
@@ -113,7 +112,7 @@ namespace Horizon::Editor
 
 		const std::string absolutePath = m_absolutePath + "/" + name;
 
-		DomainFile* pFile = Memory::Allocator::Create<DomainFile>(Memory::CurrLoc(), this, id, name,
+		DomainFile* pFile = new DomainFile(this, id, name,
 			absolutePath + std::string(DomainFile::MetaSuffix), absolutePath, m_connectedCookPath, pAssetType);
 
 		usize index = 0;
@@ -130,20 +129,20 @@ namespace Horizon::Editor
 	{
 		for (usize i = 0; i < m_folders.GetCount(); ++i)
 		{
-			if (!StringOps::EqualsNoCase(m_folders[i]->GetName(), name))
+			if (!StringHelper::CheckIfEquals(m_folders[i]->GetName(), name))
 				continue;
 
-			Memory::Allocator::Delete(m_folders[i]);
+			delete m_folders[i];
 			m_folders.RemoveAt(i);
 			return true;
 		}
 
 		for (usize i = 0; i < m_files.GetCount(); ++i)
 		{
-			if (!StringOps::EqualsNoCase(m_files[i]->GetName(), name))
+			if (!StringHelper::CheckIfEquals(m_files[i]->GetName(), name))
 				continue;
 
-			Memory::Allocator::Delete(m_files[i]);
+			delete m_files[i];
 			m_files.RemoveAt(i);
 			return true;
 		}
@@ -158,7 +157,7 @@ namespace Horizon::Editor
 			if (m_files[i] != pFile)
 				continue;
 
-			Memory::Allocator::Delete(m_files[i]);
+			delete m_files[i];
 			m_files.RemoveAt(i);
 			return true;
 		}
@@ -194,12 +193,12 @@ namespace Horizon::Editor
 	void DomainFolder::Clear()
 	{
 		for (DomainFolder* pFolder : m_folders)
-			Memory::Allocator::Delete(pFolder);
+			delete pFolder;
 
 		m_folders.Clear();
 
 		for (DomainFile* pFile : m_files)
-			Memory::Allocator::Delete(pFile);
+			delete pFile;
 
 		m_files.Clear();
 	}

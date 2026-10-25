@@ -14,7 +14,7 @@
 #include <Engine/World/WorldService.h>
 #include <Engine/World/SystemGroup.h>
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Math/Mat4f.h>
 #include <Runtime/Math/Quat.h>
@@ -47,7 +47,7 @@ namespace Horizon::Editor
 
 		if (m_world == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "WorldService is unavailable, scene view stays empty");
+			Terminal::Error(StringHelper::GetTypeName(this), "WorldService is unavailable, scene view stays empty");
 			return;
 		}
 
@@ -189,7 +189,7 @@ namespace Horizon::Editor
 
 		if (!m_editorCamera.IsValid())
 		{
-			Terminal::Error(StringOps::GetName(this), "Editor camera entity could not be created");
+			Terminal::Error(StringHelper::GetTypeName(this), "Editor camera entity could not be created");
 			return nullptr;
 		}
 

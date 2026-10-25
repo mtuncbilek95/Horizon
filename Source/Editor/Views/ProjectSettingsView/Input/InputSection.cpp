@@ -5,7 +5,7 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Input/InputService.h>
 #include <Engine/Reflection/ReflectionSystem.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Input/GamepadButtons.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/Window/KeyCode.h>
@@ -45,7 +45,7 @@ namespace Horizon::Editor
 
 		if (!m_input)
 		{
-			Terminal::Error(StringOps::GetName(this), "InputService is not registered, input settings are unavailable");
+			Terminal::Error(StringHelper::GetTypeName(this), "InputService is not registered, input settings are unavailable");
 			return;
 		}
 
@@ -115,7 +115,7 @@ namespace Horizon::Editor
 
 		if (m_filePath.empty())
 		{
-			Terminal::Error(StringOps::GetName(this), "No settings path is known, input map was applied but not saved");
+			Terminal::Error(StringHelper::GetTypeName(this), "No settings path is known, input map was applied but not saved");
 			return;
 		}
 

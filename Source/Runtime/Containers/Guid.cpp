@@ -1,6 +1,6 @@
 #include "Guid.h"
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <charconv>
@@ -9,6 +9,8 @@
 
 #if defined(HORIZON_WINDOWS)
 #include <objbase.h>
+#else
+#error "Not implemented yet"
 #endif
 
 namespace Horizon
@@ -51,7 +53,7 @@ namespace Horizon
 	{
 		if (str.size() != 36 || str[8] != '-' || str[13] != '-' || str[18] != '-' || str[23] != '-')
 		{
-			Terminal::Warn(StringOps::GetName(this), "Malformed guid string '{}'", str);
+			Terminal::Warn(StringHelper::GetTypeName(this), "Malformed guid string '{}'", str);
 			return;
 		}
 
@@ -87,7 +89,7 @@ namespace Horizon
 
 		if (!ok)
 		{
-			Terminal::Warn(StringOps::GetName(this), "Malformed guid string '{}'", str);
+			Terminal::Warn(StringHelper::GetTypeName(this), "Malformed guid string '{}'", str);
 			return;
 		}
 

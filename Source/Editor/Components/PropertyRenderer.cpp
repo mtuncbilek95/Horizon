@@ -16,7 +16,7 @@ namespace Horizon::Editor
 	PropertyRenderer::~PropertyRenderer()
 	{
 		for (DrawerEntry& entry : m_drawers)
-			Memory::Allocator::Delete(entry.pDrawer);
+			delete entry.pDrawer;
 	}
 
 	void PropertyRenderer::Initialize(Engine::Engine* pEngine)
@@ -59,7 +59,7 @@ namespace Horizon::Editor
 		if (m_drawerLookups.contains(target))
 		{
 			Terminal::Warn("PropertyRenderer", "{} targets a type that already has a drawer, skipped", pType->GetName());
-			Memory::Allocator::Delete(pDrawer);
+			delete pDrawer;
 			return false;
 		}
 
@@ -78,7 +78,7 @@ namespace Horizon::Editor
 				continue;
 
 			m_drawerLookups.erase(entry.target);
-			Memory::Allocator::Delete(entry.pDrawer);
+			delete entry.pDrawer;
 			m_drawers.RemoveAt(i - 1);
 		}
 	}

@@ -2,7 +2,7 @@
 
 #include <Engine/Asset/Mesh/MeshAssetProperties.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 namespace Horizon::Editor
@@ -35,7 +35,7 @@ namespace Horizon::Editor
 		// Check if the properties are matching
 		if (bytes.properties.GetCount() != sizeof(Engine::MeshAssetProperties))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} properties block has a wrong size", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} properties block has a wrong size", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
@@ -45,19 +45,19 @@ namespace Horizon::Editor
 
 		if (props.vertexStride != sizeof(Engine::MeshVertex) || props.indexStride != sizeof(u32))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has a wrong vertex or index stride", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has a wrong vertex or index stride", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
 		if (props.vertexCount == 0 || props.indexCount == 0 || props.subMeshCount == 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has no geometry", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has no geometry", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
 		if (bytes.table.GetCount() != props.subMeshCount * sizeof(Engine::MeshAssetSubmesh))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} table size does not match subMeshCount", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} table size does not match subMeshCount", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
@@ -66,7 +66,7 @@ namespace Horizon::Editor
 
 		if (bytes.binary.GetCount() != vertexBlock + indexBlock)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} payload size does not match its properties", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} payload size does not match its properties", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
@@ -81,13 +81,13 @@ namespace Horizon::Editor
 
 			if (!validIndices || !validVertices)
 			{
-				Terminal::Error(StringOps::GetName(this), "{} sub-mesh {} points outside of its buffers", ctx.sourcePath, i);
+				Terminal::Error(StringHelper::GetTypeName(this), "{} sub-mesh {} points outside of its buffers", ctx.sourcePath, i);
 				return AssetImportResult::InvalidData;
 			}
 
 			if (!subMesh.boundingBox.IsValid())
 			{
-				Terminal::Error(StringOps::GetName(this), "{} sub-mesh {} has an empty bounding box", ctx.sourcePath, i);
+				Terminal::Error(StringHelper::GetTypeName(this), "{} sub-mesh {} has an empty bounding box", ctx.sourcePath, i);
 				return AssetImportResult::InvalidData;
 			}
 		}

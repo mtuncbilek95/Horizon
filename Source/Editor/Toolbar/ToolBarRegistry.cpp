@@ -77,7 +77,7 @@ namespace Horizon::Editor
 	{
 		if (pType->GetBaseId() != Reflect::TypeOf<ToolBarItem>())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has not inherited from ToolBarItem.", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has not inherited from ToolBarItem.", pType->GetName());
 			return false;
 		}
 
@@ -90,7 +90,7 @@ namespace Horizon::Editor
 
 		if (!pItem)
 		{
-			Terminal::Warn(StringOps::GetName(this), "Previous error may cause due to forgetting virtual function implementations");
+			Terminal::Warn(StringHelper::GetTypeName(this), "Previous error may cause due to forgetting virtual function implementations");
 			return false;
 		}
 
@@ -108,7 +108,7 @@ namespace Horizon::Editor
 				if (section[i - 1].pType != pType)
 					continue;
 
-				Memory::Allocator::Delete(section[i - 1].pItem);
+				delete section[i - 1].pItem;
 				section.RemoveAt(i - 1);
 			}
 		}
@@ -154,7 +154,7 @@ namespace Horizon::Editor
 		for (auto& section : m_sections)
 		{
 			for (auto& entry : section)
-				Memory::Allocator::Delete(entry.pItem);
+				delete entry.pItem;
 
 			section.Clear();
 		}

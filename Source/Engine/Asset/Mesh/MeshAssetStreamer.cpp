@@ -6,7 +6,7 @@
 #include <Engine/Graphics/GraphicsContext.h>
 
 #include <Runtime/Containers/ScopedLock.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/File.h>
 
@@ -21,14 +21,14 @@ namespace Horizon::Engine
 
 		if (pContext == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "GraphicsContext is unavailable, meshes cannot be loaded");
+			Terminal::Error(StringHelper::GetTypeName(this), "GraphicsContext is unavailable, meshes cannot be loaded");
 			return;
 		}
 
 		m_device = pContext->GetDevice();
 		if (!m_device)
 		{
-			Terminal::Fatal(StringOps::GetName(this), "No graphics device, no mesh streamer");
+			Terminal::Fatal(StringHelper::GetTypeName(this), "No graphics device, no mesh streamer");
 			return;
 		}
 
@@ -41,7 +41,7 @@ namespace Horizon::Engine
 		vertArenaDesc.usage = RHI::GfxBufferUsage::Storage;
 		m_vertexArena = m_device->CreateBufferArena(vertArenaDesc);
 		m_vertexArena->SetDebugName("MeshStreamer_VertexArena");
-		Terminal::Assert(m_vertexArena, StringOps::GetName(this), "Big fucked at some places");
+		Terminal::Assert(m_vertexArena, StringHelper::GetTypeName(this), "Big fucked at some places");
 
 		m_vertexMap = (u8*)m_vertexArena->GetBuffer()->Map();
 		m_vertexBufferView = m_resourceHeap->CreateShaderView(m_vertexArena->GetBuffer());
@@ -53,7 +53,7 @@ namespace Horizon::Engine
 		indexArenaDesc.usage = RHI::GfxBufferUsage::Index;
 		m_indexArena = m_device->CreateBufferArena(indexArenaDesc);
 		m_indexArena->SetDebugName("MeshStreamer_IndexArena");
-		Terminal::Assert(m_indexArena, StringOps::GetName(this), "Big fucked at some places");
+		Terminal::Assert(m_indexArena, StringHelper::GetTypeName(this), "Big fucked at some places");
 
 		m_indexMap = (u8*)m_indexArena->GetBuffer()->Map();
 	}
@@ -69,8 +69,8 @@ namespace Horizon::Engine
 		m_resourceHeap = nullptr;
 		m_device = nullptr;
 
-		Memory::Allocator::Delete(m_indexArena);
-		Memory::Allocator::Delete(m_vertexArena);
+		delete m_indexArena;
+		delete m_vertexArena;
 	}
 
 	void MeshAssetStreamer::OnRegisteredAsset(const AssetEntry& entry)
@@ -105,7 +105,7 @@ namespace Horizon::Engine
 	{
 		if (m_device == nullptr || m_vertexArena == nullptr || m_indexArena == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "No device! No Vertex Arena! No Index Arena!", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "No device! No Vertex Arena! No Index Arena!", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
@@ -117,7 +117,7 @@ namespace Horizon::Engine
 
 		if (pAsset->m_ticket == InvalidSubmitTicket)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Job could not be submitted", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Job could not be submitted", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 		}
 	}
@@ -153,7 +153,7 @@ namespace Horizon::Engine
 		PAL::FileAccessRequest fileHandl = PAL::File::RequestAccess(pAsset->m_cookPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
 		if (!fileHandl.IsValid())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Access request to file has failed!", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Access request to file has failed!", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
@@ -163,14 +163,14 @@ namespace Horizon::Engine
 
 		if (!view.IsValid())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Failed to map the cook file", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Failed to map the cook file", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
 		if (view.GetSize() < sizeof(AssetHeader))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Cook file is smaller than its header", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Cook file is smaller than its header", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;
@@ -181,7 +181,7 @@ namespace Horizon::Engine
 
 		if (header.magic != AssetHeader::Magic)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Magic number doesn't match up!", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Magic number doesn't match up!", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;
@@ -189,7 +189,7 @@ namespace Horizon::Engine
 
 		if (header.version != AssetHeader::Version)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Versions are not matching!", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Versions are not matching!", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;
@@ -197,7 +197,7 @@ namespace Horizon::Engine
 
 		if (header.propertySize != sizeof(MeshAssetProperties))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "MeshAssetProperties are not matching!", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "MeshAssetProperties are not matching!", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;
@@ -208,7 +208,7 @@ namespace Horizon::Engine
 		const usize payloadEnd = header.payloadOffset + header.payloadSize;
 		if (propertyEnd > view.GetSize() || tableEnd > view.GetSize() || payloadEnd > view.GetSize())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Header offsets point outside of the cook file", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Header offsets point outside of the cook file", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;
@@ -221,7 +221,7 @@ namespace Horizon::Engine
 
 		if (props.vertexStride != sizeof(MeshVertex) || props.indexStride != sizeof(u32))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "VertexStride or IndexStride is not properly sized", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "VertexStride or IndexStride is not properly sized", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;
@@ -233,7 +233,7 @@ namespace Horizon::Engine
 
 		if (subMeshTable != header.tableSize)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Table size does not match MeshAssetProperties", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Table size does not match MeshAssetProperties", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;
@@ -241,7 +241,7 @@ namespace Horizon::Engine
 
 		if (vertBlock + indexBlock != header.payloadSize)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Payload size does not match MeshAssetProperties", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Payload size does not match MeshAssetProperties", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::CloseMap(view);
 			return;
@@ -259,7 +259,7 @@ namespace Horizon::Engine
 
 			if (!hasValidIndices || !hasValidVertices)
 			{
-				Terminal::Error(StringOps::GetName(this), "{} Path: {}", "a sub-mesh points outside of its buffers", pAsset->m_id.ToString());
+				Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "a sub-mesh points outside of its buffers", pAsset->m_id.ToString());
 				pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 				PAL::File::CloseMap(view);
 				return;
@@ -277,7 +277,7 @@ namespace Horizon::Engine
 			RHI::GfxBufferRange vRange = m_vertexArena->Allocate(vertBlock, sizeof(MeshVertex));
 			if (!vRange.IsValid())
 			{
-				Terminal::Error(StringOps::GetName(this), "{} Path: {}", "VertexBufferArena is out of space", pAsset->m_id.ToString());
+				Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "VertexBufferArena is out of space", pAsset->m_id.ToString());
 				pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 				PAL::File::CloseMap(view);
 				return;
@@ -286,7 +286,7 @@ namespace Horizon::Engine
 			RHI::GfxBufferRange iRange = m_indexArena->Allocate(indexBlock, sizeof(u32));
 			if (!iRange.IsValid())
 			{
-				Terminal::Error(StringOps::GetName(this), "{} Path: {}", "IndexBufferArena is out of space", pAsset->m_id.ToString());
+				Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "IndexBufferArena is out of space", pAsset->m_id.ToString());
 				pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 				m_vertexArena->Free(vRange);
 				PAL::File::CloseMap(view);

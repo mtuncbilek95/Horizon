@@ -12,8 +12,7 @@
 #include <Engine/Job/JobSystem.h>
 
 #include <Runtime/Serialization/Serializer.h>
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
 #include <Runtime/PAL/File/File.h>
@@ -46,7 +45,7 @@ namespace Horizon::Editor
 
 		m_importPipelineRegistry.BootstrapViews(GetEngine());
 
-		m_root = Memory::Allocator::Create<DomainFolder>(Memory::CurrLoc(), nullptr, "Assets", m_assetPath, m_cookPath);
+		m_root = new DomainFolder(nullptr, "Assets", m_assetPath, m_cookPath);
 		BuildRootTree();
 
 		m_watcher = PAL::DirectoryWatcher(m_assetPath, true);
@@ -72,7 +71,7 @@ namespace Horizon::Editor
 		if (m_root == nullptr)
 			return;
 
-		Memory::Allocator::Delete(m_root);
+		delete m_root;
 	}
 
 	void DomainService::DeclareDependencies(Engine::ModuleGraph& graph)
@@ -128,7 +127,7 @@ namespace Horizon::Editor
 	{
 		if (m_root == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has no domain root", m_assetPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has no domain root", m_assetPath);
 			return nullptr;
 		}
 
@@ -139,7 +138,7 @@ namespace Horizon::Editor
 	{
 		if (m_root == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has no domain root", m_assetPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has no domain root", m_assetPath);
 			return nullptr;
 		}
 
@@ -152,7 +151,7 @@ namespace Horizon::Editor
 	{
 		if (m_root == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has no domain root", m_assetPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has no domain root", m_assetPath);
 			return nullptr;
 		}
 
@@ -202,7 +201,7 @@ namespace Horizon::Editor
 	{
 		if (m_root == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has no domain root", m_assetPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has no domain root", m_assetPath);
 			return nullptr;
 		}
 
@@ -228,7 +227,7 @@ namespace Horizon::Editor
 		DomainFolder* pParent = m_root->ConfirmAndFindFolder(event.GetParent());
 		if (!pParent)
 		{
-			Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", event.GetParent());
+			Terminal::Debug(StringHelper::GetTypeName(this), "{} folder is not tracked", event.GetParent());
 			return;
 		}
 
@@ -290,7 +289,7 @@ namespace Horizon::Editor
 
 		if (!pOldParent || !pNewParent)
 		{
-			Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", event.relativePath);
+			Terminal::Debug(StringHelper::GetTypeName(this), "{} folder is not tracked", event.relativePath);
 			return;
 		}
 
@@ -332,7 +331,7 @@ namespace Horizon::Editor
 		}
 
 		ImportPipelineEntry* pOldEntry = m_importPipelineRegistry.GetImportPipelineEntry(pFile->GetExtension());
-		ImportPipelineEntry* pNewEntry = m_importPipelineRegistry.GetImportPipelineEntry(StringOps::OnlyExtension(newName));
+		ImportPipelineEntry* pNewEntry = m_importPipelineRegistry.GetImportPipelineEntry(StringHelper::FindExtension(newName));
 
 		if (!pNewEntry || pNewEntry != pOldEntry)
 		{
@@ -349,7 +348,7 @@ namespace Horizon::Editor
 			if (!PAL::File::Exists(oldMetaPath))
 				WriteMetaFile(pFile, pNewEntry->pSettingsType);
 			else if (!PAL::File::Rename(oldMetaPath, newMetaPath))
-				Terminal::Warn(StringOps::GetName(this), "{} could not be renamed to {}", oldMetaPath, newMetaPath);
+				Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be renamed to {}", oldMetaPath, newMetaPath);
 		}
 
 		if (pAssetService->HasAsset(pFile->GetID()))
@@ -395,14 +394,14 @@ namespace Horizon::Editor
 		if (task.result != AssetImportResult::Success)
 		{
 			auto* pType = GetEngine()->GetReflectionSystem()->GetType(Reflect::TypeOf<AssetImportResult>());
-			Terminal::Error(StringOps::GetName(this), "Parse task for {} has failed with result {}", task.relativePath, pType->GetEnumName(task.result));
+			Terminal::Error(StringHelper::GetTypeName(this), "Parse task for {} has failed with result {}", task.relativePath, pType->GetEnumName(task.result));
 
 			// Since we already created it, re-find the failed domain file.
 			DomainFile* pFailed = FindFileByGuid(task.context.fileId);
 			const b8 requeue = task.requeue;
 
-			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
-			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+			delete task.pImporter; // Don't forget to delete this mf
+			delete task.pSettings; // Don't forget to delete this mf
 			task = DomainFileImportContext();
 
 			if (!pFailed)
@@ -420,9 +419,9 @@ namespace Horizon::Editor
 		auto* pFile = FindFileByGuid(task.context.fileId);
 		if (!pFile)
 		{
-			Terminal::Warn(StringOps::GetName(this), "DomainFile for {} has been deleted during parse", task.relativePath);
-			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
-			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+			Terminal::Warn(StringHelper::GetTypeName(this), "DomainFile for {} has been deleted during parse", task.relativePath);
+			delete task.pImporter; // Don't forget to delete this mf
+			delete task.pSettings; // Don't forget to delete this mf
 			task = DomainFileImportContext();
 
 			return;
@@ -432,9 +431,9 @@ namespace Horizon::Editor
 		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(pFile->GetExtension());
 		if (!pEntry)
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} has no pipeline for its asset type, skipped", task.relativePath);
-			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
-			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} has no pipeline for its asset type, skipped", task.relativePath);
+			delete task.pImporter; // Don't forget to delete this mf
+			delete task.pSettings; // Don't forget to delete this mf
 			task = DomainFileImportContext();
 
 			return;
@@ -454,9 +453,9 @@ namespace Horizon::Editor
 		// Clean the shit up
 		if (task.ticket == Engine::InvalidSubmitTicket)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} cook job could not be submitted", task.relativePath);
-			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
-			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cook job could not be submitted", task.relativePath);
+			delete task.pImporter; // Don't forget to delete this mf
+			delete task.pSettings; // Don't forget to delete this mf
 			task = DomainFileImportContext();
 		}
 	}
@@ -485,13 +484,13 @@ namespace Horizon::Editor
 		DomainFile* pFile = FindFileByGuid(task.context.fileId);
 		if (!pFile)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has no domain file anymore. Cleaning up the desk!", task.relativePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has no domain file anymore. Cleaning up the desk!", task.relativePath);
 
 			if (PAL::File::Exists(task.cookedPath) && !PAL::File::Delete(task.cookedPath))
-				Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", task.cookedPath);
+				Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be deleted", task.cookedPath);
 
-			Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
-			Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+			delete task.pImporter; // Don't forget to delete this mf
+			delete task.pSettings; // Don't forget to delete this mf
 			task = DomainFileImportContext();
 			return;
 		}
@@ -500,12 +499,12 @@ namespace Horizon::Editor
 		if (task.result != AssetImportResult::Success)
 		{
 			auto* pType = GetEngine()->GetReflectionSystem()->GetType(Reflect::TypeOf<AssetImportResult>());
-			Terminal::Error(StringOps::GetName(this), "{} has failed on import with code: {}", task.relativePath, pType->GetEnumName(task.result));
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has failed on import with code: {}", task.relativePath, pType->GetEnumName(task.result));
 		}
 		else if (pAssetService->HasAsset(pFile->GetID()))
 			pAssetService->RefreshAsset(pFile->GetID());
 		else if (!pAssetService->RegisterAsset(pFile->GetID(), task.cookedPath, pFile->GetCallPath(), pFile->GetAssetName(), task.pAssetType->GetTypeId()))
-			Terminal::Error(StringOps::GetName(this), "{} could not be registered to AssetService", task.cookedPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be registered to AssetService", task.cookedPath);
 
 		const b8 requeue = task.requeue;
 		const b8 isDiscarded = task.result != AssetImportResult::Success && !requeue && !pAssetService->HasAsset(pFile->GetID());
@@ -517,8 +516,8 @@ namespace Horizon::Editor
 		m_revision.Add(1);
 
 		// Get ready to release the task
-		Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
-		Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+		delete task.pImporter; // Don't forget to delete this mf
+		delete task.pSettings; // Don't forget to delete this mf
 		task = DomainFileImportContext();
 
 		// Discard the file since requeue is also screwed
@@ -553,20 +552,20 @@ namespace Horizon::Editor
 		const std::string cookedPath = pFile->GetCookedPath();
 
 		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
-			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be deleted", cookedPath);
 	}
 
 	void DomainService::DiscardFile(DomainFile* pFile)
 	{
 		const std::string cookedPath = pFile->GetCookedPath();
 		if (PAL::File::Exists(cookedPath) && !PAL::File::Delete(cookedPath))
-			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", cookedPath);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be deleted", cookedPath);
 
 		const std::string& metaPath = pFile->GetMetaPath();
 		if (PAL::File::Exists(metaPath) && !PAL::File::Delete(metaPath))
-			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", metaPath);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be deleted", metaPath);
 
-		Terminal::Warn(StringOps::GetName(this), "{} could not be imported and is removed from the domain", pFile->GetSourceRelativePath());
+		Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be imported and is removed from the domain", pFile->GetSourceRelativePath());
 
 		pFile->GetParent()->RemoveFile(pFile);
 		m_revision.Add(1);
@@ -588,7 +587,7 @@ namespace Horizon::Editor
 			DomainFolder* pParent = m_root->ConfirmAndFindFolder(parentPath);
 			if (!pParent)
 			{
-				Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", parentPath);
+				Terminal::Debug(StringHelper::GetTypeName(this), "{} folder is not tracked", parentPath);
 				continue;
 			}
 
@@ -614,7 +613,7 @@ namespace Horizon::Editor
 
 		if (!pImportPipelineEntry)
 		{
-			Terminal::Debug(StringOps::GetName(this), "{} has no registered import pipeline.", name);
+			Terminal::Debug(StringHelper::GetTypeName(this), "{} has no registered import pipeline.", name);
 			return nullptr;
 		}
 
@@ -653,7 +652,7 @@ namespace Horizon::Editor
 
 		if (!id.IsValid())
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} carries no valid id, a new one is generated", metaPath);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} carries no valid id, a new one is generated", metaPath);
 			id = Guid::Generate();
 		}
 
@@ -686,7 +685,7 @@ namespace Horizon::Editor
 		auto* pAssetService = GetEngine()->RequestService<Engine::AssetService>();
 		if (!pAssetService->RegisterAsset(pFile->GetID(), pFile->GetCookedPath(), pFile->GetCallPath(), pFile->GetAssetName(), pFile->GetAssetType()->GetTypeId()))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be registered to AssetService", pFile->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be registered to AssetService", pFile->GetName());
 			QueueImport(pFile, ImportReason::Fresh);
 		}
 
@@ -697,7 +696,7 @@ namespace Horizon::Editor
 	{
 		if (!reader.Key("settings"))
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} carries no import settings, defaults are used", pFile->GetMetaPath());
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} carries no import settings, defaults are used", pFile->GetMetaPath());
 			return false;
 		}
 
@@ -706,7 +705,7 @@ namespace Horizon::Editor
 
 		if (reader.HasError())
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} has malformed import settings, defaults are used", pFile->GetMetaPath());
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} has malformed import settings, defaults are used", pFile->GetMetaPath());
 			return false;
 		}
 
@@ -735,14 +734,14 @@ namespace Horizon::Editor
 		const std::string& metaPath = pFile->GetMetaPath();
 		if (!PAL::File::Exists(metaPath) && !PAL::File::Create(metaPath))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be created", metaPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be created", metaPath);
 			return false;
 		}
 
 		PAL::FileAccessRequest request = PAL::File::RequestAccess(metaPath, PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::Exclusive);
 		if (!request.IsValid())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be opened for writing", metaPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be opened for writing", metaPath);
 			return false;
 		}
 
@@ -750,7 +749,7 @@ namespace Horizon::Editor
 		PAL::File::ReleaseAccess(request);
 
 		if (!wasWritten)
-			Terminal::Error(StringOps::GetName(this), "{} could not be written", metaPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be written", metaPath);
 
 		return wasWritten;
 	}
@@ -764,7 +763,7 @@ namespace Horizon::Editor
 		DomainFolder* pParent = m_root->ConfirmAndFindFolder(parentPath);
 		if (!pParent)
 		{
-			Terminal::Debug(StringOps::GetName(this), "{} folder is not tracked", parentPath);
+			Terminal::Debug(StringHelper::GetTypeName(this), "{} folder is not tracked", parentPath);
 			return;
 		}
 
@@ -802,7 +801,7 @@ namespace Horizon::Editor
 
 		const std::string& metaPath = pFile->GetMetaPath();
 		if (PAL::File::Exists(metaPath) && !PAL::File::Delete(metaPath))
-			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", metaPath);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be deleted", metaPath);
 
 		pParent->RemoveFile(pFile);
 		m_revision.Add(1);
@@ -817,7 +816,7 @@ namespace Horizon::Editor
 		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(pFile->GetExtension());
 		if (!pEntry)
 		{
-			Terminal::Debug(StringOps::GetName(this), "{} has no registered import pipeline.", pFile->GetName());
+			Terminal::Debug(StringHelper::GetTypeName(this), "{} has no registered import pipeline.", pFile->GetName());
 			return;
 		}
 
@@ -826,7 +825,7 @@ namespace Horizon::Editor
 			if (!PAL::File::Exists(pFile->GetSourcePath()))
 				return;
 
-			Terminal::Warn(StringOps::GetName(this), "{} is deleted while its source is tracked, it is written back", pFile->GetMetaPath());
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} is deleted while its source is tracked, it is written back", pFile->GetMetaPath());
 			WriteMetaFile(pFile, pEntry->pSettingsType);
 			return;
 		}
@@ -834,7 +833,7 @@ namespace Horizon::Editor
 		PAL::FileAccessRequest request = PAL::File::RequestAccess(pFile->GetMetaPath(), PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
 		if (!request.IsValid())
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} could not be opened for reading", pFile->GetMetaPath());
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be opened for reading", pFile->GetMetaPath());
 			return;
 		}
 
@@ -873,7 +872,7 @@ namespace Horizon::Editor
 		// Check if file is a valid one
 		if (!pFile || !pFile->GetSettings())
 		{
-			Terminal::Error(StringOps::GetName(this), "Import requested for a file without settings");
+			Terminal::Error(StringHelper::GetTypeName(this), "Import requested for a file without settings");
 			return;
 		}
 
@@ -897,7 +896,7 @@ namespace Horizon::Editor
 		AssetImporter* pImporter = m_importPipelineRegistry.CreateImporterInstance(pFile->GetExtension());
 		if (!pImporter)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has a pipeline but no importer for {}", pFile->GetName(), pEntry->pAssetType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has a pipeline but no importer for {}", pFile->GetName(), pEntry->pAssetType->GetName());
 			return;
 		}
 
@@ -905,7 +904,7 @@ namespace Horizon::Editor
 		AssetImportSettings* pSnapshot = CloneSettings(pFile->GetSettings(), pEntry->pSettingsType);
 		if (!pSnapshot)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} import settings could not be snapshotted", pFile->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} import settings could not be snapshotted", pFile->GetName());
 			return;
 		}
 
@@ -931,7 +930,7 @@ namespace Horizon::Editor
 		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(extension);
 		if (!pEntry)
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} has no registered import pipeline", extension);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} has no registered import pipeline", extension);
 			return nullptr;
 		}
 
@@ -940,14 +939,14 @@ namespace Horizon::Editor
 
 	void DomainService::ImportFile(const std::string& targetFolder, const std::string& sourcePath, const AssetImportSettings* pSettings)
 	{
-		/*const std::string source = StringOps::NormalizePath(sourcePath);
+		/*const std::string source = StringHelper::NormalizePath(sourcePath);
 		const usize separator = source.rfind('/');
 		const std::string name = separator == std::string::npos ? source : source.substr(separator + 1);
 
-		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(StringOps::OnlyExtension(name));
+		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(StringHelper::FindExtension(name));
 		if (!pEntry)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has no registered import pipeline", name);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has no registered import pipeline", name);
 			return;
 		}
 
@@ -956,7 +955,7 @@ namespace Horizon::Editor
 
 		if (PAL::File::Exists(targetPath) || PAL::File::Exists(metaPath))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} already exists in {}", name, targetFolder);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} already exists in {}", name, targetFolder);
 			return;
 		}
 
@@ -967,7 +966,7 @@ namespace Horizon::Editor
 			return;
 
 		if (!PAL::File::Delete(metaPath))
-			Terminal::Warn(StringOps::GetName(this), "{} could not be deleted", metaPath);*/
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be deleted", metaPath);*/
 	}
 
 	void DomainService::StartImport()
@@ -994,9 +993,9 @@ namespace Horizon::Editor
 
 			if (task.ticket == Engine::InvalidSubmitTicket)
 			{
-				Terminal::Error(StringOps::GetName(this), "{} import job could not be submitted", task.relativePath);
-				Memory::Allocator::Delete(task.pImporter); // Don't forget to delete this mf
-				Memory::Allocator::Delete(task.pSettings); // Don't forget to delete this mf
+				Terminal::Error(StringHelper::GetTypeName(this), "{} import job could not be submitted", task.relativePath);
+				delete task.pImporter; // Don't forget to delete this mf
+				delete task.pSettings; // Don't forget to delete this mf
 				task = DomainFileImportContext();
 			}
 		}
@@ -1060,7 +1059,7 @@ namespace Horizon::Editor
 		auto* pClone = (AssetImportSettings*)pType->Create();
 		if (!pClone)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has virtual function issues. Check out your settings", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has virtual function issues. Check out your settings", pType->GetName());
 			return nullptr;
 		}
 
@@ -1075,7 +1074,7 @@ namespace Horizon::Editor
 
 		if (reader.HasError())
 		{
-			Memory::Allocator::Delete(pClone);
+			delete pClone;
 			return nullptr;
 		}
 

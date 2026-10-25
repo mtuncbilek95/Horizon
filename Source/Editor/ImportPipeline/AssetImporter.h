@@ -3,8 +3,8 @@
 #include <Editor/ImportPipeline/AssetImporterTypeAttribute.h>
 #include <Editor/ImportPipeline/AssetImportResult.h>
 #include <Editor/ImportPipeline/ImportPipelineContext.h>
-#include <Runtime/Containers/List.h>
-#include <Runtime/Containers/ReadOnlyList.h>
+#include <Runtime/Containers/Vector/List.h>
+#include <Runtime/Containers/Vector/ReadOnlyList.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor

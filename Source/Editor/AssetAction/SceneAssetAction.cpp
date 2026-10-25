@@ -21,7 +21,7 @@ namespace Horizon::Editor
 
 		if (pSceneAsset->GetResidency() != Engine::AssetResidency::Resident)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be loaded, current world stays as it is", pUsedAsset->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be loaded, current world stays as it is", pUsedAsset->GetName());
 			return;
 		}
 

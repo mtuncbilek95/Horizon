@@ -180,7 +180,7 @@ namespace Horizon::Editor
 
 				if (!pMenuObj)
 				{
-					Terminal::Warn(StringOps::GetName(this), "{} could not be created, forgetting a virtual implementation causes this", pType->GetName());
+					Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be created, forgetting a virtual implementation causes this", pType->GetName());
 					return;
 				}
 
@@ -265,7 +265,7 @@ namespace Horizon::Editor
 
 	void MenuRegistry::ClearRecursive(MenuItemInstance& inst)
 	{
-		Memory::Allocator::Delete(inst.pMenu);
+		delete inst.pMenu;
 
 		for (auto& newInst : inst.subMenus)
 			ClearRecursive(newInst);

@@ -88,7 +88,7 @@ namespace Horizon::Editor
 	AssetContentView::~AssetContentView()
 	{
 		for (ActionEntry& entry : m_openActions)
-			Memory::Allocator::Delete(entry.pAction);
+			delete entry.pAction;
 	}
 
 	void AssetContentView::OnInvoke()
@@ -129,7 +129,7 @@ namespace Horizon::Editor
 
 		if (!pAttr)
 		{
-			Terminal::Error(StringOps::GetName(this), "Can't use AssetActions without ActionTypeAttribute");
+			Terminal::Error(StringHelper::GetTypeName(this), "Can't use AssetActions without ActionTypeAttribute");
 			return false;
 		}
 
@@ -137,7 +137,7 @@ namespace Horizon::Editor
 
 		if (!pAction)
 		{
-			Terminal::Warn(StringOps::GetName(this), "Forgetting to implement a virtual function can cause the previous error!");
+			Terminal::Warn(StringHelper::GetTypeName(this), "Forgetting to implement a virtual function can cause the previous error!");
 			return false;
 		}
 
@@ -146,14 +146,14 @@ namespace Horizon::Editor
 
 		if (!pAssetType)
 		{
-			Memory::Allocator::Delete(pAction);
+			delete pAction;
 			return false;
 		}
 
 		m_actionNameLookup[pAssetType->GetName()] = pAction;
 		m_openActions.EmplaceBack(pType, pAction);
 
-		Terminal::Info(StringOps::GetName(this), "{} has been registered!", pType->GetName());
+		Terminal::Info(StringHelper::GetTypeName(this), "{} has been registered!", pType->GetName());
 		return true;
 	}
 
@@ -167,7 +167,7 @@ namespace Horizon::Editor
 				continue;
 
 			std::erase_if(m_actionNameLookup, [&](const auto& pair) { return pair.second == entry.pAction; });
-			Memory::Allocator::Delete(entry.pAction);
+			delete entry.pAction;
 			m_openActions.RemoveAt(i - 1);
 		}
 	}
@@ -332,7 +332,7 @@ namespace Horizon::Editor
 			auto it = m_actionNameLookup.find(pOpenFile->GetAssetType()->GetName());
 			if (it == m_actionNameLookup.end())
 			{
-				Terminal::Warn(StringOps::GetName(this), "{} is {} and there is no action for this asset.", pOpenFile->GetName(), pOpenFile->GetAssetType()->GetName());
+				Terminal::Warn(StringHelper::GetTypeName(this), "{} is {} and there is no action for this asset.", pOpenFile->GetName(), pOpenFile->GetAssetType()->GetName());
 				return;
 			}
 
@@ -399,7 +399,7 @@ namespace Horizon::Editor
 
 		if (pEntry == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} is not a tracked browser entry", sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} is not a tracked browser entry", sourcePath);
 			return;
 		}
 

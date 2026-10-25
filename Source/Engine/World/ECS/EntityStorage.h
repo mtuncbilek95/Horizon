@@ -2,8 +2,8 @@
 
 #include <Engine/World/ECS/Definitions.h>
 
-#include <Runtime/Containers/List.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/Vector/List.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/Sync/Atomic.h>
 

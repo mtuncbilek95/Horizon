@@ -1,7 +1,6 @@
 #include "ComponentRegistry.h"
 
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 namespace Horizon::Engine
@@ -15,7 +14,7 @@ namespace Horizon::Engine
 	{
 		if (!pType)
 		{
-			Terminal::Error(StringOps::GetName(this), "Cannot create a storage for a null type");
+			Terminal::Error(StringHelper::GetTypeName(this), "Cannot create a storage for a null type");
 			return nullptr;
 		}
 
@@ -25,15 +24,15 @@ namespace Horizon::Engine
 
 		if (m_storages.GetCount() >= MaxComponents)
 		{
-			Terminal::Error(StringOps::GetName(this), "Component budget of {} is exhausted", MaxComponents);
+			Terminal::Error(StringHelper::GetTypeName(this), "Component budget of {} is exhausted", MaxComponents);
 			Terminal::Warn("Developer Info", "How the fuck did you need more than 256 component slots?? Re-assess your design god damn it.");
 			return nullptr;
 		}
 
-		auto* pStorage = Memory::Allocator::Create<ComponentStorage>(Memory::CurrLoc(), pType);
+		auto* pStorage = new ComponentStorage(pType);
 		if (!pStorage)
 		{
-			Terminal::Error(StringOps::GetName(this), "Storage for '{}' could not be allocated", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "Storage for '{}' could not be allocated", pType->GetName());
 			return nullptr;
 		}
 
@@ -66,7 +65,7 @@ namespace Horizon::Engine
 	void ComponentRegistry::Clear()
 	{
 		for (ComponentStorage* pStorage : m_storages)
-			Memory::Allocator::Delete(pStorage);
+			delete pStorage;
 
 		m_storages.Clear();
 		m_slots.clear();

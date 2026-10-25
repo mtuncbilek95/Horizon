@@ -1,6 +1,6 @@
 #include "CreateFolderItem.h"
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/PAL/File/Directory.h>
 
 namespace Horizon::Editor
@@ -11,7 +11,7 @@ namespace Horizon::Editor
 		{
 			for (const DomainFolder* pFolder : pParent->GetFolders())
 			{
-				if (StringOps::EqualsNoCase(pFolder->GetName(), name))
+				if (StringHelper::CheckIfEquals(pFolder->GetName(), name))
 					return true;
 			}
 
@@ -40,7 +40,7 @@ namespace Horizon::Editor
 		const std::string newFolderPath = context.pCurrentFolder->GetAbsolutePath() + "/" + newFolderName;
 
 		if (!PAL::Directory::Create(newFolderPath))
-			Terminal::Error(StringOps::GetName(this), "Cannot create folder: {}", newFolderPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "Cannot create folder: {}", newFolderPath);
 	}
 
 	b8 CreateFolderItem::IsEnabled(const AssetBrowserContext& context)

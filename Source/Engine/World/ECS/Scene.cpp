@@ -114,7 +114,7 @@ namespace Horizon::Engine
 		const Reflect::Type* pType = m_reflection->GetType(typeId);
 		if (!pType)
 		{
-			Terminal::Error(StringOps::GetName(this), "Component type is not reflected. Did you forget HCLASS or to regenerate?");
+			Terminal::Error(StringHelper::GetTypeName(this), "Component type is not reflected. Did you forget HCLASS or to regenerate?");
 			return nullptr;
 		}
 
@@ -125,7 +125,7 @@ namespace Horizon::Engine
 	{
 		if (!m_entities.IsAlive(handl))
 		{
-			Terminal::Warn(StringOps::GetName(this), "AddComponent on a dead or stale entity");
+			Terminal::Warn(StringHelper::GetTypeName(this), "AddComponent on a dead or stale entity");
 			return nullptr;
 		}
 

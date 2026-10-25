@@ -11,19 +11,18 @@ namespace Horizon::Engine
 {
 	Engine::Engine()
 	{
-		m_reflectionSystem = Memory::Allocator::Create<ReflectionSystem>(Memory::CurrLoc(), this);
-		m_jobSystem = Memory::Allocator::Create<JobSystem>(Memory::CurrLoc());
-		m_pluginSystem = Memory::Allocator::Create<PluginSystem>(Memory::CurrLoc(), this);
-		m_gameSystem = Memory::Allocator::Create<GameSystem>(Memory::CurrLoc(), this);
+		m_reflectionSystem = new ReflectionSystem(this);
+		m_jobSystem = new JobSystem();
+		m_pluginSystem = new PluginSystem(this);
+		m_gameSystem = new GameSystem(this);
 	}
 
 	Engine::~Engine()
 	{
-		Memory::Allocator::Delete(m_gameSystem);
-		Memory::Allocator::Delete(m_pluginSystem);
-		Memory::Allocator::Delete(m_jobSystem);
-		Memory::Allocator::Delete(m_reflectionSystem);
-		Memory::Allocator::ReportLeaks();
+		delete m_gameSystem;
+		delete m_pluginSystem;
+		delete m_jobSystem;
+		delete m_reflectionSystem;
 	}
 
 	void Engine::Run()
@@ -53,7 +52,7 @@ namespace Horizon::Engine
 		if (!m_running)
 			return;
 
-		Terminal::Info(StringOps::GetName(this), "Exit requested: {}", reason);
+		Terminal::Info(StringHelper::GetTypeName(this), "Exit requested: {}", reason);
 		m_running = false;
 	}
 
@@ -78,7 +77,7 @@ namespace Horizon::Engine
 
 		if (!pLibraryTypes)
 		{
-			Terminal::Warn(StringOps::GetName(this), "UnregisterLibrary could not find the library, nothing to do");
+			Terminal::Warn(StringHelper::GetTypeName(this), "UnregisterLibrary could not find the library, nothing to do");
 			return;
 		}
 
@@ -140,7 +139,7 @@ namespace Horizon::Engine
 			if (!m_dependencyGraph.Resolve(nodes, satisfied, order))
 			{
 				for (Module* pModule : batch)
-					Memory::Allocator::Delete(pModule);
+					delete pModule;
 
 				RequestExit("Module dependency graph could not be resolved");
 				return;
@@ -158,8 +157,8 @@ namespace Horizon::Engine
 
 		if (report)
 		{
-			Terminal::Fatal(StringOps::GetName(this), "{} failed to initialize: {}", StringOps::GetNameString(index.name()), report.GetMessage());
-			Memory::Allocator::Delete(pModule);
+			Terminal::Fatal(StringHelper::GetTypeName(this), "{} failed to initialize: {}", StringHelper::GetNameString(index.name()), report.GetMessage());
+			delete pModule;
 			RequestExit("Module initialization failed");
 			return;
 		}
@@ -176,7 +175,7 @@ namespace Horizon::Engine
 		}
 
 		m_shutdownOrder.PushBack(pModule);
-		Terminal::Info(StringOps::GetName(this), "{} is active", StringOps::GetNameString(index.name()));
+		Terminal::Info(StringHelper::GetTypeName(this), "{} is active", StringHelper::GetNameString(index.name()));
 	}
 
 	void Engine::Shutdown()
@@ -187,10 +186,10 @@ namespace Horizon::Engine
 			m_shutdownOrder[i - 1]->OnFinalize();
 
 		for (usize i = m_shutdownOrder.GetCount(); i > 0; --i)
-			Memory::Allocator::Delete(m_shutdownOrder[i - 1]);
+			delete m_shutdownOrder[i - 1];
 
 		for (Module* pModule : m_registerPending)
-			Memory::Allocator::Delete(pModule);
+			delete pModule;
 
 		m_shutdownOrder.Clear();
 		m_registerPending.Clear();

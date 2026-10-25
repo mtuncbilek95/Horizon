@@ -7,7 +7,7 @@
 #include <Engine/Reflection/ReflectionSystem.h>
 
 #include <Runtime/PAL/File/File.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 
 namespace Horizon::Engine
 {
@@ -34,7 +34,7 @@ namespace Horizon::Engine
 			if (entry.pAssetObject->m_loader)
 				entry.pAssetObject->m_loader->OnUnregisteredAsset(entry);
 
-			Memory::Allocator::Delete(entry.pAssetObject);
+			delete entry.pAssetObject;
 		}
 
 		m_usableAssets.Clear();
@@ -44,7 +44,7 @@ namespace Horizon::Engine
 		for (StreamerEntry& entry : m_streamers)
 		{
 			entry.pLoader->OnFinalize();
-			Memory::Allocator::Delete(entry.pLoader);
+			delete entry.pLoader;
 		}
 
 		m_streamers.Clear();
@@ -77,7 +77,7 @@ namespace Horizon::Engine
 
 		if (!pLoader)
 		{
-			Terminal::Warn(StringOps::GetName(this), "Forgetting to implement a virtual function can cause the previous error!");
+			Terminal::Warn(StringHelper::GetTypeName(this), "Forgetting to implement a virtual function can cause the previous error!");
 			return false;
 		}
 
@@ -88,7 +88,7 @@ namespace Horizon::Engine
 		m_streamers.EmplaceBack(pType, pLoader);
 
 		auto* pAssetType = GetEngine()->GetReflectionSystem()->GetType(pLoader->GetWorkingAssetType());
-		Terminal::Info(StringOps::GetName(this), "{} has been registered for the {} type", pType->GetName(), pAssetType ? pAssetType->GetName() : "unknown");
+		Terminal::Info(StringHelper::GetTypeName(this), "{} has been registered for the {} type", pType->GetName(), pAssetType ? pAssetType->GetName() : "unknown");
 		return true;
 	}
 
@@ -103,7 +103,7 @@ namespace Horizon::Engine
 
 			m_streamerLookup.erase(entry.pLoader->GetWorkingAssetType());
 			entry.pLoader->OnFinalize();
-			Memory::Allocator::Delete(entry.pLoader);
+			delete entry.pLoader;
 			m_streamers.RemoveAt(i - 1);
 		}
 	}
@@ -113,7 +113,7 @@ namespace Horizon::Engine
 		auto itAsset = m_idLookup.find(id);
 		if (itAsset != m_idLookup.end())
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} | {} has been already registered", id.ToString(), cookPath);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} | {} has been already registered", id.ToString(), cookPath);
 			return true;
 		}
 
@@ -122,7 +122,7 @@ namespace Horizon::Engine
 		auto itStreamer = m_streamerLookup.find(type);
 		if (itStreamer == m_streamerLookup.end())
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} has any type of loader", pType->GetName());
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} has any type of loader", pType->GetName());
 			return false;
 		}
 
@@ -136,7 +136,7 @@ namespace Horizon::Engine
 
 		if (!entry.pAssetObject)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} | {} has virtual function issues. Please check it out", id.ToString(), pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} | {} has virtual function issues. Please check it out", id.ToString(), pType->GetName());
 			return false;
 		}
 		entry.pAssetObject->m_loader = itStreamer->second;
@@ -154,7 +154,7 @@ namespace Horizon::Engine
 		auto itAsset = m_idLookup.find(id);
 		if (itAsset == m_idLookup.end())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} is not registered, nothing to unregister", id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} is not registered, nothing to unregister", id.ToString());
 			return true;
 		}
 
@@ -166,7 +166,7 @@ namespace Horizon::Engine
 
 		m_relativePathLookup.erase(entry.callPath);
 		m_idLookup.erase(itAsset);
-		Memory::Allocator::Delete(entry.pAssetObject);
+		delete entry.pAssetObject;
 
 		const usize lastIndex = m_usableAssets.GetCount() - 1;
 		if (index != lastIndex)
@@ -185,7 +185,7 @@ namespace Horizon::Engine
 		auto itAsset = m_idLookup.find(id);
 		if (itAsset == m_idLookup.end())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} is not registered, nothing to refresh", id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} is not registered, nothing to refresh", id.ToString());
 			return false;
 		}
 
@@ -202,7 +202,7 @@ namespace Horizon::Engine
 		auto itAsset = m_idLookup.find(id);
 		if (itAsset == m_idLookup.end())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has not been found in any of the sources", id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has not been found in any of the sources", id.ToString());
 			return nullptr;
 		}
 
@@ -214,14 +214,14 @@ namespace Horizon::Engine
 		auto itAsset = m_idLookup.find(id);
 		if (itAsset == m_idLookup.end())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has not been found in any of the sources", id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has not been found in any of the sources", id.ToString());
 			return nullptr;
 		}
 
 		const AssetEntry& entry = m_usableAssets[itAsset->second];
 		if (entry.assetType != type)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} is a {}, not the requested asset type", id.ToString(), entry.assetTypeName);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} is a {}, not the requested asset type", id.ToString(), entry.assetTypeName);
 			return nullptr;
 		}
 
@@ -233,7 +233,7 @@ namespace Horizon::Engine
 		auto itAsset = m_relativePathLookup.find(callPath);
 		if (itAsset == m_relativePathLookup.end())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has not been found in any of the sources", callPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has not been found in any of the sources", callPath);
 			return nullptr;
 		}
 
@@ -245,7 +245,7 @@ namespace Horizon::Engine
 		auto itLoader = m_streamerLookup.find(assetType);
 		if (itLoader == m_streamerLookup.end())
 		{
-			Terminal::Error(StringOps::GetName(this), "No loader is registered for the requested asset type");
+			Terminal::Error(StringHelper::GetTypeName(this), "No loader is registered for the requested asset type");
 			return nullptr;
 		}
 

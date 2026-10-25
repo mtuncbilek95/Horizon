@@ -1,8 +1,7 @@
 #include "D3D12Device.h"
 
 #include <Runtime/Containers/ScopedLock.h>
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <Runtime/RHI/Buffer/GfxBufferArenaDesc.h>
@@ -59,7 +58,7 @@ namespace Horizon::RHI
 
 	GfxDevice* CreateDevice(const GfxDeviceDesc& desc)
 	{
-		auto* pDevice = Memory::Allocator::Create<D3D12Device>(Memory::CurrLoc());
+		auto* pDevice = new D3D12Device();
 		pDevice->Init(desc);
 
 		return pDevice;
@@ -89,7 +88,7 @@ namespace Horizon::RHI
 			DescriptorRoot& root = m_descriptorRoots[i];
 
 			if (root.blockCount != 0)
-				Terminal::Error(StringOps::GetName(this), "Descriptor root {} still has {} blocks that were never released", i, root.blockCount);
+				Terminal::Error(StringHelper::GetTypeName(this), "Descriptor root {} still has {} blocks that were never released", i, root.blockCount);
 
 			if (root.pHeap)
 				root.pHeap->Release();
@@ -197,7 +196,7 @@ namespace Horizon::RHI
 	{
 		if (desc.capacity == 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "Descriptor heap type {} was requested with zero capacity", u32(desc.type));
+			Terminal::Error(StringHelper::GetTypeName(this), "Descriptor heap type {} was requested with zero capacity", u32(desc.type));
 			return nullptr;
 		}
 
@@ -205,13 +204,13 @@ namespace Horizon::RHI
 
 		if (base == kInvalid32)
 		{
-			Terminal::Error(StringOps::GetName(this), "Descriptor heap type {} with capacity {} could not be created", u32(desc.type), desc.capacity);
+			Terminal::Error(StringHelper::GetTypeName(this), "Descriptor heap type {} with capacity {} could not be created", u32(desc.type), desc.capacity);
 			return nullptr;
 		}
 
 		const DescriptorRoot& root = m_descriptorRoots[u32(desc.type)];
 
-		auto* pHeap = Memory::Allocator::Create<D3D12DescriptorHeap>(Memory::CurrLoc());
+		auto* pHeap = new D3D12DescriptorHeap();
 
 		pHeap->m_ownerDevice = this;
 		pHeap->m_desc = desc;
@@ -229,7 +228,7 @@ namespace Horizon::RHI
 	{
 		if (desc.imageCount > kMaxSwapchainImages)
 		{
-			Terminal::Error(StringOps::GetName(this), "Swapchain image count {} exceeds the {} limit",
+			Terminal::Error(StringHelper::GetTypeName(this), "Swapchain image count {} exceeds the {} limit",
 				desc.imageCount, kMaxSwapchainImages);
 			return nullptr;
 		}
@@ -243,12 +242,12 @@ namespace Horizon::RHI
 
 		if (!pColorHeap)
 		{
-			Terminal::Error(StringOps::GetName(this), "Swapchain could not take a color descriptor block for its render targets");
+			Terminal::Error(StringHelper::GetTypeName(this), "Swapchain could not take a color descriptor block for its render targets");
 			return nullptr;
 		}
 
 		auto* pQueue = static_cast<D3D12Queue*>(pPresentQueue);
-		auto* pSwapchain = Memory::Allocator::Create<D3D12Swapchain>(Memory::CurrLoc());
+		auto* pSwapchain = new D3D12Swapchain();
 
 		pSwapchain->m_ownerDevice = this;
 		pSwapchain->m_device = this;
@@ -297,7 +296,7 @@ namespace Horizon::RHI
 
 	GfxTexture* D3D12Device::CreateTexture(const GfxTextureDesc& desc)
 	{
-		auto* pTexture = Memory::Allocator::Create<D3D12Texture>(Memory::CurrLoc());
+		auto* pTexture = new D3D12Texture();
 
 		pTexture->m_ownerDevice = this;
 		pTexture->m_desc = desc;
@@ -357,7 +356,7 @@ namespace Horizon::RHI
 
 		if (FAILED(hr))
 		{
-			Memory::Allocator::Delete(pTexture);
+			delete pTexture;
 			return nullptr;
 		}
 
@@ -366,7 +365,7 @@ namespace Horizon::RHI
 
 	GfxBuffer* D3D12Device::CreateBuffer(const GfxBufferDesc& desc)
 	{
-		auto* pBuffer = Memory::Allocator::Create<D3D12Buffer>(Memory::CurrLoc());
+		auto* pBuffer = new D3D12Buffer();
 
 		pBuffer->m_ownerDevice = this;
 		pBuffer->m_desc = desc;
@@ -401,7 +400,7 @@ namespace Horizon::RHI
 
 		if (FAILED(hr))
 		{
-			Memory::Allocator::Delete(pBuffer);
+			delete pBuffer;
 			return nullptr;
 		}
 
@@ -423,11 +422,11 @@ namespace Horizon::RHI
 
 		if (!pBuffer)
 		{
-			Terminal::Error(StringOps::GetName(this), "Buffer Arena backing buffer of {} bytes could not be created", desc.capacity);
+			Terminal::Error(StringHelper::GetTypeName(this), "Buffer Arena backing buffer of {} bytes could not be created", desc.capacity);
 			return nullptr;
 		}
 
-		auto* pArena = Memory::Allocator::Create<D3D12BufferArena>(Memory::CurrLoc());
+		auto* pArena = new D3D12BufferArena();
 
 		pArena->m_ownerDevice = this;
 		pArena->m_desc = desc;
@@ -455,11 +454,11 @@ namespace Horizon::RHI
 
 		if (!pBuffer)
 		{
-			Terminal::Error(StringOps::GetName(this), "Upload ring buffer of {} bytes could not be created", desc.capacity);
+			Terminal::Error(StringHelper::GetTypeName(this), "Upload ring buffer of {} bytes could not be created", desc.capacity);
 			return nullptr;
 		}
 
-		auto* pRing = Memory::Allocator::Create<D3D12UploadRing>(Memory::CurrLoc());
+		auto* pRing = new D3D12UploadRing();
 
 		pRing->m_ownerDevice = this;
 		pRing->m_desc = desc;
@@ -468,7 +467,7 @@ namespace Horizon::RHI
 
 		if (!pRing->m_mapped)
 		{
-			Memory::Allocator::Delete(pRing);
+			delete pRing;
 			return nullptr;
 		}
 
@@ -479,11 +478,11 @@ namespace Horizon::RHI
 	{
 		if (!desc.pByteCode || desc.byteCodeSize == 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "Shader stage {} was given empty bytecode", u32(desc.stage));
+			Terminal::Error(StringHelper::GetTypeName(this), "Shader stage {} was given empty bytecode", u32(desc.stage));
 			return nullptr;
 		}
 
-		auto* pShader = Memory::Allocator::Create<D3D12Shader>(Memory::CurrLoc());
+		auto* pShader = new D3D12Shader();
 
 		pShader->m_ownerDevice = this;
 		pShader->m_stage = desc.stage;
@@ -497,7 +496,7 @@ namespace Horizon::RHI
 
 	GfxCommandList* D3D12Device::CreateCommandList(GfxQueueType type)
 	{
-		auto* pCmd = Memory::Allocator::Create<D3D12CommandList>(Memory::CurrLoc());
+		auto* pCmd = new D3D12CommandList();
 
 		pCmd->m_ownerDevice = this;
 		pCmd->m_device = this;
@@ -515,7 +514,7 @@ namespace Horizon::RHI
 
 	GfxQueue* D3D12Device::CreateQueue(GfxQueueType type)
 	{
-		auto* pQueue = Memory::Allocator::Create<D3D12Queue>(Memory::CurrLoc());
+		auto* pQueue = new D3D12Queue();
 
 		pQueue->m_ownerDevice = this;
 		pQueue->m_type = type;
@@ -536,7 +535,7 @@ namespace Horizon::RHI
 
 	GfxFence* D3D12Device::CreateFence()
 	{
-		auto* pFence = Memory::Allocator::Create<D3D12Fence>(Memory::CurrLoc());
+		auto* pFence = new D3D12Fence();
 
 		pFence->m_ownerDevice = this;
 
@@ -550,7 +549,7 @@ namespace Horizon::RHI
 	{
 		if (desc.count == 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "Query heap count must be greater than zero");
+			Terminal::Error(StringHelper::GetTypeName(this), "Query heap count must be greater than zero");
 			return nullptr;
 		}
 
@@ -568,14 +567,14 @@ namespace Horizon::RHI
 
 			if (FAILED(featureHr) || !options3.CopyQueueTimestampQueriesSupported)
 			{
-				Terminal::Error(StringOps::GetName(this), "Copy queue timestamp queries are not supported on this adapter");
+				Terminal::Error(StringHelper::GetTypeName(this), "Copy queue timestamp queries are not supported on this adapter");
 				return nullptr;
 			}
 
 			heapDesc.Type = D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP;
 		}
 
-		auto* pHeap = Memory::Allocator::Create<D3D12QueryHeap>(Memory::CurrLoc());
+		auto* pHeap = new D3D12QueryHeap();
 
 		pHeap->m_ownerDevice = this;
 		pHeap->m_desc = desc;
@@ -585,7 +584,7 @@ namespace Horizon::RHI
 
 		if (FAILED(hr))
 		{
-			Memory::Allocator::Delete(pHeap);
+			delete pHeap;
 			return nullptr;
 		}
 
@@ -621,7 +620,7 @@ namespace Horizon::RHI
 
 		if (mipLevel >= mipLevels)
 		{
-			Terminal::Error(StringOps::GetName(this), "Mip {} is out of range, texture has {}", mipLevel, mipLevels);
+			Terminal::Error(StringHelper::GetTypeName(this), "Mip {} is out of range, texture has {}", mipLevel, mipLevels);
 			return result;
 		}
 
@@ -674,7 +673,7 @@ namespace Horizon::RHI
 
 		if (count > root.capacity - root.top)
 		{
-			Terminal::Error(StringOps::GetName(this), "Descriptor root {} cannot give {} descriptors, {} of {} are taken",
+			Terminal::Error(StringHelper::GetTypeName(this), "Descriptor root {} cannot give {} descriptors, {} of {} are taken",
 				u32(type), count, root.top, root.capacity);
 			return kInvalid32;
 		}
@@ -695,7 +694,7 @@ namespace Horizon::RHI
 
 		if (root.blockCount == 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "Descriptor root {} got block {}+{} back but has no blocks out", u32(type), base, count);
+			Terminal::Error(StringHelper::GetTypeName(this), "Descriptor root {} got block {}+{} back but has no blocks out", u32(type), base, count);
 			return;
 		}
 

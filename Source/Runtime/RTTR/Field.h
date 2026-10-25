@@ -1,8 +1,7 @@
 #pragma once
 
-#include <Runtime/Containers/List.h>
-#include <Runtime/Containers/ReadOnlyList.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/Vector/List.h>
+#include <Runtime/Containers/Vector/ReadOnlyList.h>
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/RTTR/Attribute.h>
 #include <Runtime/RTTR/TypeKind.h>
@@ -27,7 +26,7 @@ namespace Horizon::Reflect
 		~Field()
 		{
 			for (Attribute* pAttr : m_attributes)
-				Memory::Allocator::Delete(pAttr);
+				delete pAttr;
 		}
 
 		Field(const Field&) = delete;

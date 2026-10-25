@@ -4,7 +4,7 @@
 #include <Runtime/RHI/Descriptor/GfxDescriptorHeapType.h>
 #include <Runtime/D3D12/D3D12Helpers.h>
 
-#include <Runtime/Containers/List.h>
+#include <Runtime/Containers/Vector/List.h>
 #include <Runtime/PAL/Sync/CriticalSection.h>
 
 namespace Horizon::RHI

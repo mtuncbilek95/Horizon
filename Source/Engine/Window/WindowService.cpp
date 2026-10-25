@@ -1,7 +1,7 @@
 #include "WindowService.h"
 
 #include <Engine/Core/Engine.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 namespace Horizon::Engine
@@ -12,7 +12,7 @@ namespace Horizon::Engine
 
 	ModuleReport WindowService::OnInitialize()
 	{
-		m_cursor = Memory::Allocator::Create<PAL::Cursor>(Memory::CurrLoc());
+		m_cursor = new PAL::Cursor();
 		if (!m_cursor)
 			return ModuleReport("Cursor has not been initialize.");
 
@@ -31,7 +31,7 @@ namespace Horizon::Engine
 			return ModuleReport("Window has not been initialize.");
 
 		m_mainWindow->Show();
-		Terminal::Info(StringOps::GetName(this), "Window has been initialized!");
+		Terminal::Info(StringHelper::GetTypeName(this), "Window has been initialized!");
 
 		return ModuleReport();
 	}
@@ -58,17 +58,17 @@ namespace Horizon::Engine
 
 		m_mainWindow = nullptr;
 
-		Memory::Allocator::Delete(m_cursor);
+		delete m_cursor;
 		m_cursor = nullptr;
 	}
 
 	PAL::Window* WindowService::SpawnWindow(const PAL::WindowDesc& desc)
 	{
-		PAL::Window* pWindow = Memory::Allocator::Create<PAL::Window>(Memory::CurrLoc(), desc);
+		PAL::Window* pWindow = new PAL::Window(desc);
 
 		if (!pWindow)
 		{
-			Terminal::Error(StringOps::GetName(this), "Failed to spawn window '{}'.", desc.titleName);
+			Terminal::Error(StringHelper::GetTypeName(this), "Failed to spawn window '{}'.", desc.titleName);
 			return nullptr;
 		}
 
@@ -85,14 +85,14 @@ namespace Horizon::Engine
 
 		if (!m_windows.Remove(pWindow))
 		{
-			Terminal::Warn(StringOps::GetName(this), "Window '{}' is not owned by WindowService.", pWindow->GetName());
+			Terminal::Warn(StringHelper::GetTypeName(this), "Window '{}' is not owned by WindowService.", pWindow->GetName());
 			return;
 		}
 
 		if (pWindow == m_mainWindow)
 			m_mainWindow = nullptr;
 
-		Memory::Allocator::Delete(pWindow);
+		delete pWindow;
 	}
 
 	void WindowService::DeclareDependencies(ModuleGraph& graph)

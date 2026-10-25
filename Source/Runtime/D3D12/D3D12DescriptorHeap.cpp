@@ -1,6 +1,6 @@
 #include "D3D12DescriptorHeap.h"
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <Runtime/D3D12/D3D12Buffer.h>
@@ -85,7 +85,7 @@ namespace Horizon::RHI
 
 		if (m_top >= m_desc.capacity)
 		{
-			Terminal::Error(StringOps::GetName(this), "Heap type {} at base {} is full, capacity {}, {} slots are waiting on the GPU",
+			Terminal::Error(StringHelper::GetTypeName(this), "Heap type {} at base {} is full, capacity {}, {} slots are waiting on the GPU",
 				u32(m_desc.type), m_base, m_desc.capacity, m_pending.GetCount());
 			return kInvalid32;
 		}
@@ -101,13 +101,13 @@ namespace Horizon::RHI
 
 		if (index < m_base || index >= m_base + m_top)
 		{
-			Terminal::Error(StringOps::GetName(this), "Free called with index {} outside the used range {}..{}", index, m_base, m_base + m_top);
+			Terminal::Error(StringHelper::GetTypeName(this), "Free called with index {} outside the used range {}..{}", index, m_base, m_base + m_top);
 			return;
 		}
 
 		if (m_allocatedCount == 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "Descriptor {} freed more times than allocated", index);
+			Terminal::Error(StringHelper::GetTypeName(this), "Descriptor {} freed more times than allocated", index);
 			return;
 		}
 
@@ -151,7 +151,7 @@ namespace Horizon::RHI
 		if (m_desc.type == type)
 			return true;
 
-		Terminal::Error(StringOps::GetName(this), "{} needs heap type {}, this heap is {}",
+		Terminal::Error(StringHelper::GetTypeName(this), "{} needs heap type {}, this heap is {}",
 			pWhat, u32(type), u32(m_desc.type));
 		return false;
 	}
@@ -223,7 +223,7 @@ namespace Horizon::RHI
 
 		if (mipLevel >= mipLevels)
 		{
-			Terminal::Error(StringOps::GetName(this), "Storage view mip {} is out of range, texture has {}", mipLevel, mipLevels);
+			Terminal::Error(StringHelper::GetTypeName(this), "Storage view mip {} is out of range, texture has {}", mipLevel, mipLevels);
 			return kInvalid32;
 		}
 
@@ -419,7 +419,7 @@ namespace Horizon::RHI
 
 		if (offset % D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT != 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "Constant view offset {} is not {} byte aligned", offset, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+			Terminal::Error(StringHelper::GetTypeName(this), "Constant view offset {} is not {} byte aligned", offset, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 			return kInvalid32;
 		}
 
@@ -428,13 +428,13 @@ namespace Horizon::RHI
 
 		if (offset + alignedSize > bufDesc.size)
 		{
-			Terminal::Error(StringOps::GetName(this), "Constant view {}..{} runs past the buffer size {}", offset, offset + alignedSize, bufDesc.size);
+			Terminal::Error(StringHelper::GetTypeName(this), "Constant view {}..{} runs past the buffer size {}", offset, offset + alignedSize, bufDesc.size);
 			return kInvalid32;
 		}
 
 		if (alignedSize > D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16)
 		{
-			Terminal::Error(StringOps::GetName(this), "Constant view size {} exceeds the 64KB limit", alignedSize);
+			Terminal::Error(StringHelper::GetTypeName(this), "Constant view size {} exceeds the 64KB limit", alignedSize);
 			return kInvalid32;
 		}
 

@@ -5,7 +5,7 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Plugin/PluginSystem.h>
 #include <Engine/Reflection/ReflectionSystem.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <imgui.h>
@@ -23,7 +23,7 @@ namespace Horizon::Editor
 			m_projectContext = pEngine->RequestContext<ProjectContext>();
 
 		if (!m_pluginSystem || !m_projectContext)
-			Terminal::Error(StringOps::GetName(this), "Plugin service or project context is unavailable");
+			Terminal::Error(StringHelper::GetTypeName(this), "Plugin service or project context is unavailable");
 	}
 
 	void PluginsView::OnRender(const Engine::EngineFrame& context)

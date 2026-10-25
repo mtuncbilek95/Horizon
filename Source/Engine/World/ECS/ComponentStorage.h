@@ -3,7 +3,7 @@
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Engine/World/ECS/Definitions.h>
 
-#include <Runtime/Containers/List.h>
+#include <Runtime/Containers/Vector/List.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Engine

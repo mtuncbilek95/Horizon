@@ -8,8 +8,7 @@
 #include <Engine/World/WorldService.h>
 #include <Engine/World/SystemGroup.h>
 
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <imgui.h>
@@ -87,7 +86,7 @@ namespace Horizon::Editor
 
 		if (ImGui::Selectable("None", pCurrent == nullptr) && pCurrent != nullptr)
 		{
-			Memory::Allocator::Delete(comp.m_script);
+			delete comp.m_script;
 			comp.m_script = nullptr;
 			changed = true;
 		}
@@ -104,11 +103,11 @@ namespace Horizon::Editor
 
 			if (!pType->CanConstruct())
 			{
-				Terminal::Error(StringOps::GetName(this), "{} is not default constructible", pType->GetName());
+				Terminal::Error(StringHelper::GetTypeName(this), "{} is not default constructible", pType->GetName());
 				continue;
 			}
 
-			Memory::Allocator::Delete(comp.m_script);
+			delete comp.m_script;
 			comp.m_script = static_cast<Engine::GameScript*>(pType->Create());
 			changed = true;
 		}

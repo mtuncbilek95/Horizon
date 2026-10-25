@@ -22,7 +22,7 @@ namespace Horizon::Engine
 
 		if (pPixelShader == nullptr)
 		{
-			Memory::Allocator::Delete(pVertexShader);
+			delete pVertexShader;
 			return;
 		}
 
@@ -42,13 +42,13 @@ namespace Horizon::Engine
 		pipelineDesc.depthStencil.depthCompare = RHI::GfxCompareOp::Greater;
 
 		m_opaquePipeline = pDevice->CreatePipeline(pipelineDesc);
-		Memory::Allocator::Delete(pVertexShader);
-		Memory::Allocator::Delete(pPixelShader);
+		delete pVertexShader;
+		delete pPixelShader;
 	}
 
 	void OpaqueMeshPass::OnFinalize()
 	{
-		Memory::Allocator::Delete(m_opaquePipeline);
+		delete m_opaquePipeline;
 	}
 
 	void OpaqueMeshPass::RenderFrame(const RenderPassFrame& frame)

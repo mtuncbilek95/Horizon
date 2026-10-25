@@ -1,6 +1,6 @@
 #include "RenderPass.h"
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/RHI/Shader/GfxShaderCompiler.h>
 #include <Runtime/RHI/Device/GfxDevice.h>
 
@@ -12,7 +12,7 @@ namespace Horizon::Engine
 
 		if (byteCode.IsEmpty())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be compiled with entry point {}", filePath, entryPoint);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be compiled with entry point {}", filePath, entryPoint);
 			return nullptr;
 		}
 
@@ -24,7 +24,7 @@ namespace Horizon::Engine
 		RHI::GfxShader* pShader = pDevice->CreateShader(shaderDesc);
 		if (pShader == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be turned into a shader object", filePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be turned into a shader object", filePath);
 			return nullptr;
 		}
 

@@ -5,9 +5,8 @@
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Core/EngineFrame.h>
 
-#include <Runtime/Containers/List.h>
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/Vector/List.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/Module/SymbolLibrary.h>
 #include <Runtime/PAL/Timer/Timer.h>
@@ -35,13 +34,13 @@ namespace Horizon::Engine
 			const std::type_index index = std::type_index(typeid(T));
 			if (IsRegistered(index))
 			{
-				Terminal::Warn(StringOps::GetName(this), "{} is already registered", index.name());
+				Terminal::Warn(StringHelper::GetTypeName(this), "{} is already registered", index.name());
 				return;
 			}
-			T* pModule = Memory::Allocator::Create<T>(Memory::CurrLoc(), std::forward<Args>(args)...);
+			T* pModule = new T(std::forward<Args>(args)...);
 			if (!pModule)
 			{
-				Terminal::Error(StringOps::GetName(this), "{} could not be allocated", index.name());
+				Terminal::Error(StringHelper::GetTypeName(this), "{} could not be allocated", index.name());
 				return;
 			}
 			pModule->m_engine = this;
@@ -55,7 +54,7 @@ namespace Horizon::Engine
 			auto it = m_lookupServices.find(typeid(T));
 			if (it == m_lookupServices.end())
 			{
-				Terminal::Error(StringOps::GetName(this), "{} could not found", typeid(T).name());
+				Terminal::Error(StringHelper::GetTypeName(this), "{} could not found", typeid(T).name());
 				return nullptr;
 			}
 			return (T*)m_activeServices[it->second];
@@ -68,7 +67,7 @@ namespace Horizon::Engine
 			auto it = m_lookupContexts.find(typeid(T));
 			if (it == m_lookupContexts.end())
 			{
-				Terminal::Error(StringOps::GetName(this), "{} could not found", typeid(T).name());
+				Terminal::Error(StringHelper::GetTypeName(this), "{} could not found", typeid(T).name());
 				return nullptr;
 			}
 			return (T*)m_activeContexts[it->second];

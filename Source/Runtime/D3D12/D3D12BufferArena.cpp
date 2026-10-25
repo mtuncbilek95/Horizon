@@ -1,7 +1,6 @@
 #include "D3D12BufferArena.h"
 
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <Runtime/D3D12/D3D12Buffer.h>
@@ -17,14 +16,14 @@ namespace Horizon::RHI
 		}
 
 		if (m_buffer)
-			Memory::Allocator::Delete(m_buffer);
+			delete m_buffer;
 	}
 
 	GfxBufferRange D3D12BufferArena::Allocate(usize size, usize alignment)
 	{
 		if (size == 0 || size > m_desc.capacity)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} byte request does not fit the {} byte arena", size, m_desc.capacity);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} byte request does not fit the {} byte arena", size, m_desc.capacity);
 			return {};
 		}
 
@@ -40,7 +39,7 @@ namespace Horizon::RHI
 
 		if (FAILED(hr))
 		{
-			Terminal::Error(StringOps::GetName(this), "Arena is out of space, {} bytes requested with {} in use", size, m_usedBytes);
+			Terminal::Error(StringHelper::GetTypeName(this), "Arena is out of space, {} bytes requested with {} in use", size, m_usedBytes);
 			return {};
 		}
 

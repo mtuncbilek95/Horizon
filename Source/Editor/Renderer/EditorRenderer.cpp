@@ -10,8 +10,7 @@
 
 #include <Engine/Graphics/GraphicsContext.h>
 
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/RHI/Device/GfxDevice.h>
 #include <Runtime/RHI/Queue/GfxQueue.h>
@@ -42,13 +41,13 @@ namespace Horizon::Editor
 		io.DisplayFramebufferScale = { 1.0f, 1.0f };
 		io.ConfigWindowsMoveFromTitleBarOnly = true;
 
-		m_platform = Memory::Allocator::Create<EditorPlatform>(Memory::CurrLoc(), desc.pWindowService);
+		m_platform = new EditorPlatform(desc.pWindowService);
 
 		LoadFonts();
 
 		if (m_resourceHeap == nullptr)
 		{
-			Terminal::Error(StringOps::GetName(this), "ImGui has no resource heap to work with");
+			Terminal::Error(StringHelper::GetTypeName(this), "ImGui has no resource heap to work with");
 			return;
 		}
 
@@ -68,12 +67,12 @@ namespace Horizon::Editor
 		m_device->WaitIdle();
 
 		for (auto& frame : m_frames)
-			Memory::Allocator::Delete(frame.pCmdList);
+			delete frame.pCmdList;
 
-		Memory::Allocator::Delete(m_fence);
+		delete m_fence;
 		m_device->ShutdownImGui();
 
-		Memory::Allocator::Delete(m_platform);
+		delete m_platform;
 
 		ImGui::DestroyContext((ImGuiContext*)m_context);
 	}
@@ -164,7 +163,7 @@ namespace Horizon::Editor
 
 				const std::string path = fontDir + pFile;
 				if (!io.Fonts->AddFontFromFileTTF(path.c_str(), fontSize, &iconCfg, pRange))
-					Terminal::Error(StringOps::GetName(this), "Failed to load icon font: {}", path);
+					Terminal::Error(StringHelper::GetTypeName(this), "Failed to load icon font: {}", path);
 			};
 
 		const auto loadFamily = [&](const char* pFile) -> ImFont*
@@ -174,7 +173,7 @@ namespace Horizon::Editor
 
 				if (pFont == nullptr)
 				{
-					Terminal::Error(StringOps::GetName(this), "Failed to load UI Font: {}", path);
+					Terminal::Error(StringHelper::GetTypeName(this), "Failed to load UI Font: {}", path);
 					pFont = io.Fonts->AddFontDefault();
 				}
 

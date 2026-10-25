@@ -74,7 +74,7 @@ namespace Horizon::Reflect
 		template<typename TAttr>
 		TypeBuilder& WithAttribute(TAttr attr)
 		{
-			m_type.m_attributes.PushBack(Memory::Allocator::Create<TAttr>(Memory::CurrLoc(), std::move(attr)));
+			m_type.m_attributes.PushBack(new TAttr(std::move(attr)));
 			return *this;
 		}
 
@@ -110,8 +110,7 @@ namespace Horizon::Reflect
 				return *this;
 			}
 
-			m_type.m_fields.Back().m_attributes.PushBack(
-				Memory::Allocator::Create<TAttr>(Memory::CurrLoc(), std::move(attr)));
+			m_type.m_fields.Back().m_attributes.PushBack(new TAttr(std::move(attr)));
 			return *this;
 		}
 

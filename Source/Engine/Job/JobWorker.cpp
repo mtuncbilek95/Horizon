@@ -1,7 +1,6 @@
 #include "JobWorker.h"
 
 #include <Engine/Job/JobSystem.h>
-#include <Runtime/Definitions/Allocator.h>
 
 #include <utility>
 
@@ -21,12 +20,12 @@ namespace Horizon::Engine
 	{
 		JobNode* pNode = nullptr;
 		while (m_deque.PopBottom(pNode))
-			Memory::Allocator::Delete(pNode);
+			delete pNode;
 
 		for (JobNode* pCurrent = m_inbox.Exchange(nullptr); pCurrent;)
 		{
 			JobNode* pNext = pCurrent->pNext;
-			Memory::Allocator::Delete(pCurrent);
+			delete pCurrent;
 			pCurrent = pNext;
 		}
 	}
@@ -91,7 +90,7 @@ namespace Horizon::Engine
 
 	void JobWorker::AddJob(Job&& job)
 	{
-		JobNode* pNode = Memory::Allocator::Create<JobNode>(Memory::CurrLoc(), std::move(job));
+		JobNode* pNode = new JobNode(std::move(job));
 
 		JobNode* pHead = m_inbox.Load();
 
@@ -118,7 +117,7 @@ namespace Horizon::Engine
 			return false;
 
 		out = std::move(pNode->job);
-		Memory::Allocator::Delete(pNode);
+		delete pNode;
 		return true;
 	}
 
@@ -159,7 +158,7 @@ namespace Horizon::Engine
 			return false;
 
 		out = std::move(pNode->job);
-		Memory::Allocator::Delete(pNode);
+		delete pNode;
 		return true;
 	}
 }

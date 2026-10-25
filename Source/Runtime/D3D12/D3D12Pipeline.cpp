@@ -1,7 +1,6 @@
 #include "D3D12Pipeline.h"
 
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <Runtime/RHI/Pipeline/GfxComputePipelineDesc.h>
@@ -170,7 +169,7 @@ namespace Horizon::RHI
 		const b8 bUsesMesh = desc.pMeshShader != nullptr;
 		const DXGI_SAMPLE_DESC sampleDesc = { Helpers::ToSampleCount(desc.sampleCount), 0 };
 
-		auto* pPipe = Memory::Allocator::Create<D3D12Pipeline>(Memory::CurrLoc());
+		auto* pPipe = new D3D12Pipeline();
 
 		pPipe->m_ownerDevice = this;
 
@@ -233,7 +232,7 @@ namespace Horizon::RHI
 
 		if (FAILED(hr))
 		{
-			Memory::Allocator::Delete(pPipe);
+			delete pPipe;
 			return nullptr;
 		}
 
@@ -248,7 +247,7 @@ namespace Horizon::RHI
 	{
 		if (!desc.pComputeShader)
 		{
-			Terminal::Error(StringOps::GetName(this), "Compute pipeline was given no compute shader");
+			Terminal::Error(StringHelper::GetTypeName(this), "Compute pipeline was given no compute shader");
 			return nullptr;
 		}
 
@@ -257,7 +256,7 @@ namespace Horizon::RHI
 		psoDesc.pRootSignature = m_rootSignature;
 		psoDesc.CS = ToBytecode(desc.pComputeShader);
 
-		auto* pPipe = Memory::Allocator::Create<D3D12Pipeline>(Memory::CurrLoc());
+		auto* pPipe = new D3D12Pipeline();
 
 		pPipe->m_ownerDevice = this;
 
@@ -266,7 +265,7 @@ namespace Horizon::RHI
 
 		if (FAILED(hr))
 		{
-			Memory::Allocator::Delete(pPipe);
+			delete pPipe;
 			return nullptr;
 		}
 

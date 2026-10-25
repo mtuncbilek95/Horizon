@@ -1,7 +1,7 @@
 #include "JobGraph.h"
 
 #include <Runtime/Log/Terminal.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 
 namespace Horizon::Engine
 {
@@ -9,7 +9,7 @@ namespace Horizon::Engine
 	{
 		if (!job.IsValid())
 		{
-			Terminal::Error(StringOps::GetName(this), "Rejected empty job on {} lane", u32(lane));
+			Terminal::Error(StringHelper::GetTypeName(this), "Rejected empty job on {} lane", u32(lane));
 			return InvalidGraphNode;
 		}
 
@@ -39,7 +39,7 @@ namespace Horizon::Engine
 		// before after or same fuckery check
 		if (before >= m_nodes.GetCount() || after >= m_nodes.GetCount() || before == after)
 		{
-			Terminal::Error(StringOps::GetName(this), "Invalid dependency {} -> {} with {} nodes", before, after, m_nodes.GetCount());
+			Terminal::Error(StringHelper::GetTypeName(this), "Invalid dependency {} -> {} with {} nodes", before, after, m_nodes.GetCount());
 			return false;
 		}
 
@@ -89,7 +89,7 @@ namespace Horizon::Engine
 
 		if (visited != m_nodes.GetCount())
 		{
-			Terminal::Error(StringOps::GetName(this), "Graph has a cycle, only {} of {} nodes are reachable", visited, m_nodes.GetCount());
+			Terminal::Error(StringHelper::GetTypeName(this), "Graph has a cycle, only {} of {} nodes are reachable", visited, m_nodes.GetCount());
 			return result;
 		}
 

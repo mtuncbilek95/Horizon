@@ -1,14 +1,14 @@
 #include "ReflectionSystem.h"
 
 #include <Engine/Core/Engine.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 namespace Horizon::Engine
 {
 	ReflectionSystem::ReflectionSystem(Engine* pEngine)
 	{
-		m_hostLibrary = Memory::Allocator::Create<PAL::SymbolLibrary>(Memory::CurrLoc(), PAL::SymbolLibraryDesc());
+		m_hostLibrary = new PAL::SymbolLibrary(PAL::SymbolLibraryDesc());
 
 		if (!m_hostLibrary)
 		{
@@ -31,23 +31,23 @@ namespace Horizon::Engine
 
 		if (!m_libraries.IsEmpty())
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} libraries were never unregistered, their types die with the system", m_libraries.GetCount());
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} libraries were never unregistered, their types die with the system", m_libraries.GetCount());
 		}
 
-		Memory::Allocator::Delete(m_hostLibrary);
+		delete m_hostLibrary;
 	}
 
 	b8 ReflectionSystem::RegisterLibrary(const PAL::SymbolLibrary* pLibrary)
 	{
 		if (!pLibrary)
 		{
-			Terminal::Error(StringOps::GetName(this), "RegisterLibrary received a null library");
+			Terminal::Error(StringHelper::GetTypeName(this), "RegisterLibrary received a null library");
 			return false;
 		}
 
 		if (FindLibrary(pLibrary))
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} is already registered", pLibrary->GetName());
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} is already registered", pLibrary->GetName());
 			return false;
 		}
 
@@ -56,7 +56,7 @@ namespace Horizon::Engine
 
 		if (!GenerateManifests)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} does not export GenerateModuleManifestation", pLibrary->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} does not export GenerateModuleManifestation", pLibrary->GetName());
 			return false;
 		}
 
@@ -71,16 +71,16 @@ namespace Horizon::Engine
 		{
 			if (m_typeLookup.contains(type.GetTypeId()))
 			{
-				Terminal::Error(StringOps::GetName(this), "{} from {} collides with an already registered type, skipped", type.GetName(), pLibrary->GetName());
+				Terminal::Error(StringHelper::GetTypeName(this), "{} from {} collides with an already registered type, skipped", type.GetName(), pLibrary->GetName());
 				continue;
 			}
 
 			IndexType(type);
 
-			Terminal::Debug(StringOps::GetName(this), "{} has been registered from {}", type.GetName(), pLibrary->GetName().substr(pLibrary->GetName().find_last_of("/\\") + 1));
+			Terminal::Debug(StringHelper::GetTypeName(this), "{} has been registered from {}", type.GetName(), pLibrary->GetName().substr(pLibrary->GetName().find_last_of("/\\") + 1));
 		}
 
-		Terminal::Info(StringOps::GetName(this), "{} registered {} type manifests", pLibrary->GetName().substr(pLibrary->GetName().find_last_of("/\\") + 1), library.types.GetCount());
+		Terminal::Info(StringHelper::GetTypeName(this), "{} registered {} type manifests", pLibrary->GetName().substr(pLibrary->GetName().find_last_of("/\\") + 1), library.types.GetCount());
 		return true;
 	}
 
@@ -90,7 +90,7 @@ namespace Horizon::Engine
 
 		if (!pEntry)
 		{
-			Terminal::Warn(StringOps::GetName(this), "UnregisterLibrary could not find the library, nothing to do");
+			Terminal::Warn(StringHelper::GetTypeName(this), "UnregisterLibrary could not find the library, nothing to do");
 			return;
 		}
 
@@ -110,7 +110,7 @@ namespace Horizon::Engine
 		const usize index = static_cast<usize>(pEntry - m_libraries.GetData());
 		m_libraries.RemoveAt(index);
 
-		Terminal::Info(StringOps::GetName(this), "{} unregistered {} type manifests", pLibrary->GetName(), count);
+		Terminal::Info(StringHelper::GetTypeName(this), "{} unregistered {} type manifests", pLibrary->GetName(), count);
 	}
 
 	Reflect::Type* ReflectionSystem::GetType(Reflect::TypeHandle handl)
@@ -119,7 +119,7 @@ namespace Horizon::Engine
 
 		if (it == m_typeLookup.end())
 		{
-			Terminal::Error(StringOps::GetName(this), "Reflect::TypeHandle could not found. I hope you found it xD");
+			Terminal::Error(StringHelper::GetTypeName(this), "Reflect::TypeHandle could not found. I hope you found it xD");
 			return nullptr;
 		}
 
@@ -132,7 +132,7 @@ namespace Horizon::Engine
 
 		if (it == m_nameLookup.end())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not found in the reflection system.", name);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not found in the reflection system.", name);
 			return nullptr;
 		}
 

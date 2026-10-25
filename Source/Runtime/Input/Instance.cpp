@@ -4,7 +4,6 @@
 #include <Runtime/Input/Keyboard.h>
 #include <Runtime/Input/Mouse.h>
 
-#include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
 
 namespace Horizon::Input
@@ -58,7 +57,7 @@ namespace Horizon::Input
 				continue;
 
 			ReleaseObject(pObject);
-			Memory::Allocator::Delete(pObject);
+			delete pObject;
 			m_objects.RemoveAt(i - 1);
 		}
 	}
@@ -68,7 +67,7 @@ namespace Horizon::Input
 		for (Object* pObject : m_objects)
 		{
 			ReleaseObject(pObject);
-			Memory::Allocator::Delete(pObject);
+			delete pObject;
 		}
 
 		m_objects.Clear();

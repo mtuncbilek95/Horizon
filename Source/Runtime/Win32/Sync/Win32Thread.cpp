@@ -1,6 +1,5 @@
 #include <Runtime/PAL/Sync/Thread.h>
 
-#include <Runtime/Definitions/Allocator.h>
 
 #include <Windows.h>
 #include <process.h>
@@ -49,7 +48,7 @@ namespace Horizon::PAL
 		u32 __stdcall ThreadTrampoline(void* pArg)
 		{
 			ThreadStartContext local = std::move(*(ThreadStartContext*)(pArg));
-			Memory::Allocator::Delete((ThreadStartContext*)(pArg));
+			delete (ThreadStartContext*)(pArg);
 
 			SetCurrentThreadName(local.name);
 
@@ -62,12 +61,12 @@ namespace Horizon::PAL
 
 	Thread::Thread(ThreadEntry entry, CustomUserData userData, std::string_view name)
 	{
-		ThreadStartContext* pContext = Memory::Allocator::Create<ThreadStartContext>(Memory::CurrLoc(), entry, userData, std::string(name));
+		ThreadStartContext* pContext = new ThreadStartContext(entry, userData, std::string(name));
 
 		uintptr_t h = ::_beginthreadex(nullptr, 0, &ThreadTrampoline, pContext, 0, nullptr);
 		if (h == 0)
 		{
-			Memory::Allocator::Delete(pContext);
+			delete pContext;
 			m_handle = nullptr;
 			m_id = 0;
 			return;

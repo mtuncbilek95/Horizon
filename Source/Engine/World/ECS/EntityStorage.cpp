@@ -35,7 +35,7 @@ namespace Horizon::Engine
 	{
 		if (!IsAlive(handl))
 		{
-			Terminal::Warn(StringOps::GetName(this), "Destroy called on a dead or stale entity");
+			Terminal::Warn(StringHelper::GetTypeName(this), "Destroy called on a dead or stale entity");
 			return false;
 		}
 

@@ -1,8 +1,9 @@
 #include "ComponentStorage.h"
 
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
+
+#include <new>
 
 namespace Horizon::Engine
 {
@@ -25,14 +26,14 @@ namespace Horizon::Engine
 			m_type->DestructAt(SlotAt(i));
 
 		if (m_data)
-			Memory::Allocator::FreeRaw(m_data);
+			::operator delete(m_data, std::align_val_t(m_type->GetAlignment()));
 	}
 
 	ComponentObject* ComponentStorage::Insert(EntityHandle handl, void* pSource)
 	{
 		if (!m_type->CanMove())
 		{
-			Terminal::Error(StringOps::GetName(this), "'{}' is not move constructible", m_type->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "'{}' is not move constructible", m_type->GetName());
 			return nullptr;
 		}
 
@@ -48,7 +49,7 @@ namespace Horizon::Engine
 	{
 		if (!m_type->CanConstruct())
 		{
-			Terminal::Error(StringOps::GetName(this), "'{}' is not default constructible", m_type->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "'{}' is not default constructible", m_type->GetName());
 			return nullptr;
 		}
 
@@ -128,7 +129,7 @@ namespace Horizon::Engine
 
 		if (m_sparse[index] != kInvalid32)
 		{
-			Terminal::Warn(StringOps::GetName(this), "Entity {} already owns '{}'", index, m_type->GetName());
+			Terminal::Warn(StringHelper::GetTypeName(this), "Entity {} already owns '{}'", index, m_type->GetName());
 			return nullptr;
 		}
 
@@ -154,7 +155,7 @@ namespace Horizon::Engine
 			newCapacity *= 2;
 
 		const usize stride = m_type->GetSizeInBytes();
-		u8* pNewData = (u8*)Memory::Allocator::AllocateRaw(newCapacity * stride, m_type->GetAlignment(), Memory::CurrLoc());
+		u8* pNewData = (u8*)::operator new(newCapacity * stride, std::align_val_t(m_type->GetAlignment()));
 
 		for (usize i = 0; i < m_count; i++)
 		{
@@ -166,7 +167,7 @@ namespace Horizon::Engine
 		}
 
 		if (m_data)
-			Memory::Allocator::FreeRaw(m_data);
+			::operator delete(m_data, std::align_val_t(m_type->GetAlignment()));
 
 		m_data = pNewData;
 		m_capacity = newCapacity;

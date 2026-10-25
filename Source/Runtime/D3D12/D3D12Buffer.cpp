@@ -1,6 +1,6 @@
 #include "D3D12Buffer.h"
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 namespace Horizon::RHI
@@ -24,7 +24,7 @@ namespace Horizon::RHI
 
 		if (m_desc.memory == GfxMemoryType::GpuOnly)
 		{
-			Terminal::Error(StringOps::GetName(this), "GpuOnly buffer cannot be mapped");
+			Terminal::Error(StringHelper::GetTypeName(this), "GpuOnly buffer cannot be mapped");
 			return nullptr;
 		}
 

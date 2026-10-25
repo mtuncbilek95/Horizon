@@ -169,7 +169,7 @@ namespace Horizon::Editor
 
 		void ClearRecursive(ContextMenuNode& node)
 		{
-			Memory::Allocator::Delete(node.pItem);
+			delete node.pItem;
 			node.pItem = nullptr;
 
 			for (auto& child : node.children)

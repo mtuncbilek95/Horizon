@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/RTTR/EnumValue.h>
@@ -8,9 +7,10 @@
 #include <Runtime/RTTR/TypeKind.h>
 #include <Runtime/RTTR/TypeMode.h>
 
-#include <Runtime/Containers/List.h>
-#include <Runtime/Containers/ReadOnlyList.h>
+#include <Runtime/Containers/Vector/List.h>
+#include <Runtime/Containers/Vector/ReadOnlyList.h>
 
+#include <new>
 #include <string>
 
 namespace Horizon::Reflect
@@ -26,7 +26,7 @@ namespace Horizon::Reflect
 		~Type()
 		{
 			for (Attribute* pAttr : m_attributes)
-				Memory::Allocator::Delete(pAttr);
+				delete pAttr;
 		}
 
 		Type(const Type&) = delete;
@@ -92,7 +92,7 @@ namespace Horizon::Reflect
 			m_copyFunc(pDestination, pSource);
 		}
 
-		VoidObject Create(Memory::SourceLocation loc = Memory::CurrLoc()) const
+		VoidObject Create() const
 		{
 			if (!m_constructFunc)
 			{
@@ -100,7 +100,7 @@ namespace Horizon::Reflect
 				return nullptr;
 			}
 
-			void* pMemory = Memory::Allocator::AllocateRaw(m_size, m_align, loc);
+			void* pMemory = ::operator new(m_size, std::align_val_t(m_align));
 			m_constructFunc(pMemory);
 
 			return pMemory;
@@ -112,7 +112,7 @@ namespace Horizon::Reflect
 				return;
 
 			DestructAt(pInstance);
-			Memory::Allocator::FreeRaw(pInstance);
+			::operator delete(pInstance, std::align_val_t(m_align));
 		}
 
 		ReadOnlyList<Attribute* const> GetAttributes() const { return m_attributes; }

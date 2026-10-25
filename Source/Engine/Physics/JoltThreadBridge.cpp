@@ -21,7 +21,7 @@ namespace Horizon::Engine
 
 	JoltThreadBridge::JoltHandle JoltThreadBridge::CreateJob(const c8* pName, JPH::ColorArg color, const JoltFunction& function, u32 dependencyCount)
 	{
-		JoltJob* pJob = Memory::Allocator::Create<JoltJob>(Memory::CurrLoc(), pName, color, this, function, dependencyCount);
+		JoltJob* pJob = new JoltJob(pName, color, this, function, dependencyCount);
 		JoltHandle handle(pJob);
 
 		if (dependencyCount == 0)
@@ -44,6 +44,6 @@ namespace Horizon::Engine
 
 	void JoltThreadBridge::FreeJob(JoltJob* pJob)
 	{
-		Memory::Allocator::Delete(pJob);
+		delete pJob;
 	}
 }

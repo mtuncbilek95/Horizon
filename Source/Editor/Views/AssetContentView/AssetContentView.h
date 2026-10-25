@@ -10,7 +10,7 @@
 #include <Editor/ContextMenu/AssetBrowserMenu/AssetBrowserContext.h>
 #include <Editor/Components/PropertyRenderer.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
-#include <Runtime/Containers/List.h>
+#include <Runtime/Containers/Vector/List.h>
 
 #include <imgui.h>
 #include <string>

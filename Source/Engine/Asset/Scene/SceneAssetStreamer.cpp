@@ -5,7 +5,7 @@
 #include <Engine/Asset/Scene/SceneProperties.h>
 
 #include <Runtime/Containers/ScopedLock.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/File.h>
 #include <Runtime/Serialization/BinaryArchive.h>
@@ -43,7 +43,7 @@ namespace Horizon::Engine
 	void SceneAssetStreamer::LoadAsync(SceneAsset* pAsset)
 	{
 		if (!pAsset->m_scene)
-			pAsset->m_scene = Memory::Allocator::Create<Scene>(Memory::CurrLoc(), GetEngine()->GetReflectionSystem());
+			pAsset->m_scene = new Scene(GetEngine()->GetReflectionSystem());
 
 		pAsset->m_ticket = m_jobSystem->SubmitJob(JobLane::Background, Job([this, pAsset]()
 			{
@@ -53,7 +53,7 @@ namespace Horizon::Engine
 		// Nearly impossible but sure
 		if (pAsset->m_ticket == InvalidSubmitTicket)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Job could not be submitted", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Job could not be submitted", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 		}
 	}
@@ -74,14 +74,14 @@ namespace Horizon::Engine
 		PAL::FileAccessRequest fileHandl = PAL::File::RequestAccess(pAsset->m_cookPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
 		if (!fileHandl.IsValid())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Access request to file has failed!", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Access request to file has failed!", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
 		if (!PAL::File::ReadMemory(fileHandl, headerBytes, 0, sizeof(AssetHeader)) || headerBytes.GetCount() < sizeof(AssetHeader))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Failed to read the AssetHeader", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Failed to read the AssetHeader", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::ReleaseAccess(fileHandl);
 			return;
@@ -93,7 +93,7 @@ namespace Horizon::Engine
 		// Fail checks (Doesn't happen but safe)
 		if (header.magic != AssetHeader::Magic)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Magic number doesn't match up!", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Magic number doesn't match up!", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::ReleaseAccess(fileHandl);
 			return;
@@ -102,7 +102,7 @@ namespace Horizon::Engine
 		// Fail checks (Doesn't happen but safe)
 		if (header.version != AssetHeader::Version)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Versions are not matching!", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Versions are not matching!", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::ReleaseAccess(fileHandl);
 			return;
@@ -110,7 +110,7 @@ namespace Horizon::Engine
 
 		if (!PAL::File::ReadMemory(fileHandl, propertyBytes, header.propertyOffset, header.propertyOffset + header.propertySize))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Failed to read memory file for SceneProperties", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Failed to read memory file for SceneProperties", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 
 			PAL::File::ReleaseAccess(fileHandl);
@@ -125,7 +125,7 @@ namespace Horizon::Engine
 		// If don't do this Archives gives error because there is no data to read.
 		if (props.entityCount == 0)
 		{
-			Terminal::Info(StringOps::GetName(this), "Entity count is 0. Moving on to reduce the errors");
+			Terminal::Info(StringHelper::GetTypeName(this), "Entity count is 0. Moving on to reduce the errors");
 			PAL::File::ReleaseAccess(fileHandl);
 			pAsset->m_residency.Store(AssetResidency::Resident, PAL::MemoryOrder::Release);
 			return;
@@ -133,7 +133,7 @@ namespace Horizon::Engine
 
 		if (!PAL::File::ReadMemory(fileHandl, dataPayload, header.payloadOffset, header.payloadOffset + header.payloadSize))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} Path: {}", "Failed to read memory file for BinaryData", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Failed to read memory file for BinaryData", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::ReleaseAccess(fileHandl);
 			return;
@@ -156,7 +156,7 @@ namespace Horizon::Engine
 	void SceneAssetStreamer::LoadSync(SceneAsset* pAsset)
 	{
 		if (!pAsset->m_scene)
-			pAsset->m_scene = Memory::Allocator::Create<Scene>(Memory::CurrLoc(), GetEngine()->GetReflectionSystem());
+			pAsset->m_scene = new Scene(GetEngine()->GetReflectionSystem());
 
 		RunLoadWorld(pAsset);
 	}

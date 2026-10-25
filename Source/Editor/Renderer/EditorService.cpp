@@ -47,24 +47,24 @@ namespace Horizon::Editor
 		renderDesc.colorFormat = m_swapchain->GetDesc().format;
 		renderDesc.pWindowService = pWindowSub;
 
-		m_editorRenderer = Memory::Allocator::Create<EditorRenderer>(Memory::CurrLoc(), renderDesc);
-		Terminal::Debug(StringOps::GetName(this), "EditorRenderer has been initialized!");
+		m_editorRenderer = new EditorRenderer(renderDesc);
+		Terminal::Debug(StringHelper::GetTypeName(this), "EditorRenderer has been initialized!");
 
 		m_editorContext.pEngine = GetEngine();
-		m_editorContext.pSelection = Memory::Allocator::Create<SelectionModel>(Memory::CurrLoc());
+		m_editorContext.pSelection = new SelectionModel();
 		m_editorContext.pWindow = pWindowSub->GetWindow();
 
-		m_viewRegistry = Memory::Allocator::Create<ViewRegistry>(Memory::CurrLoc());
+		m_viewRegistry = new ViewRegistry();
 
 		m_editorContext.pViews = m_viewRegistry;
 		m_viewRegistry->BootstrapViews(&m_editorContext);
 
-		m_menuRegistry = Memory::Allocator::Create<MenuRegistry>(Memory::CurrLoc());
+		m_menuRegistry = new MenuRegistry();
 
 		m_editorContext.pMenus = m_menuRegistry;
 		m_menuRegistry->BootstrapMenus(&m_editorContext);
 
-		m_toolRegistry = Memory::Allocator::Create<ToolBarRegistry>(Memory::CurrLoc());
+		m_toolRegistry = new ToolBarRegistry();
 
 		m_editorContext.pTools = m_toolRegistry;
 		m_toolRegistry->BootstrapItems(&m_editorContext);
@@ -124,14 +124,14 @@ namespace Horizon::Editor
 		const u64 value = m_queue->Signal(m_fence);
 		m_fence->WaitCPU(value);
 
-		Memory::Allocator::Delete(m_fence);
+		delete m_fence;
 
-		Memory::Allocator::Delete(m_menuRegistry);
-		Memory::Allocator::Delete(m_toolRegistry);
-		Memory::Allocator::Delete(m_viewRegistry);
-		Memory::Allocator::Delete(m_editorRenderer);
+		delete m_menuRegistry;
+		delete m_toolRegistry;
+		delete m_viewRegistry;
+		delete m_editorRenderer;
 
-		Memory::Allocator::Delete(m_editorContext.pSelection);
+		delete m_editorContext.pSelection;
 	}
 
 	void EditorService::DeclareDependencies(Engine::ModuleGraph& graph)

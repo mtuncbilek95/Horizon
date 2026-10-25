@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
 
 #include <concepts>
 #include <type_traits>
@@ -12,10 +12,6 @@ namespace Horizon::Engine
 
 	class ENGINE_API Job
 	{
-		JobFunction m_execute = nullptr;
-		JobFunction m_discard = nullptr;
-		void* m_userData = nullptr;
-
 	public:
 		Job() = default;
 		Job(JobFunction function, void* pData = nullptr);
@@ -43,7 +39,7 @@ namespace Horizon::Engine
 		{
 			using Stored = std::decay_t<TCallable>;
 
-			Stored* pStored = Memory::Allocator::Create<Stored>(Memory::CurrLoc(), std::forward<TCallable>(callable));
+			Stored* pStored = new Stored(std::forward<TCallable>(callable));
 
 			Job job;
 			job.m_userData = pStored;
@@ -51,12 +47,12 @@ namespace Horizon::Engine
 				{
 					Stored* pTarget = (Stored*)pData;
 					(*pTarget)();
-					Memory::Allocator::Delete(pTarget);
+					delete pTarget;
 				};
 
 			job.m_discard = [](void* pData)
 				{
-					Memory::Allocator::Delete((Stored*)pData);
+					delete (Stored*)pData;
 				};
 
 			return job;
@@ -64,5 +60,10 @@ namespace Horizon::Engine
 
 	private:
 		void Release();
+
+	private:
+		JobFunction m_execute = nullptr;
+		JobFunction m_discard = nullptr;
+		void* m_userData = nullptr;
 	};
 }

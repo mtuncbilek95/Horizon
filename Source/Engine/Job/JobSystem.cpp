@@ -41,13 +41,13 @@ namespace Horizon::Engine
 		pEnvelope->job.Execute();
 		pSlot->running.FetchSubtract(1);
 
-		Memory::Allocator::Delete(pEnvelope);
+		delete pEnvelope;
 
 		if (pGraph)
 			pSystem->OnNodeFinished(pGraph, node);
 
 		if (pSystem->CompleteOne(pSlot) && pGraph)
-			Memory::Allocator::Delete(pGraph);
+			delete pGraph;
 	}
 
 	void JobSystem::DiscardEnvelope(void* pUserData)
@@ -58,10 +58,10 @@ namespace Horizon::Engine
 		TicketSlot* pSlot = pEnvelope->pSlot;
 		GraphInstance* pGraph = pEnvelope->pGraph;
 
-		Memory::Allocator::Delete(pEnvelope);
+		delete pEnvelope;
 
 		if (pSystem->CompleteOne(pSlot) && pGraph)
-			Memory::Allocator::Delete(pGraph);
+			delete pGraph;
 	}
 
 	JobSystem::JobSystem()
@@ -75,7 +75,7 @@ namespace Horizon::Engine
 
 		if (cores.IsEmpty())
 		{
-			Terminal::Warn(StringOps::GetName(this), "Core enumeration failed, falling back to HardwareConcurrency");
+			Terminal::Warn(StringHelper::GetTypeName(this), "Core enumeration failed, falling back to HardwareConcurrency");
 
 			for (u32 i = 0; i < PAL::Thread::HardwareConcurrency(); i++)
 				cores.PushBack(PAL::CoreInfo{ i, i, 0, true, true });
@@ -121,7 +121,7 @@ namespace Horizon::Engine
 				pWorker->Stop();
 
 			for (JobWorker* pWorker : lane.laneWorkers)
-				Memory::Allocator::Delete(pWorker);
+				delete pWorker;
 		}
 	}
 
@@ -134,7 +134,7 @@ namespace Horizon::Engine
 	{
 		if (!job.IsValid())
 		{
-			Terminal::Error(StringOps::GetName(this), "Rejected empty job on {} lane", LaneName(lane));
+			Terminal::Error(StringHelper::GetTypeName(this), "Rejected empty job on {} lane", LaneName(lane));
 			return InvalidSubmitTicket;
 		}
 
@@ -144,7 +144,7 @@ namespace Horizon::Engine
 		if (!pSlot)
 			return InvalidSubmitTicket;
 
-		Envelope* pEnvelope = Memory::Allocator::Create<Envelope>(Memory::CurrLoc(), this, std::move(job), pSlot, nullptr, InvalidGraphNode);
+		Envelope* pEnvelope = new Envelope(this, std::move(job), pSlot, nullptr, InvalidGraphNode);
 		Enqueue(lane, pEnvelope);
 
 		return ticket;
@@ -154,7 +154,7 @@ namespace Horizon::Engine
 	{
 		if (!compiledGraph.IsValid())
 		{
-			Terminal::Error(StringOps::GetName(this), "Rejected empty or uncompiled graph");
+			Terminal::Error(StringHelper::GetTypeName(this), "Rejected empty or uncompiled graph");
 			return InvalidSubmitTicket;
 		}
 
@@ -164,7 +164,7 @@ namespace Horizon::Engine
 		if (!pSlot)
 			return InvalidSubmitTicket;
 
-		GraphInstance* pGraph = Memory::Allocator::Create<GraphInstance>(Memory::CurrLoc(), std::move(compiledGraph), pSlot);
+		GraphInstance* pGraph = new GraphInstance(std::move(compiledGraph), pSlot);
 
 		List<GraphNodeId> roots;
 
@@ -184,7 +184,7 @@ namespace Horizon::Engine
 	{
 		if (!job.IsValid())
 		{
-			Terminal::Error(StringOps::GetName(this), "Rejected empty detached job on {} lane", LaneName(lane));
+			Terminal::Error(StringHelper::GetTypeName(this), "Rejected empty detached job on {} lane", LaneName(lane));
 			return;
 		}
 
@@ -218,7 +218,7 @@ namespace Horizon::Engine
 
 		if (!pSlot)
 		{
-			Terminal::Error(StringOps::GetName(this), "Cannot wait on invalid ticket {:#x}", ticket);
+			Terminal::Error(StringHelper::GetTypeName(this), "Cannot wait on invalid ticket {:#x}", ticket);
 			return false;
 		}
 
@@ -244,18 +244,18 @@ namespace Horizon::Engine
 		Lane& target = GetLane(lane);
 
 		for (usize i = 0; i < cores.GetCount(); i++)
-			target.laneWorkers.PushBack(Memory::Allocator::Create<JobWorker>(Memory::CurrLoc(), this, lane, i));
+			target.laneWorkers.PushBack(new JobWorker(this, lane, i));
 
 		for (usize i = 0; i < cores.GetCount(); i++)
 		{
 			target.laneWorkers[i]->Start();
 			target.laneWorkers[i]->SetThreadAffinity(1ull << cores[i].logicalIndex);
 
-			Terminal::Info(StringOps::GetName(this), "{} worker {} pinned to logical core {} ({})",
+			Terminal::Info(StringHelper::GetTypeName(this), "{} worker {} pinned to logical core {} ({})",
 				LaneName(lane), i, cores[i].logicalIndex, cores[i].isPerformance ? "Performance" : "Efficiency");
 		}
 
-		Terminal::Debug(StringOps::GetName(this), "{} lane initialized with {} workers", LaneName(lane), target.laneWorkers.GetCount());
+		Terminal::Debug(StringHelper::GetTypeName(this), "{} lane initialized with {} workers", LaneName(lane), target.laneWorkers.GetCount());
 	}
 
 	JobSystem::TicketSlot* JobSystem::AcquireSlot(JobLane helpLane, u32 jobCount, SubmitTicket& outTicket)
@@ -274,7 +274,7 @@ namespace Horizon::Engine
 
 		if (index == kInvalid32)
 		{
-			Terminal::Error(StringOps::GetName(this), "No free ticket slot, {} tickets are already live", MaxLiveTickets);
+			Terminal::Error(StringHelper::GetTypeName(this), "No free ticket slot, {} tickets are already live", MaxLiveTickets);
 			outTicket = InvalidSubmitTicket;
 			return nullptr;
 		}
@@ -327,7 +327,7 @@ namespace Horizon::Engine
 	{
 		CompiledGraphNode& target = pGraph->graph.nodes[node];
 
-		Envelope* pEnvelope = Memory::Allocator::Create<Envelope>(Memory::CurrLoc(), this, std::move(target.job), pGraph->pSlot, pGraph, node);
+		Envelope* pEnvelope = new Envelope(this, std::move(target.job), pGraph->pSlot, pGraph, node);
 		Enqueue(target.lane, pEnvelope);
 	}
 

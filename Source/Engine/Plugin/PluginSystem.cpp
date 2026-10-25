@@ -1,7 +1,7 @@
 #include "PluginSystem.h"
 
 #include <Engine/Core/Engine.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
 #include <Runtime/PAL/File/File.h>
@@ -30,8 +30,8 @@ namespace Horizon::Engine
 
 	void PluginSystem::SetRoots(const std::string& engineRoot, const std::string& projectRoot)
 	{
-		m_engineRoot = engineRoot.empty() ? std::string() : StringOps::NormalizePath(engineRoot);
-		m_projectRoot = projectRoot.empty() ? std::string() : StringOps::NormalizePath(projectRoot);
+		m_engineRoot = engineRoot.empty() ? std::string() : StringHelper::NormalizePath(engineRoot);
+		m_projectRoot = projectRoot.empty() ? std::string() : StringHelper::NormalizePath(projectRoot);
 	}
 
 	void PluginSystem::DiscoverPlugins()
@@ -64,7 +64,7 @@ namespace Horizon::Engine
 
 		m_plugins = std::move(discovered);
 
-		Terminal::Info(StringOps::GetName(this), "Discovered {} plugins", m_plugins.GetCount());
+		Terminal::Info(StringHelper::GetTypeName(this), "Discovered {} plugins", m_plugins.GetCount());
 	}
 
 	void PluginSystem::LoadPlugins()
@@ -87,13 +87,13 @@ namespace Horizon::Engine
 
 		if (!pEntry)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} is not a discovered plugin, cannot load", name);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} is not a discovered plugin, cannot load", name);
 			return false;
 		}
 
 		if (pEntry->state == PluginState::Loaded)
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} is already loaded", name);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} is already loaded", name);
 			return true;
 		}
 
@@ -106,13 +106,13 @@ namespace Horizon::Engine
 
 		if (!pEntry)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} is not a discovered plugin, cannot unload", name);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} is not a discovered plugin, cannot unload", name);
 			return false;
 		}
 
 		if (pEntry->state != PluginState::Loaded)
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} is not loaded", name);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} is not loaded", name);
 			return true;
 		}
 
@@ -199,23 +199,23 @@ namespace Horizon::Engine
 		desc.path = entry.libraryPath;
 		desc.isMain = false;
 
-		PAL::SymbolLibrary* pLibrary = Memory::Allocator::Create<PAL::SymbolLibrary>(Memory::CurrLoc(), desc);
+		PAL::SymbolLibrary* pLibrary = new PAL::SymbolLibrary(desc);
 
 		if (!pLibrary || pLibrary->GetName().empty())
 		{
-			Memory::Allocator::Delete(pLibrary);
+			delete pLibrary;
 			entry.state = PluginState::Failed;
 			entry.failReason = "Library could not be loaded";
-			Terminal::Error(StringOps::GetName(this), "{} could not be loaded from {}", entry.name, entry.libraryPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be loaded from {}", entry.name, entry.libraryPath);
 			return false;
 		}
 
 		if (!m_engine->RegisterLibrary(pLibrary))
 		{
-			Memory::Allocator::Delete(pLibrary);
+			delete pLibrary;
 			entry.state = PluginState::Failed;
 			entry.failReason = "Manifestation could not be registered";
-			Terminal::Error(StringOps::GetName(this), "{} loaded but its manifestation could not be registered", entry.name);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} loaded but its manifestation could not be registered", entry.name);
 			return false;
 		}
 
@@ -223,7 +223,7 @@ namespace Horizon::Engine
 		entry.state = PluginState::Loaded;
 		entry.failReason.clear();
 
-		Terminal::Info(StringOps::GetName(this), "{} loaded", entry.name);
+		Terminal::Info(StringHelper::GetTypeName(this), "{} loaded", entry.name);
 		return true;
 	}
 
@@ -233,10 +233,10 @@ namespace Horizon::Engine
 			return;
 
 		m_engine->UnregisterLibrary(entry.pLibrary);
-		Memory::Allocator::Delete(entry.pLibrary);
+		delete entry.pLibrary;
 		entry.pLibrary = nullptr;
 		entry.state = PluginState::Available;
 
-		Terminal::Info(StringOps::GetName(this), "{} unloaded", entry.name);
+		Terminal::Info(StringHelper::GetTypeName(this), "{} unloaded", entry.name);
 	}
 }

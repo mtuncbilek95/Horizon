@@ -14,7 +14,7 @@
 #include <Engine/World/Components/FolderComponent.h>
 
 #include <Runtime/PAL/File/File.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Serialization/JsonArchive.h>
 
@@ -342,7 +342,7 @@ namespace Horizon::Editor
 
 		if (it == m_tree.end())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} folder has no tree node", folder);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} folder has no tree node", folder);
 			return;
 		}
 
@@ -601,7 +601,7 @@ namespace Horizon::Editor
 	{
 		if (leaf.empty() || leaf.find('/') != std::string::npos)
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} is not a valid folder name", leaf);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} is not a valid folder name", leaf);
 			return;
 		}
 
@@ -612,7 +612,7 @@ namespace Horizon::Editor
 
 		if (m_tree.contains(renamed))
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} folder already exists", renamed);
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} folder already exists", renamed);
 			return;
 		}
 
@@ -855,7 +855,7 @@ namespace Horizon::Editor
 
 		if (!pNameComp)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} entity has no NameComponent", handl.Index());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} entity has no NameComponent", handl.Index());
 			return;
 		}
 

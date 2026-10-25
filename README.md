@@ -53,12 +53,12 @@ void MyClass::Foo()
         auto* pObject = (MyInterface*)pType->Create();
         if(!pObject)
         {
-            Terminal::Error(StringOps::GetName(this), "{} probably has missing virtual function implementation.", pType->GetName());
+            Terminal::Error(StringHelper::GetTypeName(this), "{} probably has missing virtual function implementation.", pType->GetName());
             continue;
         }
 
         m_myObjectList.PushBack(pObject);
-        Terminal::Info(StringOps::GetName(this), "{} has been registered successfully", pType->GetName());
+        Terminal::Info(StringHelper::GetTypeName(this), "{} has been registered successfully", pType->GetName());
     }
 }
 ```
@@ -250,7 +250,7 @@ b8 TagSystem::OnInitialize()
 		if (!pTag)
 			continue;
 
-		Terminal::Info(StringOps::GetName(this), "{} is tagged as {}", pType->GetName(), pTag->GetTag());
+		Terminal::Info(StringHelper::GetTypeName(this), "{} is tagged as {}", pType->GetName(), pTag->GetTag());
 	}
 
 	return true;
@@ -371,7 +371,7 @@ namespace Horizon::ExampleProject
 	{
 		if (!m_target.IsValid())
 		{
-			Terminal::Error(StringOps::GetName(this), "No assigned entity to target");
+			Terminal::Error(StringHelper::GetTypeName(this), "No assigned entity to target");
 			return;
 		}
 

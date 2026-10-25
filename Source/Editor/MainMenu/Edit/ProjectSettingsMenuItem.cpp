@@ -2,7 +2,7 @@
 
 #include <Editor/Views/ProjectSettingsView/ProjectSettingsView.h>
 #include <Editor/Views/ViewRegistry.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 namespace Horizon::Editor

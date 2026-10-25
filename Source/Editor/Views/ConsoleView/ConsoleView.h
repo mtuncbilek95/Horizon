@@ -3,8 +3,8 @@
 #include <Editor/Views/EditorViewAttribute.h>
 #include <Editor/Views/ViewObject.h>
 #include <Editor/Font/IconsFontAwesome6.h>
-#include <Runtime/Containers/List.h>
-#include <Runtime/Containers/RingBuffer.h>
+#include <Runtime/Containers/Vector/List.h>
+#include <Runtime/Containers/Vector/RingBuffer.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <string>

@@ -5,8 +5,7 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionLibrary.h>
 #include <Engine/Reflection/ReflectionSystem.h>
-#include <Runtime/Containers/StringOps.h>
-#include <Runtime/Definitions/Allocator.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
 #include <imgui.h>
@@ -68,14 +67,14 @@ namespace Horizon::Editor
 		auto* pAttr = pNewSection->GetCustomAttribute<ProjectSectionAttribute>();
 		if (!pAttr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} needs ProjectSectionAttribute to be added. Skipping it..", pNewSection->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} needs ProjectSectionAttribute to be added. Skipping it..", pNewSection->GetName());
 			return false;
 		}
 
 		auto* pSection = static_cast<ProjectSection*>(pNewSection->Create());
 		if (!pSection)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be created. Skipping it..", pNewSection->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be created. Skipping it..", pNewSection->GetName());
 			return false;
 		}
 
@@ -101,7 +100,7 @@ namespace Horizon::Editor
 		if (insertIndex <= m_selectedIndex && m_sections.GetCount() > 1)
 			m_selectedIndex++;
 
-		Terminal::Info(StringOps::GetName(this), "{} has been registered", pNewSection->GetName());
+		Terminal::Info(StringHelper::GetTypeName(this), "{} has been registered", pNewSection->GetName());
 		return true;
 	}
 
@@ -115,7 +114,7 @@ namespace Horizon::Editor
 				continue;
 
 			entry.pSection->OnFinalize();
-			Memory::Allocator::Delete(entry.pSection);
+			delete entry.pSection;
 			m_sections.RemoveAt(i - 1);
 
 			if (m_selectedIndex >= m_sections.GetCount() && m_selectedIndex > 0)
@@ -132,7 +131,7 @@ namespace Horizon::Editor
 		for (SectionEntry& entry : m_sections)
 		{
 			entry.pSection->OnFinalize();
-			Memory::Allocator::Delete(entry.pSection);
+			delete entry.pSection;
 		}
 
 		m_sections.Clear();

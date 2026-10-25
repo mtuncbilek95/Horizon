@@ -4,9 +4,8 @@
 #include <Engine/Core/ModuleGraph.h>
 #include <Engine/Window/WindowService.h>
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/PAL/Window/Window.h>
-#include <Runtime/Definitions/Allocator.h>
 
 namespace Horizon::Engine
 {
@@ -78,7 +77,7 @@ namespace Horizon::Engine
 		if (!m_swapchain)
 			return ModuleReport("Failed to create GfxSwapchain");
 
-		Terminal::Debug(StringOps::GetName(this), "Device, Graphics Queue, Compute Queue and Transfer Queue has been initialized!");
+		Terminal::Debug(StringHelper::GetTypeName(this), "Device, Graphics Queue, Compute Queue and Transfer Queue has been initialized!");
 
 		return ModuleReport();
 	}
@@ -87,17 +86,17 @@ namespace Horizon::Engine
 	{
 		m_device->WaitIdle();
 
-		Memory::Allocator::Delete(m_swapchain);
+		delete m_swapchain;
 
-		Memory::Allocator::Delete(m_resourceTargetHeap);
-		Memory::Allocator::Delete(m_colorTargetHeap);
-		Memory::Allocator::Delete(m_depthTargetHeap);
+		delete m_resourceTargetHeap;
+		delete m_colorTargetHeap;
+		delete m_depthTargetHeap;
 
-		Memory::Allocator::Delete(m_graphicsQueue);
-		Memory::Allocator::Delete(m_computeQueue);
-		Memory::Allocator::Delete(m_transferQueue);
+		delete m_graphicsQueue;
+		delete m_computeQueue;
+		delete m_transferQueue;
 
-		Memory::Allocator::Delete(m_device);
+		delete m_device;
 	}
 
 	void GraphicsContext::DeclareDependencies(ModuleGraph& graph)

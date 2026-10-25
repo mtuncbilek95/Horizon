@@ -1,8 +1,8 @@
 #include "ImportPipeline.h"
 
 #include <Engine/Asset/AssetHeader.h>
-#include <Runtime/Containers/List.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/Vector/List.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
 #include <Runtime/PAL/File/File.h>
@@ -31,7 +31,7 @@ namespace Horizon::Editor
 		header.version = Engine::AssetHeader::Version;
 		header.id = id;
 
-		StringOps::CopyToChar(header.typeName, pAssetType->GetName());
+		std::memcpy(header.typeName, pAssetType->GetName().data(), pAssetType->GetName().size());
 		header.propertyOffset = sizeof(Engine::AssetHeader);
 		header.propertySize = bytes.properties.GetCount();
 		header.tableOffset = header.propertyOffset + header.propertySize;
@@ -52,23 +52,23 @@ namespace Horizon::Editor
 		if (header.payloadSize > 0)
 			std::memcpy(file.GetData() + header.payloadOffset, bytes.binary.GetData(), header.payloadSize);
 
-		const std::string folder = StringOps::ParentPathOf(cookedPath);
+		const std::string folder = StringHelper::FindParentPath(cookedPath);
 		if (!PAL::Directory::Exists(folder) && !PAL::Directory::Create(folder))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} cook folder could not be created", folder);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cook folder could not be created", folder);
 			return false;
 		}
 
 		if (!PAL::File::Exists(cookedPath) && !PAL::File::Create(cookedPath))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be created", cookedPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be created", cookedPath);
 			return false;
 		}
 
 		PAL::FileAccessRequest request = PAL::File::RequestAccess(cookedPath, PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::Exclusive);
 		if (!request.IsValid())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} could not be opened for writing", cookedPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be opened for writing", cookedPath);
 			return false;
 		}
 
@@ -76,7 +76,7 @@ namespace Horizon::Editor
 		PAL::File::ReleaseAccess(request);
 
 		if (!wasWritten)
-			Terminal::Error(StringOps::GetName(this), "{} could not be written", cookedPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be written", cookedPath);
 
 		return wasWritten;
 	}

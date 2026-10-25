@@ -6,14 +6,14 @@
 #include <Editor/ImportPipeline/AssetImporterTypeAttribute.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 
 namespace Horizon::Editor
 {
 	ImporterRegistry::~ImporterRegistry()
 	{
 		for (const auto& entry : m_pipelines)
-			Memory::Allocator::Delete(entry.pPipeline);
+			delete entry.pPipeline;
 
 		m_pipelines.Clear();
 		m_extToPipelineLookup.clear();
@@ -100,7 +100,7 @@ namespace Horizon::Editor
 		auto* pAssetImporter = (AssetImporter*)pType->Create();
 		if (!pAssetImporter)
 		{
-			Terminal::Warn(StringOps::GetName(this), "This could be about missing virtual functions, check interface's virtuals then check if your importer has HORIZON_TYPE_REFLECT");
+			Terminal::Warn(StringHelper::GetTypeName(this), "This could be about missing virtual functions, check interface's virtuals then check if your importer has HORIZON_TYPE_REFLECT");
 			return nullptr;
 		}
 
@@ -115,14 +115,14 @@ namespace Horizon::Editor
 		auto* pAttr = pType->GetCustomAttribute<ImportPipelineInfoAttribute>();
 		if (!pAttr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} needs ImportPipelineInfoAttribute to be added. Skipping it..", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} needs ImportPipelineInfoAttribute to be added. Skipping it..", pType->GetName());
 			return false;
 		}
 
 		auto* pObject = (ImportPipeline*)pType->Create();
 		if (!pObject)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has virtual function issues. You won't have this system.", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has virtual function issues. You won't have this system.", pType->GetName());
 			return false;
 		}
 
@@ -138,7 +138,7 @@ namespace Horizon::Editor
 			m_extToPipelineLookup[ext] = m_pipelines.GetCount();
 
 		m_pipelines.PushBack(entry);
-		Terminal::Info(StringOps::GetName(this), "{} has been registered", pType->GetName());
+		Terminal::Info(StringHelper::GetTypeName(this), "{} has been registered", pType->GetName());
 
 		return true;
 	}
@@ -160,11 +160,11 @@ namespace Horizon::Editor
 
 		if (removedIndex == m_pipelines.GetCount())
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} is not registered to ImporterRegistry", pType->GetName());
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} is not registered to ImporterRegistry", pType->GetName());
 			return false;
 		}
 
-		Memory::Allocator::Delete(m_pipelines[removedIndex].pPipeline);
+		delete m_pipelines[removedIndex].pPipeline;
 		m_pipelines.RemoveAt(removedIndex);
 
 		// Clear the ext lookup as well
@@ -197,7 +197,7 @@ namespace Horizon::Editor
 			++it;
 		}
 
-		Terminal::Info(StringOps::GetName(this), "{} has been unregistered", pType->GetName());
+		Terminal::Info(StringHelper::GetTypeName(this), "{} has been unregistered", pType->GetName());
 		return true;
 	}
 
@@ -209,7 +209,7 @@ namespace Horizon::Editor
 		auto* pAttr = pType->GetCustomAttribute<AssetImporterTypeAttribute>();
 		if (!pAttr)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} needs AssetImporterTypeAttribute to be added. Skipping it..", pType->GetName());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} needs AssetImporterTypeAttribute to be added. Skipping it..", pType->GetName());
 			return false;
 		}
 
@@ -224,7 +224,7 @@ namespace Horizon::Editor
 		m_typeToImporterLookup[pAttr->GetAssetType()] = m_importers.GetCount();
 		m_importers.PushBack(entry);
 
-		Terminal::Info(StringOps::GetName(this), "{} has been registered", pType->GetName());
+		Terminal::Info(StringHelper::GetTypeName(this), "{} has been registered", pType->GetName());
 		return true;
 	}
 
@@ -245,7 +245,7 @@ namespace Horizon::Editor
 
 		if (removedIndex == m_importers.GetCount())
 		{
-			Terminal::Warn(StringOps::GetName(this), "{} is not registered to ImporterRegistry", pType->GetName());
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} is not registered to ImporterRegistry", pType->GetName());
 			return false;
 		}
 
@@ -279,7 +279,7 @@ namespace Horizon::Editor
 			++it;
 		}
 
-		Terminal::Info(StringOps::GetName(this), "{} has been unregistered", pType->GetName());
+		Terminal::Info(StringHelper::GetTypeName(this), "{} has been unregistered", pType->GetName());
 		return true;
 	}
 }

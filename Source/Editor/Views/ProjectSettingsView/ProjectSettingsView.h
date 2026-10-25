@@ -3,7 +3,7 @@
 #include <Editor/Views/EditorViewAttribute.h>
 #include <Editor/Views/ViewObject.h>
 #include <Editor/Font/IconsFontAwesome6.h>
-#include <Runtime/Containers/List.h>
+#include <Runtime/Containers/Vector/List.h>
 #include <Runtime/RTTR/Reflection.h>
 
 #include <string>

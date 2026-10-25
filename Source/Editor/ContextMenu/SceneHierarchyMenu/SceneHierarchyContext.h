@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Engine/Core/Engine.h>
-#include <Runtime/Containers/List.h>
+#include <Runtime/Containers/Vector/List.h>
 #include <Engine/World/ECS/Scene.h>
 
 namespace Horizon::Editor

@@ -1,6 +1,5 @@
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
 
-#include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Win32/Helpers/Win32ErrorHelpers.h>
 
@@ -152,7 +151,7 @@ namespace Horizon::PAL
 			if (pContext->overlapped.hEvent != nullptr)
 				CloseHandle(pContext->overlapped.hEvent);
 
-			Memory::Allocator::Delete(pContext);
+			delete pContext;
 		}
 
 		b8 ArmRead(WatcherContext* pContext, const std::string& rootPath)
@@ -279,7 +278,7 @@ namespace Horizon::PAL
 			return;
 		}
 
-		WatcherContext* pContext = Memory::Allocator::Create<WatcherContext>(Memory::CurrLoc());
+		WatcherContext* pContext = new WatcherContext();
 		pContext->hDirectory = hDirectory;
 		pContext->recursive = recursive ? TRUE : FALSE;
 		pContext->rootWide = std::move(rootWide);

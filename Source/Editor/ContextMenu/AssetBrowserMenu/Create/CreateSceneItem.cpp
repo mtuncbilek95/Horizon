@@ -3,7 +3,7 @@
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Engine/Asset/Scene/SceneSerializer.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/File.h>
 #include <Runtime/Serialization/JsonArchive.h>
@@ -18,7 +18,7 @@ namespace Horizon::Editor
 		{
 			for (const DomainFile* pFile : pParent->GetFiles())
 			{
-				if (StringOps::EqualsNoCase(pFile->GetName(), name))
+				if (StringHelper::CheckIfEquals(pFile->GetName(), name))
 					return true;
 			}
 
@@ -57,7 +57,7 @@ namespace Horizon::Editor
 
 		if (!PAL::File::Create(path))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} cannot be created", path);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be created", path);
 			return;
 		}
 
@@ -69,7 +69,7 @@ namespace Horizon::Editor
 		PAL::File::ReleaseAccess(request);
 
 		if (!wasWritten)
-			Terminal::Error(StringOps::GetName(this), "{} cannot be written", path);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be written", path);
 	}
 
 	b8 CreateSceneItem::IsEnabled(const AssetBrowserContext& context)

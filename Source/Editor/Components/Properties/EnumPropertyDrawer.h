@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Editor/Components/PropertyDrawer.h>
-#include <Runtime/Containers/ReadOnlyList.h>
+#include <Runtime/Containers/Vector/ReadOnlyList.h>
 
 namespace Horizon::Editor
 {

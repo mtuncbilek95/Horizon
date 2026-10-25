@@ -1,7 +1,7 @@
 #include "Terminal.h"
 
-#include <Runtime/Containers/List.h>
-#include <Runtime/Containers/RingBuffer.h>
+#include <Runtime/Containers/Vector/List.h>
+#include <Runtime/Containers/Vector/RingBuffer.h>
 #include <Runtime/PAL/Console/Console.h>
 
 #include <chrono>

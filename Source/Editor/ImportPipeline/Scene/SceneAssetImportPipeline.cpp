@@ -2,7 +2,7 @@
 
 #include <Engine/Asset/Scene/SceneProperties.h>
 #include <Engine/Asset/Scene/SceneSerializer.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Serialization/BinaryArchive.h>
 
@@ -41,13 +41,13 @@ namespace Horizon::Editor
 	{
 		if (bytes.properties.GetCount() != sizeof(Engine::SceneProperties))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} properties block has a wrong size", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} properties block has a wrong size", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
 		if (bytes.table.GetCount() != 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} scene carries an unexpected table block", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} scene carries an unexpected table block", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
@@ -56,7 +56,7 @@ namespace Horizon::Editor
 
 		if (bytes.binary.GetCount() == 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has no scene payload", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has no scene payload", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
@@ -64,7 +64,7 @@ namespace Horizon::Editor
 
 		if (reader.HasError())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} payload is not a valid binary archive", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} payload is not a valid binary archive", ctx.sourcePath);
 			return AssetImportResult::CorruptedData;
 		}
 
@@ -72,13 +72,13 @@ namespace Horizon::Editor
 
 		if (!reader.Key("version") || reader.ReadU64() > Engine::SceneSerializer::Version)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} scene version is missing or newer than {}", ctx.sourcePath, Engine::SceneSerializer::Version);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} scene version is missing or newer than {}", ctx.sourcePath, Engine::SceneSerializer::Version);
 			return AssetImportResult::UnsupportedVersion;
 		}
 
 		if (!reader.Key("entities"))
 		{
-			Terminal::Error(StringOps::GetName(this), "{} payload carries no entity list", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} payload carries no entity list", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
@@ -88,13 +88,13 @@ namespace Horizon::Editor
 
 		if (reader.HasError())
 		{
-			Terminal::Error(StringOps::GetName(this), "{} payload could not be walked", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} payload could not be walked", ctx.sourcePath);
 			return AssetImportResult::CorruptedData;
 		}
 
 		if (entityCount != props.entityCount)
 		{
-			Terminal::Error(StringOps::GetName(this), "{} has {} entities but properties say {}", ctx.sourcePath, entityCount, props.entityCount);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has {} entities but properties say {}", ctx.sourcePath, entityCount, props.entityCount);
 			return AssetImportResult::InvalidData;
 		}
 

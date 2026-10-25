@@ -1,6 +1,6 @@
 #include "D3D12CommandList.h"
 
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Math/Scalar.h>
 #include <Runtime/Log/Terminal.h>
 
@@ -59,7 +59,7 @@ namespace Horizon::RHI
 	{
 		if (m_type == D3D12_COMMAND_LIST_TYPE_COPY)
 		{
-			Terminal::Error(StringOps::GetName(this), "Copy lists cannot bind descriptor heaps");
+			Terminal::Error(StringHelper::GetTypeName(this), "Copy lists cannot bind descriptor heaps");
 			return;
 		}
 
@@ -112,7 +112,7 @@ namespace Horizon::RHI
 
 			if (!pTexture)
 			{
-				Terminal::Error(StringOps::GetName(this), "Texture barrier {} has no texture", i);
+				Terminal::Error(StringHelper::GetTypeName(this), "Texture barrier {} has no texture", i);
 				continue;
 			}
 
@@ -128,7 +128,7 @@ namespace Horizon::RHI
 
 			if (firstMip >= mipLevels || firstSlice >= arrayCount)
 			{
-				Terminal::Error(StringOps::GetName(this), "Barrier subresource range starts out of bounds");
+				Terminal::Error(StringHelper::GetTypeName(this), "Barrier subresource range starts out of bounds");
 				continue;
 			}
 
@@ -167,7 +167,7 @@ namespace Horizon::RHI
 	{
 		if (count > kMaxBarrierBatch)
 		{
-			Terminal::Error(StringOps::GetName(this), "Barrier batch limit exceeded, {} > {}", count, kMaxBarrierBatch);
+			Terminal::Error(StringHelper::GetTypeName(this), "Barrier batch limit exceeded, {} > {}", count, kMaxBarrierBatch);
 			return;
 		}
 
@@ -281,7 +281,7 @@ namespace Horizon::RHI
 
 		if (count > D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
 		{
-			Terminal::Error(StringOps::GetName(this), "Viewport count exceeded, {} > {}", count,
+			Terminal::Error(StringHelper::GetTypeName(this), "Viewport count exceeded, {} > {}", count,
 				u32(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE));
 			return;
 		}
@@ -305,7 +305,7 @@ namespace Horizon::RHI
 
 		if (count > D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE)
 		{
-			Terminal::Error(StringOps::GetName(this), "Scissor count exceeded, {} > {}", count,
+			Terminal::Error(StringHelper::GetTypeName(this), "Scissor count exceeded, {} > {}", count,
 				u32(D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE));
 			return;
 		}
@@ -403,7 +403,7 @@ namespace Horizon::RHI
 
 		if (srcOff % D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT != 0)
 		{
-			Terminal::Error(StringOps::GetName(this), "Texture copy offset {} is not {}-byte aligned",
+			Terminal::Error(StringHelper::GetTypeName(this), "Texture copy offset {} is not {}-byte aligned",
 				srcOff, u32(D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT));
 			return;
 		}
@@ -465,7 +465,7 @@ namespace Horizon::RHI
 
 		if (index >= pD3DHeap->GetCount())
 		{
-			Terminal::Error(StringOps::GetName(this), "Timestamp index {} exceeds query heap count {}", index, pD3DHeap->GetCount());
+			Terminal::Error(StringHelper::GetTypeName(this), "Timestamp index {} exceeds query heap count {}", index, pD3DHeap->GetCount());
 			return;
 		}
 
@@ -482,13 +482,13 @@ namespace Horizon::RHI
 
 		if (first + count > pD3DHeap->GetCount())
 		{
-			Terminal::Error(StringOps::GetName(this), "Timestamp resolve range [{}, {}) exceeds query heap count {}", first, first + count, pD3DHeap->GetCount());
+			Terminal::Error(StringHelper::GetTypeName(this), "Timestamp resolve range [{}, {}) exceeds query heap count {}", first, first + count, pD3DHeap->GetCount());
 			return;
 		}
 
 		if (dstOff + usize(count) * sizeof(u64) > pD3DReadback->GetDesc().size)
 		{
-			Terminal::Error(StringOps::GetName(this), "Timestamp resolve of {} queries at offset {} exceeds readback size {}", count, dstOff, pD3DReadback->GetDesc().size);
+			Terminal::Error(StringHelper::GetTypeName(this), "Timestamp resolve of {} queries at offset {} exceeds readback size {}", count, dstOff, pD3DReadback->GetDesc().size);
 			return;
 		}
 

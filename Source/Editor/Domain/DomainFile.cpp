@@ -3,7 +3,7 @@
 #include <Editor/Domain/DomainFolder.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
 #include <Engine/Asset/AssetHeader.h>
-#include <Runtime/Containers/StringOps.h>
+#include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/File.h>
 
@@ -54,7 +54,7 @@ namespace Horizon::Editor
 		const std::string newPath = m_parent->GetAbsolutePath() + "/" + newName + m_extension;
 
 		if (!PAL::File::Rename(m_sourcePath, newPath))
-			Terminal::Error(StringOps::GetName(this), "{} could not be renamed to {}", m_sourcePath, newPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be renamed to {}", m_sourcePath, newPath);
 	}
 
 	b8 DomainFile::CreateSettings(Reflect::Type* pType)
@@ -74,7 +74,7 @@ namespace Horizon::Editor
 		if (!m_settings)
 			return;
 
-		Memory::Allocator::Delete(m_settings);
+		delete m_settings;
 		m_settings = nullptr;
 	}
 }

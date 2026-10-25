@@ -1,12 +1,11 @@
 #include "ScriptComponent.h"
 
-#include <Runtime/Definitions/Allocator.h>
 
 namespace Horizon::Engine
 {
 	ScriptComponent::~ScriptComponent()
 	{
-		Memory::Allocator::Delete(m_script);
+		delete m_script;
 		m_script = nullptr;
 	}
 
@@ -20,7 +19,7 @@ namespace Horizon::Engine
 		if (this == &other)
 			return *this;
 
-		Memory::Allocator::Delete(m_script);
+		delete m_script;
 		m_script = other.m_script;
 		other.m_script = nullptr;
 

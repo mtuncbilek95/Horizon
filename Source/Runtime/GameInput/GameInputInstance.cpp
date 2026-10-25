@@ -5,7 +5,6 @@
 #include <Runtime/Input/Mouse.h>
 
 #include <Runtime/Containers/ScopedLock.h>
-#include <Runtime/Definitions/Allocator.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Win32/Helpers/Win32WindowHelpers.h>
 
@@ -49,11 +48,11 @@ namespace Horizon::Input
 
 	Instance* CreateInstance()
 	{
-		auto* pInstance = Memory::Allocator::Create<GameInputInstance>(Memory::CurrLoc());
+		auto* pInstance = new GameInputInstance();
 
 		if (!pInstance->Init())
 		{
-			Memory::Allocator::Delete(pInstance);
+			delete pInstance;
 			return nullptr;
 		}
 
@@ -173,21 +172,21 @@ namespace Horizon::Input
 		if (pInfo->supportedInput & GameInputKindKeyboard)
 		{
 			pDevice->AddRef();
-			AddObject(Memory::Allocator::Create<Keyboard>(Memory::CurrLoc(), this, pDevice, vendor, product));
+			AddObject(new Keyboard(this, pDevice, vendor, product));
 			Terminal::Info("GameInputInstance", "Keyboard connected, vendor 0x{:04X} product 0x{:04X}", pInfo->vendorId, pInfo->productId);
 		}
 
 		if (pInfo->supportedInput & GameInputKindMouse)
 		{
 			pDevice->AddRef();
-			AddObject(Memory::Allocator::Create<Mouse>(Memory::CurrLoc(), this, pDevice, vendor, product));
+			AddObject(new Mouse(this, pDevice, vendor, product));
 			Terminal::Info("GameInputInstance", "Mouse connected, vendor 0x{:04X} product 0x{:04X}", pInfo->vendorId, pInfo->productId);
 		}
 
 		if (pInfo->supportedInput & GameInputKindGamepad)
 		{
 			pDevice->AddRef();
-			AddObject(Memory::Allocator::Create<Gamepad>(Memory::CurrLoc(), this, pDevice, vendor, product));
+			AddObject(new Gamepad(this, pDevice, vendor, product));
 			Terminal::Info("GameInputInstance", "Gamepad connected, vendor 0x{:04X} product 0x{:04X}", pInfo->vendorId, pInfo->productId);
 		}
 	}
