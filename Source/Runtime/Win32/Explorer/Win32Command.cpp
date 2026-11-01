@@ -1,7 +1,6 @@
 #include <Runtime/PAL/Explorer/Command.h>
 
 #include <Runtime/Log/Terminal.h>
-
 #include <Windows.h>
 
 namespace Horizon::PAL

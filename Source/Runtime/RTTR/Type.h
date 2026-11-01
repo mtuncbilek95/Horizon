@@ -100,7 +100,7 @@ namespace Horizon::Reflect
 				return nullptr;
 			}
 
-			void* pMemory = ::operator new(m_size, std::align_val_t(m_align));
+			void* pMemory = ::operator new(m_size);
 			m_constructFunc(pMemory);
 
 			return pMemory;
@@ -112,7 +112,7 @@ namespace Horizon::Reflect
 				return;
 
 			DestructAt(pInstance);
-			::operator delete(pInstance, std::align_val_t(m_align));
+			::operator delete(pInstance);
 		}
 
 		ReadOnlyList<Attribute* const> GetAttributes() const { return m_attributes; }

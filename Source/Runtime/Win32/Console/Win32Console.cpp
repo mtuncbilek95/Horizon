@@ -1,10 +1,7 @@
 #include <Runtime/PAL/Console/Console.h>
 
 #include <Runtime/Log/Terminal.h>
-
 #include <Windows.h>
-
-#include <cstdio>
 
 namespace Horizon::PAL
 {
