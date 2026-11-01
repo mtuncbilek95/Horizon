@@ -25,7 +25,7 @@ namespace Horizon::Editor
 		if (StateButton(ICON_FA_PLAY, m_state == State::Play, sPlayColor) && m_state != State::Play)
 		{
 			auto* pWorld = GetContext()->pEngine->RequestService<Engine::WorldService>();
-			pWorld->SetRunningSystems(Engine::SceneGroups::Play);
+			//pWorld->SetRunningSystems(Engine::SceneGroups::Play);
 			m_state = State::Play;
 		}
 
@@ -34,7 +34,7 @@ namespace Horizon::Editor
 		if (StateButton(ICON_FA_PAUSE, m_state == State::Pause, sPauseColor) && m_state == State::Play)
 		{
 			auto* pWorld = GetContext()->pEngine->RequestService<Engine::WorldService>();
-			pWorld->SetRunningSystems(Engine::SceneGroups::Pause);
+			//pWorld->SetRunningSystems(Engine::SceneGroups::Pause);
 			m_state = State::Pause;
 		}
 
@@ -43,7 +43,7 @@ namespace Horizon::Editor
 		if (StateButton(ICON_FA_STOP, m_state == State::Stop, sStopColor) && m_state != State::Stop)
 		{
 			auto* pWorld = GetContext()->pEngine->RequestService<Engine::WorldService>();
-			pWorld->SetRunningSystems(Engine::SceneGroups::Edit);
+			//pWorld->SetRunningSystems(Engine::SceneGroups::Edit);
 			m_state = State::Stop;
 		}
 	}

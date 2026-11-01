@@ -8,6 +8,7 @@ namespace Horizon::RHI
 	{
 		Graphics,
 		Compute,
-		Transfer
+		Transfer,
+		Count
 	};
 }

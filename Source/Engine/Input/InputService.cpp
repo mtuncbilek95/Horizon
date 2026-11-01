@@ -82,7 +82,7 @@ namespace Horizon::Engine
 
 	ModuleReport InputService::OnInitialize()
 	{
-		m_devices = Input::CreateInstance();
+		m_devices = UniquePtr<Input::Instance>(Input::CreateInstance());
 
 		if (!m_devices)
 			return ModuleReport("Input backend could not be created");
@@ -124,11 +124,7 @@ namespace Horizon::Engine
 		m_states.Clear();
 		m_lookup.clear();
 
-		if (m_devices)
-		{
-			delete m_devices;
-			m_devices = nullptr;
-		}
+		m_devices = nullptr;
 	}
 
 	void InputService::DeclareDependencies(ModuleGraph& graph)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Editor/Models/SelectionModel.h>
+#include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/PAL/Window/Window.h>
 
 namespace Horizon::Engine
@@ -18,7 +19,7 @@ namespace Horizon::Editor
 	{
 		PAL::Window* pWindow = nullptr;
 		Engine::Engine* pEngine = nullptr;
-		SelectionModel* pSelection = nullptr;
+		UniquePtr<SelectionModel> pSelection = nullptr;
 
 		ViewRegistry* pViews = nullptr;
 		MenuRegistry* pMenus = nullptr;

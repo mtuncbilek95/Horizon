@@ -7,6 +7,7 @@
 #include <Engine/Job/JobSystem.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Runtime/Containers/Guid.h>
+#include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/PAL/Sync/Atomic.h>
 
 #include <string>
@@ -30,7 +31,7 @@ namespace Horizon::Engine
 
 		const Guid& GetId() const { return m_id; }
 		AssetResidency GetResidency() const { return m_residency.Load(PAL::MemoryOrder::Acquire); }
-		Scene* GetScene() const { return m_scene; }
+		Scene* GetScene() const { return m_scene.Get(); }
 
 	protected:
 		void OnPropertiesChanged(ReadOnlyList<u8> propertyBytes) {}
@@ -40,6 +41,6 @@ namespace Horizon::Engine
 		std::string m_cookPath;
 		PAL::Atomic<AssetResidency> m_residency = AssetResidency::Unloaded;
 		SubmitTicket m_ticket = InvalidSubmitTicket;
-		Scene* m_scene = nullptr;
+		UniquePtr<Scene> m_scene = nullptr;
 	};
 }

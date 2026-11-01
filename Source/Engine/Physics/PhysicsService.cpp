@@ -64,8 +64,8 @@ namespace Horizon::Engine
 		ObjectVsBroadPhaseFilter objectVsBroadPhase;
 		ObjectPairFilter objectPair;
 
-		JoltThreadBridge* pBridge = nullptr;
-		JPH::TempAllocatorImpl* pTemp = nullptr;
+		UniquePtr<JoltThreadBridge> pBridge;
+		UniquePtr<JPH::TempAllocatorImpl> pTemp;
 		JPH::PhysicsSystem world;
 	};
 
@@ -106,8 +106,8 @@ namespace Horizon::Engine
 		if (!m_impl)
 			return ModuleReport("Failed to allocate physics state");
 
-		m_impl->pTemp = new JPH::TempAllocatorImpl(MaxPreAllocatedMemory);
-		m_impl->pBridge = new JoltThreadBridge(GetEngine()->GetJobSystem(), MaxPhysicsBarrierCount);
+		m_impl->pTemp = MakeUnique<JPH::TempAllocatorImpl>(MaxPreAllocatedMemory);
+		m_impl->pBridge = MakeUnique<JoltThreadBridge>(GetEngine()->GetJobSystem(), MaxPhysicsBarrierCount);
 
 		m_impl->world.Init(MaxBodies, 0, MaxBodyPairs, MaxContactConstraints, m_impl->broadPhaseMap, m_impl->objectVsBroadPhase, m_impl->objectPair);
 
@@ -123,8 +123,8 @@ namespace Horizon::Engine
 	{
 		if (m_impl)
 		{
-			delete m_impl->pBridge;
-			delete m_impl->pTemp;
+			m_impl->pBridge = nullptr;
+			m_impl->pTemp = nullptr;
 			delete m_impl;
 			m_impl = nullptr;
 		}
@@ -147,11 +147,11 @@ namespace Horizon::Engine
 
 	JPH::TempAllocator* PhysicsService::GetTempAllocator() const
 	{
-		return m_impl ? m_impl->pTemp : nullptr;
+		return m_impl ? m_impl->pTemp.Get() : nullptr;
 	}
 
 	JPH::JobSystem* PhysicsService::GetJobBridge() const
 	{
-		return m_impl ? m_impl->pBridge : nullptr;
+		return m_impl ? m_impl->pBridge.Get() : nullptr;
 	}
 }

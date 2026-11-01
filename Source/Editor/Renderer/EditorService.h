@@ -7,9 +7,8 @@
 
 namespace Horizon::RHI
 {
-	class GfxFence;
-	class GfxQueue;
-	class GfxSwapchain;
+	class Device;
+	class Swapchain;
 }
 
 namespace Horizon::Editor
@@ -34,20 +33,19 @@ namespace Horizon::Editor
 		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
 		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
-		ViewRegistry* GetViewRegistry() const { return m_viewRegistry; }
+		ViewRegistry* GetViewRegistry() const { return m_viewRegistry.Get(); }
 
 	private:
 		PAL::Window* m_engineWindow = nullptr;
 		PAL::Cursor* m_engineCursor = nullptr;
-		EditorRenderer* m_editorRenderer = nullptr;
+		UniquePtr<EditorRenderer> m_editorRenderer = nullptr;
 
-		MenuRegistry* m_menuRegistry = nullptr;
-		ToolBarRegistry* m_toolRegistry = nullptr;
-		ViewRegistry* m_viewRegistry = nullptr;
+		UniquePtr<MenuRegistry> m_menuRegistry = nullptr;
+		UniquePtr<ToolBarRegistry> m_toolRegistry = nullptr;
+		UniquePtr<ViewRegistry> m_viewRegistry = nullptr;
 
-		RHI::GfxFence* m_fence = nullptr;
-		RHI::GfxQueue* m_queue = nullptr;
-		RHI::GfxSwapchain* m_swapchain = nullptr;
+		RHI::Device* m_device = nullptr;
+		RHI::Swapchain* m_swapchain = nullptr;
 
 		EditorContext m_editorContext;
 	};

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Reflection/ReflectionLibrary.h>
+#include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/PAL/Module/SymbolLibrary.h>
 #include <Runtime/RTTR/Reflection.h>
@@ -42,6 +43,6 @@ namespace Horizon::Engine
 		std::unordered_map<Reflect::TypeHandle, List<Reflect::Type*>> m_byBase;
 		std::unordered_map<Reflect::TypeHandle, List<Reflect::Type*>> m_byAttribute;
 
-		PAL::SymbolLibrary* m_hostLibrary = nullptr;
+		UniquePtr<PAL::SymbolLibrary> m_hostLibrary;
 	};
 }

@@ -30,7 +30,7 @@ namespace Horizon::Editor
 		}
 
 		Release();
-		m_scene = new Engine::Scene(ctx.pReflection);
+		m_scene = MakeUnique<Engine::Scene>(ctx.pReflection);
 
 		const std::string_view text(reinterpret_cast<const c8*>(fileBytes.GetData()), fileBytes.GetCount());
 		JsonArchiveReader reader(text);
@@ -47,10 +47,6 @@ namespace Horizon::Editor
 
 	void DefaultSceneAssetImporter::Release()
 	{
-		if (!m_scene)
-			return;
-
-		delete m_scene;
 		m_scene = nullptr;
 	}
 

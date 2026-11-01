@@ -13,14 +13,14 @@
 #include <Engine/Asset/Mesh/MeshVertex.h>
 
 #include <Runtime/Log/Terminal.h>
-#include <Runtime/RHI/Buffer/GfxBuffer.h>
-#include <Runtime/RHI/Shader/GfxShaderCompiler.h>
-#include <Runtime/RHI/Shader/GfxShader.h>
-#include <Runtime/RHI/Shader/GfxShaderDesc.h>
-#include <Runtime/RHI/Pipeline/GfxGraphicsPipelineDesc.h>
-#include <Runtime/RHI/Pipeline/GfxPipeline.h>
+#include <Runtime/RHI/Buffer/Buffer.h>
+#include <Runtime/RHI/Command/CommandList.h>
+#include <Runtime/RHI/Descriptor/DescriptorHeap.h>
+#include <Runtime/RHI/Device/Device.h>
 
 #include <Runtime/Math/Mat4f.h>
+
+#include <cstring>
 
 namespace Horizon::Engine
 {
@@ -41,20 +41,18 @@ namespace Horizon::Engine
 		}
 
 		m_device = m_context->GetDevice();
-		m_queue = m_context->GetGraphicsQueue();
 
-		m_colorTargetHeap = m_context->GetColorTargetHeap();
-		m_depthTargetHeap = m_context->GetDepthTargetHeap();
 		m_resourceHeap = m_context->GetResourceHeap();
+		m_samplerHeap = m_context->GetSamplerHeap();
 
 		m_frameDataStride = (sizeof(RenderFrameData) + 255) & ~255u;
 
-		RHI::GfxBufferDesc frameDataDesc = {};
-		frameDataDesc.usage = RHI::GfxBufferUsage::Constant;
-		frameDataDesc.memory = RHI::GfxMemoryType::GpuUpload;
-		frameDataDesc.size = usize(m_frameDataStride) * GraphicsContext::MaxFramesInFlight;
+		RHI::BufferDesc frameDataDesc = {};
+		frameDataDesc.usage = RHI::BufferUsage::Constant;
+		frameDataDesc.memory = RHI::MemoryType::GpuUpload;
+		frameDataDesc.size = u64(m_frameDataStride) * GraphicsContext::MaxFramesInFlight;
 
-		m_frameDataBuffer = m_device->CreateBuffer(frameDataDesc);
+		m_frameDataBuffer = m_device->CreateRHIBuffer(frameDataDesc);
 		if (!m_frameDataBuffer)
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "FrameData buffer could not be created, render system stays down");
@@ -62,14 +60,22 @@ namespace Horizon::Engine
 		}
 
 		m_frameDataBuffer->SetDebugName("RenderSystem_FrameData");
-		m_frameDataMap = (u8*)m_frameDataBuffer->Map();
 
 		for (u32 i = 0; i < GraphicsContext::MaxFramesInFlight; i++)
-			m_frameDataViews[i] = m_resourceHeap->CreateConstantView(m_frameDataBuffer, usize(i) * m_frameDataStride, m_frameDataStride);
+		{
+			m_frameDataViews[i] = m_resourceHeap->Allocate();
+			if (m_frameDataViews[i] == kInvalid32)
+			{
+				Terminal::Error(StringHelper::GetTypeName(this), "FrameData view {} could not be allocated, render system stays down", i);
+				return false;
+			}
+
+			m_resourceHeap->Write(m_frameDataViews[i], RHI::DescriptorType::ConstantBuffer, m_frameDataBuffer.Get(), u64(i) * m_frameDataStride, m_frameDataStride);
+		}
 
 		ResizeImage({ 1280, 720 });
 		m_slots.Resize(GraphicsContext::MaxFramesInFlight);
-		m_fence = m_device->CreateFence();
+		m_fence = m_device->CreateRHIFence({});
 
 		auto* pReflection = GetEngine()->GetReflectionSystem();
 
@@ -136,7 +142,7 @@ namespace Horizon::Engine
 			DestroySlot(m_frameIndex);
 			CreateSlot(m_frameIndex);
 
-			if (!slot.pTargetTexture)
+			if (!slot.pTargetView || !slot.pDepthView)
 				return;
 		}
 
@@ -151,11 +157,13 @@ namespace Horizon::Engine
 		currentFrame.targetSize = m_targetSize;
 		currentFrame.frameIndex = m_frameIndex;
 		currentFrame.pEngineFrame = &const_cast<EngineFrame&>(ctx);
-		currentFrame.pColorTarget = slot.pTargetTexture;
-		currentFrame.pCmdList = slot.pTargetCmd;
-		currentFrame.pDepthTarget = slot.pTargetDepth;
-		currentFrame.pIndexBuffer = pMeshStreamer->GetIndexBuffer();
-		currentFrame.vertexBufferIndex = pMeshStreamer->GetVertexBufferView();
+		currentFrame.pColorTarget = slot.pTargetTexture.Get();
+		currentFrame.pColorView = slot.pTargetView.Get();
+		currentFrame.pCmdList = slot.pTargetCmd.Get();
+		currentFrame.pDepthTarget = slot.pTargetDepth.Get();
+		currentFrame.pDepthView = slot.pDepthView.Get();
+		/*currentFrame.pIndexBuffer = pMeshStreamer->GetIndexBuffer();
+		currentFrame.vertexBufferIndex = pMeshStreamer->GetVertexBufferView();*/
 
 		currentScene.ForEach<TransformComponent, MeshComponent>([&](EntityHandle entity, TransformComponent& transComp, MeshComponent& meshComp)
 			{
@@ -188,8 +196,8 @@ namespace Horizon::Engine
 				for (const MeshAssetSubmesh& submesh : pMesh->GetSubmeshes())
 				{
 					RenderableObject object = {};
-					object.firstVertex = pMesh->GetFirstVertex() + submesh.vertexOffset;
-					object.firstIndex = pMesh->GetFirstIndex() + submesh.indexOffset;
+					/*object.firstVertex = pMesh->GetFirstVertex() + submesh.vertexOffset;
+					object.firstIndex = pMesh->GetFirstIndex() + submesh.indexOffset;*/
 					object.indexCount = submesh.indexCount;
 					object.worldMatrix = transComp.m_worldMatrix;
 
@@ -206,42 +214,53 @@ namespace Horizon::Engine
 		frameData.cameraPosition = pCamera->m_worldPosition;
 		frameData.time = f32(ctx.GetTotalSeconds());
 
-		std::memcpy(m_frameDataMap + usize(m_frameIndex) * m_frameDataStride, &frameData, sizeof(RenderFrameData));
+		std::memcpy(m_frameDataBuffer->GetMappedData() + u64(m_frameIndex) * m_frameDataStride, &frameData, sizeof(RenderFrameData));
 		currentFrame.frameDataIndex = m_frameDataViews[m_frameIndex];
 
-		slot.pTargetCmd->Begin();
-		slot.pTargetCmd->BindDescriptorHeaps(m_resourceHeap, nullptr);
+		slot.pTargetPool->Reset();
+		slot.pTargetCmd->Start();
+		slot.pTargetCmd->BindDescriptorHeaps(m_resourceHeap, m_samplerHeap);
 		{
-			RHI::GfxTextureBarrier beginBarrier = {};
-			beginBarrier.pTexture = slot.pTargetTexture;
+			RHI::TextureBarrier beginBarrier = {};
+			beginBarrier.pTexture = slot.pTargetTexture.Get();
 			beginBarrier.before = slot.currState;
-			beginBarrier.after = slot.currState = RHI::GfxResourceState::RenderTarget;
-			beginBarrier.firstMip = 0;
-			beginBarrier.firstSlice = 0;
+			beginBarrier.after = slot.currState = RHI::ResourceState::RenderTarget;
+			beginBarrier.baseMip = 0;
+			beginBarrier.baseLayer = 0;
 			beginBarrier.mipCount = 1;
-			beginBarrier.sliceCount = 1;
-			slot.pTargetCmd->Barrier(&beginBarrier, 1);
+			beginBarrier.layerCount = 1;
+
+			RHI::TextureBarrier depthBarrier = {};
+			depthBarrier.pTexture = slot.pTargetDepth.Get();
+			depthBarrier.before = RHI::ResourceState::Undefined;
+			depthBarrier.after = RHI::ResourceState::DepthWrite;
+			depthBarrier.baseMip = 0;
+			depthBarrier.baseLayer = 0;
+			depthBarrier.mipCount = 1;
+			depthBarrier.layerCount = 1;
+
+			slot.pTargetCmd->Barrier({ beginBarrier, depthBarrier });
 		}
 
 		for (auto* pPass : m_renderPasses)
 			pPass->RenderFrame(currentFrame);
 
 		{
-			RHI::GfxTextureBarrier endBarrier = {};
-			endBarrier.pTexture = slot.pTargetTexture;
+			RHI::TextureBarrier endBarrier = {};
+			endBarrier.pTexture = slot.pTargetTexture.Get();
 			endBarrier.before = slot.currState;
-			endBarrier.after = slot.currState = RHI::GfxResourceState::ShaderResource;
-			endBarrier.firstMip = 0;
-			endBarrier.firstSlice = 0;
+			endBarrier.after = slot.currState = RHI::ResourceState::ShaderResource;
+			endBarrier.baseMip = 0;
+			endBarrier.baseLayer = 0;
 			endBarrier.mipCount = 1;
-			endBarrier.sliceCount = 1;
-			slot.pTargetCmd->Barrier(&endBarrier, 1);
+			endBarrier.layerCount = 1;
+			slot.pTargetCmd->Barrier({ endBarrier });
 		}
 
 		slot.pTargetCmd->End();
 
-		m_queue->Submit(&slot.pTargetCmd, 1);
-		slot.fenceValue = m_queue->Signal(m_fence);
+		m_device->Submit(RHI::QueueType::Graphics, { slot.pTargetCmd.Get() });
+		slot.fenceValue = m_device->Signal(RHI::QueueType::Graphics, m_fence.Get());
 
 		m_frameIndex = (m_frameIndex + 1) % GraphicsContext::MaxFramesInFlight;
 	}
@@ -261,10 +280,7 @@ namespace Horizon::Engine
 					m_resourceHeap->Free(m_frameDataViews[i]);
 			}
 
-			m_frameDataBuffer->Unmap();
-			delete m_frameDataBuffer;
 			m_frameDataBuffer = nullptr;
-			m_frameDataMap = nullptr;
 		}
 
 		for (auto* pPass : m_renderPasses)
@@ -280,12 +296,10 @@ namespace Horizon::Engine
 
 		m_slots.Clear();
 
-		delete m_fence;
 		m_fence = nullptr;
 
 		m_resourceHeap = nullptr;
-		m_depthTargetHeap = nullptr;
-		m_colorTargetHeap = nullptr;
+		m_samplerHeap = nullptr;
 	}
 
 	void RenderSystem::OnGroupsChanged(SystemGroup previous, SystemGroup current)
@@ -307,25 +321,35 @@ namespace Horizon::Engine
 	{
 		RenderSlot& slot = m_slots[index];
 
-		slot.pTargetCmd = m_device->CreateCommandList(RHI::GfxQueueType::Graphics);
+		RHI::CommandPoolDesc poolDesc = {};
+		poolDesc.type = RHI::QueueType::Graphics;
+		slot.pTargetPool = m_device->CreateRHICommandPool(poolDesc);
 
-		RHI::GfxTextureDesc colorDesc = {};
+		if (slot.pTargetPool)
+		{
+			RHI::CommandListDesc listDesc = {};
+			listDesc.pPool = slot.pTargetPool.Get();
+			slot.pTargetCmd = m_device->CreateRHICommandList(listDesc);
+		}
+
+		RHI::TextureDesc colorDesc = {};
 		colorDesc.width = m_targetSize.X();
 		colorDesc.height = m_targetSize.Y();
-		colorDesc.type = RHI::GfxTextureType::Tex2D;
-		colorDesc.format = RHI::GfxTextureFormat::RGBA8_UNORM;
-		colorDesc.usage = RHI::GfxTextureUsage::RenderTarget | RHI::GfxTextureUsage::Sampled;
-		colorDesc.clearColor = { 0.0f, 0.0f, 0.0f, 1.f };
+		colorDesc.type = RHI::TextureType::Texture2D;
+		colorDesc.format = RHI::TextureFormat::RGBA8_UNORM;
+		colorDesc.usage = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::Sampled;
+		colorDesc.clearColor[3] = 1.0f;
 
-		RHI::GfxTextureDesc depthDesc = {};
+		RHI::TextureDesc depthDesc = {};
 		depthDesc.width = m_targetSize.X();
 		depthDesc.height = m_targetSize.Y();
-		depthDesc.type = RHI::GfxTextureType::Tex2D;
-		depthDesc.format = RHI::GfxTextureFormat::D32_FLOAT;
-		depthDesc.usage = RHI::GfxTextureUsage::DepthStencil;
+		depthDesc.type = RHI::TextureType::Texture2D;
+		depthDesc.format = RHI::TextureFormat::D32_FLOAT;
+		depthDesc.usage = RHI::TextureUsage::DepthStencil;
+		depthDesc.clearDepth = 0.0f;
 
-		slot.pTargetTexture = m_device->CreateTexture(colorDesc);
-		slot.pTargetDepth = m_device->CreateTexture(depthDesc);
+		slot.pTargetTexture = m_device->CreateRHITexture(colorDesc);
+		slot.pTargetDepth = m_device->CreateRHITexture(depthDesc);
 
 		if (!slot.pTargetCmd || !slot.pTargetTexture || !slot.pTargetDepth)
 		{
@@ -336,11 +360,27 @@ namespace Horizon::Engine
 		slot.pTargetTexture->SetDebugName("Scene - ColorTarget");
 		slot.pTargetDepth->SetDebugName("Scene - DepthTarget");
 
-		slot.renderTargetView = m_colorTargetHeap->CreateRenderTargetView(slot.pTargetTexture);
-		slot.depthView = m_depthTargetHeap->CreateDepthStencilView(slot.pTargetDepth);
-		slot.shaderView = m_resourceHeap->CreateShaderView(slot.pTargetTexture);
+		RHI::TextureViewDesc colorViewDesc = {};
+		colorViewDesc.pTexture = slot.pTargetTexture.Get();
+		colorViewDesc.type = RHI::TextureViewType::Texture2D;
+		slot.pTargetView = m_device->CreateRHITextureView(colorViewDesc);
 
-		slot.currState = RHI::GfxResourceState::Common;
+		RHI::TextureViewDesc depthViewDesc = {};
+		depthViewDesc.pTexture = slot.pTargetDepth.Get();
+		depthViewDesc.type = RHI::TextureViewType::Texture2D;
+		slot.pDepthView = m_device->CreateRHITextureView(depthViewDesc);
+
+		if (!slot.pTargetView || !slot.pDepthView)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "Slot {} views could not be created", index);
+			return;
+		}
+
+		slot.shaderView = m_resourceHeap->Allocate();
+		if (slot.shaderView != kInvalid32)
+			m_resourceHeap->Write(slot.shaderView, RHI::DescriptorType::Texture, slot.pTargetView.Get());
+
+		slot.currState = RHI::ResourceState::Undefined;
 		slot.currSize = m_targetSize;
 		slot.fenceValue = 0;
 	}
@@ -351,25 +391,15 @@ namespace Horizon::Engine
 
 		m_device->WaitIdle();
 
-		if (slot.renderTargetView != kInvalid32)
-			m_colorTargetHeap->Free(slot.renderTargetView);
-
-		if (slot.depthView != kInvalid32)
-			m_depthTargetHeap->Free(slot.depthView);
-
 		if (slot.shaderView != kInvalid32)
 			m_resourceHeap->Free(slot.shaderView);
-
-		delete slot.pTargetTexture;
-		delete slot.pTargetDepth;
-		delete slot.pTargetCmd;
 
 		slot = RenderSlot();
 	}
 
 	u64 RenderSystem::GetOutputView() const
 	{
-		if (!m_slots[m_frameIndex].pTargetTexture)
+		if (!m_slots[m_frameIndex].pTargetTexture || m_slots[m_frameIndex].shaderView == kInvalid32)
 			return kInvalid64;
 
 		return m_resourceHeap->GetGpuHandle(m_slots[m_frameIndex].shaderView);

@@ -1,18 +1,17 @@
 #pragma once
 
+#include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/Containers/Vector/List.h>
-#include <Runtime/RHI/Texture/GfxTextureFormat.h>
+#include <Runtime/RHI/Command/CommandList.h>
+#include <Runtime/RHI/Command/CommandPool.h>
+#include <Runtime/RHI/Fence/Fence.h>
+#include <Runtime/RHI/Texture/TextureFormat.h>
 
 namespace Horizon::RHI
 {
-	class GfxDevice;
-	class GfxQueue;
-	class GfxTexture;
-	class GfxPipeline;
-	class GfxBuffer;
-	class GfxCommandList;
-	class GfxDescriptorHeap;
-	class GfxFence;
+	class Device;
+	class DescriptorHeap;
+	class Swapchain;
 }
 
 namespace Horizon::Engine
@@ -28,10 +27,10 @@ namespace Horizon::Editor
 
 	struct EditorRendererDesc
 	{
-		RHI::GfxDevice* pDevice = nullptr;
-		RHI::GfxQueue* pQueue = nullptr;
-		RHI::GfxDescriptorHeap* pResourceHeap = nullptr;
-		RHI::GfxTextureFormat colorFormat = RHI::GfxTextureFormat::RGBA8_UNORM;
+		RHI::Device* pDevice = nullptr;
+		RHI::DescriptorHeap* pResourceHeap = nullptr;
+		RHI::DescriptorHeap* pSamplerHeap = nullptr;
+		RHI::TextureFormat colorFormat = RHI::TextureFormat::BGRA8_UNORM;
 		Engine::WindowService* pWindowService = nullptr;
 	};
 
@@ -39,8 +38,9 @@ namespace Horizon::Editor
 	{
 		struct FrameContext
 		{
-			RHI::GfxCommandList* pCmdList = nullptr;
-			u32 fenceValue = 0;
+			UniquePtr<RHI::CommandPool> pPool;
+			UniquePtr<RHI::CommandList> pCmdList;
+			u64 fenceValue = 0;
 		};
 
 	public:
@@ -50,7 +50,7 @@ namespace Horizon::Editor
 		void UpdatePlatform();
 
 		b8 BeginRender(f32 dt);
-		b8 EndRender(RHI::GfxTexture* pBackbuffer);
+		b8 EndRender(RHI::Swapchain* pSwapchain);
 		b8 CheckMouseDragging();
 
 	private:
@@ -59,14 +59,14 @@ namespace Horizon::Editor
 
 	private:
 		RenderContext m_context;
-		EditorPlatform* m_platform = nullptr;
+		UniquePtr<EditorPlatform> m_platform = nullptr;
 
-		RHI::GfxDevice* m_device;
-		RHI::GfxQueue* m_graphicsQueue;
-		RHI::GfxDescriptorHeap* m_resourceHeap = nullptr;
+		RHI::Device* m_device = nullptr;
+		RHI::DescriptorHeap* m_resourceHeap = nullptr;
+		RHI::DescriptorHeap* m_samplerHeap = nullptr;
 		List<FrameContext> m_frames;
 
-		RHI::GfxFence* m_fence = nullptr;
+		UniquePtr<RHI::Fence> m_fence;
 		u32 m_frameIndex = 0;
 	};
 }

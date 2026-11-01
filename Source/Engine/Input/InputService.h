@@ -9,9 +9,11 @@
 #include <string_view>
 #include <unordered_map>
 
+#include <Runtime/Containers/Memory/UniquePtr.h>
+#include <Runtime/Input/Instance.h>
+
 namespace Horizon::Input
 {
-	class Instance;
 	class Keyboard;
 	class Mouse;
 	class Gamepad;
@@ -65,7 +67,7 @@ namespace Horizon::Engine
 		f32 ReadAxis(InputActionHandle handle) const;
 		Math::Vec2f ReadVector2(InputActionHandle handle) const;
 
-		Input::Instance* GetDevices() const { return m_devices; }
+		Input::Instance* GetDevices() const { return m_devices.Get(); }
 
 	private:
 		void Compile();
@@ -75,7 +77,7 @@ namespace Horizon::Engine
 		b8 IsValid(InputActionHandle handle) const { return handle < m_states.GetCount(); }
 
 	private:
-		Input::Instance* m_devices = nullptr;
+		UniquePtr<Input::Instance> m_devices;
 
 		InputMap m_map;
 		List<CompiledAction> m_compiled;

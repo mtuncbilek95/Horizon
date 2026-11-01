@@ -1,14 +1,20 @@
 #include "RenderPass.h"
 
 #include <Runtime/Containers/StringHelper.h>
-#include <Runtime/RHI/Shader/GfxShaderCompiler.h>
-#include <Runtime/RHI/Device/GfxDevice.h>
+#include <Runtime/RHI/Device/Device.h>
+#include <Runtime/RHI/Shader/ShaderCompiler.h>
 
 namespace Horizon::Engine
 {
-	RHI::GfxShader* RenderPass::CreateShader(RHI::GfxDevice* pDevice, const std::string& filePath, RHI::GfxShaderStage stage, const std::string& entryPoint, const std::string& debugName)
+	UniquePtr<RHI::ShaderModule> RenderPass::CreateShader(RHI::Device* pDevice, const std::string& filePath, RHI::ShaderStage stage, const std::string& entryPoint, const std::string& debugName)
 	{
-		List<u8> byteCode = RHI::GfxShaderCompiler::Compile(filePath, stage, entryPoint);
+		RHI::ShaderCompileDesc compileDesc = {};
+		compileDesc.filePath = filePath;
+		compileDesc.entryPoint = entryPoint;
+		compileDesc.stage = stage;
+		compileDesc.target = RHI::ShaderTarget::DXIL;
+
+		List<u8> byteCode = RHI::ShaderCompiler::Compile(compileDesc);
 
 		if (byteCode.IsEmpty())
 		{
@@ -16,13 +22,13 @@ namespace Horizon::Engine
 			return nullptr;
 		}
 
-		RHI::GfxShaderDesc shaderDesc = {};
-		shaderDesc.stage = stage;
-		shaderDesc.pByteCode = byteCode.GetData();
-		shaderDesc.byteCodeSize = byteCode.GetCount();
+		RHI::ShaderModuleDesc moduleDesc = {};
+		moduleDesc.stage = stage;
+		moduleDesc.entryPoint = entryPoint;
+		moduleDesc.byteCode = byteCode;
 
-		RHI::GfxShader* pShader = pDevice->CreateShader(shaderDesc);
-		if (pShader == nullptr)
+		UniquePtr<RHI::ShaderModule> pShader = pDevice->CreateRHIShaderModule(moduleDesc);
+		if (!pShader)
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be turned into a shader object", filePath);
 			return nullptr;

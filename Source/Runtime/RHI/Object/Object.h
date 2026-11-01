@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
+
 namespace Horizon::RHI
 {
 	class Device;
@@ -9,7 +11,7 @@ namespace Horizon::RHI
 	public:
 		virtual ~Object() = default;
 		
-		virtual void SetDebugName(const char* pName) {}
+		virtual void SetDebugName(const c8* pName) {}
 		
 		Device* GetOwnerDevice() const { return m_ownerDevice; }
 

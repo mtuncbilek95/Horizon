@@ -8,7 +8,7 @@ namespace Horizon::Engine
 {
 	ReflectionSystem::ReflectionSystem(Engine* pEngine)
 	{
-		m_hostLibrary = new PAL::SymbolLibrary(PAL::SymbolLibraryDesc());
+		m_hostLibrary = MakeUnique<PAL::SymbolLibrary>(PAL::SymbolLibraryDesc());
 
 		if (!m_hostLibrary)
 		{
@@ -16,7 +16,7 @@ namespace Horizon::Engine
 			return;
 		}
 
-		if (!RegisterLibrary(m_hostLibrary))
+		if (!RegisterLibrary(m_hostLibrary.Get()))
 		{
 			pEngine->RequestExit("Host manifestation could not be registered");
 		}
@@ -26,7 +26,7 @@ namespace Horizon::Engine
 	{
 		if (m_hostLibrary)
 		{
-			UnregisterLibrary(m_hostLibrary);
+			UnregisterLibrary(m_hostLibrary.Get());
 		}
 
 		if (!m_libraries.IsEmpty())
@@ -34,7 +34,7 @@ namespace Horizon::Engine
 			Terminal::Warn(StringHelper::GetTypeName(this), "{} libraries were never unregistered, their types die with the system", m_libraries.GetCount());
 		}
 
-		delete m_hostLibrary;
+		m_hostLibrary = nullptr;
 	}
 
 	b8 ReflectionSystem::RegisterLibrary(const PAL::SymbolLibrary* pLibrary)

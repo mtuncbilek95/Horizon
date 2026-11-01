@@ -12,7 +12,7 @@ namespace Horizon::Engine
 	{
 		// TODO: Temporary
 		if (m_scene)
-			delete m_scene;
+			m_scene.Reset();
 	}
 
 	void SceneAsset::LoadAsync()

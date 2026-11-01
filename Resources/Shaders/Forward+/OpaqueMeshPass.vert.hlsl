@@ -32,7 +32,7 @@ struct PixelData
     float2 uv : TEXCOORD1;
 };
 
-ConstantBuffer<OpaqueMeshConstants> pushConstant : register(b0, space0);
+ConstantBuffer<OpaqueMeshConstants> pushConstant : register(b0, space999);
 
 PixelData VSMain(uint vertexId : SV_VertexID)
 {

@@ -4,6 +4,7 @@
 #include <Engine/Window/WindowParams.h>
 #include <Runtime/PAL/Window/Window.h>
 #include <Runtime/PAL/Window/Cursor.h>
+#include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/Containers/Vector/ReadOnlyList.h>
 
@@ -17,7 +18,7 @@ namespace Horizon::Engine
 
 		PAL::Window* GetWindow() const noexcept { return m_mainWindow; }
 		ReadOnlyList<PAL::Window*> GetWindows() const noexcept { return m_windows; }
-		PAL::Cursor* GetCursor() const noexcept { return m_cursor; }
+		PAL::Cursor* GetCursor() const noexcept { return m_cursor.Get(); }
 
 		PAL::Window* SpawnWindow(const PAL::WindowDesc& desc);
 		void DestroyWindow(PAL::Window* pWindow);
@@ -33,7 +34,7 @@ namespace Horizon::Engine
 	private:
 		WindowParams m_params;
 
-		PAL::Cursor* m_cursor = nullptr;
+		UniquePtr<PAL::Cursor> m_cursor;
 		PAL::Window* m_mainWindow = nullptr;
 		List<PAL::Window*> m_windows;
 	};

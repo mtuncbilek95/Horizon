@@ -2,6 +2,7 @@
 
 #include <Engine/Rendering/RenderGraph/RenderPass.h>
 #include <Engine/Rendering/RenderGraph/RenderOrderAttribute.h>
+#include <Runtime/RHI/Pipeline/GraphicsPipeline.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Engine
@@ -25,6 +26,6 @@ namespace Horizon::Engine
 		void RenderFrame(const RenderPassFrame& frame) final;
 
 	private:
-		RHI::GfxPipeline* m_opaquePipeline = nullptr;
+		UniquePtr<RHI::GraphicsPipeline> m_opaquePipeline;
 	};
 }

@@ -4,6 +4,7 @@
 
 #include <iterator>
 #include <type_traits>
+#include <initializer_list>
 
 namespace Horizon
 {
@@ -24,6 +25,17 @@ namespace Horizon
 		ReadOnlyList(const T* pData, usize count) : m_data(pData), m_count(count)
 		{
 		}
+
+		ReadOnlyList(std::initializer_list<std::remove_const_t<T>> init)
+			: m_data(init.begin()), m_count(init.size()) {
+		}
+
+		template<usize N>
+		ReadOnlyList(const std::remove_const_t<T>(&arr)[N])
+			: m_data(arr), m_count(N) {
+		}
+
+		ReadOnlyList(List<std::remove_const_t<T>>&&) = delete;
 
 		usize GetCount() const { return m_count; }
 		const T* GetData() const { return m_data; }
