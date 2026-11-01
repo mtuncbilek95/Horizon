@@ -17,6 +17,7 @@ namespace Horizon::Engine
 
 	class SystemGraph final
 	{
+		friend class WorldService;
 	public:
 		b8 OnInititalize();
 		void OnExecute(const EngineFrame& frame, Scene* pScene);
@@ -31,16 +32,18 @@ namespace Horizon::Engine
 		void ReportCycle(const List<usize>& order);
 		void BuildHazardEdges(List<usize>& order, List<SystemDependency>& dependencyList);
 
-		void Schedule(usize index, const EngineFrame* pFrame);
+		void Schedule(usize index, const EngineFrame* pFrame, Scene* pScene);
 
 	private:
+		Engine* m_engine = nullptr;
+
 		List<RefPtr<System>> m_activeSystems;
 		std::unordered_map<Reflect::TypeHandle, usize> m_systemLookup;
 
 		List<List<usize>> m_adjacency;
 		List<usize> m_indegrees;
 
-		std::vector<std::atomic<i64>> m_counters;
+		List<i64> m_counters;
 		PAL::Atomic<i64> m_remaining;
 
 		b8 m_sorted = false;
