@@ -76,6 +76,21 @@ namespace Horizon
 		return path.substr(index);
 	}
 
+	std::string StringHelper::FindFileName(const std::string& path)
+	{
+		usize end = path.size();
+
+		while (end > 0 && IsCharSeparator(path[end - 1]))
+			--end;
+
+		usize start = end;
+
+		while (start > 0 && !IsCharSeparator(path[start - 1]))
+			--start;
+
+		return path.substr(start, end - start);
+	}
+
 	std::string_view StringHelper::GetNameString(std::string_view name)
 	{
 #if defined(HORIZON_WINDOWS)

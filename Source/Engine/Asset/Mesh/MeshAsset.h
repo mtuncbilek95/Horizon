@@ -9,6 +9,7 @@
 #include <Engine/Job/JobSystem.h>
 
 #include <Runtime/Containers/Guid.h>
+#include <Runtime/Containers/Memory/RangeAllocator.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/PAL/Sync/Atomic.h>
 
@@ -33,8 +34,8 @@ namespace Horizon::Engine
 
 		const List<MeshAssetSubmesh>& GetSubmeshes() const { return m_submeshes; }
 
-		/*u32 GetFirstVertex() const { return m_vertexRange.offset / sizeof(MeshVertex); }
-		u32 GetFirstIndex() const { return m_indexRange.offset / sizeof(u32); }*/
+		u32 GetFirstVertex() const { return m_vertexRange.offset / sizeof(MeshVertex); }
+		u32 GetFirstIndex() const { return m_indexRange.offset / sizeof(u32); }
 
 	protected:
 		void OnPropertiesChanged(ReadOnlyList<u8> propertyBytes);
@@ -48,7 +49,7 @@ namespace Horizon::Engine
 		List<MeshAssetSubmesh> m_submeshes;
 
 		MeshAssetProperties m_properties;
-		/*RHI::GfxBufferRange m_vertexRange;
-		RHI::GfxBufferRange m_indexRange;*/
+		Range m_vertexRange;
+		Range m_indexRange;
 	};
 }

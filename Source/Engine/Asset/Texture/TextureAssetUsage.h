@@ -1,11 +1,17 @@
 #pragma once
 
+#include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/RTTR/Reflection.h>
+
 namespace Horizon::Engine
 {
-	enum class TextureAssetUsage
+	HENUM();
+	enum class TextureAssetUsage : u8
 	{
 		Color,
 		Normal,
 		Mask,
+		Hdr,
+		UI
 	};
 }

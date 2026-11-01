@@ -9,6 +9,14 @@
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/File.h>
+#include <Runtime/RHI/Buffer/BufferDesc.h>
+#include <Runtime/RHI/Command/CommandList.h>
+#include <Runtime/RHI/Command/CommandListDesc.h>
+#include <Runtime/RHI/Command/CommandPool.h>
+#include <Runtime/RHI/Command/CommandPoolDesc.h>
+#include <Runtime/RHI/Descriptor/DescriptorHeap.h>
+#include <Runtime/RHI/Device/Device.h>
+#include <Runtime/RHI/Fence/FenceDesc.h>
 
 #include <cstring>
 
@@ -16,7 +24,7 @@ namespace Horizon::Engine
 {
 	void MeshAssetStreamer::OnInitialize()
 	{
-/*		m_jobSystem = GetEngine()->GetJobSystem();
+		m_jobSystem = GetEngine()->GetJobSystem();
 		GraphicsContext* pContext = GetEngine()->RequestContext<GraphicsContext>();
 
 		if (pContext == nullptr)
@@ -34,43 +42,47 @@ namespace Horizon::Engine
 
 		m_resourceHeap = pContext->GetResourceHeap();
 
-		RHI::GfxBufferArenaDesc vertArenaDesc = {};
-		vertArenaDesc.capacity = MibToByte(512ull);
-		vertArenaDesc.stride = sizeof(MeshVertex);
-		vertArenaDesc.memory = RHI::GfxMemoryType::GpuUpload;
-		vertArenaDesc.usage = RHI::GfxBufferUsage::Storage;
-		m_vertexArena = m_device->CreateBufferArena(vertArenaDesc);
-		m_vertexArena->SetDebugName("MeshStreamer_VertexArena");
-		Terminal::Assert(m_vertexArena, StringHelper::GetTypeName(this), "Big fucked at some places");
+		RHI::BufferDesc vertexDesc = {};
+		vertexDesc.size = MibToByte(512ull);
+		vertexDesc.usage = RHI::BufferUsage::Storage | RHI::BufferUsage::CopyDst;
+		vertexDesc.memory = RHI::MemoryType::GpuOnly;
+		m_vertexBuffer = m_device->CreateRHIBuffer(vertexDesc);
+		Terminal::Assert(m_vertexBuffer != nullptr, StringHelper::GetTypeName(this), "Big fucked at some places");
+		m_vertexBuffer->SetDebugName("MeshStreamer_VertexBuffer");
 
-		m_vertexMap = (u8*)m_vertexArena->GetBuffer()->Map();
-		m_vertexBufferView = m_resourceHeap->CreateShaderView(m_vertexArena->GetBuffer());
+		m_vertexBufferView = m_resourceHeap->Allocate();
+		m_resourceHeap->Write(m_vertexBufferView, RHI::DescriptorType::Buffer, m_vertexBuffer.Get(), 0, vertexDesc.size, sizeof(MeshVertex));
+		m_vertexRanges.Initialize(vertexDesc.size);
 
-		RHI::GfxBufferArenaDesc indexArenaDesc = {};
-		indexArenaDesc.capacity = MibToByte(256ull);
-		indexArenaDesc.stride = sizeof(u32);
-		indexArenaDesc.memory = RHI::GfxMemoryType::GpuUpload;
-		indexArenaDesc.usage = RHI::GfxBufferUsage::Index;
-		m_indexArena = m_device->CreateBufferArena(indexArenaDesc);
-		m_indexArena->SetDebugName("MeshStreamer_IndexArena");
-		Terminal::Assert(m_indexArena, StringHelper::GetTypeName(this), "Big fucked at some places");
+		RHI::BufferDesc indexDesc = {};
+		indexDesc.size = MibToByte(256ull);
+		indexDesc.usage = RHI::BufferUsage::Index | RHI::BufferUsage::CopyDst;
+		indexDesc.memory = RHI::MemoryType::GpuOnly;
+		m_indexBuffer = m_device->CreateRHIBuffer(indexDesc);
+		Terminal::Assert(m_indexBuffer != nullptr, StringHelper::GetTypeName(this), "Big fucked at some places");
+		m_indexBuffer->SetDebugName("MeshStreamer_IndexBuffer");
 
-		m_indexMap = (u8*)m_indexArena->GetBuffer()->Map();*/
+		m_indexRanges.Initialize(indexDesc.size);
+
+		RHI::FenceDesc fenceDesc = {};
+		m_uploadFence = m_device->CreateRHIFence(fenceDesc);
+		m_uploadFence->SetDebugName("MeshStreamer_UploadFence");
 	}
 
 	void MeshAssetStreamer::OnFinalize()
 	{
-/*		if (m_vertexBufferView != kInvalid32)
+		if (m_vertexBufferView != kInvalid32)
 		{
 			m_resourceHeap->Free(m_vertexBufferView);
 			m_vertexBufferView = kInvalid32;
 		}
 
+		m_uploadFence.Reset();
+		m_indexBuffer.Reset();
+		m_vertexBuffer.Reset();
+
 		m_resourceHeap = nullptr;
 		m_device = nullptr;
-
-		delete m_indexArena;
-		delete m_vertexArena;*/
 	}
 
 	void MeshAssetStreamer::OnRegisteredAsset(const AssetEntry& entry)
@@ -103,9 +115,9 @@ namespace Horizon::Engine
 
 	void MeshAssetStreamer::LoadAsync(MeshAsset* pAsset)
 	{
-/*		if (m_device == nullptr || m_vertexArena == nullptr || m_indexArena == nullptr)
+		if (m_device == nullptr || !m_vertexBuffer || !m_indexBuffer)
 		{
-			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "No device! No Vertex Arena! No Index Arena!", pAsset->m_id.ToString());
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "No device! No Vertex Buffer! No Index Buffer!", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
@@ -119,7 +131,7 @@ namespace Horizon::Engine
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Job could not be submitted", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
-		}*/
+		}
 	}
 
 	void MeshAssetStreamer::UnloadAsync(MeshAsset* pAsset)
@@ -129,26 +141,28 @@ namespace Horizon::Engine
 
 	void MeshAssetStreamer::ReleaseAsset(MeshAsset* pAsset)
 	{
-/*		{
+		{
 			ScopedLock lockArena(m_arenaLock);
 
 			if (pAsset->m_vertexRange.IsValid())
-				m_vertexArena->Free(pAsset->m_vertexRange);
+				m_vertexRanges.Free(pAsset->m_vertexRange);
 
 			if (pAsset->m_indexRange.IsValid())
-				m_indexArena->Free(pAsset->m_indexRange);
+				m_indexRanges.Free(pAsset->m_indexRange);
 		}
 
 		pAsset->m_vertexRange = {};
 		pAsset->m_indexRange = {};
 		pAsset->m_submeshes.Clear();
 		pAsset->m_properties = {};
-		pAsset->m_residency.Store(AssetResidency::Unloaded, PAL::MemoryOrder::Release);*/
+		pAsset->m_residency.Store(AssetResidency::Unloaded, PAL::MemoryOrder::Release);
 	}
+
+	// MeshAssetStreamer.cpp
 
 	void MeshAssetStreamer::RunLoadAsset(MeshAsset* pAsset)
 	{
-		/*pAsset->m_residency.Store(AssetResidency::Reading, PAL::MemoryOrder::Relaxed);
+		pAsset->m_residency.Store(AssetResidency::Reading, PAL::MemoryOrder::Relaxed);
 
 		PAL::FileAccessRequest fileHandl = PAL::File::RequestAccess(pAsset->m_cookPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
 		if (!fileHandl.IsValid())
@@ -271,39 +285,99 @@ namespace Horizon::Engine
 
 		pAsset->m_residency.Store(AssetResidency::Uploading, PAL::MemoryOrder::Relaxed);
 
+		Range vRange;
+		Range iRange;
+
 		{
 			ScopedLock lockArena(m_arenaLock);
 
-			RHI::GfxBufferRange vRange = m_vertexArena->Allocate(vertBlock, sizeof(MeshVertex));
+			vRange = m_vertexRanges.Allocate(vertBlock, sizeof(MeshVertex));
 			if (!vRange.IsValid())
 			{
-				Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "VertexBufferArena is out of space", pAsset->m_id.ToString());
+				Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Vertex buffer is out of space", pAsset->m_id.ToString());
 				pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
 				PAL::File::CloseMap(view);
 				return;
 			}
 
-			RHI::GfxBufferRange iRange = m_indexArena->Allocate(indexBlock, sizeof(u32));
+			iRange = m_indexRanges.Allocate(indexBlock, sizeof(u32));
 			if (!iRange.IsValid())
 			{
-				Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "IndexBufferArena is out of space", pAsset->m_id.ToString());
+				Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Index buffer is out of space", pAsset->m_id.ToString());
 				pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
-				m_vertexArena->Free(vRange);
+				m_vertexRanges.Free(vRange);
 				PAL::File::CloseMap(view);
 				return;
 			}
-
-			pAsset->m_vertexRange = vRange;
-			pAsset->m_indexRange = iRange;
 		}
 
-		std::memcpy(m_vertexMap + pAsset->m_vertexRange.offset, pVertexData, vertBlock);
-		std::memcpy(m_indexMap + pAsset->m_indexRange.offset, pIndexData, indexBlock);
+		if (!UploadPayload(pVertexData, vRange, pIndexData, iRange))
+		{
+			{
+				ScopedLock lockArena(m_arenaLock);
+				m_vertexRanges.Free(vRange);
+				m_indexRanges.Free(iRange);
+			}
+
+			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+			PAL::File::CloseMap(view);
+			return;
+		}
 
 		PAL::File::CloseMap(view);
 
+		pAsset->m_vertexRange = vRange;
+		pAsset->m_indexRange = iRange;
 		pAsset->m_submeshes = subMeshes;
 		pAsset->m_properties = props;
-		pAsset->m_residency.Store(AssetResidency::Resident, PAL::MemoryOrder::Release);*/
+		pAsset->m_residency.Store(AssetResidency::Resident, PAL::MemoryOrder::Release);
+	}
+
+	b8 MeshAssetStreamer::UploadPayload(const u8* pVertexData, const Range& vertexRange, const u8* pIndexData, const Range& indexRange)
+	{
+		RHI::BufferDesc stagingDesc = {};
+		stagingDesc.size = vertexRange.size + indexRange.size;
+		stagingDesc.usage = RHI::BufferUsage::CopySrc;
+		stagingDesc.memory = RHI::MemoryType::Upload;
+		UniquePtr<RHI::Buffer> pStaging = m_device->CreateRHIBuffer(stagingDesc);
+
+		if (!pStaging || pStaging->GetMappedData() == nullptr)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "Staging buffer could not be created, size: {}", stagingDesc.size);
+			return false;
+		}
+
+		std::memcpy(pStaging->GetMappedData(), pVertexData, vertexRange.size);
+		std::memcpy(pStaging->GetMappedData() + vertexRange.size, pIndexData, indexRange.size);
+
+		RHI::CommandPoolDesc poolDesc = {};
+		poolDesc.type = RHI::QueueType::Transfer;
+		UniquePtr<RHI::CommandPool> pPool = m_device->CreateRHICommandPool(poolDesc);
+
+		RHI::CommandListDesc listDesc = {};
+		listDesc.pPool = pPool.Get();
+		UniquePtr<RHI::CommandList> pCmd = m_device->CreateRHICommandList(listDesc);
+
+		if (!pPool || !pCmd)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "Transfer command list could not be created");
+			return false;
+		}
+
+		pCmd->Start();
+		pCmd->CopyBuffer(pStaging.Get(), 0, m_vertexBuffer.Get(), vertexRange.offset, vertexRange.size);
+		pCmd->CopyBuffer(pStaging.Get(), vertexRange.size, m_indexBuffer.Get(), indexRange.offset, indexRange.size);
+		pCmd->End();
+
+		u64 fenceValue = 0;
+
+		{
+			ScopedLock lockUpload(m_uploadLock);
+			m_device->Submit(RHI::QueueType::Transfer, { pCmd.Get() });
+			fenceValue = m_device->Signal(RHI::QueueType::Transfer, m_uploadFence.Get());
+		}
+
+		m_uploadFence->WaitCPU(fenceValue);
+		return true;
 	}
 }

@@ -43,7 +43,7 @@ namespace Horizon::Editor
 	void SceneView::OnInvoke()
 	{
 		m_world = GetContext()->pEngine->RequestService<Engine::WorldService>();
-		//m_world->SetRunningSystems(Engine::SceneGroups::Edit);
+		m_world->SetRunningSystems(Engine::SceneGroups::Edit);
 
 		if (m_world == nullptr)
 		{
@@ -92,22 +92,22 @@ namespace Horizon::Editor
 		if (m_world->GetRunningSystems() != Engine::SceneGroups::Play)
 		{
 			EnsureEditorCamera(pScene);
-			//m_cameraSystem->SetOverride(m_editorCamera);
+			m_cameraSystem->SetOverride(m_editorCamera);
 		}
 		else
-			//m_cameraSystem->ClearOverride();
+			m_cameraSystem->ClearOverride();
 
-		//const Engine::EntityHandle activeCamera = m_cameraSystem->GetActiveCamera();
+		const Engine::EntityHandle activeCamera = m_cameraSystem->GetActiveCamera();
 		Engine::CameraComponent* pCamera = nullptr;
 		Engine::TransformComponent* pCameraPos = nullptr;
 
-		/*if (activeCamera.IsValid())
-			pCamera = pScene->FindComponent<Engine::CameraComponent>(activeCamera);*/
+		if (activeCamera.IsValid())
+			pCamera = pScene->FindComponent<Engine::CameraComponent>(activeCamera);
 
-		/*if (activeCamera == m_editorCamera)
-			pCameraPos = pScene->FindComponent<Engine::TransformComponent>(m_editorCamera);*/
+		if (activeCamera == m_editorCamera)
+			pCameraPos = pScene->FindComponent<Engine::TransformComponent>(m_editorCamera);
 
-			/*if (pCamera == nullptr)
+			if (pCamera == nullptr)
 			{
 				ImVec2 avail = ImGui::GetContentRegionAvail();
 				ImVec2 textSize = ImGui::CalcTextSize(kErrorMessage.data());
@@ -118,12 +118,12 @@ namespace Horizon::Editor
 					start.y + (avail.y - textSize.y) * 0.5f));
 				ImGui::TextUnformatted(kErrorMessage.data());
 				return;
-			}*/
+			}
 
 		const Math::Vec2f requested = { area.x, area.y };
 
-		/*if (pCamera->m_targetScreen != requested)
-			pCamera->m_targetScreen = requested;*/
+		if (pCamera->m_targetScreen != requested)
+			pCamera->m_targetScreen = requested;
 
 		const u64 handle = m_renderer->GetOutputView();
 
@@ -168,8 +168,8 @@ namespace Horizon::Editor
 		std::string fpsCounter = std::format("FPS: {:.2f}", m_fps);
 		ImGui::TextColored(ImVec4(0.1, 0.8, 0.2, 1), fpsCounter.c_str());
 
-		/*if (m_world->GetRunningSystems() == Engine::SceneGroups::Edit)
-			RenderGizmo({ imageMin.x, imageMin.y }, { area.x, area.y }, *pCamera);*/
+		if (m_world->GetRunningSystems() == Engine::SceneGroups::Edit)
+			RenderGizmo({ imageMin.x, imageMin.y }, { area.x, area.y }, *pCamera);
 	}
 
 	void SceneView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)

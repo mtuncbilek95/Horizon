@@ -18,6 +18,7 @@ namespace Horizon
 
 		static std::string ResolveWithNoExtension(const std::string path);
 		static std::string FindExtension(const std::string path);
+		static std::string FindFileName(const std::string& path);
 
 		static std::string_view GetNameString(std::string_view name);
 

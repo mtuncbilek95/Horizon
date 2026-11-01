@@ -162,8 +162,8 @@ namespace Horizon::Engine
 		currentFrame.pCmdList = slot.pTargetCmd.Get();
 		currentFrame.pDepthTarget = slot.pTargetDepth.Get();
 		currentFrame.pDepthView = slot.pDepthView.Get();
-		/*currentFrame.pIndexBuffer = pMeshStreamer->GetIndexBuffer();
-		currentFrame.vertexBufferIndex = pMeshStreamer->GetVertexBufferView();*/
+		currentFrame.pIndexBuffer = pMeshStreamer->GetIndexBuffer();
+		currentFrame.vertexBufferIndex = pMeshStreamer->GetVertexBufferView();
 
 		currentScene.ForEach<TransformComponent, MeshComponent>([&](EntityHandle entity, TransformComponent& transComp, MeshComponent& meshComp)
 			{
@@ -196,8 +196,8 @@ namespace Horizon::Engine
 				for (const MeshAssetSubmesh& submesh : pMesh->GetSubmeshes())
 				{
 					RenderableObject object = {};
-					/*object.firstVertex = pMesh->GetFirstVertex() + submesh.vertexOffset;
-					object.firstIndex = pMesh->GetFirstIndex() + submesh.indexOffset;*/
+					object.firstVertex = pMesh->GetFirstVertex() + submesh.vertexOffset;
+					object.firstIndex = pMesh->GetFirstIndex() + submesh.indexOffset;
 					object.indexCount = submesh.indexCount;
 					object.worldMatrix = transComp.m_worldMatrix;
 

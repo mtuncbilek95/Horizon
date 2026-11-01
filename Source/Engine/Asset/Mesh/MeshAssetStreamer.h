@@ -7,9 +7,19 @@
 #include <Engine/Asset/Mesh/MeshAsset.h>
 #include <Engine/Asset/Mesh/MeshAssetProperties.h>
 
+#include <Runtime/Containers/Memory/RangeAllocator.h>
+#include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/Containers/Vector/List.h>
+#include <Runtime/RHI/Buffer/Buffer.h>
+#include <Runtime/RHI/Fence/Fence.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/PAL/Sync/CriticalSection.h>
+
+namespace Horizon::RHI
+{
+	class Device;
+	class DescriptorHeap;
+}
 
 namespace Horizon::Engine
 {
@@ -26,9 +36,9 @@ namespace Horizon::Engine
 		void LoadAsync(MeshAsset* pAsset);
 		void UnloadAsync(MeshAsset* pAsset);
 
-		/*RHI::GfxBuffer* GetVertexBuffer() const { return m_vertexArena->GetBuffer(); }
-		RHI::GfxBuffer* GetIndexBuffer() const { return m_indexArena->GetBuffer(); }*/
-		/*u32 GetVertexBufferView() const { return m_vertexBufferView; }*/
+		RHI::Buffer* GetVertexBuffer() const { return m_vertexBuffer.Get(); }
+		RHI::Buffer* GetIndexBuffer() const { return m_indexBuffer.Get(); }
+		u32 GetVertexBufferView() const { return m_vertexBufferView; }
 
 	protected:
 		void OnInitialize() final;
@@ -41,18 +51,23 @@ namespace Horizon::Engine
 	private:
 		void RunLoadAsset(MeshAsset* pAsset);
 		void ReleaseAsset(MeshAsset* pAsset);
+		b8 UploadPayload(const u8* pVertexData, const Range& vertexRange, const u8* pIndexData, const Range& indexRange);
 
 	private:
-		/*RHI::GfxDevice* m_device = nullptr;
-		RHI::GfxDescriptorHeap* m_resourceHeap = nullptr;
+		RHI::Device* m_device = nullptr;
+		RHI::DescriptorHeap* m_resourceHeap = nullptr;
+
+		UniquePtr<RHI::Buffer> m_vertexBuffer;
+		UniquePtr<RHI::Buffer> m_indexBuffer;
 		u32 m_vertexBufferView = kInvalid32;
 
-		RHI::GfxBufferArena* m_vertexArena = nullptr;
-		u8* m_vertexMap = nullptr;
-		RHI::GfxBufferArena* m_indexArena = nullptr;
-		u8* m_indexMap = nullptr;*/
+		RangeAllocator m_vertexRanges;
+		RangeAllocator m_indexRanges;
+		PAL::CriticalSection m_arenaLock;
+
+		UniquePtr<RHI::Fence> m_uploadFence;
+		PAL::CriticalSection m_uploadLock;
 
 		JobSystem* m_jobSystem = nullptr;
-		PAL::CriticalSection m_arenaLock;
 	};
 }
