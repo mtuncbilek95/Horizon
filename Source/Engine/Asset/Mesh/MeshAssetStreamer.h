@@ -8,7 +8,6 @@
 #include <Engine/Asset/Mesh/MeshAssetProperties.h>
 
 #include <Runtime/Containers/Vector/List.h>
-#include <Runtime/RHI/Buffer/GfxBufferArena.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/PAL/Sync/CriticalSection.h>
 
@@ -27,9 +26,9 @@ namespace Horizon::Engine
 		void LoadAsync(MeshAsset* pAsset);
 		void UnloadAsync(MeshAsset* pAsset);
 
-		RHI::GfxBuffer* GetVertexBuffer() const { return m_vertexArena->GetBuffer(); }
-		RHI::GfxBuffer* GetIndexBuffer() const { return m_indexArena->GetBuffer(); }
-		u32 GetVertexBufferView() const { return m_vertexBufferView; }
+		/*RHI::GfxBuffer* GetVertexBuffer() const { return m_vertexArena->GetBuffer(); }
+		RHI::GfxBuffer* GetIndexBuffer() const { return m_indexArena->GetBuffer(); }*/
+		/*u32 GetVertexBufferView() const { return m_vertexBufferView; }*/
 
 	protected:
 		void OnInitialize() final;
@@ -44,14 +43,14 @@ namespace Horizon::Engine
 		void ReleaseAsset(MeshAsset* pAsset);
 
 	private:
-		RHI::GfxDevice* m_device = nullptr;
+		/*RHI::GfxDevice* m_device = nullptr;
 		RHI::GfxDescriptorHeap* m_resourceHeap = nullptr;
 		u32 m_vertexBufferView = kInvalid32;
 
 		RHI::GfxBufferArena* m_vertexArena = nullptr;
 		u8* m_vertexMap = nullptr;
 		RHI::GfxBufferArena* m_indexArena = nullptr;
-		u8* m_indexMap = nullptr;
+		u8* m_indexMap = nullptr;*/
 
 		JobSystem* m_jobSystem = nullptr;
 		PAL::CriticalSection m_arenaLock;

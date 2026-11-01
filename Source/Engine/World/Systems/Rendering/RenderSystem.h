@@ -6,7 +6,9 @@
 #include <Engine/World/Systems/Rendering/RenderSlot.h>
 #include <Engine/Rendering/RenderGraph/RenderPass.h>
 
-#include <Runtime/RHI/Descriptor/GfxDescriptorHeap.h>
+#include <Runtime/Containers/Memory/UniquePtr.h>
+#include <Runtime/RHI/Buffer/Buffer.h>
+#include <Runtime/RHI/Fence/Fence.h>
 #include <Runtime/Math/Vec2u.h>
 
 namespace Horizon::Engine
@@ -36,23 +38,20 @@ namespace Horizon::Engine
 
 	private:
 		GraphicsContext* m_context = nullptr;
-		RHI::GfxDevice* m_device = nullptr;
-		RHI::GfxQueue* m_queue = nullptr;
+		RHI::Device* m_device = nullptr;
 
 		Math::Vec2u m_targetSize = { 0, 0 };
 
-		RHI::GfxDescriptorHeap* m_colorTargetHeap = nullptr;
-		RHI::GfxDescriptorHeap* m_depthTargetHeap = nullptr;
-		RHI::GfxDescriptorHeap* m_resourceHeap = nullptr;
+		RHI::DescriptorHeap* m_resourceHeap = nullptr;
+		RHI::DescriptorHeap* m_samplerHeap = nullptr;
 
 		List<RenderSlot> m_slots;
 		List<RenderPass*> m_renderPasses;
 
-		RHI::GfxFence* m_fence = nullptr;
+		UniquePtr<RHI::Fence> m_fence;
 		u32 m_frameIndex = 0;
 
-		RHI::GfxBuffer* m_frameDataBuffer = nullptr;
-		u8* m_frameDataMap = nullptr;
+		UniquePtr<RHI::Buffer> m_frameDataBuffer;
 
 		u32 m_frameDataStride = 0;
 		u32 m_frameDataViews[GraphicsContext::MaxFramesInFlight] = {};

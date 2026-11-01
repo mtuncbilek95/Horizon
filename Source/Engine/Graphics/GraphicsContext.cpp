@@ -20,83 +20,64 @@ namespace Horizon::Engine
 		if (!pWindowSub)
 			return ModuleReport("Failed to get WindowService. Nothing will work...");
 
-		RHI::GfxDeviceDesc deviceDesc = {};
+		RHI::DeviceDesc deviceDesc = {};
 #if defined(HORIZON_DEBUG)
-		deviceDesc.enableDebugLayer = true;
+		deviceDesc.enableDebug = true;
 		deviceDesc.enableGpuValidation = true;
 #endif
 
 		// Create device
-		m_device = RHI::CreateDevice(deviceDesc);
+		m_device = RHI::CreateRHIDevice(deviceDesc);
 		if (!m_device)
-			return ModuleReport("Failed to create GfxDevice");
+			return ModuleReport("Failed to create Device");
 
-		// Create queues
-		m_graphicsQueue = m_device->CreateQueue(RHI::GfxQueueType::Graphics);
-		if (!m_graphicsQueue)
-			return ModuleReport("Failed to create GfxQueue(Graphics)");
+		RHI::DescriptorHeapDesc heapDesc = {};
 
-		m_computeQueue = m_device->CreateQueue(RHI::GfxQueueType::Compute);
-		if (!m_computeQueue)
-			return ModuleReport("Failed to create GfxQueue(Compute)");
-
-		m_transferQueue = m_device->CreateQueue(RHI::GfxQueueType::Transfer);
-		if (!m_transferQueue)
-			return ModuleReport("Failed to create GfxQueue(Transfer)");
-
-		RHI::GfxDescriptorHeapDesc heapDesc = {};
-
-		heapDesc.type = RHI::GfxDescriptorHeapType::Resource;
+		heapDesc.type = RHI::DescriptorHeapType::Resource;
 		heapDesc.capacity = 1 << 16;
-		m_resourceTargetHeap = m_device->CreateDescriptorHeap(heapDesc);
-		if (!m_resourceTargetHeap)
-			return ModuleReport("Failed to create GfxDescriptorHeap(Resource)");
+		m_resourceHeap = m_device->CreateRHIDescriptorHeap(heapDesc);
+		if (!m_resourceHeap)
+			return ModuleReport("Failed to create DescriptorHeap(Resource)");
 
-		heapDesc.type = RHI::GfxDescriptorHeapType::Color;
-		heapDesc.capacity = 1 << 8;
-		m_colorTargetHeap = m_device->CreateDescriptorHeap(heapDesc);
-		if (!m_colorTargetHeap)
-			return ModuleReport("Failed to create GfxDescriptorHeap(Color)");
+		heapDesc.type = RHI::DescriptorHeapType::Sampler;
+		heapDesc.capacity = 1 << 11;
+		m_samplerHeap = m_device->CreateRHIDescriptorHeap(heapDesc);
+		if (!m_samplerHeap)
+			return ModuleReport("Failed to create DescriptorHeap(Sampler)");
 
-		heapDesc.type = RHI::GfxDescriptorHeapType::Depth;
-		heapDesc.capacity = 1 << 7;
-		m_depthTargetHeap = m_device->CreateDescriptorHeap(heapDesc);
-		if (!m_depthTargetHeap)
-			return ModuleReport("Failed to create GfxDescriptorHeap(Depth)");
+		m_globalLayout = m_device->CreateRHIGlobalPipelineLayout();
+		if (!m_globalLayout)
+			return ModuleReport("Failed to create global PipelineLayout");
 
 		PAL::WindowRect windowRect = pWindowSub->GetWindow()->GetRect();
 
 		// Create swapchain
-		RHI::GfxSwapchainDesc swapDesc = {};
-		swapDesc.pWindowHandle = (void*)pWindowSub->GetWindow()->GetOSHandle();
+		RHI::SwapchainDesc swapDesc = {};
+		swapDesc.windowHandle = pWindowSub->GetWindow()->GetOSHandle();
 		swapDesc.imageCount = 3;
 		swapDesc.width = windowRect.width;
 		swapDesc.height = windowRect.height;
-		swapDesc.presentMode = RHI::GfxPresentMode::Vsync;
-		m_swapchain = m_device->CreateSwapchain(swapDesc, m_graphicsQueue);
+		swapDesc.presentMode = RHI::PresentMode::Vsync;
+		swapDesc.format = RHI::TextureFormat::RGBA8_UNORM;
+		m_swapchain = m_device->CreateRHISwapchain(swapDesc);
 		if (!m_swapchain)
-			return ModuleReport("Failed to create GfxSwapchain");
+			return ModuleReport("Failed to create Swapchain");
 
-		Terminal::Debug(StringHelper::GetTypeName(this), "Device, Graphics Queue, Compute Queue and Transfer Queue has been initialized!");
+		Terminal::Debug(StringHelper::GetTypeName(this), "Device, descriptor heaps, global layout and swapchain has been initialized!");
 
 		return ModuleReport();
 	}
 
 	void GraphicsContext::OnFinalize()
 	{
-		m_device->WaitIdle();
+		if (m_device)
+			m_device->WaitIdle();
 
-		delete m_swapchain;
-
-		delete m_resourceTargetHeap;
-		delete m_colorTargetHeap;
-		delete m_depthTargetHeap;
-
-		delete m_graphicsQueue;
-		delete m_computeQueue;
-		delete m_transferQueue;
-
-		delete m_device;
+		m_swapchain = nullptr;
+		m_globalLayout = nullptr;
+		m_samplerHeap = nullptr;
+		m_resourceHeap = nullptr;
+		m_device = nullptr;
 	}
 
 	void GraphicsContext::DeclareDependencies(ModuleGraph& graph)

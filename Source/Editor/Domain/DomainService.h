@@ -3,10 +3,12 @@
 #include <Editor/ImportPipeline/ImporterRegistry.h>
 #include <Editor/Domain/DomainFileImportContext.h>
 #include <Editor/Domain/DomainFile.h>
+#include <Editor/Domain/DomainFolder.h>
 #include <Engine/Core/Service.h>
 #include <Engine/Job/JobSystem.h>
 #include <Runtime/PAL/Watcher/DirectoryWatcher.h>
 #include <Runtime/Containers/Guid.h>
+#include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/Serialization/JsonArchive.h>
 #include <Runtime/PAL/Sync/Atomic.h>
@@ -16,7 +18,6 @@
 
 namespace Horizon::Editor
 {
-	class DomainFolder;
 	class AssetImporter;
 
 	class EDITOR_API DomainService : public Engine::Service
@@ -33,7 +34,7 @@ namespace Horizon::Editor
 		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
 		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
-		DomainFolder* GetRoot() const { return m_root; }
+		DomainFolder* GetRoot() const { return m_root.Get(); }
 
 		DomainFolder* FindFolder(std::string_view relativePath) const;
 		DomainFile* FindFileByGuid(const Guid& guid) const;
@@ -91,7 +92,7 @@ namespace Horizon::Editor
 	private:
 		std::string m_assetPath;
 		std::string m_cookPath;
-		DomainFolder* m_root = nullptr;
+		UniquePtr<DomainFolder> m_root;
 
 		ImporterRegistry m_importPipelineRegistry;
 		Engine::JobSystem* m_jobSystem = nullptr;

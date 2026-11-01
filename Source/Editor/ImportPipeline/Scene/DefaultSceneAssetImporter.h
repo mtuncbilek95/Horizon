@@ -5,12 +5,9 @@
 #include <Editor/ImportPipeline/AssetImportResult.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
 #include <Engine/Asset/Scene/SceneAsset.h>
+#include <Engine/World/ECS/Scene.h>
+#include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/RTTR/Reflection.h>
-
-namespace Horizon::Engine
-{
-	class Scene;
-}
 
 namespace Horizon::Editor
 {
@@ -30,6 +27,6 @@ namespace Horizon::Editor
 		AssetImportResult GenerateBinary(const ImportPipelineContext& ctx, List<u8>& outBytes) final;
 
 	private:
-		Engine::Scene* m_scene = nullptr;
+		UniquePtr<Engine::Scene> m_scene;
 	};
 }

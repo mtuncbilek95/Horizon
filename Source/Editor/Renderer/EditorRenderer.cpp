@@ -12,24 +12,17 @@
 
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
-#include <Runtime/RHI/Device/GfxDevice.h>
-#include <Runtime/RHI/Queue/GfxQueue.h>
-#include <Runtime/RHI/Fence/GfxFence.h>
-#include <Runtime/RHI/Command/GfxCommandList.h>
-#include <Runtime/RHI/Descriptor/GfxDescriptorHeap.h>
-#include <Runtime/RHI/Pipeline/GfxPipeline.h>
-#include <Runtime/RHI/Buffer/GfxBuffer.h>
-#include <Runtime/RHI/Texture/GfxTexture.h>
+#include <Runtime/RHI/Device/Device.h>
+#include <Runtime/RHI/Descriptor/DescriptorHeap.h>
+#include <Runtime/RHI/Swapchain/Swapchain.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>
 
-#include <backends/imgui_impl_dx12.h>
-
 namespace Horizon::Editor
 {
 	EditorRenderer::EditorRenderer(const EditorRendererDesc& desc) : m_device(desc.pDevice),
-		m_graphicsQueue(desc.pQueue), m_resourceHeap(desc.pResourceHeap)
+		m_resourceHeap(desc.pResourceHeap), m_samplerHeap(desc.pSamplerHeap)
 	{
 		m_context = ImGui::CreateContext();
 		ImGui::SetCurrentContext((ImGuiContext*)m_context);
@@ -41,7 +34,7 @@ namespace Horizon::Editor
 		io.DisplayFramebufferScale = { 1.0f, 1.0f };
 		io.ConfigWindowsMoveFromTitleBarOnly = true;
 
-		m_platform = new EditorPlatform(desc.pWindowService);
+		m_platform = MakeUnique<EditorPlatform>(desc.pWindowService);
 
 		LoadFonts();
 
@@ -51,13 +44,21 @@ namespace Horizon::Editor
 			return;
 		}
 
-		m_device->InitializeImGui(Engine::GraphicsContext::MaxFramesInFlight, m_graphicsQueue, m_resourceHeap, desc.colorFormat);
+		m_device->InitializeImGui(Engine::GraphicsContext::MaxFramesInFlight, m_resourceHeap, desc.colorFormat);
 
 		m_frames.Resize(Engine::GraphicsContext::MaxFramesInFlight);
 		for (u32 i = 0; i < Engine::GraphicsContext::MaxFramesInFlight; i++)
-			m_frames[i].pCmdList = m_device->CreateCommandList(RHI::GfxQueueType::Graphics);
+		{
+			RHI::CommandPoolDesc poolDesc = {};
+			poolDesc.type = RHI::QueueType::Graphics;
+			m_frames[i].pPool = m_device->CreateRHICommandPool(poolDesc);
 
-		m_fence = m_device->CreateFence();
+			RHI::CommandListDesc listDesc = {};
+			listDesc.pPool = m_frames[i].pPool.Get();
+			m_frames[i].pCmdList = m_device->CreateRHICommandList(listDesc);
+		}
+
+		m_fence = m_device->CreateRHIFence({});
 
 		DefaultStyle();
 	}
@@ -66,13 +67,12 @@ namespace Horizon::Editor
 	{
 		m_device->WaitIdle();
 
-		for (auto& frame : m_frames)
-			delete frame.pCmdList;
+		m_frames.Clear();
+		m_fence = nullptr;
 
-		delete m_fence;
 		m_device->ShutdownImGui();
 
-		delete m_platform;
+		m_platform.Reset();
 
 		ImGui::DestroyContext((ImGuiContext*)m_context);
 	}
@@ -93,39 +93,42 @@ namespace Horizon::Editor
 		return true;
 	}
 
-	b8 EditorRenderer::EndRender(RHI::GfxTexture* pBackbuffer)
+	b8 EditorRenderer::EndRender(RHI::Swapchain* pSwapchain)
 	{
 		ImGui::Render();
 
 		FrameContext& context = m_frames[m_frameIndex];
 
 		m_fence->WaitCPU(context.fenceValue);
+		context.pPool->Reset();
 
-		context.pCmdList->Begin();
-		context.pCmdList->BindDescriptorHeaps(m_resourceHeap, nullptr);
+		RHI::CommandList* pCmdList = context.pCmdList.Get();
+		RHI::Texture* pBackbuffer = pSwapchain->GetCurrentImage();
 
-		RHI::GfxTextureBarrier toTarget = { pBackbuffer, RHI::GfxResourceState::Present, RHI::GfxResourceState::RenderTarget };
-		context.pCmdList->Barrier(&toTarget, 1);
+		pCmdList->Start();
+		pCmdList->BindDescriptorHeaps(m_resourceHeap, m_samplerHeap);
 
-		const RHI::GfxTextureDesc& bbDesc = pBackbuffer->GetDesc();
-		RHI::GfxRenderBeginDesc pass = {};
+		pCmdList->Barrier({ RHI::TextureBarrier{ pBackbuffer, RHI::ResourceState::Undefined, RHI::ResourceState::RenderTarget } });
 
-		pass.AddColorTarget(pBackbuffer, RHI::GfxLoadOp::Clear, { 0.1f, 0.1f, 0.1f, 1.0f })
-			.SetSize(bbDesc.width, bbDesc.height);
-		context.pCmdList->BeginRendering(pass);
+		RHI::RenderingDesc rendering = {};
+		rendering.colorAttachments[0].pView = pSwapchain->GetCurrentImageView();
+		rendering.colorAttachments[0].loadOp = RHI::LoadOp::Clear;
+		rendering.colorAttachments[0].clearColor[0] = 0.1f;
+		rendering.colorAttachments[0].clearColor[1] = 0.1f;
+		rendering.colorAttachments[0].clearColor[2] = 0.1f;
+		rendering.colorAttachments[0].clearColor[3] = 1.0f;
+		rendering.colorAttachmentCount = 1;
 
-		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), (ID3D12GraphicsCommandList6*)context.pCmdList->GetAPIHandle());
+		pCmdList->StartRendering(rendering);
+		pCmdList->RenderImGui(ImGui::GetDrawData());
+		pCmdList->EndRendering();
 
-		context.pCmdList->EndRendering();
+		pCmdList->Barrier({ RHI::TextureBarrier{ pBackbuffer, RHI::ResourceState::RenderTarget, RHI::ResourceState::Present } });
 
-		RHI::GfxTextureBarrier toPresent = { pBackbuffer, RHI::GfxResourceState::RenderTarget, RHI::GfxResourceState::Present };
+		pCmdList->End();
+		m_device->Submit(RHI::QueueType::Graphics, { pCmdList });
 
-		context.pCmdList->Barrier(&toPresent, 1);
-
-		context.pCmdList->End();
-		m_graphicsQueue->Submit(&context.pCmdList, 1);
-
-		context.fenceValue = m_graphicsQueue->Signal(m_fence);
+		context.fenceValue = m_device->Signal(RHI::QueueType::Graphics, m_fence.Get());
 		m_frameIndex = (m_frameIndex + 1) % Engine::GraphicsContext::MaxFramesInFlight;
 
 		ImGui::UpdatePlatformWindows();

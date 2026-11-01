@@ -43,7 +43,7 @@ namespace Horizon::Engine
 	void SceneAssetStreamer::LoadAsync(SceneAsset* pAsset)
 	{
 		if (!pAsset->m_scene)
-			pAsset->m_scene = new Scene(GetEngine()->GetReflectionSystem());
+			pAsset->m_scene = MakeUnique<Scene>(GetEngine()->GetReflectionSystem());
 
 		pAsset->m_ticket = m_jobSystem->SubmitJob(JobLane::Background, Job([this, pAsset]()
 			{
@@ -156,7 +156,7 @@ namespace Horizon::Engine
 	void SceneAssetStreamer::LoadSync(SceneAsset* pAsset)
 	{
 		if (!pAsset->m_scene)
-			pAsset->m_scene = new Scene(GetEngine()->GetReflectionSystem());
+			pAsset->m_scene = MakeUnique<Scene>(GetEngine()->GetReflectionSystem());
 
 		RunLoadWorld(pAsset);
 	}

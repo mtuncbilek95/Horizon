@@ -11,18 +11,18 @@ namespace Horizon::Engine
 {
 	Engine::Engine()
 	{
-		m_reflectionSystem = new ReflectionSystem(this);
-		m_jobSystem = new JobSystem();
-		m_pluginSystem = new PluginSystem(this);
-		m_gameSystem = new GameSystem(this);
+		m_reflectionSystem = MakeUnique<ReflectionSystem>(this);
+		m_jobSystem = MakeUnique<JobSystem>();
+		m_pluginSystem = MakeUnique<PluginSystem>(this);
+		m_gameSystem = MakeUnique<GameSystem>(this);
 	}
 
 	Engine::~Engine()
 	{
-		delete m_gameSystem;
-		delete m_pluginSystem;
-		delete m_jobSystem;
-		delete m_reflectionSystem;
+		m_gameSystem = nullptr;
+		m_pluginSystem = nullptr;
+		m_jobSystem = nullptr;
+		m_reflectionSystem = nullptr;
 	}
 
 	void Engine::Run()

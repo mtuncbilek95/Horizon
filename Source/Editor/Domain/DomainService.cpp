@@ -45,7 +45,7 @@ namespace Horizon::Editor
 
 		m_importPipelineRegistry.BootstrapViews(GetEngine());
 
-		m_root = new DomainFolder(nullptr, "Assets", m_assetPath, m_cookPath);
+		m_root = MakeUnique<DomainFolder>(nullptr, "Assets", m_assetPath, m_cookPath);
 		BuildRootTree();
 
 		m_watcher = PAL::DirectoryWatcher(m_assetPath, true);
@@ -68,10 +68,7 @@ namespace Horizon::Editor
 		m_watcher.ClearSubscriptions();
 		m_watcher = PAL::DirectoryWatcher();
 
-		if (m_root == nullptr)
-			return;
-
-		delete m_root;
+		m_root = nullptr;
 	}
 
 	void DomainService::DeclareDependencies(Engine::ModuleGraph& graph)
@@ -92,7 +89,7 @@ namespace Horizon::Editor
 
 	void DomainService::BuildRootTree()
 	{
-		ProcessFolder(m_root);
+		ProcessFolder(m_root.Get());
 	}
 
 	void DomainService::BindWatcher()
@@ -142,7 +139,7 @@ namespace Horizon::Editor
 			return nullptr;
 		}
 
-		DomainFile* pFile = FindFileByGuid(m_root, guid);
+		DomainFile* pFile = FindFileByGuid(m_root.Get(), guid);
 		return pFile;
 	}
 
@@ -155,7 +152,7 @@ namespace Horizon::Editor
 			return nullptr;
 		}
 
-		DomainFile* pFile = FindFileByRelative(m_root, relative);
+		DomainFile* pFile = FindFileByRelative(m_root.Get(), relative);
 		return pFile;
 	}
 

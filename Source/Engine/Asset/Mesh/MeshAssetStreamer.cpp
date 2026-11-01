@@ -16,7 +16,7 @@ namespace Horizon::Engine
 {
 	void MeshAssetStreamer::OnInitialize()
 	{
-		m_jobSystem = GetEngine()->GetJobSystem();
+/*		m_jobSystem = GetEngine()->GetJobSystem();
 		GraphicsContext* pContext = GetEngine()->RequestContext<GraphicsContext>();
 
 		if (pContext == nullptr)
@@ -55,12 +55,12 @@ namespace Horizon::Engine
 		m_indexArena->SetDebugName("MeshStreamer_IndexArena");
 		Terminal::Assert(m_indexArena, StringHelper::GetTypeName(this), "Big fucked at some places");
 
-		m_indexMap = (u8*)m_indexArena->GetBuffer()->Map();
+		m_indexMap = (u8*)m_indexArena->GetBuffer()->Map();*/
 	}
 
 	void MeshAssetStreamer::OnFinalize()
 	{
-		if (m_vertexBufferView != kInvalid32)
+/*		if (m_vertexBufferView != kInvalid32)
 		{
 			m_resourceHeap->Free(m_vertexBufferView);
 			m_vertexBufferView = kInvalid32;
@@ -70,7 +70,7 @@ namespace Horizon::Engine
 		m_device = nullptr;
 
 		delete m_indexArena;
-		delete m_vertexArena;
+		delete m_vertexArena;*/
 	}
 
 	void MeshAssetStreamer::OnRegisteredAsset(const AssetEntry& entry)
@@ -103,7 +103,7 @@ namespace Horizon::Engine
 
 	void MeshAssetStreamer::LoadAsync(MeshAsset* pAsset)
 	{
-		if (m_device == nullptr || m_vertexArena == nullptr || m_indexArena == nullptr)
+/*		if (m_device == nullptr || m_vertexArena == nullptr || m_indexArena == nullptr)
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "No device! No Vertex Arena! No Index Arena!", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
@@ -119,7 +119,7 @@ namespace Horizon::Engine
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Job could not be submitted", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
-		}
+		}*/
 	}
 
 	void MeshAssetStreamer::UnloadAsync(MeshAsset* pAsset)
@@ -129,7 +129,7 @@ namespace Horizon::Engine
 
 	void MeshAssetStreamer::ReleaseAsset(MeshAsset* pAsset)
 	{
-		{
+/*		{
 			ScopedLock lockArena(m_arenaLock);
 
 			if (pAsset->m_vertexRange.IsValid())
@@ -143,12 +143,12 @@ namespace Horizon::Engine
 		pAsset->m_indexRange = {};
 		pAsset->m_submeshes.Clear();
 		pAsset->m_properties = {};
-		pAsset->m_residency.Store(AssetResidency::Unloaded, PAL::MemoryOrder::Release);
+		pAsset->m_residency.Store(AssetResidency::Unloaded, PAL::MemoryOrder::Release);*/
 	}
 
 	void MeshAssetStreamer::RunLoadAsset(MeshAsset* pAsset)
 	{
-		pAsset->m_residency.Store(AssetResidency::Reading, PAL::MemoryOrder::Relaxed);
+		/*pAsset->m_residency.Store(AssetResidency::Reading, PAL::MemoryOrder::Relaxed);
 
 		PAL::FileAccessRequest fileHandl = PAL::File::RequestAccess(pAsset->m_cookPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
 		if (!fileHandl.IsValid())
@@ -304,6 +304,6 @@ namespace Horizon::Engine
 
 		pAsset->m_submeshes = subMeshes;
 		pAsset->m_properties = props;
-		pAsset->m_residency.Store(AssetResidency::Resident, PAL::MemoryOrder::Release);
+		pAsset->m_residency.Store(AssetResidency::Resident, PAL::MemoryOrder::Release);*/
 	}
 }

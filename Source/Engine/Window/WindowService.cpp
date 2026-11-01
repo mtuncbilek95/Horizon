@@ -12,7 +12,7 @@ namespace Horizon::Engine
 
 	ModuleReport WindowService::OnInitialize()
 	{
-		m_cursor = new PAL::Cursor();
+		m_cursor = MakeUnique<PAL::Cursor>();
 		if (!m_cursor)
 			return ModuleReport("Cursor has not been initialize.");
 
@@ -58,7 +58,6 @@ namespace Horizon::Engine
 
 		m_mainWindow = nullptr;
 
-		delete m_cursor;
 		m_cursor = nullptr;
 	}
 
@@ -72,7 +71,7 @@ namespace Horizon::Engine
 			return nullptr;
 		}
 
-		pWindow->AddListener(m_cursor);
+		pWindow->AddListener(m_cursor.Get());
 		m_windows.PushBack(pWindow);
 
 		return pWindow;

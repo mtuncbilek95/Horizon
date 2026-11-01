@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/PAL/Module/SymbolLibrary.h>
 
@@ -43,7 +44,7 @@ namespace Horizon::Engine
 
 	private:
 		Engine* m_engine = nullptr;
-		PAL::SymbolLibrary* m_gameLibrary = nullptr;
+		UniquePtr<PAL::SymbolLibrary> m_gameLibrary;
 
 		std::string m_moduleName;
 		std::string m_libraryPath;

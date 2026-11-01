@@ -14,10 +14,8 @@
 
 #include <Runtime/PAL/Console/Console.h>
 #include <Runtime/PAL/Timer/Timer.h>
-#include <Runtime/RHI/Device/GfxDevice.h>
-#include <Runtime/RHI/Swapchain/GfxSwapchain.h>
-#include <Runtime/RHI/Fence/GfxFence.h>
-#include <Runtime/RHI/Queue/GfxQueue.h>
+#include <Runtime/RHI/Device/Device.h>
+#include <Runtime/RHI/Swapchain/Swapchain.h>
 
 #include <imgui.h>
 
@@ -36,37 +34,36 @@ namespace Horizon::Editor
 		if (!pGraphSub)
 			return Engine::ModuleReport("Failed to get GraphicsContext. Nothing will work...");
 
-		m_fence = pGraphSub->GetDevice()->CreateFence();
+		m_device = pGraphSub->GetDevice();
 		m_swapchain = pGraphSub->GetSwapchain();
-		m_queue = pGraphSub->GetGraphicsQueue();
 
 		EditorRendererDesc renderDesc = {};
-		renderDesc.pDevice = pGraphSub->GetDevice();
-		renderDesc.pQueue = pGraphSub->GetGraphicsQueue();
+		renderDesc.pDevice = m_device;
 		renderDesc.pResourceHeap = pGraphSub->GetResourceHeap();
-		renderDesc.colorFormat = m_swapchain->GetDesc().format;
+		renderDesc.pSamplerHeap = pGraphSub->GetSamplerHeap();
+		renderDesc.colorFormat = m_swapchain->GetFormat();
 		renderDesc.pWindowService = pWindowSub;
 
-		m_editorRenderer = new EditorRenderer(renderDesc);
+		m_editorRenderer = MakeUnique<EditorRenderer>(renderDesc);
 		Terminal::Debug(StringHelper::GetTypeName(this), "EditorRenderer has been initialized!");
 
 		m_editorContext.pEngine = GetEngine();
-		m_editorContext.pSelection = new SelectionModel();
+		m_editorContext.pSelection = MakeUnique<SelectionModel>();
 		m_editorContext.pWindow = pWindowSub->GetWindow();
 
-		m_viewRegistry = new ViewRegistry();
+		m_viewRegistry = MakeUnique<ViewRegistry>();
 
-		m_editorContext.pViews = m_viewRegistry;
+		m_editorContext.pViews = m_viewRegistry.Get();
 		m_viewRegistry->BootstrapViews(&m_editorContext);
 
-		m_menuRegistry = new MenuRegistry();
+		m_menuRegistry = MakeUnique<MenuRegistry>();
 
-		m_editorContext.pMenus = m_menuRegistry;
+		m_editorContext.pMenus = m_menuRegistry.Get();
 		m_menuRegistry->BootstrapMenus(&m_editorContext);
 
-		m_toolRegistry = new ToolBarRegistry();
+		m_toolRegistry = MakeUnique<ToolBarRegistry>();
 
-		m_editorContext.pTools = m_toolRegistry;
+		m_editorContext.pTools = m_toolRegistry.Get();
 		m_toolRegistry->BootstrapItems(&m_editorContext);
 
 		return Engine::ModuleReport();
@@ -101,11 +98,12 @@ namespace Horizon::Editor
 
 		if (!onResizeDone)
 		{
+			m_device->WaitIdle();
 			m_swapchain->Resize(newWindowWidth, newWindowHeight);
 			onResizeDone = true;
 		}
 
-		if (!m_swapchain->AcquireNextImage(m_fence))
+		if (!m_swapchain->AcquireNextImage())
 			return;
 
 		m_editorRenderer->BeginRender(ctx.DeltaTime());
@@ -114,24 +112,14 @@ namespace Horizon::Editor
 		m_toolRegistry->RenderGUI();
 		m_viewRegistry->RenderGUI(ctx);
 
-		m_editorRenderer->EndRender(m_swapchain->GetImage(m_swapchain->GetCurrentImageIndex()));
+		m_editorRenderer->EndRender(m_swapchain);
 
-		m_swapchain->Present(m_queue, m_fence);
+		m_swapchain->Present();
 	}
 
 	void EditorService::OnFinalize()
 	{
-		const u64 value = m_queue->Signal(m_fence);
-		m_fence->WaitCPU(value);
-
-		delete m_fence;
-
-		delete m_menuRegistry;
-		delete m_toolRegistry;
-		delete m_viewRegistry;
-		delete m_editorRenderer;
-
-		delete m_editorContext.pSelection;
+		m_device->WaitIdle();
 	}
 
 	void EditorService::DeclareDependencies(Engine::ModuleGraph& graph)

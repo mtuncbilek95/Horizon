@@ -1,8 +1,7 @@
 #include "OpaqueMeshPass.h"
 
 #include <Engine/Graphics/GraphicsContext.h>
-#include <Runtime/RHI/Pipeline/GfxGraphicsPipelineDesc.h>
-#include <Runtime/RHI/Pipeline/GfxPipeline.h>
+#include <Runtime/RHI/Pipeline/GraphicsPipelineDesc.h>
 
 namespace Horizon::Engine
 {
@@ -13,69 +12,73 @@ namespace Horizon::Engine
 
 		const std::string shaderRoot = std::string(HORIZON_RESOURCE_DIR) + "/Shaders/Forward+/";
 
-		RHI::GfxShader* pVertexShader = CreateShader(pDevice, shaderRoot + "OpaqueMeshPass.vert.hlsl", RHI::GfxShaderStage::Vertex, "VSMain", "OpaqueMeshPass_Vertex");
+		UniquePtr<RHI::ShaderModule> pVertexShader = CreateShader(pDevice, shaderRoot + "OpaqueMeshPass.vert.hlsl", RHI::ShaderStage::Vertex, "VSMain", "OpaqueMeshPass_Vertex");
 
-		if (pVertexShader == nullptr)
+		if (!pVertexShader)
 			return;
 
-		RHI::GfxShader* pPixelShader = CreateShader(pDevice, shaderRoot + "OpaqueMeshPass.frag.hlsl", RHI::GfxShaderStage::Pixel, "PSMain", "OpaqueMeshPass_Fragment");
+		UniquePtr<RHI::ShaderModule> pPixelShader = CreateShader(pDevice, shaderRoot + "OpaqueMeshPass.frag.hlsl", RHI::ShaderStage::Pixel, "PSMain", "OpaqueMeshPass_Fragment");
 
-		if (pPixelShader == nullptr)
-		{
-			delete pVertexShader;
+		if (!pPixelShader)
 			return;
-		}
 
-		RHI::GfxGraphicsPipelineDesc pipelineDesc = {};
-		pipelineDesc.pVertexShader = pVertexShader;
-		pipelineDesc.pPixelShader = pPixelShader;
-		pipelineDesc.colorFormats[0] = RHI::GfxTextureFormat::RGBA8_UNORM;
-		pipelineDesc.colorTargetCount = 1;
-		pipelineDesc.depthFormat = RHI::GfxTextureFormat::D32_FLOAT;
-		pipelineDesc.topology = RHI::GfxPrimitiveTopology::TriangleList;
+		RHI::GraphicsPipelineDesc pipelineDesc = {};
+		pipelineDesc.pLayout = pContext->GetGlobalLayout();
+		pipelineDesc.pVertexShader = pVertexShader.Get();
+		pipelineDesc.pPixelShader = pPixelShader.Get();
+		pipelineDesc.colorTargets.PushBack({ RHI::TextureFormat::RGBA8_UNORM });
+		pipelineDesc.depthFormat = RHI::TextureFormat::D32_FLOAT;
+		pipelineDesc.topology = RHI::PrimitiveTopology::TriangleList;
 
-		pipelineDesc.rasterizer.fillMode = RHI::GfxFillMode::Solid;
-		pipelineDesc.rasterizer.cullMode = RHI::GfxCullMode::None;
+		pipelineDesc.rasterizer.fillMode = RHI::FillMode::Solid;
+		pipelineDesc.rasterizer.cullMode = RHI::CullMode::None;
 
 		pipelineDesc.depthStencil.depthTest = true;
 		pipelineDesc.depthStencil.depthWrite = true;
-		pipelineDesc.depthStencil.depthCompare = RHI::GfxCompareOp::Greater;
+		pipelineDesc.depthStencil.depthCompare = RHI::CompareOp::Greater;
 
-		m_opaquePipeline = pDevice->CreatePipeline(pipelineDesc);
-		delete pVertexShader;
-		delete pPixelShader;
+		m_opaquePipeline = pDevice->CreateRHIPipeline(pipelineDesc);
 	}
 
 	void OpaqueMeshPass::OnFinalize()
 	{
-		delete m_opaquePipeline;
+		m_opaquePipeline = nullptr;
 	}
 
 	void OpaqueMeshPass::RenderFrame(const RenderPassFrame& frame)
 	{
-		RHI::GfxRenderBeginDesc clearDesc = RHI::GfxRenderBeginDesc()
-			.AddColorTarget(frame.pColorTarget, RHI::GfxLoadOp::Clear, { 0.0f, 0.0f, 0.0f, 1.f })
-			.SetDepth(frame.pDepthTarget, RHI::GfxLoadOp::Clear, 0.0f)
-			.SetSize(frame.targetSize.X(), frame.targetSize.Y());
+		if (!m_opaquePipeline)
+			return;
 
-		frame.pCmdList->BeginRendering(clearDesc);
+		RHI::RenderingDesc rendering = {};
+		rendering.colorAttachments[0].pView = frame.pColorView;
+		rendering.colorAttachments[0].loadOp = RHI::LoadOp::Clear;
+		rendering.colorAttachmentCount = 1;
+		rendering.depthAttachment.pView = frame.pDepthView;
+		rendering.depthAttachment.loadOp = RHI::LoadOp::Clear;
+		rendering.depthAttachment.clearDepth = 0.0f;
+
+		frame.pCmdList->StartRendering(rendering);
 		frame.pCmdList->SetScissor({ 0, 0, i32(frame.targetSize.X()), i32(frame.targetSize.Y()) });
 		frame.pCmdList->SetViewport({ 0, 0, f32(frame.targetSize.X()), f32(frame.targetSize.Y()), 0.f, 1.f });
 
-		frame.pCmdList->BindPipeline(m_opaquePipeline);
-		frame.pCmdList->BindIndexBuffer(frame.pIndexBuffer, RHI::GfxIndexType::Index32);
-
-		OpaqueMeshConstants constants = {};
-		constants.frameDataIndex = frame.frameDataIndex;
-		constants.vertexBufferIndex = frame.vertexBufferIndex;
-
-		for (const RenderableObject& object : frame.graphReadyObjects)
+		if (frame.pIndexBuffer)
 		{
-			constants.worldMatrix = object.worldMatrix;
-			constants.firstVertex = object.firstVertex;
+			frame.pCmdList->BindPipeline(m_opaquePipeline.Get());
+			frame.pCmdList->BindIndexBuffer(frame.pIndexBuffer, RHI::IndexType::Index32);
 
-			frame.pCmdList->SetGraphicsConstants(&constants, sizeof(OpaqueMeshConstants) / sizeof(u32));
-			frame.pCmdList->DrawIndexed(object.indexCount, 1, object.firstIndex, 0);
+			OpaqueMeshConstants constants = {};
+			constants.frameDataIndex = frame.frameDataIndex;
+			constants.vertexBufferIndex = frame.vertexBufferIndex;
+
+			for (const RenderableObject& object : frame.graphReadyObjects)
+			{
+				constants.worldMatrix = object.worldMatrix;
+				constants.firstVertex = object.firstVertex;
+
+				frame.pCmdList->SetPushConstants(&constants, sizeof(OpaqueMeshConstants));
+				frame.pCmdList->DrawIndexed(object.indexCount, 1, object.firstIndex, 0);
+			}
 		}
 
 		frame.pCmdList->EndRendering();

@@ -66,8 +66,7 @@ namespace Horizon::Engine
 		if (!m_gameLibrary)
 			return;
 
-		m_engine->UnregisterLibrary(m_gameLibrary);
-		delete m_gameLibrary;
+		m_engine->UnregisterLibrary(m_gameLibrary.Get());
 		m_gameLibrary = nullptr;
 		m_state = GameModuleState::None;
 
@@ -134,18 +133,16 @@ namespace Horizon::Engine
 		desc.path = m_shadowPath;
 		desc.isMain = false;
 
-		m_gameLibrary = new PAL::SymbolLibrary(desc);
+		m_gameLibrary = MakeUnique<PAL::SymbolLibrary>(desc);
 
 		if (m_gameLibrary->GetName().empty())
 		{
-			delete m_gameLibrary;
 			m_gameLibrary = nullptr;
 			return Fail("Library could not be loaded");
 		}
 
-		if (!m_engine->RegisterLibrary(m_gameLibrary))
+		if (!m_engine->RegisterLibrary(m_gameLibrary.Get()))
 		{
-			delete m_gameLibrary;
 			m_gameLibrary = nullptr;
 			return Fail("Manifestation could not be registered");
 		}

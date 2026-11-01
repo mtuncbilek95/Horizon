@@ -1,12 +1,11 @@
 #pragma once
 
 #include <Engine/Core/Context.h>
-#include <Runtime/RHI/Device/GfxDevice.h>
-#include <Runtime/RHI/Queue/GfxQueue.h>
-#include <Runtime/RHI/Fence/GfxFence.h>
-#include <Runtime/RHI/Descriptor/GfxDescriptorHeap.h>
-#include <Runtime/RHI/Command/GfxCommandList.h>
-#include <Runtime/RHI/Swapchain/GfxSwapchain.h>
+#include <Runtime/Containers/Memory/UniquePtr.h>
+#include <Runtime/RHI/Device/Device.h>
+#include <Runtime/RHI/Descriptor/DescriptorHeap.h>
+#include <Runtime/RHI/Pipeline/PipelineLayout.h>
+#include <Runtime/RHI/Swapchain/Swapchain.h>
 
 namespace Horizon::Engine
 {
@@ -19,17 +18,13 @@ namespace Horizon::Engine
 		GraphicsContext() = default;
 		~GraphicsContext() = default;
 
-		RHI::GfxDevice* GetDevice() const { return m_device; }
+		RHI::Device* GetDevice() const { return m_device.Get(); }
+		RHI::Swapchain* GetSwapchain() const { return m_swapchain.Get(); }
 
-		RHI::GfxQueue* GetGraphicsQueue() const { return m_graphicsQueue; }
-		RHI::GfxQueue* GetComputeQueue() const { return m_computeQueue; }
-		RHI::GfxQueue* GetTransferQueue() const { return m_transferQueue; }
-		
-		RHI::GfxSwapchain* GetSwapchain() const { return m_swapchain; }
+		RHI::DescriptorHeap* GetResourceHeap() const { return m_resourceHeap.Get(); }
+		RHI::DescriptorHeap* GetSamplerHeap() const { return m_samplerHeap.Get(); }
 
-		RHI::GfxDescriptorHeap* GetResourceHeap() const { return m_resourceTargetHeap; }
-		RHI::GfxDescriptorHeap* GetColorTargetHeap() const { return m_colorTargetHeap; }
-		RHI::GfxDescriptorHeap* GetDepthTargetHeap() const { return m_depthTargetHeap; }
+		RHI::PipelineLayout* GetGlobalLayout() const { return m_globalLayout.Get(); }
 
 		ModuleReport OnInitialize() final;
 		void OnFinalize() final;
@@ -39,16 +34,13 @@ namespace Horizon::Engine
 		void OnLibraryUnregistered(const ReflectionLibrary& library) final;
 
 	private:
-		RHI::GfxDevice* m_device = nullptr;
+		UniquePtr<RHI::Device> m_device;
 
-		RHI::GfxQueue* m_graphicsQueue = nullptr;
-		RHI::GfxQueue* m_computeQueue = nullptr;
-		RHI::GfxQueue* m_transferQueue = nullptr;
+		UniquePtr<RHI::DescriptorHeap> m_resourceHeap;
+		UniquePtr<RHI::DescriptorHeap> m_samplerHeap;
 
-		RHI::GfxSwapchain* m_swapchain = nullptr;
+		UniquePtr<RHI::PipelineLayout> m_globalLayout;
 
-		RHI::GfxDescriptorHeap* m_colorTargetHeap = nullptr;
-		RHI::GfxDescriptorHeap* m_depthTargetHeap = nullptr;
-		RHI::GfxDescriptorHeap* m_resourceTargetHeap = nullptr;
+		UniquePtr<RHI::Swapchain> m_swapchain;
 	};
 }

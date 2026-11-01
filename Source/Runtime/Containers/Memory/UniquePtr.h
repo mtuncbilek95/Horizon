@@ -1,25 +1,18 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/RTTR/Reflection.h>
 
 #include <concepts>
 #include <cstddef>
 #include <type_traits>
 #include <utility>
 
-namespace Horizon::Reflect
-{
-	class Base;
-}
-
 namespace Horizon
 {
 	template<typename T>
-		requires (!std::is_base_of_v<Reflect::Base, std::remove_cv_t<T>>)
 	class UniquePtr final
 	{
-		template<typename U>
-			requires (!std::is_base_of_v<Reflect::Base, std::remove_cv_t<U>>)
 		friend class UniquePtr;
 
 	public:
