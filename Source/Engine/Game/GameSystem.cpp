@@ -1,7 +1,6 @@
 #include "GameSystem.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/World/SystemGroup.h>
 #include <Engine/World/WorldService.h>
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
@@ -102,7 +101,7 @@ namespace Horizon::Engine
 			return;
 
 		auto* pWorld = m_engine->RequestService<WorldService>();
-		const SystemGroup running = pWorld ? pWorld->GetRunningSystems() : SystemGroup::None;
+		/*const SystemGroup running = pWorld ? pWorld->GetRunningSystems() : SystemGroup::None;
 
 		if (running == SceneGroups::Play || running == SceneGroups::Pause)
 		{
@@ -112,7 +111,7 @@ namespace Horizon::Engine
 				m_reloadDeferred = true;
 			}
 			return;
-		}
+		}*/
 
 		m_reloadDeferred = false;
 		Reload();

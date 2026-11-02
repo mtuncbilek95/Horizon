@@ -4,8 +4,7 @@
 #include <Editor/Font/IconsFontAwesome6.h>
 
 #include <Engine/World/ECS/Scene.h>
-#include <Engine/World/Components/Tag/NameComponent.h>
-#include <Engine/World/Components/EditorOnlyComponent.h>
+#include <Engine/World/Components/Tag/EntityName.h>
 
 #include <Runtime/Log/Terminal.h>
 
@@ -127,11 +126,8 @@ namespace Horizon::Editor
 			}
 		}
 
-		pScene->ForEach<Engine::NameComponent>([&](Engine::EntityHandle entt, const Engine::NameComponent&)
+		pScene->ForEach<World::Component::EntityName>([&](Engine::EntityHandle entt, const World::Component::EntityName&)
 			{
-				if (pScene->HasComponent<Engine::EditorOnlyComponent>(entt))
-					return;
-
 				const std::string label = LabelOf(entt, pScene);
 
 				if (!SearchFilter::Matches(label, m_search))
@@ -163,7 +159,7 @@ namespace Horizon::Editor
 		if (!pScene->GetEntities().IsAlive(entity))
 			return "Missing";
 
-		const Engine::NameComponent* pName = pScene->FindComponent<Engine::NameComponent>(entity);
+		const World::Component::EntityName* pName = pScene->FindComponent<World::Component::EntityName>(entity);
 
 		if (pName == nullptr || pName->m_name.empty())
 			return std::format("Entity {}", entity.Index());

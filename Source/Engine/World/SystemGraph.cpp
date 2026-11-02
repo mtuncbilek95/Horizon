@@ -1,5 +1,6 @@
 #include "SystemGraph.h"
 
+#include <Engine/Job/JobSystem.h>
 #include <Runtime/Containers/StringHelper.h>
 
 #include <vector>
@@ -21,7 +22,7 @@ namespace Horizon::Engine
 				continue;
 			}
 
-			//pSystem->m_engine = m_engine;
+			pSystem->m_engine = m_engine;
 
 			if (!pSystem->OnInitialize())
 			{
@@ -36,8 +37,8 @@ namespace Horizon::Engine
 		}
 
 		List<SystemDependency> dependencyList(m_activeSystems.GetCount());
-		/*for (usize i = 0; i < m_activeSystems.GetCount(); i++)
-			m_activeSystems[i]->DeclareDependency(dependencyList[i]);*/
+		for (usize i = 0; i < m_activeSystems.GetCount(); i++)
+			m_activeSystems[i]->DeclareDependencies(dependencyList[i]);
 
 		m_adjacency = BuildExplicitEdges(dependencyList);
 
@@ -228,5 +229,18 @@ namespace Horizon::Engine
 
 	void SystemGraph::Schedule(usize index, const EngineFrame* pFrame, Scene* pScene)
 	{
+		m_engine->GetJobSystem()->SubmitDetached(JobLane::Critical, [this, index, pFrame, pScene]()
+			{
+				m_activeSystems[index]->OnExecute(*pFrame, *pScene);
+
+				for (usize next : m_adjacency[index])
+				{
+					if (PAL::AtomicOps::Subtract(&m_counters[next], 1) == 0)
+						Schedule(next, pFrame, pScene);
+				}
+
+				if (m_remaining.Subtract(1) == 0)
+					PAL::Futex::WakeAll(m_remaining.Address());
+			});
 	}
 }

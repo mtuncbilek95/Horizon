@@ -1,6 +1,6 @@
 #include "CreateEntityItem.h"
 
-#include <Engine/World/Components/Tag/NameComponent.h>
+#include <Engine/World/Components/Tag/EntityName.h>
 
 namespace Horizon::Editor
 {
@@ -36,7 +36,7 @@ namespace Horizon::Editor
 	{
 		u32 highest = kInvalid32;
 
-		context.pCurrentScene->ForEach<Engine::NameComponent>([&](Engine::EntityHandle, const Engine::NameComponent& comp) 
+		context.pCurrentScene->ForEach<World::Component::EntityName>([&](Engine::EntityHandle, const World::Component::EntityName& comp) 
 			{
 				u32 suffix = ParseSuffix(comp.m_name);
 
@@ -50,7 +50,7 @@ namespace Horizon::Editor
 		std::string name = highest == kInvalid32 ? std::string(kBaseName) : std::format("{} ({})", kBaseName, highest + 1);
 
 		Engine::EntityHandle entt = context.pCurrentScene->AddEntity();
-		auto* pName = context.pCurrentScene->AddComponent(entt, Engine::NameComponent());
+		auto* pName = context.pCurrentScene->AddComponent(entt, World::Component::EntityName());
 		pName->m_name = name;
 	}
 

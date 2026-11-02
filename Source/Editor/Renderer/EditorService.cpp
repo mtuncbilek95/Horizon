@@ -120,6 +120,13 @@ namespace Horizon::Editor
 	void EditorService::OnFinalize()
 	{
 		m_device->WaitIdle();
+
+		m_viewRegistry.Reset();
+		m_toolRegistry.Reset();
+		m_menuRegistry.Reset();
+		m_editorContext.pSelection.Reset();
+
+		m_editorRenderer.Reset();
 	}
 
 	void EditorService::DeclareDependencies(Engine::ModuleGraph& graph)

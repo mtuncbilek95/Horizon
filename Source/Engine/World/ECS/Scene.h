@@ -8,6 +8,8 @@
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/Containers/StringHelper.h>
 
+#include <utility>
+
 namespace Horizon::Engine
 {
 	class ENGINE_API Scene
@@ -89,16 +91,17 @@ namespace Horizon::Engine
 						pDriver = pStorage;
 				}
 
-				for (usize i = 0; i < pDriver->GetCount(); i++)
+				[&]<usize... I>(std::index_sequence<I...>)
 				{
-					const EntityHandle entity = pDriver->GetEntityAt(i);
+					for (usize i = 0; i < pDriver->GetCount(); i++)
+					{
+						const EntityHandle entity = pDriver->GetEntityAt(i);
+						ComponentObject* comps[] = { (storages[I] == pDriver ? pDriver->GetAt(i) : storages[I]->Find(entity))... };
 
-					[&](auto*... pComps)
-						{
-							if ((pComps && ...))
-								func(entity, *pComps...);
-						}(FindComponent<Ts>(entity)...);
-				}
+						if ((comps[I] && ...))
+							func(entity, *static_cast<Ts*>(comps[I])...);
+					}
+				}(std::index_sequence_for<Ts...>{});
 			}
 		}
 

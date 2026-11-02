@@ -1,7 +1,6 @@
 #include "SceneSerializer.h"
 
 #include <Engine/Reflection/ReflectionSystem.h>
-#include <Engine/World/Components/EditorOnlyComponent.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/Serialization/Serializer.h>
@@ -172,7 +171,7 @@ namespace Horizon::Engine
 		if (!scene.IsAlive(handle))
 			return false;
 
-		return !scene.HasComponent<EditorOnlyComponent>(handle);
+		return true;
 	}
 
 	usize SceneSerializer::CountSerializableEntities(const Scene& scene)

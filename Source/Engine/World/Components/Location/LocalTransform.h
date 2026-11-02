@@ -6,18 +6,16 @@
 #include <Runtime/RTTR/Attributes/DegreesAttribute.h>
 #include <Runtime/RTTR/Attributes/TooltipAttribute.h>
 #include <Runtime/Math/Vec3f.h>
-#include <Runtime/Math/Mat4f.h>
-#include <Runtime/Math/Quat.h>
 
-namespace Horizon::Engine
+namespace Horizon::World::Component
 {
-	HCLASS(ComponentId["TransformComponent", "Physics"]);
-	class ENGINE_API TransformComponent final : public ComponentObject
+	HCLASS(Engine::ComponentId["LocalTransform", "Location"]);
+	class LocalTransform final : public Engine::ComponentObject
 	{
-		HORIZON_TYPE_REFLECT(TransformComponent);
+		HORIZON_TYPE_REFLECT(LocalTransform);
 	public:
-		TransformComponent() = default;
-		~TransformComponent() = default;
+		LocalTransform() = default;
+		~LocalTransform() = default;
 
 		HFIELD();
 		Math::Vec3f m_position;
@@ -27,9 +25,5 @@ namespace Horizon::Engine
 
 		HFIELD();
 		Math::Vec3f m_scale = { 1.f, 1.f, 1.f };
-
-		Math::Quat m_orientation;
-		Math::Vec3f m_lastRotation;
-		Math::Mat4f m_worldMatrix;
 	};
 }
