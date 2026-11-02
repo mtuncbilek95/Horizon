@@ -29,7 +29,7 @@ namespace Horizon::World::System
 				viewProj.m_projection = proj;
 				viewProj.m_viewProjection = proj * view;
 				viewProj.m_worldPosition = world.m_worldMatrix.GetTranslation();
-			});
+			}); 
 	}
 
 	void CameraExtraction::OnFinalize()

@@ -1,7 +1,6 @@
 #include "ProjectContext.h"
 
 #include <Engine/Plugin/PluginSystem.h>
-#include <Engine/Input/InputService.h>
 #include <Engine/Game/GameSystem.h>
 #include <Engine/Window/WindowService.h>
 #include <Runtime/Containers/StringHelper.h>
@@ -45,7 +44,6 @@ namespace Horizon::Editor
 
 		auto* pPlugins = GetEngine()->GetPluginSystem();
 		auto* pGame = GetEngine()->GetGameSystem();
-		auto* pInput = GetEngine()->RequestService<Engine::InputService>();
 
 		// TODO: Check if the game has plugin dependency
 		// TODO: Check version
@@ -60,8 +58,6 @@ namespace Horizon::Editor
 		const std::string moduleName = m_projectName.substr(0, m_projectName.rfind('.'));
 		pGame->Load(m_projectPath, moduleName);
 
-		pInput->LoadInputFromFile(m_settingsPath + "/GameInputSettings.hsettings");
-
 		return Engine::ModuleReport();
 	}
 
@@ -72,7 +68,6 @@ namespace Horizon::Editor
 	void ProjectContext::DeclareDependencies(Engine::ModuleGraph& graph)
 	{
 		graph.Precedes<Engine::WindowService>();
-		graph.Requires<Engine::InputService>();
 	}
 
 	void ProjectContext::SetPluginEnabled(const std::string& name, b8 enabled)
