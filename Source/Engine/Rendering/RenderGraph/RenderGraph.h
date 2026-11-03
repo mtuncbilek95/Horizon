@@ -23,10 +23,24 @@ namespace Horizon::Engine
 		void OnLibraryUnregistered(const ReflectionLibrary& library);
 
 	private:
+		void AddEdge(List<List<usize>>& adjacency, usize beforeIndex, usize afterIndex);
+
+		b8 CompileGraph(List<RenderDependency>& dependencyList);
+		b8 ResolveResources(List<RenderDependency>& dependencyList);
+
+		List<List<usize>> BuildExplicitEdges(List<RenderDependency>& dependencyList);
+		b8 TopologicalSort(List<usize>& order);
+		void ReportCycle(List<usize>& order);
+
+	private:
 		Engine* m_engine = nullptr;
 		ReflectionSystem* m_reflection = nullptr;
 		JobSystem* m_job = nullptr;
 
 		List<RefPtr<RenderNode>> m_activeNodes;
+		std::unordered_map<Reflect::TypeHandle, usize> m_nodeLookup;
+
+		std::unordered_map<Reflect::TypeHandle, usize> m_creatorLookup; // Which indexed node called Creates<>()...
+		List<List<usize>> m_adjacency;
 	};
 }

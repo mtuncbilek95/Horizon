@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Engine/World/System.h>
+#include <Engine/Rendering/RenderGraph/RenderGraph.h>
+#include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::World::System
@@ -14,5 +16,8 @@ namespace Horizon::World::System
 		void OnExecute(const Engine::EngineFrame& ctx, Engine::Scene& currentScene) final;
 		void OnFinalize() final;
 		void DeclareDependencies(Engine::SystemDependency& graph) final;
+
+	private:
+		UniquePtr<Engine::RenderGraph> m_graph = nullptr;
 	};
 }

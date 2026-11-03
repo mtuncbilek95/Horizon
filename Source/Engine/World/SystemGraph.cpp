@@ -129,10 +129,10 @@ namespace Horizon::Engine
 			SystemDependency& depend = dependencyList[i];
 
 			for (const auto& index : depend.m_runsBefore)
-				AddEdge(adjacency, i, m_systemLookup[index]);
+				AddEdge(adjacency, i, m_systemLookup.at(index));
 
 			for (const auto& index : depend.m_runsAfter)
-				AddEdge(adjacency, m_systemLookup[index], i);
+				AddEdge(adjacency, m_systemLookup.at(index), i);
 		}
 
 		return adjacency;
@@ -141,8 +141,6 @@ namespace Horizon::Engine
 	b8 SystemGraph::TopologicalSort(List<usize>& order)
 	{
 		List<usize> indegrees(m_adjacency.GetCount(), 0);
-		m_indegrees = List<usize>(m_adjacency.GetCount(), 0);
-
 		std::priority_queue<usize, std::vector<usize>, std::greater<>> systemQ;
 
 		for (usize i = 0; i < m_adjacency.GetCount(); i++)
