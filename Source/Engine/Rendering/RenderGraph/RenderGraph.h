@@ -32,6 +32,10 @@ namespace Horizon::Engine
 		b8 TopologicalSort(List<usize>& order);
 		void ReportCycle(List<usize>& order);
 
+		b8 ValidateAmbiguity(List<usize>& order, List<RenderDependency>& dependencyList);
+		void BuildLifetimes(const List<usize>& order, List<RenderDependency>& dependencyList);
+		b8 BuildBarriers(const List<usize>& order, List<RenderDependency>& dependencyList);
+
 	private:
 		Engine* m_engine = nullptr;
 		ReflectionSystem* m_reflection = nullptr;
@@ -42,5 +46,7 @@ namespace Horizon::Engine
 
 		std::unordered_map<Reflect::TypeHandle, usize> m_creatorLookup; // Which indexed node called Creates<>()...
 		List<List<usize>> m_adjacency;
+
+		List<usize> m_order;
 	};
 }

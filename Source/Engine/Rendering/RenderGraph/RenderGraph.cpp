@@ -90,7 +90,18 @@ namespace Horizon::Engine
 			return false;
 		}
 
-		// TODO: Build lifetimes and barriers
+#if defined(HORIZON_DEBUG)
+		// Check for ambiguities only in debug mode, because O(N^3).
+		if (!ValidateAmbiguity(order, dependencyList))
+			return false;
+#endif
+
+		BuildLifetimes(order, dependencyList);
+
+		if (!BuildBarriers(order, dependencyList))
+			return false;
+
+		m_order = order;
 		return true;
 	}
 
@@ -107,9 +118,16 @@ namespace Horizon::Engine
 			// Resolve the texture that has been created by the current pass
 			for (const auto& create : depend.m_textureCreates)
 			{
+				Reflect::Type* pResourceType = m_reflection->GetType(create.resource);
+				if (!pResourceType)
+				{
+					Terminal::Error(StringHelper::GetTypeName(this), "{} creates a texture whose tag is not reflected. Add HCLASS to the tag.", nodeName);
+					return false;
+				}
+
 				if (!m_creatorLookup.emplace(create.resource, i).second)
 				{
-					Terminal::Error(StringHelper::GetTypeName(this), "{} creates a texture that another node already creates.", nodeName);
+					Terminal::Error(StringHelper::GetTypeName(this), "{} creates {} but another node already creates it.", nodeName, pResourceType->GetName());
 					return false;
 				}
 			}
@@ -117,9 +135,16 @@ namespace Horizon::Engine
 			// Resolve the buffers that has been created by the current pass
 			for (const auto& create : depend.m_bufferCreates)
 			{
+				Reflect::Type* pResourceType = m_reflection->GetType(create.resource);
+				if (!pResourceType)
+				{
+					Terminal::Error(StringHelper::GetTypeName(this), "{} creates a buffer whose tag is not reflected. Add HCLASS to the tag.", nodeName);
+					return false;
+				}
+
 				if (!m_creatorLookup.emplace(create.resource, i).second)
 				{
-					Terminal::Error(StringHelper::GetTypeName(this), "{} creates a buffer that another node already creates.", nodeName);
+					Terminal::Error(StringHelper::GetTypeName(this), "{} creates {} but another node already creates it.", nodeName, pResourceType->GetName());
 					return false;
 				}
 			}
@@ -250,5 +275,82 @@ namespace Horizon::Engine
 	{
 		// TODO: Make a better report later
 		Terminal::Error(StringHelper::GetTypeName(this), "RenderGraph Cycle! ! ! ! !");
+	}
+
+	b8 RenderGraph::ValidateAmbiguity(List<usize>& order, List<RenderDependency>& dependencyList)
+	{
+		struct Accessor
+		{
+			usize node = 0;
+			b8 writes = false;
+		};
+
+		usize nodeCount = m_activeNodes.GetCount();
+
+		// List of "where can I arrive in the end?"
+		List<List<b8>> reachable(nodeCount, List<b8>(nodeCount, false));
+
+		// Start from the end
+		for (usize idx = order.GetCount(); idx > 0; idx--)
+		{
+			// Scan the very end
+			usize node = order[idx - 1];
+			for (usize next : m_adjacency[node])
+			{
+				reachable[node][next] = true; // Mark
+				for (usize i = 0; i < nodeCount; i++)
+				{
+					if (reachable[next][i])
+						reachable[node][i] = true; // Then mark for this as well
+				}
+			}
+		}
+		
+		// Get the reads and writes 
+		std::unordered_map<Reflect::TypeHandle, List<Accessor>> accessorsByResource;
+		for (usize i = 0; i < dependencyList.GetCount(); i++)
+		{
+			for (const auto& access : dependencyList[i].m_reads)
+				accessorsByResource[access.resource].PushBack({ i, false });
+
+			for (const auto& access : dependencyList[i].m_writes)
+				accessorsByResource[access.resource].PushBack({ i, true });
+		}
+
+		// Check if a resource is being accessed via 2 nodes at the same time.
+		for (const auto& pair : accessorsByResource)
+		{
+			const List<Accessor>& accessors = pair.second;
+			for (usize a = 0; a < accessors.GetCount(); a++)
+			{
+				for (usize b = a + 1; b < accessors.GetCount(); b++)
+				{
+					const Accessor& lhs = accessors[a];
+					const Accessor& rhs = accessors[b];
+
+					if (lhs.node == rhs.node || (!lhs.writes && !rhs.writes))
+						continue;
+
+					if (reachable[lhs.node][rhs.node] || reachable[rhs.node][lhs.node])
+						continue;
+
+					Terminal::Error(StringHelper::GetTypeName(this), "{} and {} access the same resource without an order. Add RunsBefore or RunsAfter.",
+						m_reflection->GetType(m_activeNodes[lhs.node]->GetTypeId())->GetName(), m_reflection->GetType(m_activeNodes[rhs.node]->GetTypeId())->GetName());
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
+
+	void RenderGraph::BuildLifetimes(const List<usize>& order, List<RenderDependency>& dependencyList)
+	{
+
+	}
+
+	b8 RenderGraph::BuildBarriers(const List<usize>& order, List<RenderDependency>& dependencyList)
+	{
+		return true;
 	}
 }

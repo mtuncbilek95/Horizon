@@ -17,6 +17,7 @@ namespace Horizon::World::System
 
 	void RenderSubmission::OnExecute(const Engine::EngineFrame& ctx, Engine::Scene& currentScene)
 	{
+		m_graph->OnExecute();
 	}
 
 	void RenderSubmission::OnFinalize()
