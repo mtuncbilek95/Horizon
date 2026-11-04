@@ -37,6 +37,7 @@ namespace Horizon::Engine
 			}
 
 			pNode->m_engine = m_engine;
+			pNode->m_graph = this;
 
 			if (!pNode->OnInitialize())
 			{
@@ -79,7 +80,7 @@ namespace Horizon::Engine
 
 		for (usize i = m_activeNodes.GetCount(); i > 0; i--)
 			m_activeNodes[i - 1]->OnFinalize();
-
+		 
 		m_resources.clear();
 		m_nodeBarriers.Clear();
 		m_lifetimes.clear();
