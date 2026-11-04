@@ -22,7 +22,7 @@ namespace Horizon::Rendering::Pass
 		depthDesc.width = 1920;
 		depthDesc.height = 1080;
 
-		//graph.Creates<Resource::SceneDepth>(depthDesc);
+		graph.Creates<Resource::SceneDepth>(depthDesc);
 		graph.Writes<Resource::SceneDepth>(RHI::ResourceState::DepthWrite);
 	}
 

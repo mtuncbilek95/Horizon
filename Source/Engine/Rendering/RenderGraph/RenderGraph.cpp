@@ -1,5 +1,6 @@
 #include "RenderGraph.h"
 
+#include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Rendering/RenderGraph/RenderDependency.h>
 
 #include <queue>
@@ -18,6 +19,13 @@ namespace Horizon::Engine
 
 	b8 RenderGraph::OnInitialize()
 	{
+		m_graphics = m_engine->RequestContext<GraphicsContext>();
+		if (!m_graphics)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "GraphicsContext could not be found. RenderGraph cannot initialize.");
+			return false;
+		}
+
 		List<Reflect::Type*> nodeTypes = m_reflection->GetTypeByBase(Reflect::TypeOf<RenderNode>());
 		for (auto* pType : nodeTypes)
 		{
@@ -56,11 +64,31 @@ namespace Horizon::Engine
 		if (!CompileGraph(dependencyList))
 			return;
 
+		// Get missing resources
+		if (!AcquireResources())
+			return;
+
 		// Execute graph
+		RecordRendering();
 	}
 
 	void RenderGraph::OnFinalize()
 	{
+		if (m_graphics)
+			m_graphics->GetDevice()->WaitIdle();
+
+		for (usize i = m_activeNodes.GetCount(); i > 0; i--)
+			m_activeNodes[i - 1]->OnFinalize();
+
+		m_resources.clear();
+		m_nodeBarriers.Clear();
+		m_lifetimes.clear();
+		m_order.Clear();
+		m_adjacency.Clear();
+		m_creatorLookup.clear();
+
+		m_nodeLookup.clear();
+		m_activeNodes.Clear();
 	}
 
 	void RenderGraph::OnLibraryRegistered(const ReflectionLibrary& library)
@@ -130,6 +158,10 @@ namespace Horizon::Engine
 					Terminal::Error(StringHelper::GetTypeName(this), "{} creates {} but another node already creates it.", nodeName, pResourceType->GetName());
 					return false;
 				}
+
+				RenderResource& resource = m_resources[create.resource];
+				resource.type = RenderResourceType::Texture;
+				resource.texDesc = create.desc;
 			}
 
 			// Resolve the buffers that has been created by the current pass
@@ -147,6 +179,10 @@ namespace Horizon::Engine
 					Terminal::Error(StringHelper::GetTypeName(this), "{} creates {} but another node already creates it.", nodeName, pResourceType->GetName());
 					return false;
 				}
+
+				RenderResource& resource = m_resources[create.resource];
+				resource.type = RenderResourceType::Buffer;
+				resource.bufDesc = create.desc;
 			}
 		}
 
@@ -305,7 +341,7 @@ namespace Horizon::Engine
 				}
 			}
 		}
-		
+
 		// Get the reads and writes 
 		std::unordered_map<Reflect::TypeHandle, List<Accessor>> accessorsByResource;
 		for (usize i = 0; i < dependencyList.GetCount(); i++)
@@ -346,11 +382,184 @@ namespace Horizon::Engine
 
 	void RenderGraph::BuildLifetimes(const List<usize>& order, List<RenderDependency>& dependencyList)
 	{
+		m_lifetimes.clear();
 
+		for (usize i = 0; i < order.GetCount(); i++)
+		{
+			RenderDependency& depend = dependencyList[order[i]];
+
+			for (const auto& access : depend.m_reads)
+			{
+				ResourceLifetime& lifetime = m_lifetimes[access.resource];
+				if (lifetime.firstAppear == u64_max)
+					lifetime.firstAppear = i;
+
+				lifetime.lastAppear = i;
+			}
+
+			for (const auto& access : depend.m_writes)
+			{
+				ResourceLifetime& lifetime = m_lifetimes[access.resource];
+				if (lifetime.firstAppear == u64_max)
+					lifetime.firstAppear = i;
+
+				lifetime.lastAppear = i;
+			}
+		}
 	}
 
 	b8 RenderGraph::BuildBarriers(const List<usize>& order, List<RenderDependency>& dependencyList)
 	{
+		struct TrackedState
+		{
+			RHI::ResourceState state = RHI::ResourceState::Undefined;
+			b8 written = false;
+		};
+
+		struct NodeAccess
+		{
+			RHI::ResourceState state = RHI::ResourceState::Undefined;
+			b8 writes = false;
+		};
+
+		m_nodeBarriers = List<List<RenderBarrier>>(m_activeNodes.GetCount());
+
+		std::unordered_map<Reflect::TypeHandle, TrackedState> trackedStates;
+		std::unordered_map<Reflect::TypeHandle, NodeAccess> nodeAccesses;
+
+		// Start running order list
+		for (usize node : order)
+		{
+			nodeAccesses.clear();
+
+			RenderDependency& depend = dependencyList[node];
+			for (const auto& access : depend.m_reads)
+			{
+				auto it = nodeAccesses.find(access.resource);
+				if (it == nodeAccesses.end()) // If it's a new node, add the state
+					nodeAccesses[access.resource] = { access.state, false };
+				else
+					it->second.state |= access.state; // Combine with previous state
+			}
+
+			for (const auto& access : depend.m_writes)
+			{
+				auto it = nodeAccesses.find(access.resource);
+				if (it != nodeAccesses.end() && it->second.state != access.state)
+				{
+					Terminal::Error(StringHelper::GetTypeName(this), "{} reads and writes the same resource in different states.",
+						m_reflection->GetType(m_activeNodes[node]->GetTypeId())->GetName());
+					return false;
+				}
+
+				nodeAccesses[access.resource] = { access.state, true };
+			}
+
+			for (const auto& pair : nodeAccesses)
+			{
+				const NodeAccess& access = pair.second;
+				TrackedState& tracked = trackedStates[pair.first];
+
+				b8 transition = tracked.state != access.state;
+				b8 uavHazard = access.state == RHI::ResourceState::UnorderedAccess && (tracked.written || access.writes);
+
+				if (transition || uavHazard)
+					m_nodeBarriers[node].PushBack({ pair.first, tracked.state, access.state });
+
+				tracked.state = access.state;
+				tracked.written = access.writes;
+			}
+		}
+
 		return true;
+	}
+
+	b8 RenderGraph::AcquireResources()
+	{
+		RHI::Device* pDevice = m_graphics->GetDevice();
+
+		for (auto& pair : m_resources)
+		{
+			RenderResource& resource = pair.second;
+
+			// Process buffer
+			if (resource.type == RenderResourceType::Buffer)
+			{
+				if (resource.buffer)
+					continue;
+
+				resource.buffer = pDevice->CreateRHIBuffer(resource.bufDesc);
+				if (!resource.buffer)
+				{
+					Terminal::Error(StringHelper::GetTypeName(this), "{} buffer could not be created.", m_reflection->GetType(pair.first)->GetName());
+					return false;
+				}
+
+				continue;
+			}
+
+			if (resource.texture)
+				continue;
+
+			// Continue processing texture
+			resource.texture = pDevice->CreateRHITexture(resource.texDesc);
+			if (!resource.texture)
+			{
+				Terminal::Error(StringHelper::GetTypeName(this), "{} texture could not be created.", m_reflection->GetType(pair.first)->GetName());
+				return false;
+			}
+
+			RHI::TextureViewDesc viewDesc = {};
+			viewDesc.pTexture = resource.texture.Get();
+			viewDesc.format = resource.texDesc.format;
+
+			b8 isArray = resource.texDesc.arrayLayers > 1;
+			switch (resource.texDesc.type)
+			{
+			case RHI::TextureType::Texture1D:
+				viewDesc.type = isArray ? RHI::TextureViewType::Texture1DArray : RHI::TextureViewType::Texture1D;
+				break;
+			case RHI::TextureType::Texture2D:
+				viewDesc.type = isArray ? RHI::TextureViewType::Texture2DArray : RHI::TextureViewType::Texture2D;
+				break;
+			case RHI::TextureType::Texture3D:
+				viewDesc.type = RHI::TextureViewType::Texture3D;
+				break;
+			case RHI::TextureType::TextureCube:
+				viewDesc.type = resource.texDesc.arrayLayers > 6 ? RHI::TextureViewType::TextureCubeArray : RHI::TextureViewType::TextureCube;
+				break;
+			}
+
+			resource.texView = pDevice->CreateRHITextureView(viewDesc);
+			if (!resource.texView)
+			{
+				Terminal::Error(StringHelper::GetTypeName(this), "{} texture view could not be created.", m_reflection->GetType(pair.first)->GetName());
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	RenderResource* RenderGraph::LookupResource(Reflect::TypeHandle resource, RenderResourceType type)
+	{
+		auto it = m_resources.find(resource);
+		if (it == m_resources.end())
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "Requested resource is not created by any node.");
+			return nullptr;
+		}
+
+		if (it->second.type != type)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "{} is requested with the wrong resource type.", m_reflection->GetType(resource)->GetName());
+			return nullptr;
+		}
+
+		return &it->second;
+	}
+
+	void RenderGraph::RecordRendering()
+	{
 	}
 }
