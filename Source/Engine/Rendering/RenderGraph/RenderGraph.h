@@ -12,6 +12,14 @@
 #include <Runtime/RHI/Buffer/Buffer.h>
 #include <Runtime/RHI/Texture/Texture.h>
 #include <Runtime/RHI/Texture/TextureView.h>
+#include <Runtime/RHI/Queue/QueueType.h>
+
+namespace Horizon::RHI
+{
+	class Fence;
+	class CommandPool;
+	class CommandList;
+}
 
 namespace Horizon::Engine
 {
@@ -40,7 +48,7 @@ namespace Horizon::Engine
 		RenderGraph& operator=(const RenderGraph&) = delete;
 
 		b8 OnInitialize();
-		void OnExecute();
+		void OnExecute(const RenderSetupContext& setupContext, const RenderDrawContext& drawContext);
 		void OnFinalize();
 
 		void OnLibraryRegistered(const ReflectionLibrary& library);
@@ -63,7 +71,7 @@ namespace Horizon::Engine
 		b8 BuildBarriers(const List<usize>& order, List<RenderDependency>& dependencyList);
 
 		b8 AcquireResources();
-		void RecordRendering();
+		void RecordRendering(const RenderDrawContext& drawContext);
 
 	private:
 		Engine* m_engine = nullptr;
@@ -83,5 +91,10 @@ namespace Horizon::Engine
 		List<List<RenderBarrier>> m_nodeBarriers;
 
 		std::unordered_map<Reflect::TypeHandle, RenderResource> m_resources; // My shitty pool
+
+		UniquePtr<RHI::CommandPool> m_pool = nullptr;
+		UniquePtr<RHI::CommandList> m_list = nullptr;
+		UniquePtr<RHI::Fence> m_fence = nullptr;
+		u64 m_fenceValue = 0;
 	};
 }

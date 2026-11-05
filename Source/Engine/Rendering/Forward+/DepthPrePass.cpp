@@ -14,19 +14,19 @@ namespace Horizon::Rendering::Pass
 	{
 	}
 
-	void DepthPrePass::Setup(Engine::RenderDependency& graph)
+	void DepthPrePass::Setup(const Engine::RenderSetupContext& setupContext, Engine::RenderDependency& graph)
 	{
 		RHI::TextureDesc depthDesc = {};
 		depthDesc.format = RHI::TextureFormat::D32_FLOAT;
 		depthDesc.usage = RHI::TextureUsage::DepthStencil | RHI::TextureUsage::Sampled;
-		depthDesc.width = 1920;
-		depthDesc.height = 1080;
+		depthDesc.width = setupContext.colorImageDimension.X();
+		depthDesc.height = setupContext.colorImageDimension.Y();
 
 		graph.Creates<Resource::SceneDepth>(depthDesc);
 		graph.Writes<Resource::SceneDepth>(RHI::ResourceState::DepthWrite);
 	}
 
-	void DepthPrePass::Render()
+	void DepthPrePass::Render(const Engine::RenderDrawContext& context)
 	{
 	}
 }

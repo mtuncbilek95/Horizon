@@ -14,7 +14,7 @@ namespace Horizon::Rendering::Pass
 	{
 	}
 
-	void LightCullingPass::Setup(Engine::RenderDependency& graph)
+	void LightCullingPass::Setup(const Engine::RenderSetupContext& setupContext, Engine::RenderDependency& graph)
 	{
 		RHI::BufferDesc gridDesc = {};
 		gridDesc.size = 120 * 68 * sizeof(u32) * 2;
@@ -27,7 +27,7 @@ namespace Horizon::Rendering::Pass
 		graph.Writes<Resource::LightGrid>(RHI::ResourceState::UnorderedAccess);
 	}
 
-	void LightCullingPass::Render()
+	void LightCullingPass::Render(const Engine::RenderDrawContext& context)
 	{
 	}
 }

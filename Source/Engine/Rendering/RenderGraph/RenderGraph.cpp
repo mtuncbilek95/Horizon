@@ -2,6 +2,11 @@
 
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Rendering/RenderGraph/RenderDependency.h>
+#include <Runtime/RHI/Device/Device.h>
+#include <Runtime/RHI/Command/TextureBarrier.h>
+#include <Runtime/RHI/Command/CommandList.h>
+#include <Runtime/RHI/Command/CommandPool.h>
+#include <Runtime/RHI/Fence/Fence.h>
 
 #include <queue>
 #include <vector>
@@ -26,6 +31,39 @@ namespace Horizon::Engine
 			return false;
 		}
 
+		RHI::Device* pDevice = m_graphics->GetDevice();
+
+		// Create a general graphics pool
+		RHI::CommandPoolDesc poolDesc = {};
+		poolDesc.type = RHI::QueueType::Graphics;
+
+		m_pool = pDevice->CreateRHICommandPool(poolDesc);
+		if (!m_pool)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "Command pool could not be created.");
+			return false;
+		}
+
+		// Create a single cmdList 
+		RHI::CommandListDesc listDesc = {};
+		listDesc.pPool = m_pool.Get();
+
+		m_list = pDevice->CreateRHICommandList(listDesc);
+		if (!m_list)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "Command list could not be created.");
+			return false;
+		}
+
+		// Create a fence to prevent fuckery
+		m_fence = pDevice->CreateRHIFence(RHI::FenceDesc());
+		if (!m_fence)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "Fence could not be created.");
+			return false;
+		}
+
+		// Gather all the RenderNodes 
 		List<Reflect::Type*> nodeTypes = m_reflection->GetTypeByBase(Reflect::TypeOf<RenderNode>());
 		for (auto* pType : nodeTypes)
 		{
@@ -54,12 +92,12 @@ namespace Horizon::Engine
 		return true;
 	}
 
-	void RenderGraph::OnExecute()
+	void RenderGraph::OnExecute(const RenderSetupContext& setupContext, const RenderDrawContext& drawContext)
 	{
 		// Configure dependency list
 		List<RenderDependency> dependencyList(m_activeNodes.GetCount());
 		for (usize i = 0; i < m_activeNodes.GetCount(); i++)
-			m_activeNodes[i]->Setup(dependencyList[i]);
+			m_activeNodes[i]->Setup(setupContext, dependencyList[i]);
 
 		// Compile graph
 		if (!CompileGraph(dependencyList))
@@ -70,7 +108,7 @@ namespace Horizon::Engine
 			return;
 
 		// Execute graph
-		RecordRendering();
+		RecordRendering(drawContext);
 	}
 
 	void RenderGraph::OnFinalize()
@@ -80,7 +118,7 @@ namespace Horizon::Engine
 
 		for (usize i = m_activeNodes.GetCount(); i > 0; i--)
 			m_activeNodes[i - 1]->OnFinalize();
-		 
+
 		m_resources.clear();
 		m_nodeBarriers.Clear();
 		m_lifetimes.clear();
@@ -560,7 +598,52 @@ namespace Horizon::Engine
 		return &it->second;
 	}
 
-	void RenderGraph::RecordRendering()
+	void RenderGraph::RecordRendering(const RenderDrawContext& drawContext)
 	{
+		auto* pDevice = m_graphics->GetDevice();
+
+		m_pool->Reset();
+
+		// Start command-list 
+		m_list->Start();
+		m_list->BindDescriptorHeaps(m_graphics->GetResourceHeap(), m_graphics->GetSamplerHeap());
+
+		for (usize node : m_order)
+		{
+			for (const RenderBarrier& barrier : m_nodeBarriers[node])
+			{
+				RenderResource& resource = m_resources[barrier.resource];
+
+				if (resource.type == RenderResourceType::Texture)
+				{
+					RHI::TextureBarrier texBarrier = {};
+					texBarrier.pTexture = resource.texture.Get();
+					texBarrier.before = barrier.before;
+					texBarrier.after = barrier.after;
+
+					m_list->Barrier({ texBarrier });
+				}
+				else
+				{
+					RHI::BufferBarrier bufBarrier = {};
+					bufBarrier.pBuffer = resource.buffer.Get();
+					bufBarrier.before = barrier.before;
+					bufBarrier.after = barrier.after;
+
+					m_list->Barrier({ bufBarrier });
+				}
+			}
+
+			m_activeNodes[node]->m_cmdList = m_list.Get();
+			m_activeNodes[node]->Render(drawContext);
+			m_activeNodes[node]->m_cmdList = nullptr;
+		}
+
+		m_list->End();
+		m_fenceValue++;
+
+		pDevice->Submit(RHI::QueueType::Graphics, { m_list.Get() });
+		m_fenceValue = pDevice->Signal(RHI::QueueType::Graphics, m_fence.Get());
+		m_fence->WaitCPU(m_fenceValue);
 	}
 }

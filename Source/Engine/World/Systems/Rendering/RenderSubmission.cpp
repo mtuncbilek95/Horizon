@@ -17,7 +17,14 @@ namespace Horizon::World::System
 
 	void RenderSubmission::OnExecute(const Engine::EngineFrame& ctx, Engine::Scene& currentScene)
 	{
-		m_graph->OnExecute();
+		Engine::RenderSetupContext setupCtx = 
+		{
+			.colorImageDimension = { 1920, 1080 },
+			.shadowMapDimension = { 2048, 2048 },
+		};
+
+		Engine::RenderDrawContext drawCtx = {};
+		m_graph->OnExecute(setupCtx, drawCtx);
 	}
 
 	void RenderSubmission::OnFinalize()
