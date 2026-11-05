@@ -33,7 +33,7 @@ namespace Horizon::Rendering::Pass
 		desc.colorAttachments[0].pView = GetTextureView<Resource::SceneColor>();
 		desc.colorAttachments[0].loadOp = RHI::LoadOp::Clear;
 		desc.colorAttachments[0].storeOp = RHI::StoreOp::Store;
-		desc.colorAttachments[0].clearColor = { 0.1f, 0.1f, 0.1f, 1.f };
+		desc.colorAttachments[0].clearColor = { 0.5f, 0.6f, 0.2f, 1.f };
 		desc.colorAttachmentCount = 1;
 
 		desc.depthAttachment.pView = GetTextureView<Resource::SceneDepth>();

@@ -1,4 +1,4 @@
-#include "EditorRenderer.h"
+#include "EditorOverlay.h"
 
 #include <Editor/Font/IconsFontAudio.h>
 #include <Editor/Font/IconsFontAwesome6.h>
@@ -12,17 +12,17 @@
 
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
+#include <Runtime/RHI/Command/CommandList.h>
 #include <Runtime/RHI/Device/Device.h>
 #include <Runtime/RHI/Descriptor/DescriptorHeap.h>
-#include <Runtime/RHI/Swapchain/Swapchain.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>
 
 namespace Horizon::Editor
 {
-	EditorRenderer::EditorRenderer(const EditorRendererDesc& desc) : m_device(desc.pDevice),
-		m_resourceHeap(desc.pResourceHeap), m_samplerHeap(desc.pSamplerHeap)
+	EditorOverlay::EditorOverlay(const EditorOverlayDesc& desc) : m_device(desc.pDevice),
+		m_resourceHeap(desc.pResourceHeap)
 	{
 		m_context = ImGui::CreateContext();
 		ImGui::SetCurrentContext((ImGuiContext*)m_context);
@@ -46,30 +46,12 @@ namespace Horizon::Editor
 
 		m_device->InitializeImGui(Engine::GraphicsContext::MaxFramesInFlight, m_resourceHeap, desc.colorFormat);
 
-		m_frames.Resize(Engine::GraphicsContext::MaxFramesInFlight);
-		for (u32 i = 0; i < Engine::GraphicsContext::MaxFramesInFlight; i++)
-		{
-			RHI::CommandPoolDesc poolDesc = {};
-			poolDesc.type = RHI::QueueType::Graphics;
-			m_frames[i].pPool = m_device->CreateRHICommandPool(poolDesc);
-
-			RHI::CommandListDesc listDesc = {};
-			listDesc.pPool = m_frames[i].pPool.Get();
-			m_frames[i].pCmdList = m_device->CreateRHICommandList(listDesc);
-		}
-
-		m_fence = m_device->CreateRHIFence({});
-
 		DefaultStyle();
 	}
 
-	EditorRenderer::~EditorRenderer()
+	EditorOverlay::~EditorOverlay()
 	{
 		m_device->WaitIdle();
-
-		m_frames.Clear();
-		m_fence = nullptr;
-
 		m_device->ShutdownImGui();
 
 		m_platform.Reset();
@@ -77,12 +59,12 @@ namespace Horizon::Editor
 		ImGui::DestroyContext((ImGuiContext*)m_context);
 	}
 
-	void EditorRenderer::UpdatePlatform()
+	void EditorOverlay::UpdatePlatform()
 	{
 		m_platform->NewFrame();
 	}
 
-	b8 EditorRenderer::BeginRender(f32 dt)
+	b8 EditorOverlay::BeginRender(f32 dt)
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		io.DeltaTime = dt;
@@ -93,56 +75,42 @@ namespace Horizon::Editor
 		return true;
 	}
 
-	b8 EditorRenderer::EndRender(RHI::Swapchain* pSwapchain)
+	b8 EditorOverlay::EndRender()
 	{
 		ImGui::Render();
-
-		FrameContext& context = m_frames[m_frameIndex];
-
-		m_fence->WaitCPU(context.fenceValue);
-		context.pPool->Reset();
-
-		RHI::CommandList* pCmdList = context.pCmdList.Get();
-		RHI::Texture* pBackbuffer = pSwapchain->GetCurrentImage();
-
-		pCmdList->Start();
-		pCmdList->BindDescriptorHeaps(m_resourceHeap, m_samplerHeap);
-
-		pCmdList->Barrier({ RHI::TextureBarrier{ pBackbuffer, RHI::ResourceState::Undefined, RHI::ResourceState::RenderTarget } });
-
-		RHI::RenderingDesc rendering = {};
-		rendering.colorAttachments[0].pView = pSwapchain->GetCurrentImageView();
-		rendering.colorAttachments[0].loadOp = RHI::LoadOp::Clear;
-		rendering.colorAttachments[0].clearColor[0] = 0.1f;
-		rendering.colorAttachments[0].clearColor[1] = 0.1f;
-		rendering.colorAttachments[0].clearColor[2] = 0.1f;
-		rendering.colorAttachments[0].clearColor[3] = 1.0f;
-		rendering.colorAttachmentCount = 1;
-
-		pCmdList->StartRendering(rendering);
-		pCmdList->RenderImGui(ImGui::GetDrawData());
-		pCmdList->EndRendering();
-
-		pCmdList->Barrier({ RHI::TextureBarrier{ pBackbuffer, RHI::ResourceState::RenderTarget, RHI::ResourceState::Present } });
-
-		pCmdList->End();
-		m_device->Submit(RHI::QueueType::Graphics, { pCmdList });
-
-		context.fenceValue = m_device->Signal(RHI::QueueType::Graphics, m_fence.Get());
-		m_frameIndex = (m_frameIndex + 1) % Engine::GraphicsContext::MaxFramesInFlight;
-
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
+		m_frameReady = true;
 
 		return true;
 	}
 
-	b8 EditorRenderer::CheckMouseDragging()
+	b8 EditorOverlay::CheckMouseDragging()
 	{
 		return ImGui::IsAnyItemActive() && ImGui::IsAnyMouseDown();
 	}
 
-	void EditorRenderer::LoadFonts()
+	void EditorOverlay::OnRecord(RHI::CommandList* pCmdList)
+	{
+		if (!m_frameReady)
+		{
+			Terminal::Warn(StringHelper::GetTypeName(this), "OnRecord called before ImGui frame was rendered, skipping");
+			return;
+		}
+
+		pCmdList->RenderImGui(ImGui::GetDrawData());
+	}
+
+	void EditorOverlay::OnFrameEnd()
+	{
+		if (!m_frameReady)
+			return;
+
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+
+		m_frameReady = false;
+	}
+
+	void EditorOverlay::LoadFonts()
 	{
 		ImGuiIO& io = ImGui::GetIO();
 
@@ -162,7 +130,7 @@ namespace Horizon::Editor
 				iconCfg.PixelSnapH = true;
 				iconCfg.ExtraSizeScale = 0.85f;
 				iconCfg.GlyphMinAdvanceX = fontSize;
-				iconCfg.GlyphExcludeRanges = pExclude;   // ImGui 1.92+
+				iconCfg.GlyphExcludeRanges = pExclude;
 
 				const std::string path = fontDir + pFile;
 				if (!io.Fonts->AddFontFromFileTTF(path.c_str(), fontSize, &iconCfg, pRange))
@@ -191,7 +159,7 @@ namespace Horizon::Editor
 		loadFamily("NotoSans-SemiBold.ttf");
 	}
 
-	void EditorRenderer::DefaultStyle()
+	void EditorOverlay::DefaultStyle()
 	{
 		ImGuiStyle& style = ImGui::GetStyle();
 		ImVec4* pColors = style.Colors;

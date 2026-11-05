@@ -54,7 +54,7 @@ int main(int argC, char** argV)
 	engine.RegisterModule<Engine::InputService>();
 	engine.RegisterModule<Editor::EditorService>();
 	engine.RegisterModule<Engine::PhysicsService>();
-	engine.RegisterModule<Engine::PresentationService>();
+	engine.RegisterModule<Engine::PresentationService>(Engine::PresentationMode::Editor);
 
 	engine.Run();
 }

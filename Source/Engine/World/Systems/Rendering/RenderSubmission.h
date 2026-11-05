@@ -5,6 +5,11 @@
 #include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/RTTR/Reflection.h>
 
+namespace Horizon::Engine
+{
+	class PresentationService;
+}
+
 namespace Horizon::World::System
 {
 	HCLASS();
@@ -19,7 +24,6 @@ namespace Horizon::World::System
 
 	private:
 		UniquePtr<Engine::RenderGraph> m_graph = nullptr;
-
-
+		Engine::PresentationService* m_presentation = nullptr;
 	};
 }

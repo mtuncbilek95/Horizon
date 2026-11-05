@@ -2,10 +2,8 @@
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Core/ModuleDependency.h>
-#include <Engine/Window/WindowService.h>
 
 #include <Runtime/Containers/StringHelper.h>
-#include <Runtime/PAL/Window/Window.h>
 
 namespace Horizon::Engine
 {
@@ -14,11 +12,6 @@ namespace Horizon::Engine
 		// TODO: After sometime, capacity that comes from 
 		// project settings would be awesome. Even deviceDesc
 		// can be imported from some shit.
-
-		// Get window service to use on swapchain
-		auto* pWindowSub = GetEngine()->RequestService<WindowService>();
-		if (!pWindowSub)
-			return ModuleReport("Failed to get WindowService. Nothing will work...");
 
 		RHI::DeviceDesc deviceDesc = {};
 #if defined(HORIZON_DEBUG)
@@ -49,21 +42,7 @@ namespace Horizon::Engine
 		if (!m_globalLayout)
 			return ModuleReport("Failed to create global PipelineLayout");
 
-		PAL::WindowRect windowRect = pWindowSub->GetWindow()->GetRect();
-
-		// Create swapchain
-		RHI::SwapchainDesc swapDesc = {};
-		swapDesc.windowHandle = pWindowSub->GetWindow()->GetOSHandle();
-		swapDesc.imageCount = 3;
-		swapDesc.width = windowRect.width;
-		swapDesc.height = windowRect.height;
-		swapDesc.presentMode = RHI::PresentMode::Vsync;
-		swapDesc.format = RHI::TextureFormat::RGBA8_UNORM;
-		m_swapchain = m_device->CreateRHISwapchain(swapDesc);
-		if (!m_swapchain)
-			return ModuleReport("Failed to create Swapchain");
-
-		Terminal::Debug(StringHelper::GetTypeName(this), "Device, descriptor heaps, global layout and swapchain has been initialized!");
+		Terminal::Debug(StringHelper::GetTypeName(this), "Device, descriptor heaps and global layout has been initialized!");
 
 		return ModuleReport();
 	}
@@ -73,7 +52,6 @@ namespace Horizon::Engine
 		if (m_device)
 			m_device->WaitIdle();
 
-		m_swapchain = nullptr;
 		m_globalLayout = nullptr;
 		m_samplerHeap = nullptr;
 		m_resourceHeap = nullptr;
@@ -82,7 +60,6 @@ namespace Horizon::Engine
 
 	void GraphicsContext::DeclareDependencies(ModuleDependency& graph)
 	{
-		graph.InitAfter<WindowService>();
 	}
 
 	void GraphicsContext::OnLibraryRegistered(const ReflectionLibrary& library)

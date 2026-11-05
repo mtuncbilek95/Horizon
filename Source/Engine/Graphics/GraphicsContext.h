@@ -5,7 +5,6 @@
 #include <Runtime/RHI/Device/Device.h>
 #include <Runtime/RHI/Descriptor/DescriptorHeap.h>
 #include <Runtime/RHI/Pipeline/PipelineLayout.h>
-#include <Runtime/RHI/Swapchain/Swapchain.h>
 
 namespace Horizon::Engine
 {
@@ -19,7 +18,6 @@ namespace Horizon::Engine
 		~GraphicsContext() = default;
 
 		RHI::Device* GetDevice() const { return m_device.Get(); }
-		RHI::Swapchain* GetSwapchain() const { return m_swapchain.Get(); }
 
 		RHI::DescriptorHeap* GetResourceHeap() const { return m_resourceHeap.Get(); }
 		RHI::DescriptorHeap* GetSamplerHeap() const { return m_samplerHeap.Get(); }
@@ -40,7 +38,5 @@ namespace Horizon::Engine
 		UniquePtr<RHI::DescriptorHeap> m_samplerHeap;
 
 		UniquePtr<RHI::PipelineLayout> m_globalLayout;
-
-		UniquePtr<RHI::Swapchain> m_swapchain;
 	};
 }

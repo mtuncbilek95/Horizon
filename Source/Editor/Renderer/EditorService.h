@@ -8,12 +8,16 @@
 namespace Horizon::RHI
 {
 	class Device;
-	class Swapchain;
+}
+
+namespace Horizon::Engine
+{
+	class PresentationService;
 }
 
 namespace Horizon::Editor
 {
-	class EditorRenderer;
+	class EditorOverlay;
 	class EditorContext;
 	class ViewRegistry;
 	class MenuRegistry;
@@ -38,14 +42,14 @@ namespace Horizon::Editor
 	private:
 		PAL::Window* m_engineWindow = nullptr;
 		PAL::Cursor* m_engineCursor = nullptr;
-		UniquePtr<EditorRenderer> m_editorRenderer = nullptr;
+		UniquePtr<EditorOverlay> m_editorOverlay = nullptr;
 
 		UniquePtr<MenuRegistry> m_menuRegistry = nullptr;
 		UniquePtr<ToolBarRegistry> m_toolRegistry = nullptr;
 		UniquePtr<ViewRegistry> m_viewRegistry = nullptr;
 
 		RHI::Device* m_device = nullptr;
-		RHI::Swapchain* m_swapchain = nullptr;
+		Engine::PresentationService* m_presentation = nullptr;
 
 		EditorContext m_editorContext;
 	};

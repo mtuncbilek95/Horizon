@@ -2,7 +2,7 @@
 
 #include <Editor/Domain/DomainService.h>
 #include <Editor/Models/SelectionModel.h>
-#include <Editor/Renderer/EditorRenderer.h>
+#include <Editor/Renderer/EditorOverlay.h>
 #include <Editor/Views/ViewRegistry.h>
 #include <Editor/MainMenu/MenuRegistry.h>
 #include <Editor/Toolbar/ToolBarRegistry.h>
@@ -36,17 +36,23 @@ namespace Horizon::Editor
 			return Engine::ModuleReport("Failed to get GraphicsContext. Nothing will work...");
 
 		m_device = pGraphSub->GetDevice();
-		m_swapchain = pGraphSub->GetSwapchain();
 
-		EditorRendererDesc renderDesc = {};
-		renderDesc.pDevice = m_device;
-		renderDesc.pResourceHeap = pGraphSub->GetResourceHeap();
-		renderDesc.pSamplerHeap = pGraphSub->GetSamplerHeap();
-		renderDesc.colorFormat = m_swapchain->GetFormat();
-		renderDesc.pWindowService = pWindowSub;
+		m_presentation = GetEngine()->RequestService<Engine::PresentationService>();
+		if (!m_presentation)
+			return Engine::ModuleReport("Failed to get PresentationService. Nothing will be presented...");
 
-		m_editorRenderer = MakeUnique<EditorRenderer>(renderDesc);
-		Terminal::Debug(StringHelper::GetTypeName(this), "EditorRenderer has been initialized!");
+		if (m_presentation->GetMode() != Engine::PresentationMode::Editor)
+			return Engine::ModuleReport("PresentationService is not registered in Editor mode");
+
+		EditorOverlayDesc overlayDesc = {};
+		overlayDesc.pDevice = m_device;
+		overlayDesc.pResourceHeap = pGraphSub->GetResourceHeap();
+		overlayDesc.colorFormat = m_presentation->GetSwapchain()->GetFormat();
+		overlayDesc.pWindowService = pWindowSub;
+
+		m_editorOverlay = MakeUnique<EditorOverlay>(overlayDesc);
+		m_presentation->SetOverlay(m_editorOverlay.Get());
+		Terminal::Debug(StringHelper::GetTypeName(this), "EditorOverlay has been initialized!");
 
 		m_editorContext.pEngine = GetEngine();
 		m_editorContext.pSelection = MakeUnique<SelectionModel>();
@@ -74,52 +80,27 @@ namespace Horizon::Editor
 	{
 		const auto& messages = m_engineWindow->GetMessages();
 
-		b8 onResizeDone = true;
-		i32 newWindowWidth = -1, newWindowHeight = -1;
 		for (const auto& message : messages)
 		{
-			switch (message.type)
-			{
-			case PAL::InputMessageType::Resize:
-			{
-				newWindowWidth = message.width;
-				newWindowHeight = message.height;
-				onResizeDone = false;
-				break;
-			}
-			case PAL::InputMessageType::DropFiles:
+			if (message.type == PAL::InputMessageType::DropFiles)
 				m_editorContext.upcomingFiles = message.filePaths;
-				break;
-			default:
-				break;
-			}
 		}
 
-		m_editorRenderer->UpdatePlatform();
-
-		if (!onResizeDone)
-		{
-			m_device->WaitIdle();
-			m_swapchain->Resize(newWindowWidth, newWindowHeight);
-			onResizeDone = true;
-		}
-
-		if (!m_swapchain->AcquireNextImage())
-			return;
-
-		m_editorRenderer->BeginRender(ctx.DeltaTime());
+		m_editorOverlay->UpdatePlatform();
+		m_editorOverlay->BeginRender(ctx.DeltaTime());
 
 		m_menuRegistry->RenderGUI();
 		m_toolRegistry->RenderGUI();
 		m_viewRegistry->RenderGUI(ctx);
 
-		m_editorRenderer->EndRender(m_swapchain);
-
-		m_swapchain->Present();
+		m_editorOverlay->EndRender();
 	}
 
 	void EditorService::OnFinalize()
 	{
+		if (m_presentation)
+			m_presentation->SetOverlay(nullptr);
+
 		m_device->WaitIdle();
 
 		m_viewRegistry.Reset();
@@ -127,12 +108,12 @@ namespace Horizon::Editor
 		m_menuRegistry.Reset();
 		m_editorContext.pSelection.Reset();
 
-		m_editorRenderer.Reset();
+		m_editorOverlay.Reset();
 	}
 
 	void EditorService::DeclareDependencies(Engine::ModuleDependency& graph)
 	{
-		graph.InitAfter<Engine::WindowService, Engine::GraphicsContext, DomainService, Engine::WorldService, 
+		graph.InitAfter<Engine::WindowService, Engine::GraphicsContext, DomainService, Engine::WorldService,
 			Engine::PresentationService>();
 		graph.RunBefore<Engine::PresentationService>();
 	}
