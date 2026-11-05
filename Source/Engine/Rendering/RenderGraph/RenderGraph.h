@@ -40,6 +40,14 @@ namespace Horizon::Engine
 			usize lastAppear = 0;
 		};
 
+		struct ImportedTexture
+		{
+			RHI::Texture* pTexture = nullptr;
+			RHI::TextureView* pView = nullptr;
+			RHI::ResourceState initialState = RHI::ResourceState::Undefined;
+			RHI::ResourceState finalState = RHI::ResourceState::Undefined;
+		};
+
 	public:
 		RenderGraph(Engine* pEngine);
 		~RenderGraph();
@@ -54,7 +62,15 @@ namespace Horizon::Engine
 		void OnLibraryRegistered(const ReflectionLibrary& library);
 		void OnLibraryUnregistered(const ReflectionLibrary& library);
 
-		RenderResource* LookupResource(Reflect::TypeHandle resource, RenderResourceType type);
+		template<typename T>
+		void ImportTexture(RHI::Texture* pTexture, RHI::TextureView* pView, RHI::ResourceState initialState, RHI::ResourceState finalState)
+		{
+			m_importedTextures[Reflect::TypeOf<T>()] = { pTexture, pView, initialState, finalState };
+		}
+
+		RHI::Texture* FindTexture(Reflect::TypeHandle resource);
+		RHI::TextureView* FindTextureView(Reflect::TypeHandle resource);
+		RHI::Buffer* FindBuffer(Reflect::TypeHandle resource);
 
 	private:
 		void AddEdge(List<List<usize>>& adjacency, usize beforeIndex, usize afterIndex);
@@ -72,6 +88,9 @@ namespace Horizon::Engine
 
 		b8 AcquireResources();
 		void RecordRendering(const RenderDrawContext& drawContext);
+		void RecordBarriers(const List<RenderBarrier>& barriers);
+
+		RenderResource* LookupResource(Reflect::TypeHandle resource, RenderResourceType type);
 
 	private:
 		Engine* m_engine = nullptr;
@@ -89,8 +108,10 @@ namespace Horizon::Engine
 
 		std::unordered_map<Reflect::TypeHandle, ResourceLifetime> m_lifetimes;
 		List<List<RenderBarrier>> m_nodeBarriers;
+		List<RenderBarrier> m_finalBarriers;
 
 		std::unordered_map<Reflect::TypeHandle, RenderResource> m_resources; // My shitty pool
+		std::unordered_map<Reflect::TypeHandle, ImportedTexture> m_importedTextures;
 
 		UniquePtr<RHI::CommandPool> m_pool = nullptr;
 		UniquePtr<RHI::CommandList> m_list = nullptr;

@@ -19,17 +19,9 @@ namespace Horizon::Rendering::Pass
 
 	void ForwardPass::Setup(const Engine::RenderSetupContext& setupContext, Engine::RenderDependency& graph)
 	{
-		RHI::TextureDesc colorDesc = {};
-		colorDesc.format = RHI::TextureFormat::RGBA8_UNORM;
-		colorDesc.usage = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::Sampled;
-		colorDesc.width = setupContext.colorImageDimension.X();
-		colorDesc.height = setupContext.colorImageDimension.Y();
-
-		graph.Creates<Resource::SceneColor>(colorDesc);
-		graph.Writes<Resource::SceneColor>(RHI::ResourceState::RenderTarget);
-
-		graph.Reads<Resource::SceneDepth>(RHI::ResourceState::DepthRead);
+		graph.Reads<Resource::SceneDepth>(RHI::ResourceState::DepthWrite);
 		graph.Reads<Resource::LightGrid>(RHI::ResourceState::ShaderResource);
+		graph.Writes<Resource::SceneColor>(RHI::ResourceState::RenderTarget);
 	}
 
 	void ForwardPass::Render(const Engine::RenderDrawContext& context)
@@ -47,6 +39,7 @@ namespace Horizon::Rendering::Pass
 		desc.depthAttachment.pView = GetTextureView<Resource::SceneDepth>();
 		desc.depthAttachment.loadOp = RHI::LoadOp::Load;
 		desc.depthAttachment.storeOp = RHI::StoreOp::Store;
+		desc.depthAttachment.readOnly = true;
 
 		pCmdList->StartRendering(desc);
 

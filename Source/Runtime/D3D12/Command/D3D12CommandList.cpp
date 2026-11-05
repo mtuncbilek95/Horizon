@@ -188,6 +188,7 @@ namespace Horizon::RHI
 
 		D3D12_RENDER_PASS_DEPTH_STENCIL_DESC depthStencil = {};
 		D3D12_RENDER_PASS_DEPTH_STENCIL_DESC* pDepthStencil = nullptr;
+		D3D12_RENDER_PASS_FLAGS flags = D3D12_RENDER_PASS_FLAG_NONE;
 
 		if (desc.depthAttachment.pView)
 		{
@@ -197,22 +198,39 @@ namespace Horizon::RHI
 			TextureFormat format = pView->GetFormat();
 			b8 hasStencil = format == TextureFormat::D24_UNORM_S8_UINT || format == TextureFormat::D32_FLOAT_S8_UINT;
 
-			depthStencil.cpuDescriptor = pView->DepthStencilHandle();
+			if (attachment.readOnly)
+			{
+				depthStencil.cpuDescriptor = pView->DepthStencilReadOnlyHandle();
 
-			depthStencil.DepthBeginningAccess.Type = Helpers::ToBeginningAccess(attachment.loadOp);
-			depthStencil.DepthBeginningAccess.Clear.ClearValue.Format = Helpers::ToFormat(format);
-			depthStencil.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = attachment.clearDepth;
-			depthStencil.DepthEndingAccess.Type = Helpers::ToEndingAccess(attachment.storeOp);
+				depthStencil.DepthBeginningAccess.Type = D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE;
+				depthStencil.DepthEndingAccess.Type = D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE;
 
-			depthStencil.StencilBeginningAccess.Type = hasStencil ? Helpers::ToBeginningAccess(attachment.loadOp) : D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS;
-			depthStencil.StencilBeginningAccess.Clear.ClearValue.Format = Helpers::ToFormat(format);
-			depthStencil.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = attachment.clearStencil;
-			depthStencil.StencilEndingAccess.Type = hasStencil ? Helpers::ToEndingAccess(attachment.storeOp) : D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS;
+				depthStencil.StencilBeginningAccess.Type = hasStencil ? D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE : D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS;
+				depthStencil.StencilEndingAccess.Type = hasStencil ? D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE : D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS;
+
+				flags |= D3D12_RENDER_PASS_FLAG_BIND_READ_ONLY_DEPTH;
+				if (hasStencil)
+					flags |= D3D12_RENDER_PASS_FLAG_BIND_READ_ONLY_STENCIL;
+			}
+			else
+			{
+				depthStencil.cpuDescriptor = pView->DepthStencilHandle();
+
+				depthStencil.DepthBeginningAccess.Type = Helpers::ToBeginningAccess(attachment.loadOp);
+				depthStencil.DepthBeginningAccess.Clear.ClearValue.Format = Helpers::ToFormat(format);
+				depthStencil.DepthBeginningAccess.Clear.ClearValue.DepthStencil.Depth = attachment.clearDepth;
+				depthStencil.DepthEndingAccess.Type = Helpers::ToEndingAccess(attachment.storeOp);
+
+				depthStencil.StencilBeginningAccess.Type = hasStencil ? Helpers::ToBeginningAccess(attachment.loadOp) : D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS;
+				depthStencil.StencilBeginningAccess.Clear.ClearValue.Format = Helpers::ToFormat(format);
+				depthStencil.StencilBeginningAccess.Clear.ClearValue.DepthStencil.Stencil = attachment.clearStencil;
+				depthStencil.StencilEndingAccess.Type = hasStencil ? Helpers::ToEndingAccess(attachment.storeOp) : D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS;
+			}
 
 			pDepthStencil = &depthStencil;
 		}
 
-		m_list->BeginRenderPass(desc.colorAttachmentCount, renderTargets, pDepthStencil, D3D12_RENDER_PASS_FLAG_NONE);
+		m_list->BeginRenderPass(desc.colorAttachmentCount, renderTargets, pDepthStencil, flags);
 	}
 
 	void D3D12CommandList::EndRendering()

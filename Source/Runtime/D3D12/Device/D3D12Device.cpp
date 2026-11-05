@@ -559,6 +559,14 @@ namespace Horizon::RHI
 
 			D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = Helpers::ToDepthStencilViewDesc(*pNewView);
 			m_device->CreateDepthStencilView(pTexture->Handle(), &dsvDesc, pNewView->m_dsvHandle);
+
+			pNewView->m_dsvReadOnlyHandle = m_dsvPool.Allocate();
+			if (pNewView->m_dsvReadOnlyHandle.ptr == 0)
+				return nullptr;
+
+			b8 hasStencil = pNewView->m_format == TextureFormat::D24_UNORM_S8_UINT || pNewView->m_format == TextureFormat::D32_FLOAT_S8_UINT;
+			dsvDesc.Flags = hasStencil ? (D3D12_DSV_FLAG_READ_ONLY_DEPTH | D3D12_DSV_FLAG_READ_ONLY_STENCIL) : D3D12_DSV_FLAG_READ_ONLY_DEPTH;
+			m_device->CreateDepthStencilView(pTexture->Handle(), &dsvDesc, pNewView->m_dsvReadOnlyHandle);
 		}
 
 		return pNewView;

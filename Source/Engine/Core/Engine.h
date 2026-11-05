@@ -90,6 +90,7 @@ namespace Horizon::Engine
 		void FlushPending();
 		void Activate(Module* pModule);
 		void Shutdown();
+
 	private:
 		PAL::Timer m_timer;
 		EngineFrame m_frameContext;

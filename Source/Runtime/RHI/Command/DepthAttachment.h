@@ -14,5 +14,6 @@ namespace Horizon::RHI
 		StoreOp storeOp = StoreOp::Store;
 		f32 clearDepth = 1.0f;
 		u8 clearStencil = 0;
+		b8 readOnly = false;
 	};
 }

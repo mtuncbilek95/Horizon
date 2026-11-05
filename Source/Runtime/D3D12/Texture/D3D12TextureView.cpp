@@ -11,5 +11,8 @@ namespace Horizon::RHI
 
 		if (m_dsvHandle.ptr != 0)
 			m_dsvPool->Free(m_dsvHandle);
+
+		if (m_dsvReadOnlyHandle.ptr != 0)
+			m_dsvPool->Free(m_dsvReadOnlyHandle);
 	}
 }

@@ -101,14 +101,22 @@ namespace Horizon::Engine
 
 		// Compile graph
 		if (!CompileGraph(dependencyList))
+		{
+			m_importedTextures.clear();
 			return;
+		}
 
 		// Get missing resources
 		if (!AcquireResources())
+		{
+			m_importedTextures.clear();
 			return;
+		}
 
 		// Execute graph
 		RecordRendering(drawContext);
+
+		m_importedTextures.clear();
 	}
 
 	void RenderGraph::OnFinalize()
@@ -120,7 +128,9 @@ namespace Horizon::Engine
 			m_activeNodes[i - 1]->OnFinalize();
 
 		m_resources.clear();
+		m_importedTextures.clear();
 		m_nodeBarriers.Clear();
+		m_finalBarriers.Clear();
 		m_lifetimes.clear();
 		m_order.Clear();
 		m_adjacency.Clear();
@@ -136,6 +146,41 @@ namespace Horizon::Engine
 
 	void RenderGraph::OnLibraryUnregistered(const ReflectionLibrary& library)
 	{
+	}
+
+	RHI::Texture* RenderGraph::FindTexture(Reflect::TypeHandle resource)
+	{
+		auto imported = m_importedTextures.find(resource);
+		if (imported != m_importedTextures.end())
+			return imported->second.pTexture;
+
+		RenderResource* pResource = LookupResource(resource, RenderResourceType::Texture);
+		if (!pResource)
+			return nullptr;
+
+		return pResource->texture.Get();
+	}
+
+	RHI::TextureView* RenderGraph::FindTextureView(Reflect::TypeHandle resource)
+	{
+		auto imported = m_importedTextures.find(resource);
+		if (imported != m_importedTextures.end())
+			return imported->second.pView;
+
+		RenderResource* pResource = LookupResource(resource, RenderResourceType::Texture);
+		if (!pResource)
+			return nullptr;
+
+		return pResource->texView.Get();
+	}
+
+	RHI::Buffer* RenderGraph::FindBuffer(Reflect::TypeHandle resource)
+	{
+		RenderResource* pResource = LookupResource(resource, RenderResourceType::Buffer);
+		if (!pResource)
+			return nullptr;
+
+		return pResource->buffer.Get();
 	}
 
 	void RenderGraph::AddEdge(List<List<usize>>& adjacency, usize beforeIndex, usize afterIndex)
@@ -192,6 +237,12 @@ namespace Horizon::Engine
 					return false;
 				}
 
+				if (m_importedTextures.find(create.resource) != m_importedTextures.end())
+				{
+					Terminal::Error(StringHelper::GetTypeName(this), "{} creates {} but it is imported into the graph.", nodeName, pResourceType->GetName());
+					return false;
+				}
+
 				if (!m_creatorLookup.emplace(create.resource, i).second)
 				{
 					Terminal::Error(StringHelper::GetTypeName(this), "{} creates {} but another node already creates it.", nodeName, pResourceType->GetName());
@@ -234,9 +285,9 @@ namespace Horizon::Engine
 			// Reading a resource that no node creates
 			for (const auto& access : depend.m_reads)
 			{
-				if (m_creatorLookup.find(access.resource) == m_creatorLookup.end())
+				if (m_creatorLookup.find(access.resource) == m_creatorLookup.end() && m_importedTextures.find(access.resource) == m_importedTextures.end())
 				{
-					Terminal::Error(StringHelper::GetTypeName(this), "{} reads a resource that no node creates.", nodeName);
+					Terminal::Error(StringHelper::GetTypeName(this), "{} reads a resource that is neither created nor imported.", nodeName);
 					return false;
 				}
 			}
@@ -244,9 +295,9 @@ namespace Horizon::Engine
 			// Reading a resource that no node creates
 			for (const auto& access : depend.m_writes)
 			{
-				if (m_creatorLookup.find(access.resource) == m_creatorLookup.end())
+				if (m_creatorLookup.find(access.resource) == m_creatorLookup.end() && m_importedTextures.find(access.resource) == m_importedTextures.end())
 				{
-					Terminal::Error(StringHelper::GetTypeName(this), "{} writes a resource that no node creates.", nodeName);
+					Terminal::Error(StringHelper::GetTypeName(this), "{} writes a resource that is neither created nor imported.", nodeName);
 					return false;
 				}
 			}
@@ -291,17 +342,23 @@ namespace Horizon::Engine
 			// Creator of each read resource runs before this node
 			for (const auto& access : depend.m_reads)
 			{
-				usize creator = m_creatorLookup[access.resource];
-				if (creator != i)
-					AddEdge(adjacency, creator, i);
+				auto it = m_creatorLookup.find(access.resource);
+				if (it == m_creatorLookup.end())
+					continue;
+
+				if (it->second != i)
+					AddEdge(adjacency, it->second, i);
 			}
 
 			// Creator of each written resource runs before this node
 			for (const auto& access : depend.m_writes)
 			{
-				usize creator = m_creatorLookup[access.resource];
-				if (creator != i)
-					AddEdge(adjacency, creator, i);
+				auto it = m_creatorLookup.find(access.resource);
+				if (it == m_creatorLookup.end())
+					continue;
+
+				if (it->second != i)
+					AddEdge(adjacency, it->second, i);
 			}
 		}
 
@@ -466,6 +523,9 @@ namespace Horizon::Engine
 		std::unordered_map<Reflect::TypeHandle, TrackedState> trackedStates;
 		std::unordered_map<Reflect::TypeHandle, NodeAccess> nodeAccesses;
 
+		for (const auto& pair : m_importedTextures)
+			trackedStates[pair.first] = { pair.second.initialState, false };
+
 		// Start running order list
 		for (usize node : order)
 		{
@@ -508,6 +568,14 @@ namespace Horizon::Engine
 				tracked.state = access.state;
 				tracked.written = access.writes;
 			}
+		}
+
+		m_finalBarriers.Clear();
+		for (const auto& pair : m_importedTextures)
+		{
+			TrackedState& tracked = trackedStates[pair.first];
+			if (tracked.state != pair.second.finalState)
+				m_finalBarriers.PushBack({ pair.first, tracked.state, pair.second.finalState });
 		}
 
 		return true;
@@ -610,34 +678,14 @@ namespace Horizon::Engine
 
 		for (usize node : m_order)
 		{
-			for (const RenderBarrier& barrier : m_nodeBarriers[node])
-			{
-				RenderResource& resource = m_resources[barrier.resource];
-
-				if (resource.type == RenderResourceType::Texture)
-				{
-					RHI::TextureBarrier texBarrier = {};
-					texBarrier.pTexture = resource.texture.Get();
-					texBarrier.before = barrier.before;
-					texBarrier.after = barrier.after;
-
-					m_list->Barrier({ texBarrier });
-				}
-				else
-				{
-					RHI::BufferBarrier bufBarrier = {};
-					bufBarrier.pBuffer = resource.buffer.Get();
-					bufBarrier.before = barrier.before;
-					bufBarrier.after = barrier.after;
-
-					m_list->Barrier({ bufBarrier });
-				}
-			}
+			RecordBarriers(m_nodeBarriers[node]);
 
 			m_activeNodes[node]->m_cmdList = m_list.Get();
 			m_activeNodes[node]->Render(drawContext);
 			m_activeNodes[node]->m_cmdList = nullptr;
 		}
+
+		RecordBarriers(m_finalBarriers);
 
 		m_list->End();
 		m_fenceValue++;
@@ -645,5 +693,44 @@ namespace Horizon::Engine
 		pDevice->Submit(RHI::QueueType::Graphics, { m_list.Get() });
 		m_fenceValue = pDevice->Signal(RHI::QueueType::Graphics, m_fence.Get());
 		m_fence->WaitCPU(m_fenceValue);
+	}
+
+	void RenderGraph::RecordBarriers(const List<RenderBarrier>& barriers)
+	{
+		for (const RenderBarrier& barrier : barriers)
+		{
+			auto imported = m_importedTextures.find(barrier.resource);
+			if (imported != m_importedTextures.end())
+			{
+				RHI::TextureBarrier texBarrier = {};
+				texBarrier.pTexture = imported->second.pTexture;
+				texBarrier.before = barrier.before;
+				texBarrier.after = barrier.after;
+
+				m_list->Barrier({ texBarrier });
+				continue;
+			}
+
+			RenderResource& resource = m_resources[barrier.resource];
+
+			if (resource.type == RenderResourceType::Texture)
+			{
+				RHI::TextureBarrier texBarrier = {};
+				texBarrier.pTexture = resource.texture.Get();
+				texBarrier.before = barrier.before;
+				texBarrier.after = barrier.after;
+
+				m_list->Barrier({ texBarrier });
+			}
+			else
+			{
+				RHI::BufferBarrier bufBarrier = {};
+				bufBarrier.pBuffer = resource.buffer.Get();
+				bufBarrier.before = barrier.before;
+				bufBarrier.after = barrier.after;
+
+				m_list->Barrier({ bufBarrier });
+			}
+		}
 	}
 }
