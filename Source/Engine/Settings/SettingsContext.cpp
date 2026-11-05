@@ -1,6 +1,6 @@
 #include "SettingsContext.h"
 
-#include <Engine/Core/ModuleGraph.h>
+#include <Engine/Core/ModuleDependency.h>
 
 namespace Horizon::Engine
 {
@@ -13,7 +13,7 @@ namespace Horizon::Engine
 	{
 	}
 
-	void SettingsContext::DeclareDependencies(ModuleGraph& graph)
+	void SettingsContext::DeclareDependencies(ModuleDependency& graph)
 	{
 	}
 }

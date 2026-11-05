@@ -11,6 +11,7 @@
 #include <Engine/Window/WindowService.h>
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/World/WorldService.h>
+#include <Engine/Presentation/PresentationService.h>
 
 #include <Runtime/PAL/Console/Console.h>
 #include <Runtime/PAL/Timer/Timer.h>
@@ -129,12 +130,11 @@ namespace Horizon::Editor
 		m_editorRenderer.Reset();
 	}
 
-	void EditorService::DeclareDependencies(Engine::ModuleGraph& graph)
+	void EditorService::DeclareDependencies(Engine::ModuleDependency& graph)
 	{
-		graph.Requires<Engine::WindowService>();
-		graph.Requires<Engine::GraphicsContext>();
-		graph.Requires<DomainService>();
-		graph.Requires<Engine::WorldService>();
+		graph.InitAfter<Engine::WindowService, Engine::GraphicsContext, DomainService, Engine::WorldService, 
+			Engine::PresentationService>();
+		graph.RunBefore<Engine::PresentationService>();
 	}
 
 	void EditorService::OnLibraryRegistered(const Engine::ReflectionLibrary& library)

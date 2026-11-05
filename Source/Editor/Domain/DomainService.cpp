@@ -5,7 +5,7 @@
 #include <Editor/ImportPipeline/ImporterRegistry.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
 
-#include <Engine/Core/ModuleGraph.h>
+#include <Engine/Core/ModuleDependency.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Asset/AssetService.h>
 #include <Engine/Reflection/ReflectionSystem.h>
@@ -71,10 +71,9 @@ namespace Horizon::Editor
 		m_root = nullptr;
 	}
 
-	void DomainService::DeclareDependencies(Engine::ModuleGraph& graph)
+	void DomainService::DeclareDependencies(Engine::ModuleDependency& graph)
 	{
-		graph.Requires<Engine::AssetService>();
-		graph.Requires<ProjectContext>();
+		graph.InitAfter<Engine::AssetService, ProjectContext>();
 	}
 
 	void DomainService::OnLibraryRegistered(const Engine::ReflectionLibrary& library)

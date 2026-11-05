@@ -10,7 +10,7 @@ namespace Horizon::Engine
 	public:
 		ModuleReport OnInitialize() final;
 		void OnFinalize() final;
-		void DeclareDependencies(ModuleGraph& graph) final;
+		void DeclareDependencies(ModuleDependency& graph) final;
 
 	private:
 		EngineSettings m_settings;

@@ -28,7 +28,7 @@ namespace Horizon::Editor
 		Engine::ModuleReport OnInitialize() final;
 		void OnExecute(const Engine::EngineFrame& ctx) final;
 		void OnFinalize() final;
-		void DeclareDependencies(Engine::ModuleGraph& graph) final;
+		void DeclareDependencies(Engine::ModuleDependency& graph) final;
 
 		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
 		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;

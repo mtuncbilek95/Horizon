@@ -65,9 +65,9 @@ namespace Horizon::Editor
 	{
 	}
 
-	void ProjectContext::DeclareDependencies(Engine::ModuleGraph& graph)
+	void ProjectContext::DeclareDependencies(Engine::ModuleDependency& graph)
 	{
-		graph.Precedes<Engine::WindowService>();
+		graph.InitBefore<Engine::WindowService>();
 	}
 
 	void ProjectContext::SetPluginEnabled(const std::string& name, b8 enabled)

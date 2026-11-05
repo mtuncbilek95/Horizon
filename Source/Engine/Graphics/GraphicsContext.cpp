@@ -1,7 +1,7 @@
 #include "GraphicsContext.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Core/ModuleGraph.h>
+#include <Engine/Core/ModuleDependency.h>
 #include <Engine/Window/WindowService.h>
 
 #include <Runtime/Containers/StringHelper.h>
@@ -80,9 +80,9 @@ namespace Horizon::Engine
 		m_device = nullptr;
 	}
 
-	void GraphicsContext::DeclareDependencies(ModuleGraph& graph)
+	void GraphicsContext::DeclareDependencies(ModuleDependency& graph)
 	{
-		graph.Requires<WindowService>();
+		graph.InitAfter<WindowService>();
 	}
 
 	void GraphicsContext::OnLibraryRegistered(const ReflectionLibrary& library)

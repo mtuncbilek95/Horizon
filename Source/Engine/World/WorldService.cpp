@@ -36,10 +36,10 @@ namespace Horizon::Engine
 		m_graph->OnFinalize();
 	}
 
-	void WorldService::DeclareDependencies(ModuleGraph& graph)
+	void WorldService::DeclareDependencies(ModuleDependency& graph)
 	{
-		graph.Requires<AssetService>();
-		graph.Requires<GraphicsContext>();
+		graph.InitAfter<AssetService, 
+			GraphicsContext>();
 	}
 
 	void WorldService::OnLibraryRegistered(const ReflectionLibrary& library)

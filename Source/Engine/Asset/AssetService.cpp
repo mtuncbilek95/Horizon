@@ -2,7 +2,7 @@
 
 #include <Engine/Asset/AssetLoadSystem.h>
 #include <Engine/Core/Engine.h>
-#include <Engine/Core/ModuleGraph.h>
+#include <Engine/Core/ModuleDependency.h>
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 
@@ -51,9 +51,9 @@ namespace Horizon::Engine
 		m_streamerLookup.clear();
 	}
 
-	void AssetService::DeclareDependencies(ModuleGraph& graph)
+	void AssetService::DeclareDependencies(ModuleDependency& graph)
 	{
-		graph.Requires<GraphicsContext>();
+		graph.InitAfter<GraphicsContext>();
 	}
 
 	void AssetService::OnLibraryRegistered(const ReflectionLibrary& library)

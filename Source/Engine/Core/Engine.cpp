@@ -5,10 +5,53 @@
 #include <Engine/Job/JobSystem.h>
 #include <Engine/Plugin/PluginSystem.h>
 
-#include <unordered_set>
-
 namespace Horizon::Engine
 {
+	namespace
+	{
+		b8 StableTopologicalSort(const List<List<usize>>& adjacency, List<usize>& outOrder)
+		{
+			const usize count = adjacency.GetCount();
+
+			List<usize> indegree(count);
+			for (const List<usize>& edges : adjacency)
+			{
+				for (usize after : edges)
+					indegree[after]++;
+			}
+
+			List<b8> emitted(count);
+
+			outOrder.Clear();
+			outOrder.Reserve(count);
+
+			while (outOrder.GetCount() < count)
+			{
+				usize next = count;
+
+				for (usize i = 0; i < count; i++)
+				{
+					if (!emitted[i] && indegree[i] == 0)
+					{
+						next = i;
+						break;
+					}
+				}
+
+				if (next == count)
+					return false;
+
+				emitted[next] = true;
+				outOrder.PushBack(next);
+
+				for (usize after : adjacency[next])
+					indegree[after]--;
+			}
+
+			return true;
+		}
+	}
+
 	Engine::Engine()
 	{
 		m_reflectionSystem = MakeUnique<ReflectionSystem>(this);
@@ -40,7 +83,7 @@ namespace Horizon::Engine
 
 			m_frameContext.Advance(deltaTime);
 
-			for (Service* pService : m_activeServices)
+			for (const UniquePtr<Service>& pService : m_activeServices)
 				pService->OnExecute(m_frameContext);
 		}
 
@@ -63,7 +106,7 @@ namespace Horizon::Engine
 			return false;
 
 		const ReflectionLibrary* pLibraryTypes = m_reflectionSystem->FindLibrary(pLibrary);
-		
+
 		// Do some shit on libraries that wants to use.
 		for (Module* pModule : m_shutdownOrder)
 			pModule->OnLibraryRegistered(*pLibraryTypes);
@@ -90,7 +133,7 @@ namespace Horizon::Engine
 
 	b8 Engine::IsRegistered(std::type_index index) const
 	{
-		if (m_lookupServices.contains(index) || m_lookupContexts.contains(index))
+		if (IsActive(index))
 			return true;
 
 		for (Module* pModule : m_registerPending)
@@ -102,6 +145,11 @@ namespace Horizon::Engine
 		return false;
 	}
 
+	b8 Engine::IsActive(std::type_index index) const
+	{
+		return m_lookupServices.contains(index) || m_lookupContexts.contains(index);
+	}
+
 	void Engine::FlushPending()
 	{
 		while (!m_registerPending.IsEmpty())
@@ -109,34 +157,12 @@ namespace Horizon::Engine
 			List<Module*> batch;
 			batch.Swap(m_registerPending);
 
-			std::unordered_map<std::type_index, Module*> batchById;
-			List<std::type_index> nodes;
-			nodes.Reserve(batch.GetCount());
-
-			m_dependencyGraph.Clear();
-
 			for (Module* pModule : batch)
-			{
-				const std::type_index index = pModule->GetTypeId();
+				pModule->DeclareDependencies(pModule->m_dependency);
 
-				batchById.emplace(index, pModule);
-				nodes.PushBack(index);
+			List<usize> order;
 
-				m_dependencyGraph.BeginNode(index);
-				pModule->DeclareDependencies(m_dependencyGraph);
-			}
-
-			std::unordered_set<std::type_index> satisfied;
-
-			for (const auto& pair : m_lookupServices)
-				satisfied.insert(pair.first);
-
-			for (const auto& pair : m_lookupContexts)
-				satisfied.insert(pair.first);
-
-			List<std::type_index> order;
-
-			if (!m_dependencyGraph.Resolve(nodes, satisfied, order))
+			if (!ResolveInitOrder(batch, order))
 			{
 				for (Module* pModule : batch)
 					delete pModule;
@@ -145,9 +171,141 @@ namespace Horizon::Engine
 				return;
 			}
 
-			for (const auto& index : order)
-				Activate(batchById[index]);
+			const usize serviceCount = m_activeServices.GetCount();
+
+			for (usize index : order)
+				Activate(batch[index]);
+
+			if (m_activeServices.GetCount() == serviceCount)
+				continue;
+
+			if (!SortServices())
+			{
+				RequestExit("Service run order could not be resolved");
+				return;
+			}
 		}
+	}
+
+	b8 Engine::ResolveInitOrder(const List<Module*>& batch, List<usize>& outOrder)
+	{
+		std::unordered_map<std::type_index, usize> batchLookup;
+
+		for (usize i = 0; i < batch.GetCount(); i++)
+			batchLookup.emplace(batch[i]->GetTypeId(), i);
+
+		List<List<usize>> adjacency(batch.GetCount());
+
+		for (usize i = 0; i < batch.GetCount(); i++)
+		{
+			const std::type_index owner = batch[i]->GetTypeId();
+			const ModuleDependency& dependency = batch[i]->m_dependency;
+
+			for (const std::type_index& target : dependency.m_initAfterList)
+			{
+				if (IsActive(target))
+					continue;
+
+				auto it = batchLookup.find(target);
+				if (it == batchLookup.end())
+				{
+					Terminal::Warn(StringHelper::GetTypeName(this), "{} inits after unregistered module {}, dropping the constraint", StringHelper::GetNameString(owner.name()), StringHelper::GetNameString(target.name()));
+					continue;
+				}
+
+				adjacency[it->second].PushBack(i);
+			}
+
+			for (const std::type_index& target : dependency.m_initBeforeList)
+			{
+				if (IsActive(target))
+				{
+					Terminal::Warn(StringHelper::GetTypeName(this), "{} inits before {} but {} is already active, dropping the constraint", StringHelper::GetNameString(owner.name()), StringHelper::GetNameString(target.name()), StringHelper::GetNameString(target.name()));
+					continue;
+				}
+
+				auto it = batchLookup.find(target);
+				if (it == batchLookup.end())
+				{
+					Terminal::Warn(StringHelper::GetTypeName(this), "{} inits before unregistered module {}, dropping the constraint", StringHelper::GetNameString(owner.name()), StringHelper::GetNameString(target.name()));
+					continue;
+				}
+
+				adjacency[i].PushBack(it->second);
+			}
+
+			const b8 hasRunConstraints = !dependency.m_runBeforeList.IsEmpty() || !dependency.m_runAfterList.IsEmpty();
+
+			if (hasRunConstraints && !dynamic_cast<Service*>(batch[i]))
+				Terminal::Warn(StringHelper::GetTypeName(this), "{} is a context, its run constraints are dropped", StringHelper::GetNameString(owner.name()));
+		}
+
+		if (!StableTopologicalSort(adjacency, outOrder))
+		{
+			Terminal::Fatal(StringHelper::GetTypeName(this), "Cyclic init dependency detected inside the pending module batch");
+			return false;
+		}
+
+		return true;
+	}
+
+	b8 Engine::SortServices()
+	{
+		const usize count = m_activeServices.GetCount();
+
+		List<List<usize>> adjacency(count);
+
+		for (usize i = 0; i < count; i++)
+		{
+			const std::type_index owner = m_activeServices[i]->GetTypeId();
+			const ModuleDependency& dependency = m_activeServices[i]->m_dependency;
+
+			for (const std::type_index& target : dependency.m_runBeforeList)
+			{
+				auto it = m_lookupServices.find(target);
+				if (it == m_lookupServices.end())
+				{
+					Terminal::Warn(StringHelper::GetTypeName(this), "{} runs before {} which is not an active service, dropping the constraint", StringHelper::GetNameString(owner.name()), StringHelper::GetNameString(target.name()));
+					continue;
+				}
+
+				adjacency[i].PushBack(it->second);
+			}
+
+			for (const std::type_index& target : dependency.m_runAfterList)
+			{
+				auto it = m_lookupServices.find(target);
+				if (it == m_lookupServices.end())
+				{
+					Terminal::Warn(StringHelper::GetTypeName(this), "{} runs after {} which is not an active service, dropping the constraint", StringHelper::GetNameString(owner.name()), StringHelper::GetNameString(target.name()));
+					continue;
+				}
+
+				adjacency[it->second].PushBack(i);
+			}
+		}
+
+		List<usize> order;
+
+		if (!StableTopologicalSort(adjacency, order))
+		{
+			Terminal::Fatal(StringHelper::GetTypeName(this), "Cyclic run dependency detected between active services");
+			return false;
+		}
+
+		List<UniquePtr<Service>> sorted;
+		sorted.Reserve(count);
+
+		for (usize index : order)
+			sorted.PushBack(std::move(m_activeServices[index]));
+
+		m_activeServices.Swap(sorted);
+		m_lookupServices.clear();
+
+		for (usize i = 0; i < count; i++)
+			m_lookupServices.emplace(m_activeServices[i]->GetTypeId(), i);
+
+		return true;
 	}
 
 	void Engine::Activate(Module* pModule)
@@ -166,12 +324,12 @@ namespace Horizon::Engine
 		if (Service* pService = dynamic_cast<Service*>(pModule))
 		{
 			m_lookupServices.emplace(index, m_activeServices.GetCount());
-			m_activeServices.PushBack(pService);
+			m_activeServices.PushBack(UniquePtr<Service>(pService));
 		}
 		else
 		{
 			m_lookupContexts.emplace(index, m_activeContexts.GetCount());
-			m_activeContexts.PushBack(static_cast<Context*>(pModule));
+			m_activeContexts.PushBack(UniquePtr<Context>(static_cast<Context*>(pModule)));
 		}
 
 		m_shutdownOrder.PushBack(pModule);
@@ -186,7 +344,20 @@ namespace Horizon::Engine
 			m_shutdownOrder[i - 1]->OnFinalize();
 
 		for (usize i = m_shutdownOrder.GetCount(); i > 0; --i)
-			delete m_shutdownOrder[i - 1];
+		{
+			const std::type_index index = m_shutdownOrder[i - 1]->GetTypeId();
+
+			auto service = m_lookupServices.find(index);
+			if (service != m_lookupServices.end())
+			{
+				m_activeServices[service->second].Reset();
+				continue;
+			}
+
+			auto context = m_lookupContexts.find(index);
+			if (context != m_lookupContexts.end())
+				m_activeContexts[context->second].Reset();
+		}
 
 		for (Module* pModule : m_registerPending)
 			delete pModule;
@@ -197,6 +368,5 @@ namespace Horizon::Engine
 		m_activeContexts.Clear();
 		m_lookupServices.clear();
 		m_lookupContexts.clear();
-		m_dependencyGraph.Clear();
 	}
 }

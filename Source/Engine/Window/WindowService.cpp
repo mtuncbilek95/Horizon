@@ -94,7 +94,7 @@ namespace Horizon::Engine
 		delete pWindow;
 	}
 
-	void WindowService::DeclareDependencies(ModuleGraph& graph)
+	void WindowService::DeclareDependencies(ModuleDependency& graph)
 	{
 	}
 

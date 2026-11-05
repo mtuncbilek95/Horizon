@@ -135,9 +135,10 @@ namespace Horizon::Engine
 		JPH::Factory::sInstance = nullptr;
 	}
 
-	void PhysicsService::DeclareDependencies(ModuleGraph& graph)
+	void PhysicsService::DeclareDependencies(ModuleDependency& graph)
 	{
-		graph.Precedes<WorldService>();
+		graph.InitBefore<WorldService>();
+		graph.RunBefore<WorldService>();
 	}
 
 	JPH::PhysicsSystem* PhysicsService::GetWorld() const

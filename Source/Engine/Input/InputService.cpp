@@ -1,7 +1,7 @@
 #include "InputService.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Core/ModuleGraph.h>
+#include <Engine/Core/ModuleDependency.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/World/WorldService.h>
 
@@ -27,9 +27,10 @@ namespace Horizon::Engine
 		m_devices = nullptr;
 	}
 
-	void InputService::DeclareDependencies(ModuleGraph& graph)
+	void InputService::DeclareDependencies(ModuleDependency& graph)
 	{
-		graph.Precedes<WorldService>();
+		graph.InitBefore<WorldService>();
+		graph.RunBefore<WorldService>();
 	}
 
 	void InputService::OnLibraryRegistered(const ReflectionLibrary& library)

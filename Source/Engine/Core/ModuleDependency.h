@@ -2,6 +2,8 @@
 
 #include <Runtime/Containers/Vector/List.h>
 
+#include <typeindex>
+
 namespace Horizon::Engine
 {
 	class ModuleDependency

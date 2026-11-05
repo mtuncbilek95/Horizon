@@ -1,12 +1,12 @@
 #pragma once
 
+#include <Engine/Core/ModuleDependency.h>
 #include <Engine/Core/ModuleReport.h>
 #include <typeindex>
 
 namespace Horizon::Engine
 {
 	class Engine;
-	class ModuleGraph;
 	struct ReflectionLibrary;
 
 	class ENGINE_API Module
@@ -18,7 +18,7 @@ namespace Horizon::Engine
 
 		virtual ModuleReport OnInitialize() = 0;
 		virtual void OnFinalize() = 0;
-		virtual void DeclareDependencies(ModuleGraph& graph) = 0;
+		virtual void DeclareDependencies(ModuleDependency& graph) = 0;
 
 		virtual void OnLibraryRegistered(const ReflectionLibrary& library) = 0;
 		virtual void OnLibraryUnregistered(const ReflectionLibrary& library) = 0;
@@ -34,5 +34,6 @@ namespace Horizon::Engine
 
 	private:
 		Engine* m_engine = nullptr;
+		ModuleDependency m_dependency;
 	};
 }

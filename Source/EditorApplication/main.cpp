@@ -9,8 +9,7 @@
 #include <Engine/World/WorldService.h>
 #include <Engine/Physics/PhysicsService.h>
 #include <Engine/Input/InputService.h>
-
-#include <Runtime/PAL/Console/Console.h>
+#include <Engine/Presentation/PresentationService.h>
 
 #include "TypeManifestation.h"
 
@@ -55,6 +54,7 @@ int main(int argC, char** argV)
 	engine.RegisterModule<Engine::InputService>();
 	engine.RegisterModule<Editor::EditorService>();
 	engine.RegisterModule<Engine::PhysicsService>();
+	engine.RegisterModule<Engine::PresentationService>();
 
 	engine.Run();
 }

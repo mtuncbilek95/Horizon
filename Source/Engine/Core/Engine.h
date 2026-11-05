@@ -2,7 +2,7 @@
 
 #include <Engine/Core/Context.h>
 #include <Engine/Core/Service.h>
-#include <Engine/Core/ModuleGraph.h>
+#include <Engine/Core/ModuleDependency.h>
 #include <Engine/Core/EngineFrame.h>
 #include <Engine/Game/GameSystem.h>
 #include <Engine/Job/JobSystem.h>
@@ -57,7 +57,7 @@ namespace Horizon::Engine
 				Terminal::Error(StringHelper::GetTypeName(this), "{} could not found", typeid(T).name());
 				return nullptr;
 			}
-			return (T*)m_activeServices[it->second];
+			return (T*)m_activeServices[it->second].Get();
 		}
 
 		template<typename T>
@@ -70,7 +70,7 @@ namespace Horizon::Engine
 				Terminal::Error(StringHelper::GetTypeName(this), "{} could not found", typeid(T).name());
 				return nullptr;
 			}
-			return (T*)m_activeContexts[it->second];
+			return (T*)m_activeContexts[it->second].Get();
 		}
 
 		void Run();
@@ -87,7 +87,10 @@ namespace Horizon::Engine
 
 	private:
 		b8 IsRegistered(std::type_index index) const;
+		b8 IsActive(std::type_index index) const;
 		void FlushPending();
+		b8 ResolveInitOrder(const List<Module*>& batch, List<usize>& outOrder);
+		b8 SortServices();
 		void Activate(Module* pModule);
 		void Shutdown();
 
@@ -95,14 +98,13 @@ namespace Horizon::Engine
 		PAL::Timer m_timer;
 		EngineFrame m_frameContext;
 
-		ModuleGraph m_dependencyGraph;
 		List<Module*> m_registerPending;
 		List<Module*> m_shutdownOrder;
 
-		List<Service*> m_activeServices;
+		List<UniquePtr<Service>> m_activeServices;
 		std::unordered_map<std::type_index, usize> m_lookupServices;
 
-		List<Context*> m_activeContexts;
+		List<UniquePtr<Context>> m_activeContexts;
 		std::unordered_map<std::type_index, usize> m_lookupContexts;
 
 		UniquePtr<ReflectionSystem> m_reflectionSystem;
