@@ -11,7 +11,7 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class ENGINE_API SceneAssetStreamer : public AssetLoadSystem
+	class SceneAssetStreamer : public AssetLoadSystem
 	{
 		HORIZON_TYPE_REFLECT(SceneAssetStreamer);
 	public:

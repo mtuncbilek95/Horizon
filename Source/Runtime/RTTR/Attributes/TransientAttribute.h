@@ -5,7 +5,7 @@
 
 namespace Horizon::Reflect
 {
-	class RUNTIME_API TransientAttribute final : public Attribute
+	class TransientAttribute final : public Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(TransientAttribute);
 	public:

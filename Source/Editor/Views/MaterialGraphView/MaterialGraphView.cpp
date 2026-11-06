@@ -273,12 +273,4 @@ namespace Horizon::Editor
 
 		ed::SetCurrentEditor(nullptr);
 	}
-
-	void MaterialGraphView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-	{
-	}
-
-	void MaterialGraphView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-	{
-	}
 }

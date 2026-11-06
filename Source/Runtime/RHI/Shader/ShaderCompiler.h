@@ -4,7 +4,7 @@
 
 namespace Horizon::RHI
 {
-	struct RUNTIME_API ShaderCompiler
+	struct ShaderCompiler
 	{
 		static List<u8> Compile(const ShaderCompileDesc& desc);
 	};

@@ -6,7 +6,7 @@
 namespace Horizon::Rendering::Pass
 {
 	HCLASS();
-	class ENGINE_API LightCullingPass : public Engine::RenderNode
+	class LightCullingPass : public Engine::RenderNode
 	{
 		HORIZON_TYPE_REFLECT(LightCullingPass);
 	public:

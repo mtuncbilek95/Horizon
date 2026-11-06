@@ -12,7 +12,7 @@ namespace Horizon::PAL
 
 namespace Horizon::Editor
 {
-	struct EDITOR_API ChromeBar final
+	struct ChromeBar final
 	{
 		static constexpr f32 Height = 32.0f;
 		static constexpr f32 ButtonWidth = 46.0f;

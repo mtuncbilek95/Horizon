@@ -11,7 +11,7 @@ namespace Horizon::Engine
 
 namespace Horizon::Editor
 {
-	class EDITOR_API EntityPickerWidget
+	class EntityPickerWidget
 	{
 	public:
 		static constexpr const c8* PayloadName = "HZ_ENTITY";

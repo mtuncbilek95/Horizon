@@ -9,7 +9,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ImportPipelineInfoAttribute[Reflect::TypeOf<Engine::MeshAsset>(), Reflect::TypeOf<MeshAssetImportSettings>(), { ".fbx", ".gltf", ".glb", ".obj" }]);
-	class EDITOR_API MeshAssetImportPipeline : public ImportPipeline
+	class MeshAssetImportPipeline : public ImportPipeline
 	{
 		HORIZON_TYPE_REFLECT(MeshAssetImportPipeline);
 	public:

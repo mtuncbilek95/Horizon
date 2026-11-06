@@ -18,7 +18,7 @@ namespace Horizon::RHI
 namespace Horizon::Editor
 {
 	HCLASS(EditorView[ICON_FA_MOUNTAIN_SUN, "Scene", DockZone::Center, EditorViewFlags::OpenOnStart]);
-	class EDITOR_API SceneView : public ViewObject
+	class SceneView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(SceneView);
 	public:
@@ -27,9 +27,6 @@ namespace Horizon::Editor
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
 		b8 IsFullBleed() const { return true; }
 

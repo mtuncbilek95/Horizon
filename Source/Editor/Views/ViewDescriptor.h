@@ -8,7 +8,7 @@
 
 namespace Horizon::Editor
 {
-	struct EDITOR_API ViewDescriptor
+	struct ViewDescriptor
 	{
 		std::string displayName;
 		EditorViewFlags flags;

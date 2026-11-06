@@ -12,7 +12,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API Scene
+	class Scene
 	{
 	public:
 		Scene(ReflectionSystem* pReflection);

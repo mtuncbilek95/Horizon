@@ -5,7 +5,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API Service : public Module
+	class Service : public Module
 	{
 	public:
 		Service() = default;

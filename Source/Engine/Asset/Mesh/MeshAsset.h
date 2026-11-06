@@ -18,7 +18,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(AssetType[AssetKind::Streamable]);
-	class ENGINE_API MeshAsset : public AssetObject
+	class MeshAsset : public AssetObject
 	{
 		HORIZON_TYPE_REFLECT(MeshAsset);
 		friend class MeshAssetStreamer;

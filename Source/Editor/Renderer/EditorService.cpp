@@ -117,28 +117,4 @@ namespace Horizon::Editor
 			Engine::PresentationService>();
 		graph.RunBefore<Engine::PresentationService>();
 	}
-
-	void EditorService::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-	{
-		if (m_menuRegistry)
-			m_menuRegistry->OnLibraryRegistered(library);
-
-		if (m_toolRegistry)
-			m_toolRegistry->OnLibraryRegistered(library);
-
-		if (m_viewRegistry)
-			m_viewRegistry->OnLibraryRegistered(library);
-	}
-
-	void EditorService::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-	{
-		if (m_viewRegistry)
-			m_viewRegistry->OnLibraryUnregistered(library);
-
-		if (m_toolRegistry)
-			m_toolRegistry->OnLibraryUnregistered(library);
-
-		if (m_menuRegistry)
-			m_menuRegistry->OnLibraryUnregistered(library);
-	}
 }

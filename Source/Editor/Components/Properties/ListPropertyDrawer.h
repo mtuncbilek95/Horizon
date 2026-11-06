@@ -11,7 +11,7 @@ namespace Horizon::Reflect
 namespace Horizon::Editor
 {
 	HCLASS();
-	class EDITOR_API ListPropertyDrawer final : public PropertyDrawer
+	class ListPropertyDrawer final : public PropertyDrawer
 	{
 		HORIZON_TYPE_REFLECT(ListPropertyDrawer);
 	public:

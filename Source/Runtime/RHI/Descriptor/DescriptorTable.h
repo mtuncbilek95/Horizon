@@ -9,7 +9,7 @@ namespace Horizon::RHI
 	class Buffer;
 	class Sampler;
 
-	class RUNTIME_API DescriptorTable : public Object
+	class DescriptorTable : public Object
 	{
 	public:
 		virtual void Write(u32 binding, u32 arrayIndex, TextureView* pView) = 0;

@@ -8,109 +8,35 @@ namespace Horizon::Engine
 {
 	ReflectionSystem::ReflectionSystem(Engine* pEngine)
 	{
-		m_hostLibrary = MakeUnique<PAL::SymbolLibrary>(PAL::SymbolLibraryDesc());
-
-		if (!m_hostLibrary)
-		{
-			pEngine->RequestExit("Host Library has not been created!");
-			return;
-		}
-
-		if (!RegisterLibrary(m_hostLibrary.Get()))
-		{
-			pEngine->RequestExit("Host manifestation could not be registered");
-		}
-	}
-
-	ReflectionSystem::~ReflectionSystem()
-	{
-		if (m_hostLibrary)
-		{
-			UnregisterLibrary(m_hostLibrary.Get());
-		}
-
-		if (!m_libraries.IsEmpty())
-		{
-			Terminal::Warn(StringHelper::GetTypeName(this), "{} libraries were never unregistered, their types die with the system", m_libraries.GetCount());
-		}
-
-		m_hostLibrary = nullptr;
-	}
-
-	b8 ReflectionSystem::RegisterLibrary(const PAL::SymbolLibrary* pLibrary)
-	{
-		if (!pLibrary)
-		{
-			Terminal::Error(StringHelper::GetTypeName(this), "RegisterLibrary received a null library");
-			return false;
-		}
-
-		if (FindLibrary(pLibrary))
-		{
-			Terminal::Warn(StringHelper::GetTypeName(this), "{} is already registered", pLibrary->GetName());
-			return false;
-		}
+		PAL::SymbolLibrary mainSymbol;
+		const std::string mainName = mainSymbol.GetName().substr(mainSymbol.GetName().find_last_of("/\\") + 1);
 
 		using GenerateFn = void(*)(List<Reflect::Type>*);
-		auto* GenerateManifests = reinterpret_cast<GenerateFn>(pLibrary->GetSymbol("GenerateModuleManifestation"));
+		auto* GenerateManifests = reinterpret_cast<GenerateFn>(mainSymbol.GetSymbol("GenerateModuleManifestation"));
 
 		if (!GenerateManifests)
 		{
-			Terminal::Error(StringHelper::GetTypeName(this), "{} does not export GenerateModuleManifestation", pLibrary->GetName());
-			return false;
+			Terminal::Error(StringHelper::GetTypeName(this), "{} does not export GenerateModuleManifestation", mainName);
+			pEngine->RequestExit("Main manifestation could not be registered");
+			return;
 		}
 
-		List<Reflect::Type> manifests;
-		GenerateManifests(&manifests);
+		GenerateManifests(&m_types);
 
-		ReflectionLibrary& library = m_libraries.EmplaceBack();
-		library.library = pLibrary;
-		library.types = std::move(manifests);
-
-		for (Reflect::Type& type : library.types)
+		for (Reflect::Type& type : m_types)
 		{
 			if (m_typeLookup.contains(type.GetTypeId()))
 			{
-				Terminal::Error(StringHelper::GetTypeName(this), "{} from {} collides with an already registered type, skipped", type.GetName(), pLibrary->GetName());
+				Terminal::Error(StringHelper::GetTypeName(this), "{} collides with an already registered type, skipped", type.GetName());
 				continue;
 			}
 
 			IndexType(type);
 
-			Terminal::Debug(StringHelper::GetTypeName(this), "{} has been registered from {}", type.GetName(), pLibrary->GetName().substr(pLibrary->GetName().find_last_of("/\\") + 1));
+			Terminal::Debug(StringHelper::GetTypeName(this), "{} has been registered from {}", type.GetName(), mainName);
 		}
 
-		Terminal::Info(StringHelper::GetTypeName(this), "{} registered {} type manifests", pLibrary->GetName().substr(pLibrary->GetName().find_last_of("/\\") + 1), library.types.GetCount());
-		return true;
-	}
-
-	void ReflectionSystem::UnregisterLibrary(const PAL::SymbolLibrary* pLibrary)
-	{
-		ReflectionLibrary* pEntry = FindLibrary(pLibrary);
-
-		if (!pEntry)
-		{
-			Terminal::Warn(StringHelper::GetTypeName(this), "UnregisterLibrary could not find the library, nothing to do");
-			return;
-		}
-
-		for (Reflect::Type& type : pEntry->types)
-		{
-			auto typeIt = m_typeLookup.find(type.GetTypeId());
-
-			if (typeIt == m_typeLookup.end() || typeIt->second != &type)
-			{
-				continue;
-			}
-
-			UnindexType(type);
-		}
-
-		const usize count = pEntry->types.GetCount();
-		const usize index = static_cast<usize>(pEntry - m_libraries.GetData());
-		m_libraries.RemoveAt(index);
-
-		Terminal::Info(StringHelper::GetTypeName(this), "{} unregistered {} type manifests", pLibrary->GetName(), count);
+		Terminal::Info(StringHelper::GetTypeName(this), "{} registered {} type manifests", mainName, m_types.GetCount());
 	}
 
 	Reflect::Type* ReflectionSystem::GetType(Reflect::TypeHandle handl)
@@ -163,19 +89,6 @@ namespace Horizon::Engine
 		return it->second;
 	}
 
-	ReflectionLibrary* ReflectionSystem::FindLibrary(const PAL::SymbolLibrary* pLibrary)
-	{
-		for (ReflectionLibrary& library : m_libraries)
-		{
-			if (library.library == pLibrary)
-			{
-				return &library;
-			}
-		}
-
-		return nullptr;
-	}
-
 	void ReflectionSystem::IndexType(Reflect::Type& type)
 	{
 		m_typeLookup[type.GetTypeId()] = &type;
@@ -185,41 +98,6 @@ namespace Horizon::Engine
 		for (Reflect::Attribute* pAttr : type.GetAttributes())
 		{
 			m_byAttribute[pAttr->GetTypeId()].PushBack(&type);
-		}
-	}
-
-	void ReflectionSystem::UnindexType(Reflect::Type& type)
-	{
-		m_typeLookup.erase(type.GetTypeId());
-		m_nameLookup.erase(type.GetName());
-
-		auto baseIt = m_byBase.find(type.GetBaseId());
-
-		if (baseIt != m_byBase.end())
-		{
-			baseIt->second.Remove(&type);
-
-			if (baseIt->second.IsEmpty())
-			{
-				m_byBase.erase(baseIt);
-			}
-		}
-
-		for (Reflect::Attribute* pAttr : type.GetAttributes())
-		{
-			auto attrIt = m_byAttribute.find(pAttr->GetTypeId());
-
-			if (attrIt == m_byAttribute.end())
-			{
-				continue;
-			}
-
-			attrIt->second.Remove(&type);
-
-			if (attrIt->second.IsEmpty())
-			{
-				m_byAttribute.erase(attrIt);
-			}
 		}
 	}
 }

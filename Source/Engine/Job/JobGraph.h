@@ -10,7 +10,7 @@ namespace Horizon::Engine
 	using GraphNodeId = u32;
 	static constexpr GraphNodeId InvalidGraphNode = kInvalid32;
 
-	struct ENGINE_API CompiledGraphNode
+	struct CompiledGraphNode
 	{
 		JobLane lane = JobLane::Critical;
 		Job job;
@@ -26,7 +26,7 @@ namespace Horizon::Engine
 		CompiledGraphNode& operator=(CompiledGraphNode&&) noexcept = default;
 	};
 
-	struct ENGINE_API CompiledGraph
+	struct CompiledGraph
 	{
 		List<CompiledGraphNode> nodes;
 
@@ -41,7 +41,7 @@ namespace Horizon::Engine
 		b8 IsValid() const { return !nodes.IsEmpty(); }
 	};
 
-	class ENGINE_API JobGraph final
+	class JobGraph final
 	{
 	public:
 		JobGraph() = default;

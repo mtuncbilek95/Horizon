@@ -9,7 +9,7 @@
 
 namespace Horizon::Editor
 {
-	class EDITOR_API DomainFolder
+	class DomainFolder
 	{
 	public:
 		DomainFolder(DomainFolder* pParent, const std::string& name, const std::string& absolutePath, const std::string& cookPath) : m_parent(pParent),

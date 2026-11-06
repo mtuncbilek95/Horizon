@@ -8,7 +8,7 @@
 
 namespace Horizon
 {
-	class RUNTIME_API JsonArchiveWriter final : public IArchiveWriter
+	class JsonArchiveWriter final : public IArchiveWriter
 	{
 	public:
 		void BeginObject() final;
@@ -35,7 +35,7 @@ namespace Horizon
 		std::string m_pendingKey;
 	};
 
-	class RUNTIME_API JsonArchiveReader final : public IArchiveReader
+	class JsonArchiveReader final : public IArchiveReader
 	{
 	public:
 		JsonArchiveReader(std::string_view text);

@@ -56,21 +56,6 @@ namespace Horizon::Engine
 		graph.InitAfter<GraphicsContext>();
 	}
 
-	void AssetService::OnLibraryRegistered(const ReflectionLibrary& library)
-	{
-		for (const Reflect::Type& type : library.types)
-		{
-			if (type.GetBaseId() == Reflect::TypeOf<AssetLoadSystem>())
-				AddLoaderType(&type);
-		}
-	}
-
-	void AssetService::OnLibraryUnregistered(const ReflectionLibrary& library)
-	{
-		for (const Reflect::Type& type : library.types)
-			RemoveLoaderType(&type);
-	}
-
 	b8 AssetService::AddLoaderType(const Reflect::Type* pType)
 	{
 		AssetLoadSystem* pLoader = (AssetLoadSystem*)pType->Create();

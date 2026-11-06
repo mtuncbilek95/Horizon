@@ -13,7 +13,7 @@ namespace Horizon::Reflect
 {
 	class Type;
 
-	class RUNTIME_API Field
+	class Field
 	{
 		template<typename>
 		friend class TypeBuilder;

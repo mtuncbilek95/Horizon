@@ -13,7 +13,7 @@ namespace Horizon::Editor
 {
 	class MenuItem;
 
-	struct EDITOR_API MenuItemInstance
+	struct MenuItemInstance
 	{
 		std::string displayName;
 		i32 order = 0;

@@ -119,29 +119,6 @@ namespace Horizon::Editor
 		m_window->SetChrome(chrome);
 	}
 
-	void MenuRegistry::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-	{
-		for (const Reflect::Type& type : library.types)
-		{
-			if (type.GetCustomAttribute<MainMenuItemAttribute>())
-				AddRootType(&type);
-		}
-
-		for (const Reflect::Type& type : library.types)
-		{
-			if (type.GetCustomAttribute<MenuItemAttribute>())
-				AddLeafType(&type);
-		}
-
-		SortRecursive(m_menus);
-	}
-
-	void MenuRegistry::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-	{
-		for (const Reflect::Type& type : library.types)
-			RemoveType(m_menus, &type);
-	}
-
 	void MenuRegistry::AddRootType(const Reflect::Type* pType)
 	{
 		auto* pAttr = pType->GetCustomAttribute<MainMenuItemAttribute>();

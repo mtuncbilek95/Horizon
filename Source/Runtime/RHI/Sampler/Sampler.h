@@ -5,7 +5,7 @@
 
 namespace Horizon::RHI
 {
-	class RUNTIME_API Sampler : public Object
+	class Sampler : public Object
 	{
 	public:
 		const SamplerDesc& GetDesc() const { return m_desc; }

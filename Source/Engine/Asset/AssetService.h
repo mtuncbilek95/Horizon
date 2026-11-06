@@ -13,7 +13,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API AssetService : public Service
+	class AssetService : public Service
 	{
 		struct StreamerEntry
 		{
@@ -25,9 +25,6 @@ namespace Horizon::Engine
 		void OnExecute(const EngineFrame& ctx) final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleDependency& graph) final;
-
-		void OnLibraryRegistered(const ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const ReflectionLibrary& library) final;
 
 		b8 RegisterAsset(const Guid& id, const std::string& cookPath, const std::string& callPath, const std::string& name, Reflect::TypeHandle type);
 		b8 UnregisterAsset(const Guid& id);

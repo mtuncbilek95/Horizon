@@ -50,7 +50,7 @@ namespace Horizon::RHI
 	struct SwapchainDesc;
 	class Swapchain;
 
-	class RUNTIME_API Device
+	class Device
 	{
 	public:
 		virtual ~Device() = default;
@@ -83,5 +83,5 @@ namespace Horizon::RHI
 		virtual void ShutdownImGui() = 0;
 	};
 
-	RUNTIME_API UniquePtr<Device> CreateRHIDevice(DeviceDesc& desc);
+	UniquePtr<Device> CreateRHIDevice(DeviceDesc& desc);
 }

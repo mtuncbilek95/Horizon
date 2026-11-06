@@ -3,64 +3,24 @@
 #include <Runtime/Log/Terminal.h>
 
 #include <Windows.h>
-#include <cassert>
 
 namespace Horizon::PAL
 {
-	SymbolLibrary::SymbolLibrary(const SymbolLibraryDesc& desc) : m_desc(desc)
+	SymbolLibrary::SymbolLibrary()
 	{
-		HINSTANCE instance = NULL;
-		c8 tempBuffer[MaxNameBufferLength];
+		HINSTANCE instance = GetModuleHandle(NULL);
 
-		// If its main, GetModuleHandle(), if its not, load the library.
-		if (desc.isMain)
-		{
-			instance = GetModuleHandle(NULL);
-
-			if (!instance)
-				return;
-
-			DWORD lengthCopied = GetModuleFileName(instance, tempBuffer, MaxNameBufferLength);
-
-			if (lengthCopied == ERROR_INSUFFICIENT_BUFFER)
-				return;
-		}
-		else
-		{
-			assert(!desc.path.empty() && "This should be not empty");
-
-			instance = LoadLibrary(desc.path.data());
-
-			if (!instance)
-				return;
-		}
-
-		std::string name = desc.isMain ? std::string(tempBuffer) : desc.path;
-
-		if (name.empty())
-		{
-			if (desc.isMain)
-				return;
-			else
-			{
-				FreeLibrary(instance);
-				return;
-			}
-		}
-
-		m_name = name;
-		m_instance = instance;
-	}
-
-	SymbolLibrary::~SymbolLibrary()
-	{
-		if (!m_instance || m_desc.isMain)
+		if (!instance)
 			return;
 
-		if (!FreeLibrary(HINSTANCE(m_instance)))
-			Terminal::Warn("SymbolLibrary", "{} could not be freed, error {}", m_name, GetLastError());
+		c8 tempBuffer[MaxNameBufferLength];
+		DWORD lengthCopied = GetModuleFileName(instance, tempBuffer, MaxNameBufferLength);
 
-		m_instance = nullptr;
+		if (lengthCopied == 0 || lengthCopied == MaxNameBufferLength)
+			return;
+
+		m_name = std::string(tempBuffer, lengthCopied);
+		m_instance = instance;
 	}
 
 	SymbolAddress SymbolLibrary::GetSymbol(const std::string& name) const

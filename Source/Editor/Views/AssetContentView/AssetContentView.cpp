@@ -104,25 +104,6 @@ namespace Horizon::Editor
 		m_contextMenu.BootstrapContext(GetContext()->pEngine, "ContentBrowserView");
 	}
 
-	void AssetContentView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-	{
-		for (const Reflect::Type& type : library.types)
-		{
-			if (type.GetBaseId() == Reflect::TypeOf<AssetAction>())
-				AddAction(&type);
-		}
-
-		m_contextMenu.OnLibraryRegistered(library);
-	}
-
-	void AssetContentView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-	{
-		m_contextMenu.OnLibraryUnregistered(library);
-
-		for (const Reflect::Type& type : library.types)
-			RemoveAction(&type);
-	}
-
 	b8 AssetContentView::AddAction(const Reflect::Type* pType)
 	{
 		auto* pAttr = pType->GetCustomAttribute<ActionTypeAttribute>();

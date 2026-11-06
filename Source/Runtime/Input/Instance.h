@@ -10,7 +10,7 @@ namespace Horizon::Input
 	class Mouse;
 	class Gamepad;
 
-	class RUNTIME_API Instance
+	class Instance
 	{
 	public:
 		virtual ~Instance();
@@ -38,5 +38,5 @@ namespace Horizon::Input
 		List<Object*> m_objects;
 	};
 
-	RUNTIME_API Instance* CreateInstance();
+	Instance* CreateInstance();
 }

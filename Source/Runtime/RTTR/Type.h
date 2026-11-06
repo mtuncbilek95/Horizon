@@ -17,7 +17,7 @@ namespace Horizon::Reflect
 {
 	using VoidObject = void*;
 
-	class RUNTIME_API Type final
+	class Type final
 	{
 		template<typename>
 		friend class TypeBuilder;

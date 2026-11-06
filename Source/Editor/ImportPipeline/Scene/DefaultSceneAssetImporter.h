@@ -12,7 +12,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(AssetImporterType[Reflect::TypeOf<Engine::SceneAsset>(), { ".hscene" }]);
-	class EDITOR_API DefaultSceneAssetImporter final : public AssetImporter
+	class DefaultSceneAssetImporter final : public AssetImporter
 	{
 		HORIZON_TYPE_REFLECT(DefaultSceneAssetImporter);
 	public:

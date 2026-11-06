@@ -24,7 +24,7 @@ namespace Horizon::RHI
 namespace Horizon::Engine
 {
 	HCLASS();
-	class ENGINE_API MeshAssetStreamer : public AssetLoadSystem
+	class MeshAssetStreamer : public AssetLoadSystem
 	{
 		HORIZON_TYPE_REFLECT(MeshAssetStreamer);
 	public:

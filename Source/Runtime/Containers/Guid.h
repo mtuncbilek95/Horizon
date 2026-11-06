@@ -7,7 +7,7 @@
 
 namespace Horizon
 {
-	class RUNTIME_API Guid final
+	class Guid final
 	{
 	public:
 		static Guid Generate();

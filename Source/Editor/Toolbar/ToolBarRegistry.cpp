@@ -56,23 +56,6 @@ namespace Horizon::Editor
 		ImGui::End();
 	}
 
-	void ToolBarRegistry::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-	{
-		for (const Reflect::Type& type : library.types)
-		{
-			if (type.GetCustomAttribute<ToolBarItemAttribute>())
-				AddType(&type);
-		}
-
-		SortSections();
-	}
-
-	void ToolBarRegistry::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-	{
-		for (const Reflect::Type& type : library.types)
-			RemoveType(&type);
-	}
-
 	b8 ToolBarRegistry::AddType(const Reflect::Type* pType)
 	{
 		if (pType->GetBaseId() != Reflect::TypeOf<ToolBarItem>())

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Editor/Components/PropertyDrawer.h>
-#include <Engine/Reflection/ReflectionLibrary.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/RTTR/Reflection.h>
 
@@ -15,7 +14,7 @@ namespace Horizon::Engine
 
 namespace Horizon::Editor
 {
-	class EDITOR_API PropertyRenderer final
+	class PropertyRenderer final
 	{
 		struct DrawerEntry
 		{
@@ -37,9 +36,6 @@ namespace Horizon::Editor
 		void DrawObject(const Reflect::Type& type, void* pInstance);
 		void DrawFields(const Reflect::Type& type, void* pInstance);
 		PropertyDrawer* FindDrawer(Reflect::TypeHandle handle) const;
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library);
 
 	private:
 		b8 AddType(const Reflect::Type* pType);

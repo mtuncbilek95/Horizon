@@ -5,7 +5,7 @@
 
 namespace Horizon::PAL
 {
-	struct RUNTIME_API MonitorInfo
+	struct MonitorInfo
 	{
 		i32 posX, posY;
 		u32 width, height;
@@ -15,7 +15,7 @@ namespace Horizon::PAL
 		b8 isPrimary;
 	};
 
-	struct RUNTIME_API Monitor
+	struct Monitor
 	{
 		static List<MonitorInfo> EnumerateMonitors();
 	};

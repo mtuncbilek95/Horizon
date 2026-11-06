@@ -140,14 +140,6 @@ namespace Horizon::Engine
 		m_activeNodes.Clear();
 	}
 
-	void RenderGraph::OnLibraryRegistered(const ReflectionLibrary& library)
-	{
-	}
-
-	void RenderGraph::OnLibraryUnregistered(const ReflectionLibrary& library)
-	{
-	}
-
 	RHI::Texture* RenderGraph::FindTexture(Reflect::TypeHandle resource)
 	{
 		auto imported = m_importedTextures.find(resource);

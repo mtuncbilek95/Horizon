@@ -5,7 +5,7 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class ENGINE_API EngineSettings : public Reflect::Base
+	class EngineSettings : public Reflect::Base
 	{
 		HORIZON_TYPE_REFLECT(EngineSettings);
 	public:

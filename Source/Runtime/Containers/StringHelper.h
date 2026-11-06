@@ -7,7 +7,7 @@
 
 namespace Horizon
 {
-	struct RUNTIME_API StringHelper final
+	struct StringHelper final
 	{
 		static b8 IsCharSeparator(c8 value);
 		static b8 CheckIfEquals(std::string_view left, std::string_view right);

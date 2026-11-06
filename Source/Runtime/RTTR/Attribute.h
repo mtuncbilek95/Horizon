@@ -4,7 +4,7 @@
 
 namespace Horizon::Reflect
 {
-	class RUNTIME_API Attribute
+	class Attribute
 	{
 	public:
 		virtual ~Attribute() = default;

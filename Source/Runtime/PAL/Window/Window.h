@@ -36,7 +36,7 @@ namespace Horizon::PAL
 		Window* pOwner = nullptr;
 	};
 
-	class RUNTIME_API Window final
+	class Window final
 	{
 	public:
 		Window(const WindowDesc& desc);

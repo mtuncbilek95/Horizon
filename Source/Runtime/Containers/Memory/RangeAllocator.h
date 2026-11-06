@@ -13,7 +13,7 @@ namespace Horizon
 		b8 IsValid() const { return offset != kInvalid64; }
 	};
 
-	class RUNTIME_API RangeAllocator final
+	class RangeAllocator final
 	{
 	public:
 		void Initialize(u64 capacity);

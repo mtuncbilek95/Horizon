@@ -25,7 +25,7 @@ namespace Horizon::Engine
 {
 	class GraphicsContext;
 
-	class ENGINE_API RenderGraph
+	class RenderGraph
 	{
 		struct RenderBarrier
 		{
@@ -58,9 +58,6 @@ namespace Horizon::Engine
 		b8 OnInitialize();
 		void OnExecute(const RenderSetupContext& setupContext, const RenderDrawContext& drawContext);
 		void OnFinalize();
-
-		void OnLibraryRegistered(const ReflectionLibrary& library);
-		void OnLibraryUnregistered(const ReflectionLibrary& library);
 
 		template<typename T>
 		void ImportTexture(RHI::Texture* pTexture, RHI::TextureView* pView, RHI::ResourceState initialState, RHI::ResourceState finalState)

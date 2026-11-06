@@ -6,7 +6,7 @@
 namespace Horizon::Editor
 {
 	HCLASS();
-	class EDITOR_API Color4fPropertyDrawer final : public PropertyDrawer
+	class Color4fPropertyDrawer final : public PropertyDrawer
 	{
 		HORIZON_TYPE_REFLECT(Color4fPropertyDrawer);
 	public:

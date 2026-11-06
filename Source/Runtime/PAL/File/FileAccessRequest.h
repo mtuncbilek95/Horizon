@@ -9,7 +9,7 @@ namespace Horizon::PAL
 	struct FileAccessTag {};
 	using FileAccessHandle = Handle<FileAccessTag>;
 
-	class RUNTIME_API FileAccessRequest final
+	class FileAccessRequest final
 	{
 		friend struct File;
 	public:

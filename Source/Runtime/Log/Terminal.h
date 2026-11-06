@@ -28,7 +28,7 @@ namespace Horizon
 	inline constexpr LogLevel CompiledMinLevel = LogLevel::Debug;
 #endif
 
-	class RUNTIME_API ILogSink
+	class ILogSink
 	{
 	public:
 		virtual ~ILogSink() = default;
@@ -44,7 +44,7 @@ namespace Horizon
 		std::string message;
 	};
 
-	class RUNTIME_API Terminal
+	class Terminal
 	{
 	public:
 		static constexpr usize DefaultHistoryCapacity = 4096;

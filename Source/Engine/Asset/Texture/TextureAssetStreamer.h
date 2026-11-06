@@ -7,7 +7,7 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class ENGINE_API TextureAssetStreamer : public AssetLoadSystem
+	class TextureAssetStreamer : public AssetLoadSystem
 	{
 		HORIZON_TYPE_REFLECT(TextureAssetStreamer);
 	public:

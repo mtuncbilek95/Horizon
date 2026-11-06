@@ -6,7 +6,7 @@ namespace Horizon::PAL
 {
 	using CritSecHandl = void*;
 
-	class RUNTIME_API CriticalSection
+	class CriticalSection
 	{
 	public:
 		CriticalSection();

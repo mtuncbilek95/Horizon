@@ -8,7 +8,7 @@
 namespace Horizon::Math
 {
 	HCLASS();
-	class RUNTIME_API BoundingBox final
+	class BoundingBox final
 	{
 		HORIZON_DATA_REFLECT(BoundingBox);
 	public:

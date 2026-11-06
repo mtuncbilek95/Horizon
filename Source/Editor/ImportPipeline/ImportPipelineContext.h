@@ -11,7 +11,7 @@
 
 namespace Horizon::Editor
 {
-	struct EDITOR_API ImportPipelineContext
+	struct ImportPipelineContext
 	{
 		std::string sourcePath;
 		std::string sourceFolder;

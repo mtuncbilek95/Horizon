@@ -6,7 +6,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ContextMenuItem["ContentBrowserView", "Create/Material", 2]);
-	class EDITOR_API CreateMaterialItem : public AssetBrowserMenuItem
+	class CreateMaterialItem : public AssetBrowserMenuItem
 	{
 		HORIZON_TYPE_REFLECT(CreateMaterialItem);
 	public:

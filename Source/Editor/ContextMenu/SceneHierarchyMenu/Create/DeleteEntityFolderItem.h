@@ -6,7 +6,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ContextMenuItem["SceneHierarchyView", "Delete Folder", i32_max]);
-	class EDITOR_API DeleteEntityFolderItem : public SceneHierarchyMenuItem
+	class DeleteEntityFolderItem : public SceneHierarchyMenuItem
 	{
 		HORIZON_TYPE_REFLECT(DeleteEntityFolderItem);
 	public:

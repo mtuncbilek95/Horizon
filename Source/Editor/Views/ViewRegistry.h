@@ -3,13 +3,13 @@
 #include <Editor/Renderer/EditorContext.h>
 #include <Editor/Views/ViewDescriptor.h>
 #include <Editor/Views/ViewObject.h>
-#include <Engine/Reflection/ReflectionLibrary.h>
+#include <Runtime/RTTR/Reflection.h>
 
 #include <Runtime/Containers/Vector/List.h>
 
 namespace Horizon::Editor
 {
-	class EDITOR_API ViewRegistry
+	class ViewRegistry
 	{
 	public:
 		ViewRegistry();
@@ -17,9 +17,6 @@ namespace Horizon::Editor
 
 		void BootstrapViews(EditorContext* ctx);
 		void RenderGUI(const Engine::EngineFrame& context);
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library);
 
 		template<typename T>
 		T* GetViewObject()

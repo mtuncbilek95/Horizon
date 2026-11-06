@@ -6,7 +6,7 @@
 namespace Horizon::Math
 {
 	HCLASS();
-	class RUNTIME_API Color4f final
+	class Color4f final
 	{
 		HORIZON_DATA_REFLECT(Color4f);
 	public:

@@ -8,7 +8,7 @@
 
 namespace Horizon::RHI
 {
-	class RUNTIME_API Swapchain : public Object
+	class Swapchain : public Object
 	{
 	public:
 		virtual b8 AcquireNextImage() = 0;

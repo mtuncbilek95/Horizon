@@ -6,7 +6,7 @@
 namespace Horizon::Math
 {
 	HCLASS();
-	class RUNTIME_API Vec2f final
+	class Vec2f final
 	{
 		HORIZON_DATA_REFLECT(Vec2f);
 	public:

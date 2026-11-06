@@ -5,7 +5,7 @@
 
 namespace Horizon::RHI
 {
-	class RUNTIME_API ComputePipeline : public Pipeline
+	class ComputePipeline : public Pipeline
 	{
 	};
 }

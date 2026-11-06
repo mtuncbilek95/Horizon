@@ -19,7 +19,7 @@ namespace Horizon::Editor
 		PropertyRenderer* pRenderer = nullptr;
 	};
 
-	class EDITOR_API PropertyDrawer : public Reflect::Base
+	class PropertyDrawer : public Reflect::Base
 	{
 	public:
 		virtual ~PropertyDrawer() override = default;

@@ -10,7 +10,7 @@ namespace Horizon::RHI
 	class Buffer;
 	class Sampler;
 
-	class RUNTIME_API DescriptorHeap : public Object
+	class DescriptorHeap : public Object
 	{
 	public:
 		virtual u32 Allocate() = 0;

@@ -14,7 +14,7 @@ namespace Horizon::PAL
 		SeqCst
 	};
 
-	struct RUNTIME_API AtomicOps
+	struct AtomicOps
 	{
 		static i64 Load(const i64* pValue, MemoryOrder order = MemoryOrder::SeqCst);
 		static i64 FetchStore(i64* pTarget, const i64 value, MemoryOrder order = MemoryOrder::SeqCst);

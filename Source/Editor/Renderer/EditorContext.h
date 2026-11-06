@@ -15,7 +15,7 @@ namespace Horizon::Editor
 	class ViewRegistry;
 	class ToolBarRegistry;
 
-	struct EDITOR_API EditorContext final
+	struct EditorContext final
 	{
 		PAL::Window* pWindow = nullptr;
 		Engine::Engine* pEngine = nullptr;

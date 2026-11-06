@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Reflection/ReflectionLibrary.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Runtime/Containers/Vector/List.h>
 
@@ -32,9 +31,6 @@ namespace Horizon::Editor
 		~ImporterRegistry();
 
 		void BootstrapViews(Engine::Engine* pEngine);
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library);
 
 		ImportPipelineEntry* GetImportPipelineEntry(const std::string& extension);
 		ImportPipelineEntry* GetImportPipelineEntry(Reflect::TypeHandle handle);

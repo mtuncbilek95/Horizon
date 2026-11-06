@@ -9,7 +9,7 @@
 
 namespace Horizon::Editor
 {
-	class EDITOR_API EditorViewAttribute : public Reflect::Attribute
+	class EditorViewAttribute : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(EditorViewAttribute);
 	public:

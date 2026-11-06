@@ -39,28 +39,6 @@ namespace Horizon::Editor
 			AddImporterType(pType);
 	}
 
-	void ImporterRegistry::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-	{
-		// Check for pipelines first
-		for (const Reflect::Type& type : library.types)
-			AddPipelineType(&type);
-
-		// Check for importers second
-		for (const Reflect::Type& type : library.types)
-			AddImporterType(&type);
-	}
-
-	void ImporterRegistry::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-	{
-		// Check for pipelines first
-		for (const Reflect::Type& type : library.types)
-			RemovePipelineType(&type);
-
-		// Check for importers second
-		for (const Reflect::Type& type : library.types)
-			RemoveImporterType(&type);
-	}
-
 	ImportPipelineEntry* ImporterRegistry::GetImportPipelineEntry(const std::string& extension)
 	{
 		auto it = m_extToPipelineLookup.find(extension);

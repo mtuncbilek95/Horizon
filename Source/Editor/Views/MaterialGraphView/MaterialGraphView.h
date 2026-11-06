@@ -7,7 +7,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(EditorView[ICON_FA_BRUSH, "Material Graph", DockZone::Center, EditorViewFlags::Mutable | EditorViewFlags::MultiInstance]);
-	class EDITOR_API MaterialGraphView : public ViewObject
+	class MaterialGraphView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(MaterialGraphView);
 	public:
@@ -16,9 +16,6 @@ namespace Horizon::Editor
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
 	private:
 	};

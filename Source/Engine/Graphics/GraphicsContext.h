@@ -8,7 +8,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API GraphicsContext : public Context
+	class GraphicsContext : public Context
 	{
 	public:
 		static constexpr u32 MaxFramesInFlight = 2;
@@ -27,9 +27,6 @@ namespace Horizon::Engine
 		ModuleReport OnInitialize() final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleDependency& graph) final;
-
-		void OnLibraryRegistered(const ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const ReflectionLibrary& library) final;
 
 	private:
 		UniquePtr<RHI::Device> m_device;

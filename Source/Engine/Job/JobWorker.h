@@ -12,7 +12,7 @@ namespace Horizon::Engine
 {
 	class JobSystem;
 
-	class ENGINE_API JobWorker
+	class JobWorker
 	{
 		static void ThreadEntryPoint(void* pUserData);
 

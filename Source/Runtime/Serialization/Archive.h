@@ -8,7 +8,7 @@
 
 namespace Horizon
 {
-	class RUNTIME_API IArchiveWriter
+	class IArchiveWriter
 	{
 	public:
 		virtual ~IArchiveWriter() = default;
@@ -33,7 +33,7 @@ namespace Horizon
 		}
 	};
 
-	class RUNTIME_API IArchiveReader
+	class IArchiveReader
 	{
 	public:
 		virtual ~IArchiveReader() = default;

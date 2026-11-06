@@ -5,7 +5,7 @@
 
 namespace Horizon::RHI
 {
-	class RUNTIME_API Fence : public Object
+	class Fence : public Object
 	{
 	public:
 		virtual u64 GetCompletedValue() = 0;

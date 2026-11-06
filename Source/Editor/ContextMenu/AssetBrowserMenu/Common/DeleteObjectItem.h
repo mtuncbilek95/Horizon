@@ -6,7 +6,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ContextMenuItem["ContentBrowserView", "Delete", 1]);
-	class EDITOR_API DeleteObjectItem : public AssetBrowserMenuItem
+	class DeleteObjectItem : public AssetBrowserMenuItem
 	{
 		HORIZON_TYPE_REFLECT(DeleteObjectItem);
 	public:

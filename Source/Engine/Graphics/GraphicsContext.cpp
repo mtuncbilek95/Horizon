@@ -61,12 +61,4 @@ namespace Horizon::Engine
 	void GraphicsContext::DeclareDependencies(ModuleDependency& graph)
 	{
 	}
-
-	void GraphicsContext::OnLibraryRegistered(const ReflectionLibrary& library)
-	{
-	}
-
-	void GraphicsContext::OnLibraryUnregistered(const ReflectionLibrary& library)
-	{
-	}
 }

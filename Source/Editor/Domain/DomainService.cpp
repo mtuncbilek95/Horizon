@@ -76,16 +76,6 @@ namespace Horizon::Editor
 		graph.InitAfter<Engine::AssetService, ProjectContext>();
 	}
 
-	void DomainService::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-	{
-		m_importPipelineRegistry.OnLibraryRegistered(library);
-	}
-
-	void DomainService::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-	{
-		m_importPipelineRegistry.OnLibraryUnregistered(library);
-	}
-
 	void DomainService::BuildRootTree()
 	{
 		ProcessFolder(m_root.Get());

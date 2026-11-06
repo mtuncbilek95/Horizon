@@ -6,7 +6,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ContextMenuItem["SceneHierarchyView", "SetIcon", i32_max]);
-	class EDITOR_API SetEntityIconItem : public SceneHierarchyMenuItem
+	class SetEntityIconItem : public SceneHierarchyMenuItem
 	{
 		HORIZON_TYPE_REFLECT(SetEntityIconItem);
 	public:

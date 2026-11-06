@@ -7,9 +7,8 @@
 namespace Horizon::Engine
 {
 	class Engine;
-	struct ReflectionLibrary;
 
-	class ENGINE_API Module
+	class Module
 	{
 		friend class Engine;
 	public:
@@ -19,9 +18,6 @@ namespace Horizon::Engine
 		virtual ModuleReport OnInitialize() = 0;
 		virtual void OnFinalize() = 0;
 		virtual void DeclareDependencies(ModuleDependency& graph) = 0;
-
-		virtual void OnLibraryRegistered(const ReflectionLibrary& library) = 0;
-		virtual void OnLibraryUnregistered(const ReflectionLibrary& library) = 0;
 
 		std::type_index GetTypeId() const
 		{

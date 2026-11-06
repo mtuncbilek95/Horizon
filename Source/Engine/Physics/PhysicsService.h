@@ -11,7 +11,7 @@ namespace JPH
 
 namespace Horizon::Engine
 {
-	class ENGINE_API PhysicsService final : public Service
+	class PhysicsService final : public Service
 	{
 		static constexpr u32 MaxBodies = 65536u;
 		static constexpr u32 MaxBodyPairs = 65536u;
@@ -27,9 +27,6 @@ namespace Horizon::Engine
 		void OnExecute(const EngineFrame& ctx) final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleDependency& graph) final;
-
-		void OnLibraryRegistered(const ReflectionLibrary& library) final {}
-		void OnLibraryUnregistered(const ReflectionLibrary& library) final {}
 
 		JPH::PhysicsSystem* GetWorld() const;
 		JPH::TempAllocator* GetTempAllocator() const;

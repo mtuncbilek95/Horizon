@@ -6,7 +6,7 @@
 
 namespace Horizon::Editor
 {
-	class EDITOR_API AssetAction : public Reflect::Base
+	class AssetAction : public Reflect::Base
 	{
 	public:
 		virtual void OnTrigger(EditorContext* pContext, DomainFile* pUsedAsset) = 0;

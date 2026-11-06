@@ -7,7 +7,7 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class ENGINE_API InputActionMapAssetLoader : public AssetLoadSystem
+	class InputActionMapAssetLoader : public AssetLoadSystem
 	{
 		HORIZON_TYPE_REFLECT(InputActionMapAssetLoader);
 	public:

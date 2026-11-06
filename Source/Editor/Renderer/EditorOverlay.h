@@ -31,7 +31,7 @@ namespace Horizon::Editor
 		Engine::WindowService* pWindowService = nullptr;
 	};
 
-	class EDITOR_API EditorOverlay final : public Engine::PresentationOverlay
+	class EditorOverlay final : public Engine::PresentationOverlay
 	{
 	public:
 		EditorOverlay(const EditorOverlayDesc& desc);

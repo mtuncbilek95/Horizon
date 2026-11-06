@@ -12,16 +12,13 @@ namespace Horizon::Engine
 	class SystemGraph;
 	class Scene;
 
-	class ENGINE_API WorldService : public Service
+	class WorldService : public Service
 	{
 	public:
 		ModuleReport OnInitialize() final;
 		void OnExecute(const EngineFrame& ctx) final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleDependency& graph) final;
-
-		void OnLibraryRegistered(const ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const ReflectionLibrary& library) final;
 
 		Scene* GetCurrentWorld() const { return m_activeWorld; }
 		void SetCurrentWorld(Scene* pNewWorld) { m_activeWorld = pNewWorld; }

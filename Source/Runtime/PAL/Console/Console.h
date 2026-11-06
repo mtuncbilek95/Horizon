@@ -4,7 +4,7 @@
 
 namespace Horizon::PAL
 {
-	struct RUNTIME_API Console
+	struct Console
 	{
 		static b8 IsAttached();
 		static b8 Hide();

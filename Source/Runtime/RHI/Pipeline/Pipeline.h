@@ -7,7 +7,7 @@ namespace Horizon::RHI
 {
 	class PipelineLayout;
 
-	class RUNTIME_API Pipeline : public Object
+	class Pipeline : public Object
 	{
 	public:
 		PipelineType GetType() const { return m_type; }

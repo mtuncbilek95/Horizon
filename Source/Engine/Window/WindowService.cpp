@@ -97,12 +97,4 @@ namespace Horizon::Engine
 	void WindowService::DeclareDependencies(ModuleDependency& graph)
 	{
 	}
-
-	void WindowService::OnLibraryRegistered(const ReflectionLibrary& library)
-	{
-	}
-
-	void WindowService::OnLibraryUnregistered(const ReflectionLibrary& library)
-	{
-	}
 }

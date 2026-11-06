@@ -9,7 +9,7 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class ENGINE_API System : public Reflect::Base
+	class System : public Reflect::Base
 	{
 		friend class SystemGraph;
 	public:

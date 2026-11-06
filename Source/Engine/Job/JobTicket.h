@@ -16,7 +16,7 @@ namespace Horizon::Engine
 		Completed
 	};
 
-	struct ENGINE_API SubmitRequest
+	struct SubmitRequest
 	{
 		JobLane lane = JobLane::Critical;
 		Job job;

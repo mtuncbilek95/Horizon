@@ -7,7 +7,7 @@
 
 namespace Horizon::Input
 {
-	class RUNTIME_API Mouse final : public Object
+	class Mouse final : public Object
 	{
 	public:
 		Mouse(Instance* pInstance, ObjectHandle handle, VendorType vendor, ProductType product);

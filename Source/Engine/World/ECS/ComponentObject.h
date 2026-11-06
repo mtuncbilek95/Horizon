@@ -5,7 +5,7 @@
 namespace Horizon::Engine
 {
 	HCLASS();
-	class ENGINE_API ComponentObject : public Reflect::Base
+	class ComponentObject : public Reflect::Base
 	{
 	public:
 		ComponentObject() = default;

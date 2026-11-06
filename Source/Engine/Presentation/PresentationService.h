@@ -30,7 +30,7 @@ namespace Horizon::Engine
 		Editor
 	};
 
-	class ENGINE_API PresentationService final : public Service
+	class PresentationService final : public Service
 	{
 		struct FrameSlot
 		{
@@ -50,9 +50,6 @@ namespace Horizon::Engine
 		void OnExecute(const EngineFrame& ctx) final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleDependency& graph) final;
-
-		void OnLibraryRegistered(const ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const ReflectionLibrary& library) final;
 
 		PresentationMode GetMode() const { return m_mode; }
 		void SetOverlay(PresentationOverlay* pOverlay) { m_overlay = pOverlay; }

@@ -3,7 +3,6 @@
 #include <Editor/ContextMenu/ContextMenuItemAttribute.h>
 #include <Editor/ContextMenu/ContextMenuItem.h>
 #include <Engine/Core/Engine.h>
-#include <Engine/Reflection/ReflectionLibrary.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 
 #include <imgui.h>
@@ -50,20 +49,6 @@ namespace Horizon::Editor
 
 				ImGui::EndPopup();
 			}
-		}
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-		{
-			for (const Reflect::Type& type : library.types)
-				AddType(&type);
-
-			SortRecursive(m_menus);
-		}
-
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-		{
-			for (const Reflect::Type& type : library.types)
-				RemoveType(m_menus, &type);
 		}
 
 	private:

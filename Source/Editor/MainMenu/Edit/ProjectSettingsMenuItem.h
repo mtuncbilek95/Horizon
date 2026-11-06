@@ -7,7 +7,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(MenuItem["Edit/Project Settings", i32_max]);
-	class EDITOR_API ProjectSettingsMenuItem : public MenuItem
+	class ProjectSettingsMenuItem : public MenuItem
 	{
 		HORIZON_TYPE_REFLECT(ProjectSettingsMenuItem);
 	public:

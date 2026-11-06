@@ -9,7 +9,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ImportPipelineInfoAttribute[Reflect::TypeOf<Engine::SceneAsset>(), Reflect::TypeOf<SceneAssetImportSettings>(), { ".hscene", ".usd" }]);
-	class EDITOR_API SceneAssetImportPipeline : public ImportPipeline
+	class SceneAssetImportPipeline : public ImportPipeline
 	{
 		HORIZON_TYPE_REFLECT(SceneAssetImportPipeline);
 	public:

@@ -1,9 +1,7 @@
 #include "Engine.h"
 
-#include <Engine/Game/GameSystem.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/Job/JobSystem.h>
-#include <Engine/Plugin/PluginSystem.h>
 
 namespace Horizon::Engine
 {
@@ -56,14 +54,10 @@ namespace Horizon::Engine
 	{
 		m_reflectionSystem = MakeUnique<ReflectionSystem>(this);
 		m_jobSystem = MakeUnique<JobSystem>();
-		m_pluginSystem = MakeUnique<PluginSystem>(this);
-		m_gameSystem = MakeUnique<GameSystem>(this);
 	}
 
 	Engine::~Engine()
 	{
-		m_gameSystem = nullptr;
-		m_pluginSystem = nullptr;
 		m_jobSystem = nullptr;
 		m_reflectionSystem = nullptr;
 	}
@@ -75,8 +69,6 @@ namespace Horizon::Engine
 		while (m_running)
 		{
 			FlushPending();
-			m_pluginSystem->FlushRequests();
-			m_gameSystem->PollReload();
 
 			f64 deltaTime = m_timer.GetElapsedTimeInSec();
 			m_timer.Reset();
@@ -97,38 +89,6 @@ namespace Horizon::Engine
 
 		Terminal::Info(StringHelper::GetTypeName(this), "Exit requested: {}", reason);
 		m_running = false;
-	}
-
-	b8 Engine::RegisterLibrary(const PAL::SymbolLibrary* pLibrary)
-	{
-		// Register on reflection
-		if (!m_reflectionSystem->RegisterLibrary(pLibrary))
-			return false;
-
-		const ReflectionLibrary* pLibraryTypes = m_reflectionSystem->FindLibrary(pLibrary);
-
-		// Do some shit on libraries that wants to use.
-		for (Module* pModule : m_shutdownOrder)
-			pModule->OnLibraryRegistered(*pLibraryTypes);
-
-		return true;
-	}
-
-	void Engine::UnregisterLibrary(const PAL::SymbolLibrary* pLibrary)
-	{
-		const ReflectionLibrary* pLibraryTypes = m_reflectionSystem->FindLibrary(pLibrary);
-
-		if (!pLibraryTypes)
-		{
-			Terminal::Warn(StringHelper::GetTypeName(this), "UnregisterLibrary could not find the library, nothing to do");
-			return;
-		}
-
-		// Do some shit on libraries that wants to remove it from its system.
-		for (usize i = m_shutdownOrder.GetCount(); i > 0; --i)
-			m_shutdownOrder[i - 1]->OnLibraryUnregistered(*pLibraryTypes);
-
-		m_reflectionSystem->UnregisterLibrary(pLibrary);
 	}
 
 	b8 Engine::IsRegistered(std::type_index index) const
@@ -338,8 +298,6 @@ namespace Horizon::Engine
 
 	void Engine::Shutdown()
 	{
-		m_pluginSystem->UnloadAll();
-
 		for (usize i = m_shutdownOrder.GetCount(); i > 0; --i)
 			m_shutdownOrder[i - 1]->OnFinalize();
 

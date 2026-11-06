@@ -5,7 +5,7 @@
 
 namespace Horizon::RHI
 {
-	class RUNTIME_API PipelineLayout : public Object
+	class PipelineLayout : public Object
 	{
 	public:
 		const List<DescriptorTableLayout>& GetTables() const { return m_tables; }

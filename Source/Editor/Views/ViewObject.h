@@ -9,7 +9,6 @@
 namespace Horizon::Engine
 {
 	class Engine;
-	struct ReflectionLibrary;
 }
 
 namespace Horizon::Editor
@@ -18,7 +17,7 @@ namespace Horizon::Editor
 	class EditorContext;
 	class DomainFile;
 
-	class EDITOR_API ViewObject : public Reflect::Base
+	class ViewObject : public Reflect::Base
 	{
 		friend class ViewRegistry;
 	public:
@@ -29,9 +28,6 @@ namespace Horizon::Editor
 		virtual b8 OnCommand(ViewCommand command) { return false; }
 
 		virtual b8 IsFullBleed() const { return false; }
-
-		virtual void OnLibraryRegistered(const Engine::ReflectionLibrary& library) = 0;
-		virtual void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) = 0;
 
 		ViewRegistry* GetRegistry() const { return m_holder; }
 		EditorContext* GetContext() const { return m_context; }

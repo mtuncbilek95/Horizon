@@ -13,7 +13,7 @@ namespace Horizon::Engine
 namespace Horizon::World::System
 {
 	HCLASS();
-	class ENGINE_API RenderSubmission : public Engine::System
+	class RenderSubmission : public Engine::System
 	{
 		HORIZON_TYPE_REFLECT(RenderSubmission);
 	public:

@@ -124,39 +124,6 @@ namespace Horizon::Editor
 			CloseView(pView);
 	}
 
-	void ViewRegistry::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-	{
-		for (const Reflect::Type& type : library.types)
-		{
-			if (type.GetCustomAttribute<EditorViewAttribute>())
-				AddType(&type);
-		}
-
-		for (auto* pView : m_createdViews)
-			pView->OnLibraryRegistered(library);
-	}
-
-	void ViewRegistry::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-	{
-		for (auto* pView : m_createdViews)
-			pView->OnLibraryUnregistered(library);
-
-		for (const Reflect::Type& type : library.types)
-		{
-			for (usize i = m_createdViews.GetCount(); i > 0; --i)
-			{
-				if (m_createdViews[i - 1]->GetTypeId() == type.GetTypeId())
-					CloseView(m_createdViews[i - 1]);
-			}
-
-			for (usize i = m_registeredViews.GetCount(); i > 0; --i)
-			{
-				if (m_registeredViews[i - 1].pCoreType == &type)
-					m_registeredViews.RemoveAt(i - 1);
-			}
-		}
-	}
-
 	void ViewRegistry::BuildDefaultLayout(u32 rootId)
 	{
 		ImGui::DockBuilderRemoveNode(rootId);

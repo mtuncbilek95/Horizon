@@ -13,7 +13,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(AssetType[AssetKind::Streamable]);
-	class ENGINE_API TextureAsset : public AssetObject
+	class TextureAsset : public AssetObject
 	{
 		HORIZON_TYPE_REFLECT(TextureAsset);
 		friend class TextureAssetStreamer;

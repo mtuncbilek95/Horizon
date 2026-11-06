@@ -32,12 +32,4 @@ namespace Horizon::Engine
 		graph.InitBefore<WorldService>();
 		graph.RunBefore<WorldService>();
 	}
-
-	void InputService::OnLibraryRegistered(const ReflectionLibrary& library)
-	{
-	}
-
-	void InputService::OnLibraryUnregistered(const ReflectionLibrary& library)
-	{
-	}
 }

@@ -10,7 +10,7 @@ namespace Horizon::Engine
 {
 	class AssetLoadSystem;
 
-	class ENGINE_API AssetObject : public Reflect::Base
+	class AssetObject : public Reflect::Base
 	{
 		friend class AssetService;
 	public:

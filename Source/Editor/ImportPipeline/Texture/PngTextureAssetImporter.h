@@ -11,7 +11,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(AssetImporterType[Reflect::TypeOf<Engine::TextureAsset>(), { ".png", ".jpg", ".jpeg" }]);
-	class EDITOR_API PngTextureAssetImporter final : public AssetImporter
+	class PngTextureAssetImporter final : public AssetImporter
 	{
 		HORIZON_TYPE_REFLECT(PngTextureAssetImporter);
 	public:

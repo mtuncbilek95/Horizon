@@ -69,12 +69,4 @@ namespace Horizon::Editor
 
 		ImGui::Image((ImTextureID)m_resourceHeap->GetGpuHandle(m_descriptorIndex), available);
 	}
-
-	void SceneView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-	{
-	}
-
-	void SceneView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-	{
-	}
 }

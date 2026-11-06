@@ -20,7 +20,7 @@ namespace Horizon::Engine
 	class RenderGraph;
 
 	HCLASS();
-	class ENGINE_API RenderNode : public Reflect::Base
+	class RenderNode : public Reflect::Base
 	{
 		friend class RenderGraph;
 	public:

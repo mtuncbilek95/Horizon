@@ -13,16 +13,13 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API InputService final : public Service
+	class InputService final : public Service
 	{
 	public:
 		ModuleReport OnInitialize() final;
 		void OnExecute(const EngineFrame& ctx) final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleDependency& graph) final;
-
-		void OnLibraryRegistered(const ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const ReflectionLibrary& library) final;
 
 		Input::Instance* GetDevices() const { return m_devices.Get(); }
 

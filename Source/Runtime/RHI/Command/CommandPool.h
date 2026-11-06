@@ -5,7 +5,7 @@
 
 namespace Horizon::RHI
 {
-	class RUNTIME_API CommandPool : public Object
+	class CommandPool : public Object
 	{
 	public:
 		virtual void Reset() = 0;

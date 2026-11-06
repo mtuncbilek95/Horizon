@@ -4,16 +4,13 @@
 #include <Engine/Core/Service.h>
 #include <Engine/Core/ModuleDependency.h>
 #include <Engine/Core/EngineFrame.h>
-#include <Engine/Game/GameSystem.h>
 #include <Engine/Job/JobSystem.h>
-#include <Engine/Plugin/PluginSystem.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 
 #include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
-#include <Runtime/PAL/Module/SymbolLibrary.h>
 #include <Runtime/PAL/Timer/Timer.h>
 
 #include <typeindex>
@@ -21,7 +18,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API Engine final
+	class Engine final
 	{
 	public:
 		Engine();
@@ -77,12 +74,7 @@ namespace Horizon::Engine
 		void RequestExit(std::string_view reason);
 
 		ReflectionSystem* GetReflectionSystem() const noexcept { return m_reflectionSystem.Get(); }
-		b8 RegisterLibrary(const PAL::SymbolLibrary* pLibrary);
-		void UnregisterLibrary(const PAL::SymbolLibrary* pLibrary);
-
-		GameSystem* GetGameSystem() const noexcept { return m_gameSystem.Get(); }
 		JobSystem* GetJobSystem() const noexcept { return m_jobSystem.Get(); }
-		PluginSystem* GetPluginSystem() const noexcept { return m_pluginSystem.Get(); }
 		const EngineFrame& GetFrame() const { return m_frameContext; }
 
 	private:
@@ -109,8 +101,6 @@ namespace Horizon::Engine
 
 		UniquePtr<ReflectionSystem> m_reflectionSystem;
 		UniquePtr<JobSystem> m_jobSystem;
-		UniquePtr<PluginSystem> m_pluginSystem;
-		UniquePtr<GameSystem> m_gameSystem;
 
 		b8 m_running = true;
 	};

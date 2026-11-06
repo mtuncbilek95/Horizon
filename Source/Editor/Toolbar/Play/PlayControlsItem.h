@@ -8,7 +8,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ToolBarItem[ToolBarSection::Center, 0]);
-	class EDITOR_API PlayControlsItem final : public ToolBarItem
+	class PlayControlsItem final : public ToolBarItem
 	{
 		HORIZON_TYPE_REFLECT(PlayControlsItem);
 	public:

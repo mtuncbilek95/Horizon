@@ -2,7 +2,7 @@
 
 #include <Editor/MainMenu/MenuItemInstance.h>
 #include <Editor/Renderer/EditorContext.h>
-#include <Engine/Reflection/ReflectionLibrary.h>
+#include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Engine
 {
@@ -19,9 +19,6 @@ namespace Horizon::Editor
 
 		void BootstrapMenus(EditorContext* ctx);
 		void RenderGUI();
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library);
 
 	private:
 		void AddRootType(const Reflect::Type* pType);

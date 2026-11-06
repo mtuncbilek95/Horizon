@@ -5,7 +5,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API AssetTypeAttribute final : public Reflect::Attribute
+	class AssetTypeAttribute final : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(AssetTypeAttribute);
 	public:

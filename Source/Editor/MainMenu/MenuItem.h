@@ -5,7 +5,7 @@
 
 namespace Horizon::Editor
 {
-	class EDITOR_API MenuItem : public Reflect::Base
+	class MenuItem : public Reflect::Base
 	{
 		friend class MenuRegistry;
 	public:

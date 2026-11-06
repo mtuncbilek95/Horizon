@@ -1,7 +1,5 @@
 #include "ProjectContext.h"
 
-#include <Engine/Plugin/PluginSystem.h>
-#include <Engine/Game/GameSystem.h>
 #include <Engine/Window/WindowService.h>
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/PAL/File/Directory.h>
@@ -26,8 +24,6 @@ namespace Horizon::Editor
 
 		m_assetPath = m_projectPath + "/Assets";
 		m_cookPath = m_projectPath + "/Cooked";
-		m_pluginPath = m_projectPath + "/Plugins";
-		m_codePath = m_projectPath + "/Code";
 		m_settingsPath = m_projectPath + "/Settings";
 
 		if (!PAL::Directory::Exists(m_assetPath) && !PAL::Directory::Create(m_assetPath))
@@ -36,27 +32,8 @@ namespace Horizon::Editor
 		if (!PAL::Directory::Exists(m_cookPath) && !PAL::Directory::Create(m_cookPath))
 			return Engine::ModuleReport("Cook root cannot be created");
 
-		if (!PAL::Directory::Exists(m_pluginPath) && !PAL::Directory::Create(m_pluginPath))
-			return Engine::ModuleReport("Plugin root cannot be created");
-
 		if (!PAL::Directory::Exists(m_settingsPath) && !PAL::Directory::Create(m_settingsPath))
 			return Engine::ModuleReport("Settings root cannot be created");
-
-		auto* pPlugins = GetEngine()->GetPluginSystem();
-		auto* pGame = GetEngine()->GetGameSystem();
-
-		// TODO: Check if the game has plugin dependency
-		// TODO: Check version
-		// TODO: Check all the security shit like it is corrupted or something else etc.
-
-		// Load the fuck them out
-		pPlugins->SetRoots("", m_pluginPath);
-		pPlugins->SetEnabledPlugins(m_enabledPlugins);
-		pPlugins->DiscoverPlugins();
-		pPlugins->LoadPlugins();
-
-		const std::string moduleName = m_projectName.substr(0, m_projectName.rfind('.'));
-		pGame->Load(m_projectPath, moduleName);
 
 		return Engine::ModuleReport();
 	}
@@ -68,18 +45,5 @@ namespace Horizon::Editor
 	void ProjectContext::DeclareDependencies(Engine::ModuleDependency& graph)
 	{
 		graph.InitBefore<Engine::WindowService>();
-	}
-
-	void ProjectContext::SetPluginEnabled(const std::string& name, b8 enabled)
-	{
-		const b8 current = m_enabledPlugins.Contains(name);
-
-		if (enabled == current)
-			return;
-
-		if (enabled)
-			m_enabledPlugins.PushBack(name);
-		else
-			m_enabledPlugins.Remove(name);
 	}
 }

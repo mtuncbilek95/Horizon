@@ -4,7 +4,7 @@
 
 namespace Horizon::Editor
 {
-	class EDITOR_API AssetImporterTypeAttribute : public Reflect::Attribute
+	class AssetImporterTypeAttribute : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(AssetImporterTypeAttribute);
 	public:

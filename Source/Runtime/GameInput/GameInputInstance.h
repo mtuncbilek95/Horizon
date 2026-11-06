@@ -12,7 +12,7 @@ namespace Horizon::Input
 	class Mouse;
 	class Gamepad;
 
-	class RUNTIME_API GameInputInstance final : public Instance
+	class GameInputInstance final : public Instance
 	{
 		struct PendingDevice
 		{

@@ -11,7 +11,7 @@ namespace Horizon::PAL
 		i32 x, y;
 	};
 
-	class RUNTIME_API Cursor final : public WindowListener
+	class Cursor final : public WindowListener
 	{
 	public:
 		Cursor() = default;

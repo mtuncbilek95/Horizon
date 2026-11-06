@@ -12,7 +12,7 @@ namespace Horizon::PAL
 	using ThreadHandle = void*;
 	using CustomUserData = void*;
 
-	class RUNTIME_API Thread
+	class Thread
 	{
 	public:
 		Thread() = default;

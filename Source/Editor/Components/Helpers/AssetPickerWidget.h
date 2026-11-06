@@ -12,7 +12,7 @@ namespace Horizon::Editor
 	class DomainFile;
 	class DomainService;
 
-	class EDITOR_API AssetPickerWidget
+	class AssetPickerWidget
 	{
 		struct Candidate
 		{

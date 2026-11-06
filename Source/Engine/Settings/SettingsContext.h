@@ -5,7 +5,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API SettingsContext : public Context 
+	class SettingsContext : public Context 
 	{
 	public:
 		ModuleReport OnInitialize() final;

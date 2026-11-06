@@ -5,7 +5,7 @@
 
 namespace Horizon::RHI
 {
-	class RUNTIME_API ShaderModule : public Object
+	class ShaderModule : public Object
 	{
 	public:
 		ShaderStage GetStage() const { return m_stage; }

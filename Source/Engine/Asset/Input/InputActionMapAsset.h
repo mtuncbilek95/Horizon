@@ -13,7 +13,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(AssetType[AssetKind::Data]);
-	class ENGINE_API InputActionMapAsset : public AssetObject
+	class InputActionMapAsset : public AssetObject
 	{
 		HORIZON_TYPE_REFLECT(InputActionMapAsset);
 		friend class InputActionMapAssetLoader;

@@ -6,7 +6,7 @@
 
 namespace Horizon::Input
 {
-	class RUNTIME_API Gamepad final : public Object
+	class Gamepad final : public Object
 	{
 	public:
 		Gamepad(Instance* pInstance, ObjectHandle handle, VendorType vendor, ProductType product);

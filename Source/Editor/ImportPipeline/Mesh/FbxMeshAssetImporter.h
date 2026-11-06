@@ -11,7 +11,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(AssetImporterType[Reflect::TypeOf<Engine::MeshAsset>(), { ".fbx" }]);
-	class EDITOR_API FbxMeshAssetImporter final : public AssetImporter
+	class FbxMeshAssetImporter final : public AssetImporter
 	{
 		HORIZON_TYPE_REFLECT(FbxMeshAssetImporter);
 	public:

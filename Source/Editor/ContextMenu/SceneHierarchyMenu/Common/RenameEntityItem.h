@@ -6,7 +6,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ContextMenuItem["SceneHierarchyView", "Rename", 1]);
-	class EDITOR_API RenameEntityItem : public SceneHierarchyMenuItem
+	class RenameEntityItem : public SceneHierarchyMenuItem
 	{
 		HORIZON_TYPE_REFLECT(RenameEntityItem);
 	public:

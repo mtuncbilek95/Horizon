@@ -6,7 +6,7 @@
 namespace Horizon::Rendering::Pass
 {
 	HCLASS();
-	class ENGINE_API DepthPrePass : public Engine::RenderNode
+	class DepthPrePass : public Engine::RenderNode
 	{
 		HORIZON_TYPE_REFLECT(DepthPrePass);
 	public:

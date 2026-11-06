@@ -6,7 +6,7 @@
 namespace Horizon::World::System
 {
 	HCLASS();
-	class ENGINE_API RenderExtraction : public Engine::System
+	class RenderExtraction : public Engine::System
 	{
 		HORIZON_TYPE_REFLECT(RenderExtraction);
 	public:

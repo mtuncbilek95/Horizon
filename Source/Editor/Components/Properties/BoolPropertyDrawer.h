@@ -5,7 +5,7 @@
 namespace Horizon::Editor
 {
 	HCLASS();
-	class EDITOR_API BoolPropertyDrawer final : public PropertyDrawer
+	class BoolPropertyDrawer final : public PropertyDrawer
 	{
 		HORIZON_TYPE_REFLECT(BoolPropertyDrawer);
 	public:

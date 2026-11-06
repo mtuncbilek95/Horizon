@@ -20,7 +20,7 @@ namespace Horizon::Engine
 
 namespace Horizon::Editor
 {
-	class EDITOR_API EditorPlatform final
+	class EditorPlatform final
 	{
 	public:
 		EditorPlatform(Engine::WindowService* pWindowService);

@@ -138,14 +138,6 @@ namespace Horizon::Engine
 		graph.RunAfter<WorldService>();
 	}
 
-	void PresentationService::OnLibraryRegistered(const ReflectionLibrary& library)
-	{
-	}
-
-	void PresentationService::OnLibraryUnregistered(const ReflectionLibrary& library)
-	{
-	}
-
 	void PresentationService::HandleWindowMessages()
 	{
 		const auto& messages = m_window->GetMessages();

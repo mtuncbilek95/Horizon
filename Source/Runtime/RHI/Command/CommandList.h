@@ -21,7 +21,7 @@ namespace Horizon::RHI
 	class DescriptorHeap;
 	class DescriptorTable;
 
-	class RUNTIME_API CommandList : public Object
+	class CommandList : public Object
 	{
 	public:
 		virtual void Start() = 0;

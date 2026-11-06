@@ -29,21 +29,6 @@ namespace Horizon::Editor
 			AddType(pType);
 	}
 
-	void PropertyRenderer::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-	{
-		for (const Reflect::Type& type : library.types)
-		{
-			if (type.GetBaseId() == Reflect::TypeOf<PropertyDrawer>())
-				AddType(&type);
-		}
-	}
-
-	void PropertyRenderer::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-	{
-		for (const Reflect::Type& type : library.types)
-			RemoveType(&type);
-	}
-
 	b8 PropertyRenderer::AddType(const Reflect::Type* pType)
 	{
 		if (pType->GetIsAbstract())

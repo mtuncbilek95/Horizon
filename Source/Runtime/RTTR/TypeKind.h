@@ -4,7 +4,7 @@
 
 namespace Horizon::Reflect
 {
-	enum class RUNTIME_API TypeKind : u8
+	enum class TypeKind : u8
 	{
 		Object,
 		Enum,

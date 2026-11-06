@@ -9,7 +9,7 @@
 
 namespace Horizon::PAL
 {
-	struct RUNTIME_API File final
+	struct File final
 	{
 		static FileAccessRequest RequestAccess(const std::string& newPath, FileOperationAccessPolicy accessPol, FileOperationSharePolicy sharePol, b8 asyncOp = false);
 		static void ReleaseAccess(FileAccessRequest handle);

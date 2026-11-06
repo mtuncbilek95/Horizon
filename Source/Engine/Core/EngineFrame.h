@@ -4,7 +4,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API EngineFrame final
+	class EngineFrame final
 	{
 		friend class Engine;
 	public:

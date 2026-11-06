@@ -5,7 +5,7 @@
 
 namespace Horizon::RHI
 {
-	class RUNTIME_API GraphicsPipeline : public Pipeline
+	class GraphicsPipeline : public Pipeline
 	{
 	public:
 		PrimitiveTopology GetTopology() const { return m_topology; }

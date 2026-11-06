@@ -12,7 +12,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(EditorView[ICON_FA_TERMINAL, "Console", DockZone::Bottom, EditorViewFlags::OpenOnStart]);
-	class EDITOR_API ConsoleView : public ViewObject
+	class ConsoleView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(ConsoleView);
 
@@ -25,9 +25,6 @@ namespace Horizon::Editor
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
 	private:
 		void PullHistory();

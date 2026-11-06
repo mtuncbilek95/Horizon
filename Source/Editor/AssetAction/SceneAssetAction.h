@@ -7,7 +7,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(ActionType[Reflect::TypeOf<Engine::SceneAsset>()])
-	class EDITOR_API SceneAssetAction : public AssetAction
+	class SceneAssetAction : public AssetAction
 	{
 		HORIZON_TYPE_REFLECT(SceneAssetAction);
 	public:

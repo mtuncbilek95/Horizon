@@ -5,7 +5,7 @@
 
 namespace Horizon::Engine
 {
-	struct ENGINE_API WindowParams
+	struct WindowParams
 	{
 		Math::Vec2u windowSize = Math::Vec2u::Zero();
 		PAL::WindowFlags flags;

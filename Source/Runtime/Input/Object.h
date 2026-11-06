@@ -10,7 +10,7 @@ namespace Horizon::Input
 	class Instance;
 	using ObjectHandle = void*;
 
-	class RUNTIME_API Object
+	class Object
 	{
 	public:
 		Object(Instance* pInstance, ObjectHandle handle, DeviceType type, VendorType vendor, ProductType product)

@@ -4,7 +4,7 @@
 
 namespace Horizon::PAL
 {
-	struct RUNTIME_API Command
+	struct Command
 	{
 		static void ExecuteInTerminal(const std::string& commandLine);
 	};

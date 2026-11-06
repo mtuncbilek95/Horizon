@@ -5,7 +5,7 @@
 
 namespace Horizon::RHI
 {
-	class RUNTIME_API Buffer : public Object
+	class Buffer : public Object
 	{
 	public:
 		u64 GetSize() const { return m_size; }

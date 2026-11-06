@@ -6,7 +6,7 @@
 namespace Horizon::World::System
 {
 	HCLASS();
-	class ENGINE_API InputEvaluation : public Engine::System
+	class InputEvaluation : public Engine::System
 	{
 		HORIZON_TYPE_REFLECT(InputEvaluation);
 	public:

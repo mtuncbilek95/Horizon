@@ -14,10 +14,10 @@ namespace Horizon::PAL
 {
 	using WatcherHandle = void*;
 
-	class RUNTIME_API DirectoryWatcher
+	class DirectoryWatcher
 	{
 	public:
-		struct RUNTIME_API Event
+		struct Event
 		{
 			static constexpr u32 NoExtension = 0xFFFFFF;
 

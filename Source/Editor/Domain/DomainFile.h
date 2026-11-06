@@ -12,7 +12,7 @@ namespace Horizon::Editor
 	class DomainFolder;
 	class AssetImportSettings;
 
-	class EDITOR_API DomainFile
+	class DomainFile
 	{
 	public:
 		static constexpr std::string_view MetaSuffix = ".hmeta";

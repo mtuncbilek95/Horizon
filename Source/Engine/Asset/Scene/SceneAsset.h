@@ -15,7 +15,7 @@
 namespace Horizon::Engine
 {
 	HCLASS(AssetType[AssetKind::Streamable]);
-	class ENGINE_API SceneAsset : public AssetObject
+	class SceneAsset : public AssetObject
 	{
 		HORIZON_TYPE_REFLECT(SceneAsset);
 		friend class SceneAssetStreamer;

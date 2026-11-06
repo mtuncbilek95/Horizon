@@ -6,7 +6,7 @@
 namespace Horizon::World::System
 {
 	HCLASS();
-	class ENGINE_API LocalToWorld : public Engine::System
+	class LocalToWorld : public Engine::System
 	{
 		HORIZON_TYPE_REFLECT(LocalToWorld);
 	public:

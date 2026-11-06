@@ -6,7 +6,7 @@
 namespace Horizon::Rendering::Pass
 {
 	HCLASS();
-	class ENGINE_API ForwardPass : public Engine::RenderNode
+	class ForwardPass : public Engine::RenderNode
 	{
 		HORIZON_TYPE_REFLECT(ForwardPass);
 	public:

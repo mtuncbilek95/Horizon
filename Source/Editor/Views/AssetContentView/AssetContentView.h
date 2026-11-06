@@ -19,7 +19,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(EditorView[ICON_FA_FOLDER_TREE, "Content Browser", DockZone::Bottom, EditorViewFlags::OpenOnStart]);
-	class EDITOR_API AssetContentView : public ViewObject
+	class AssetContentView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(AssetContentView);
 
@@ -47,9 +47,6 @@ namespace Horizon::Editor
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
 	private:
 		b8 AddAction(const Reflect::Type* pType);

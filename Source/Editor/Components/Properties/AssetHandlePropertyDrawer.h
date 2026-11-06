@@ -7,7 +7,7 @@
 namespace Horizon::Editor
 {
 	HCLASS();
-	class EDITOR_API AssetHandlePropertyDrawer final : public PropertyDrawer
+	class AssetHandlePropertyDrawer final : public PropertyDrawer
 	{
 		HORIZON_TYPE_REFLECT(AssetHandlePropertyDrawer);
 	public:

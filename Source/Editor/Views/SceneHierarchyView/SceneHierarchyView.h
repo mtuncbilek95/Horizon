@@ -16,16 +16,13 @@
 namespace Horizon::Editor
 {
 	HCLASS(EditorView[ICON_FA_DIAGRAM_PROJECT, "Scene Hierarchy", DockZone::Left, EditorViewFlags::OpenOnStart]);
-	class EDITOR_API SceneHierarchyView : public ViewObject
+	class SceneHierarchyView : public ViewObject
 	{
 		HORIZON_TYPE_REFLECT(SceneHierarchyView);
 	public:
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
 		b8 OnCommand(ViewCommand command) final;
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
 		b8 IsFullBleed() const final { return true; }
 	};

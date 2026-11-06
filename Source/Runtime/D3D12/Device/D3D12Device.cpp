@@ -70,7 +70,7 @@ namespace Horizon::RHI
 		}
 	}
 
-	RUNTIME_API UniquePtr<Device> CreateRHIDevice(DeviceDesc& desc)
+	UniquePtr<Device> CreateRHIDevice(DeviceDesc& desc)
 	{
 		UniquePtr<D3D12Device> pDevice = MakeUnique<D3D12Device>();
 		if (pDevice->Initialize(desc))

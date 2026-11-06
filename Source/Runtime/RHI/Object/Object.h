@@ -6,7 +6,7 @@ namespace Horizon::RHI
 {
 	class Device;
 
-	class RUNTIME_API Object
+	class Object
 	{
 	public:
 		virtual ~Object() = default;

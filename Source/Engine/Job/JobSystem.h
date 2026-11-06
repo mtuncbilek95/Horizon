@@ -15,7 +15,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API JobSystem final
+	class JobSystem final
 	{
 		friend class JobWorker;
 

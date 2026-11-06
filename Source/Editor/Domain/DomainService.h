@@ -20,7 +20,7 @@ namespace Horizon::Editor
 {
 	class AssetImporter;
 
-	class EDITOR_API DomainService : public Engine::Service
+	class DomainService : public Engine::Service
 	{
 		static constexpr usize MaxConcurrentImports = 8;
 		static constexpr auto IgnoredAddList = std::to_array<std::string_view>({ ".hmeta", ".bin" });
@@ -30,9 +30,6 @@ namespace Horizon::Editor
 		void OnExecute(const Engine::EngineFrame& ctx) final;
 		void OnFinalize() final;
 		void DeclareDependencies(Engine::ModuleDependency& graph) final;
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library) final;
 
 		DomainFolder* GetRoot() const { return m_root.Get(); }
 

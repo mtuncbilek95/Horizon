@@ -10,7 +10,7 @@ namespace Horizon::Engine
 {
 	using JobFunction = void(*)(void* pUserData);
 
-	class ENGINE_API Job
+	class Job
 	{
 	public:
 		Job() = default;

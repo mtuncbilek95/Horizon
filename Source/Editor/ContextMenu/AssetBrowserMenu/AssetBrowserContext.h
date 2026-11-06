@@ -6,7 +6,7 @@
 
 namespace Horizon::Editor
 {
-	struct EDITOR_API AssetBrowserContext
+	struct AssetBrowserContext
 	{
 		Engine::Engine* pEngine;
 		DomainFolder* pCurrentFolder = nullptr;

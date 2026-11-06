@@ -17,7 +17,7 @@ namespace Horizon::Editor
 		List<u8> binary;
 	};
 
-	class EDITOR_API ImportPipeline : public Reflect::Base
+	class ImportPipeline : public Reflect::Base
 	{
 	public:
 		AssetImportResult Cook(const ImportPipelineContext& ctx, const Guid& id, const Reflect::Type* pAssetType, const std::string& cookedPath, ImportProductBytes& bytes);

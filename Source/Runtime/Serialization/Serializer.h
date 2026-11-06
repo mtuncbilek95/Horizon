@@ -5,7 +5,7 @@
 
 namespace Horizon
 {
-	class RUNTIME_API Serializer
+	class Serializer
 	{
 	public:
 		using ResolveFn = const Reflect::Type* (*)(void* pUserData, Reflect::TypeHandle handle);

@@ -41,12 +41,4 @@ namespace Horizon::Engine
 		graph.InitAfter<AssetService, 
 			GraphicsContext>();
 	}
-
-	void WorldService::OnLibraryRegistered(const ReflectionLibrary& library)
-	{
-	}
-
-	void WorldService::OnLibraryUnregistered(const ReflectionLibrary& library)
-	{
-	}
 }

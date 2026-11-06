@@ -9,7 +9,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API EntityStorage final
+	class EntityStorage final
 	{
 	public:
 		EntityStorage();

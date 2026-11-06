@@ -7,7 +7,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(MenuItem["Edit/Engine Settings", i32_max - 1]);
-	class EDITOR_API EngineSettingsMenuItem : public MenuItem
+	class EngineSettingsMenuItem : public MenuItem
 	{
 		HORIZON_TYPE_REFLECT(EngineSettingsMenuItem);
 	public:

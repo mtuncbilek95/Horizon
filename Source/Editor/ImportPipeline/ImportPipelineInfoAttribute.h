@@ -4,7 +4,7 @@
 
 namespace Horizon::Editor
 {
-	class EDITOR_API ImportPipelineInfoAttribute : public Reflect::Attribute 
+	class ImportPipelineInfoAttribute : public Reflect::Attribute 
 	{
 		HORIZON_ATTRIBUTE_REFLECT(ImportPipelineInfoAttribute);
 	public:

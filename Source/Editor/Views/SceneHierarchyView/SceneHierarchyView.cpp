@@ -17,12 +17,4 @@ namespace Horizon::Editor
 
 		return true;
 	}
-
-	void SceneHierarchyView::OnLibraryRegistered(const Engine::ReflectionLibrary& library)
-	{
-	}
-
-	void SceneHierarchyView::OnLibraryUnregistered(const Engine::ReflectionLibrary& library)
-	{
-	}
 }

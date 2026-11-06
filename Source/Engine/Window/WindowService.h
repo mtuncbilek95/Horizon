@@ -10,7 +10,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API WindowService : public Service
+	class WindowService : public Service
 	{
 	public:
 		WindowService(const WindowParams& params);
@@ -27,9 +27,6 @@ namespace Horizon::Engine
 		void OnExecute(const EngineFrame& ctx) final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleDependency& graph) final;
-
-		void OnLibraryRegistered(const ReflectionLibrary& library) final;
-		void OnLibraryUnregistered(const ReflectionLibrary& library) final;
 
 	private:
 		WindowParams m_params;

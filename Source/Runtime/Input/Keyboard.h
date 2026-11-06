@@ -9,7 +9,7 @@ namespace Horizon::Input
 {
 	using KeyboardState = std::bitset<512>;
 
-	class RUNTIME_API Keyboard final : public Object
+	class Keyboard final : public Object
 	{
 	public:
 		Keyboard(Instance* pInstance, ObjectHandle handle, VendorType vendor, ProductType product);

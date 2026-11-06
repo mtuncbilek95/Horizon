@@ -14,7 +14,7 @@
 namespace Horizon::Editor
 {
 	HCLASS(AssetImporterType[Reflect::TypeOf<Engine::MeshAsset>(), { ".gltf", ".glb" }]);
-	class EDITOR_API GltfMeshAssetImporter final : public AssetImporter
+	class GltfMeshAssetImporter final : public AssetImporter
 	{
 		HORIZON_TYPE_REFLECT(GltfMeshAssetImporter);
 	public:

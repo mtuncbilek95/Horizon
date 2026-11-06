@@ -5,7 +5,7 @@
 
 namespace Horizon::Editor
 {
-	class EDITOR_API ToolBarItemAttribute : public Reflect::Attribute
+	class ToolBarItemAttribute : public Reflect::Attribute
 	{
 		HORIZON_ATTRIBUTE_REFLECT(ToolBarItemAttribute);
 	public:

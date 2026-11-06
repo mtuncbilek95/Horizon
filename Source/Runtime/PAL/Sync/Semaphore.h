@@ -6,7 +6,7 @@ namespace Horizon::PAL
 {
 	using SemaphoreHandle = void*;
 
-	class RUNTIME_API Semaphore
+	class Semaphore
 	{
 	public:
 		Semaphore(u32 initialCount = 0, u32 maxCount = i32_max);

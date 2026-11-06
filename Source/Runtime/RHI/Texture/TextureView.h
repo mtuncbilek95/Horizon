@@ -5,7 +5,7 @@
 
 namespace Horizon::RHI
 {
-	class RUNTIME_API TextureView : public Object
+	class TextureView : public Object
 	{
 	public:
 		Texture* GetTexture() const { return m_texture; }

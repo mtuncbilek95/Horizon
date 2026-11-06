@@ -6,7 +6,7 @@
 namespace Horizon::World::System
 {
 	HCLASS();
-	class ENGINE_API CameraExtraction : public Engine::System
+	class CameraExtraction : public Engine::System
 	{
 		HORIZON_TYPE_REFLECT(CameraExtraction);
 	public:

@@ -4,7 +4,7 @@
 
 namespace Horizon::Reflect
 {
-	enum class RUNTIME_API TypeMode : u8
+	enum class TypeMode : u8
 	{
 		Invalid,
 		Compose,

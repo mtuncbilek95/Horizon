@@ -10,7 +10,7 @@
 
 namespace Horizon::Engine
 {
-	class ENGINE_API ComponentRegistry final
+	class ComponentRegistry final
 	{
 	public:
 		ComponentRegistry() = default;

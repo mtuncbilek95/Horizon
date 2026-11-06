@@ -3,12 +3,12 @@
 #include <Editor/Renderer/EditorContext.h>
 #include <Editor/ToolBar/ToolBarItem.h>
 #include <Editor/ToolBar/ToolBarSection.h>
-#include <Engine/Reflection/ReflectionLibrary.h>
+#include <Runtime/RTTR/Reflection.h>
 #include <Runtime/Containers/Vector/List.h>
 
 namespace Horizon::Editor
 {
-	class EDITOR_API ToolBarRegistry
+	class ToolBarRegistry
 	{
 		static constexpr f32 kHeight = 36.0f;
 		static constexpr usize kSectionCount = 3;
@@ -26,9 +26,6 @@ namespace Horizon::Editor
 
 		void BootstrapItems(EditorContext* ctx);
 		void RenderGUI();
-
-		void OnLibraryRegistered(const Engine::ReflectionLibrary& library);
-		void OnLibraryUnregistered(const Engine::ReflectionLibrary& library);
 
 	private:
 		b8 AddType(const Reflect::Type* pType);
