@@ -684,7 +684,7 @@ namespace Horizon::Engine
 
 		pDevice->Submit(RHI::QueueType::Graphics, { m_list.Get() });
 		m_fenceValue = pDevice->Signal(RHI::QueueType::Graphics, m_fence.Get());
-		m_fence->WaitCPU(m_fenceValue);
+		m_fence->WaitCPU(m_fenceValue); // TODO: This is not okay
 	}
 
 	void RenderGraph::RecordBarriers(const List<RenderBarrier>& barriers)
