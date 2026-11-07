@@ -4,6 +4,7 @@
 #include <Engine/Asset/AssetObject.h>
 #include <Engine/Asset/AssetResidency.h>
 #include <Engine/Asset/AssetTypeAttribute.h>
+#include <Engine/Asset/Mesh/MeshAssetUsePermit.h>
 #include <Engine/Asset/Mesh/MeshAssetProperties.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
 #include <Engine/Job/JobSystem.h>
@@ -29,6 +30,9 @@ namespace Horizon::Engine
 		void LoadAsync();
 		void UnloadAsync();
 
+		MeshAssetUsePermit BeginUse();
+		void EndUse(MeshAssetUsePermit& permit);
+
 		const Guid& GetId() const { return m_id; }
 		AssetResidency GetResidency() const { return m_residency.Load(PAL::MemoryOrder::Acquire); }
 
@@ -41,6 +45,9 @@ namespace Horizon::Engine
 		void OnPropertiesChanged(ReadOnlyList<u8> propertyBytes);
 
 	private:
+		void ReleaseUse();
+
+	private:
 		Guid m_id;
 		std::string m_cookPath;
 		PAL::Atomic<AssetResidency> m_residency = AssetResidency::Unloaded;
@@ -51,5 +58,7 @@ namespace Horizon::Engine
 		MeshAssetProperties m_properties;
 		Range m_vertexRange;
 		Range m_indexRange;
+
+		PAL::Atomic<u32> m_useCount = 0;
 	};
 }

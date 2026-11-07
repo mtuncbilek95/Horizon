@@ -19,5 +19,12 @@ namespace Horizon::World::Component
 
 		HFIELD(AssetRef[Reflect::TypeOf<Engine::MeshAsset>()]);
 		Engine::AssetHandle<Engine::MeshAsset> m_meshHandle;
+
+		HFIELD();
+		b8 m_visible = true;
+
+		HFIELD();
+		b8 m_castShadow = true;
+
 	};
 }

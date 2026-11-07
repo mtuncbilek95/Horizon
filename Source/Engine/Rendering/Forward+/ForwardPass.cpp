@@ -37,9 +37,9 @@ namespace Horizon::Rendering::Pass
 		desc.colorAttachmentCount = 1;
 
 		desc.depthAttachment.pView = GetTextureView<Resource::SceneDepth>();
-		desc.depthAttachment.loadOp = RHI::LoadOp::Load;
+		desc.depthAttachment.loadOp = RHI::LoadOp::Clear;
 		desc.depthAttachment.storeOp = RHI::StoreOp::Store;
-		desc.depthAttachment.readOnly = true;
+		desc.depthAttachment.readOnly = false;
 
 		pCmdList->StartRendering(desc);
 
@@ -52,6 +52,9 @@ namespace Horizon::Rendering::Pass
 		scissor.width = static_cast<i32>(pColor->GetWidth());
 		scissor.height = static_cast<i32>(pColor->GetHeight());
 		pCmdList->SetScissor(scissor);
+
+
+
 
 		pCmdList->EndRendering();
 	}
