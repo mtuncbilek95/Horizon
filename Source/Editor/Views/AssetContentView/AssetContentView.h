@@ -61,23 +61,19 @@ namespace Horizon::Editor
 		void RenderRenameModal();
 		BrowserEntry* FindEntry(const std::string& path);
 
-		// Import action
 		void ImportFiles(const List<std::string>& files);
 		void RenderDialog();
+
 	private:
-		// Asset Open Actions
 		List<ActionEntry> m_openActions;
 		std::unordered_map<std::string, RefPtr<AssetAction>> m_actionNameLookup;
 
-		// Context Menu
 		ContextMenuRegistry<AssetBrowserContext> m_contextMenu;
 		DomainFolder* m_currentFolder = nullptr;
 
-		// Safe-use entries
 		List<BrowserEntry> m_entries;
 		ImGuiSelectionBasicStorage m_selection;
 
-		// Rename misc.
 		std::string m_renamePath;
 		b8 m_renameIsFolder = false;
 		c8 m_renameBuffer[256] = {};

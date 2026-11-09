@@ -24,6 +24,8 @@ namespace Horizon::World::System
 		void OnFinalize() final;
 		void DeclareDependencies(Engine::SystemDependency& graph) final;
 
+		Engine::RenderGraph* GetGraph() const { return m_graph.Get(); }
+
 	private:
 		UniquePtr<Engine::RenderGraph> m_graph = nullptr;
 		Engine::PresentationService* m_presentation = nullptr;

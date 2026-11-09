@@ -11,6 +11,7 @@ namespace Horizon::Engine
 {
 	class SystemGraph;
 	class Scene;
+	class System;
 
 	class WorldService : public Service
 	{
@@ -22,6 +23,8 @@ namespace Horizon::Engine
 
 		Scene* GetCurrentWorld() const { return m_activeWorld; }
 		void SetCurrentWorld(Scene* pNewWorld) { m_activeWorld = pNewWorld; }
+
+		System* FindSystem(Reflect::TypeHandle handl);
 
 	private:
 		UniquePtr<SystemGraph> m_graph;

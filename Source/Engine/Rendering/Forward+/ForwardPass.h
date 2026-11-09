@@ -5,12 +5,13 @@
 #include <Runtime/RHI/Descriptor/DescriptorHeap.h>
 #include <Runtime/RHI/Shader/ShaderModule.h>
 #include <Runtime/RHI/Pipeline/GraphicsPipeline.h>
+#include <Runtime/RTTR/Attributes/DynamicUsageAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/Containers/Memory/UniquePtr.h>
 
 namespace Horizon::Rendering::Pass
 {
-	HCLASS();
+	HCLASS(DynamicUsage);
 	class ForwardPass : public Engine::RenderNode
 	{
 		HORIZON_TYPE_REFLECT(ForwardPass);

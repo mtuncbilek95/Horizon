@@ -41,4 +41,9 @@ namespace Horizon::Engine
 		graph.InitAfter<AssetService, 
 			GraphicsContext>();
 	}
+
+	System* WorldService::FindSystem(Reflect::TypeHandle handl)
+	{
+		return m_graph->FindSystem(handl);
+	}
 }

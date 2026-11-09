@@ -14,7 +14,7 @@
 #include <Engine/Presentation/PresentationService.h>
 #include <Engine/Rendering/Forward+/Resources.h>
 
-
+#include <Engine/Rendering/Forward+/ForwardPass.h>
 
 namespace Horizon::World::System
 {

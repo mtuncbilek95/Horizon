@@ -65,6 +65,8 @@ namespace Horizon::Engine
 			m_importedTextures[Reflect::TypeOf<T>()] = { pTexture, pView, initialState, finalState };
 		}
 
+		void SetEnablePass(Reflect::TypeHandle handl, b8 enable);
+
 		RHI::Texture* FindTexture(Reflect::TypeHandle resource);
 		RHI::TextureView* FindTextureView(Reflect::TypeHandle resource);
 		RHI::Buffer* FindBuffer(Reflect::TypeHandle resource);
@@ -114,5 +116,7 @@ namespace Horizon::Engine
 		UniquePtr<RHI::CommandList> m_list = nullptr;
 		UniquePtr<RHI::Fence> m_fence = nullptr;
 		u64 m_fenceValue = 0;
+
+		std::unordered_map<Reflect::TypeHandle, b8> m_status;
 	};
 }
