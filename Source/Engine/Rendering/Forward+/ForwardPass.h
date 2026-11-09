@@ -11,7 +11,7 @@
 
 namespace Horizon::Rendering::Pass
 {
-	HCLASS(DynamicUsage);
+	HCLASS();
 	class ForwardPass : public Engine::RenderNode
 	{
 		HORIZON_TYPE_REFLECT(ForwardPass);
