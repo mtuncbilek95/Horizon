@@ -15,8 +15,8 @@ namespace Horizon::Engine
 
 		RHI::DeviceDesc deviceDesc = {};
 #if defined(HORIZON_DEBUG)
-		deviceDesc.enableDebug = false;
-		deviceDesc.enableGpuValidation = false;
+		deviceDesc.enableDebug = true;
+		deviceDesc.enableGpuValidation = true;
 #endif
 
 		// Create device

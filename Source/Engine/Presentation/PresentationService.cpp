@@ -46,7 +46,7 @@ namespace Horizon::Engine
 		swapDesc.imageCount = 3;
 		swapDesc.width = windowRect.width;
 		swapDesc.height = windowRect.height;
-		swapDesc.presentMode = RHI::PresentMode::Vsync;
+		swapDesc.presentMode = RHI::PresentMode::Immediate;
 		swapDesc.format = RHI::TextureFormat::RGBA8_UNORM;
 		m_swapchain = m_device->CreateRHISwapchain(swapDesc);
 		if (!m_swapchain)
@@ -201,7 +201,7 @@ namespace Horizon::Engine
 	{
 		RHI::TextureDesc textureDesc = {};
 		textureDesc.format = SceneFormat;
-		textureDesc.usage = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::Sampled;
+		textureDesc.usage = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::Sampled | RHI::TextureUsage::Storage;
 		textureDesc.width = extent.X();
 		textureDesc.height = extent.Y();
 
