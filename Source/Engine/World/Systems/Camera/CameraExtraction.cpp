@@ -27,7 +27,7 @@ namespace Horizon::World::System
 			{
 				Math::Vec2u viewportSize = m_present->GetSceneExtent();
 				const Math::Mat4f view = world.m_worldMatrix.Inverse();
-				const Math::Mat4f proj = Math::Mat4f::PerspectiveRZ(perspective.m_fov, viewportSize.X() / viewportSize.Y(),
+				const Math::Mat4f proj = Math::Mat4f::PerspectiveRZ(perspective.m_fov, (f32)viewportSize.X() / (f32)viewportSize.Y(),
 					perspective.m_nearPlane, perspective.m_farPlane);
 
 				viewProj.m_view = view;

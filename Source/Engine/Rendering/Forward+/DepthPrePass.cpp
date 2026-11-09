@@ -22,8 +22,8 @@ namespace Horizon::Rendering::Pass
 		depthDesc.width = setupContext.colorImageDimension.X();
 		depthDesc.height = setupContext.colorImageDimension.Y();
 
-		graph.Creates<Resource::SceneDepth>(depthDesc);
-		graph.Writes<Resource::SceneDepth>(RHI::ResourceState::DepthWrite);
+		graph.Creates<Resource::PreDepthOutput>(depthDesc);
+		graph.Writes<Resource::PreDepthOutput>(RHI::ResourceState::DepthWrite);
 	}
 
 	void DepthPrePass::Render(const Engine::RenderDrawContext& context)
