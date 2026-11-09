@@ -8,7 +8,7 @@ struct PixelData
 float4 PSMain(PixelData input) : SV_Target0
 {
     const float3 lightDirection = normalize(float3(0.4f, 0.8f, 0.3f));
-    const float diffuse = saturate(dot(normalize(input.normal), lightDirection));
+    const float shade = dot(normalize(input.normal), lightDirection) * 0.5f + 0.5f;
 
-    return float4(input.color.rgb * (0.15f + 0.85f * diffuse), 1.0f);
+    return float4(input.color.rgb * shade, 1.0f);
 }
