@@ -7,6 +7,7 @@
 #include <Runtime/RHI/Command/CommandList.h>
 #include <Runtime/RHI/Command/CommandPool.h>
 #include <Runtime/RHI/Fence/Fence.h>
+#include <Runtime/RTTR/Attributes/IgnoreAttribute.h>
 
 #include <queue>
 #include <vector>
@@ -67,6 +68,9 @@ namespace Horizon::Engine
 		List<Reflect::Type*> nodeTypes = m_reflection->GetTypeByBase(Reflect::TypeOf<RenderNode>());
 		for (auto* pType : nodeTypes)
 		{
+			if (pType->GetCustomAttribute<Reflect::IgnoreAttribute>())
+				continue;
+
 			RefPtr<RenderNode> pNode = MakeRef<RenderNode>(pType);
 			if (!pNode)
 			{
@@ -662,6 +666,7 @@ namespace Horizon::Engine
 	{
 		auto* pDevice = m_graphics->GetDevice();
 
+		m_fence->WaitCPU(m_fenceValue);
 		m_pool->Reset();
 
 		// Start command-list 
@@ -683,6 +688,7 @@ namespace Horizon::Engine
 		m_fenceValue++;
 
 		pDevice->Submit(RHI::QueueType::Graphics, { m_list.Get() });
+		m_fenceValue = pDevice->Signal(RHI::QueueType::Graphics, m_fence.Get());
 	}
 
 	void RenderGraph::RecordBarriers(const List<RenderBarrier>& barriers)
