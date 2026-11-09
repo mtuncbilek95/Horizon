@@ -14,15 +14,28 @@
 #include <Runtime/RHI/Shader/ShaderModuleDesc.h>
 #include <Runtime/RHI/Texture/Texture.h>
 
+#include <algorithm>
+
 namespace Horizon::Rendering::Pass
 {
 	namespace
 	{
+		constexpr u32 kMaxPointLights = 4096;
+
 		struct ForwardConstants
 		{
 			Math::Mat4f worldViewProj;
+			f32 worldRows[12];
 			u32 vertexBufferIndex;
 			u32 firstVertex;
+			u32 pointLightBufferIndex;
+			u32 pointLightCount;
+		};
+
+		struct GpuPointLight
+		{
+			f32 colorIntensity[4];
+			f32 positionRange[4];
 		};
 	}
 
@@ -88,11 +101,36 @@ namespace Horizon::Rendering::Pass
 			return false;
 		}
 
+		RHI::BufferDesc pointLightDesc = {};
+		pointLightDesc.size = sizeof(GpuPointLight) * kMaxPointLights;
+		pointLightDesc.usage = RHI::BufferUsage::Storage;
+		pointLightDesc.memory = RHI::MemoryType::Upload;
+		m_pointLightBuffer = pDevice->CreateRHIBuffer(pointLightDesc);
+
+		if (!m_pointLightBuffer || m_pointLightBuffer->GetMappedData() == nullptr)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "ForwardPass point light buffer could not be created");
+			return false;
+		}
+
+		m_pointLightBuffer->SetDebugName("ForwardPass_PointLightBuffer");
+
+		m_resourceHeap = pContext->GetResourceHeap();
+		m_pointLightView = m_resourceHeap->Allocate();
+		m_resourceHeap->Write(m_pointLightView, RHI::DescriptorType::Buffer, m_pointLightBuffer.Get(), 0, pointLightDesc.size, sizeof(GpuPointLight));
+
 		return true;
 	}
 
 	void ForwardPass::OnFinalize()
 	{
+		if (m_pointLightView != kInvalid32)
+		{
+			m_resourceHeap->Free(m_pointLightView);
+			m_pointLightView = kInvalid32;
+		}
+
+		m_pointLightBuffer.Reset();
 		m_pipeline.Reset();
 		m_fragmentShader.Reset();
 		m_vertexShader.Reset();
@@ -115,6 +153,20 @@ namespace Horizon::Rendering::Pass
 	{
 		RHI::CommandList* pCmdList = GetCommandList();
 		RHI::Texture* pColor = GetTexture<Resource::SceneColor>();
+
+		const u32 pointLightCount = static_cast<u32>(std::min<usize>(context.pointLights.GetCount(), kMaxPointLights));
+		GpuPointLight* pPointLights = reinterpret_cast<GpuPointLight*>(m_pointLightBuffer->GetMappedData());
+
+		for (u32 i = 0; i < pointLightCount; i++)
+		{
+			const Engine::RenderablePointLight& light = context.pointLights[i];
+
+			pPointLights[i] =
+			{
+				{ light.color.R(), light.color.G(), light.color.B(), light.intensity },
+				{ light.position.X(), light.position.Y(), light.position.Z(), light.range },
+			};
+		}
 
 		RHI::RenderingDesc desc = {};
 		desc.colorAttachments[0].pView = GetTextureView<Resource::SceneColor>();
@@ -154,6 +206,14 @@ namespace Horizon::Rendering::Pass
 			ForwardConstants constants = {};
 			constants.worldViewProj = context.camViewProjMatrix * renderable.worldMatrix;
 			constants.vertexBufferIndex = pStreamer->GetVertexBufferView();
+			constants.pointLightBufferIndex = m_pointLightView;
+			constants.pointLightCount = pointLightCount;
+
+			for (i32 row = 0; row < 3; row++)
+			{
+				for (i32 col = 0; col < 4; col++)
+					constants.worldRows[row * 4 + col] = renderable.worldMatrix(row, col);
+			}
 
 			for (const Asset::MeshSubmesh& submesh : renderable.mesh.submeshes)
 			{
