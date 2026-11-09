@@ -10,6 +10,7 @@
 #include <Editor/ContextMenu/AssetBrowserMenu/AssetBrowserContext.h>
 #include <Editor/Components/PropertyRenderer.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
+#include <Runtime/Containers/Memory/RefPtr.h>
 #include <Runtime/Containers/Vector/List.h>
 
 #include <imgui.h>
@@ -38,12 +39,12 @@ namespace Horizon::Editor
 		struct ActionEntry
 		{
 			const Reflect::Type* pType = nullptr;
-			AssetAction* pAction = nullptr;
+			RefPtr<AssetAction> pAction;
 		};
 
 	public:
 		AssetContentView() = default;
-		~AssetContentView() final;
+		~AssetContentView() final = default;
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
@@ -54,8 +55,6 @@ namespace Horizon::Editor
 
 		void RenderToolbar(DomainFolder* pFolder);
 		void RebuildEntries(DomainFolder* pFolder);
-		void RenderGrid();
-		void DrawCell(ImDrawList* pDrawList, const BrowserEntry& entry, const ImVec2& cellMin, f32 cell);
 		void CollectSelected(AssetBrowserContext& context);
 		void Navigate(DomainFolder* pTarget);
 		void BeginRename(const std::string& sourcePath);
@@ -68,7 +67,7 @@ namespace Horizon::Editor
 	private:
 		// Asset Open Actions
 		List<ActionEntry> m_openActions;
-		std::unordered_map<std::string, AssetAction*> m_actionNameLookup;
+		std::unordered_map<std::string, RefPtr<AssetAction>> m_actionNameLookup;
 
 		// Context Menu
 		ContextMenuRegistry<AssetBrowserContext> m_contextMenu;

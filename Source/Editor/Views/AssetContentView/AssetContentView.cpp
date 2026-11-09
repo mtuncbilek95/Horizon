@@ -84,12 +84,6 @@ namespace Horizon::Editor
 		return pFile->GetName();
 	}
 
-	AssetContentView::~AssetContentView()
-	{
-		for (ActionEntry& entry : m_openActions)
-			delete entry.pAction;
-	}
-
 	void AssetContentView::OnInvoke()
 	{
 		auto* pDomain = GetContext()->pEngine->RequestService<DomainService>();
@@ -113,7 +107,7 @@ namespace Horizon::Editor
 			return false;
 		}
 
-		AssetAction* pAction = (AssetAction*)pType->Create();
+		RefPtr<AssetAction> pAction = MakeRef<AssetAction>(pType);
 
 		if (!pAction)
 		{
@@ -125,10 +119,7 @@ namespace Horizon::Editor
 		Reflect::Type* pAssetType = pReflect->GetType(pAttr->GetAssetType());
 
 		if (!pAssetType)
-		{
-			delete pAction;
 			return false;
-		}
 
 		m_actionNameLookup[pAssetType->GetName()] = pAction;
 		m_openActions.EmplaceBack(pType, pAction);
@@ -147,7 +138,6 @@ namespace Horizon::Editor
 				continue;
 
 			std::erase_if(m_actionNameLookup, [&](const auto& pair) { return pair.second == entry.pAction; });
-			delete entry.pAction;
 			m_openActions.RemoveAt(i - 1);
 		}
 	}
@@ -169,7 +159,109 @@ namespace Horizon::Editor
 		ImGui::Separator();
 
 		RebuildEntries(pFolder);
-		RenderGrid();
+
+		const f32 cell = ImGui::GetFontSize() * 6.f;
+		const f32 step = cell + ImGui::GetStyle().ItemSpacing.x;
+		const usize columnCount = static_cast<usize>(ImMax(1, static_cast<i32>(ImGui::GetContentRegionAvail().x / step)));
+		const ImVec2 startPos = ImGui::GetCursorScreenPos();
+
+		ImGuiMultiSelectFlags msFlags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_SelectOnClickRelease;
+
+		if (!ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
+			msFlags |= ImGuiMultiSelectFlags_BoxSelect2d | ImGuiMultiSelectFlags_ClearOnClickVoid;
+
+		ImGuiMultiSelectIO* pMultiIO = ImGui::BeginMultiSelect(msFlags, m_selection.Size, static_cast<i32>(m_entries.GetCount()));
+
+		m_selection.UserData = this;
+		m_selection.AdapterIndexToStorageId = [](ImGuiSelectionBasicStorage* pSelf, int index)
+			{
+				AssetContentView* pView = static_cast<AssetContentView*>(pSelf->UserData);
+				return pView->m_entries[static_cast<usize>(index)].id;
+			};
+
+		m_selection.ApplyRequests(pMultiIO);
+
+		DomainFolder* pEnterFolder = nullptr;
+		DomainFile* pOpenFile = nullptr;
+		ImDrawList* pDrawList = ImGui::GetWindowDrawList();
+
+		for (usize i = 0; i < m_entries.GetCount(); i++)
+		{
+			const BrowserEntry& entry = m_entries[i];
+			const ImVec2 cellMin = ImVec2(startPos.x + (i % columnCount) * step, startPos.y + (i / columnCount) * step);
+
+			ImGui::SetCursorScreenPos(cellMin);
+			ImGui::PushID(static_cast<i32>(entry.id));
+
+			ImGui::SetNextItemSelectionUserData(static_cast<ImGuiSelectionUserData>(i));
+			ImGui::SetNextItemAllowOverlap();
+			ImGui::Selectable("", m_selection.Contains(entry.id), ImGuiSelectableFlags_None, ImVec2(cell, cell));
+
+			if (entry.IsFolder() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				pEnterFolder = entry.pFolder;
+
+			if (!entry.IsFolder() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				pOpenFile = entry.pFile;
+
+			if (!entry.IsFolder() && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover))
+			{
+				ImGui::SetDragDropPayload("HZ_ASSET_FILE", &entry.pFile, sizeof(DomainFile*));
+
+				ImGui::TextUnformatted(ICON_FA_FILE);
+				ImGui::SameLine();
+				ImGui::TextUnformatted(entry.GetName().c_str());
+
+				ImGui::EndDragDropSource();
+			}
+
+			std::string fileIcon = ICON_FA_FOLDER;
+
+			if (!entry.IsFolder())
+				fileIcon = DomainToAssetIcon(entry.pFile->GetAssetType());
+
+			const ImU32 textColor = ImGui::GetColorU32(ImGuiCol_Text);
+
+			ImGui::PushFont(ImGui::GetFont(), cell * 0.5f);
+
+			const ImVec2 iconSize = ImGui::CalcTextSize(fileIcon.c_str());
+			const ImVec2 iconPos = ImVec2(cellMin.x + (cell - iconSize.x) * 0.5f, cellMin.y + cell * 0.14f);
+
+			pDrawList->AddText(iconPos, textColor, fileIcon.c_str());
+			ImGui::PopFont();
+
+			const std::string label = TruncateToWidth(entry.GetName(), cell - 6.f);
+			const ImVec2 nameSize = ImGui::CalcTextSize(label.c_str());
+			const ImVec2 namePos = ImVec2(cellMin.x + (cell - nameSize.x) * 0.5f, cellMin.y + cell - nameSize.y - 4.f);
+
+			pDrawList->AddText(namePos, textColor, label.c_str());
+
+			if (label != entry.GetName() && ImGui::IsItemHovered())
+				ImGui::SetTooltip("%s", entry.GetName().c_str());
+
+			ImGui::PopID();
+		}
+
+		pMultiIO = ImGui::EndMultiSelect();
+		m_selection.ApplyRequests(pMultiIO);
+
+		const usize lineCount = (m_entries.GetCount() + columnCount - 1) / columnCount;
+		ImGui::SetCursorScreenPos(startPos);
+		ImGui::Dummy(ImVec2(columnCount * step, lineCount * step));
+
+		if (pEnterFolder != nullptr)
+			Navigate(pEnterFolder);
+
+		if (pOpenFile != nullptr)
+		{
+			auto it = m_actionNameLookup.find(pOpenFile->GetAssetType()->GetName());
+			if (it == m_actionNameLookup.end())
+			{
+				Terminal::Warn(StringHelper::GetTypeName(this), "{} is {} and there is no action for this asset.", pOpenFile->GetName(), pOpenFile->GetAssetType()->GetName());
+				return;
+			}
+
+			it->second->OnTrigger(GetContext(), pOpenFile);
+		}
 
 		AssetBrowserContext browserContext = {};
 		browserContext.pEngine = GetContext()->pEngine;
@@ -234,117 +326,6 @@ namespace Horizon::Editor
 			BrowserEntry& entry = m_entries.EmplaceBack(nullptr, pFile, 0);
 			entry.id = HashPath(entry.GetPath());
 		}
-	}
-
-	void AssetContentView::RenderGrid()
-	{
-		const f32 cell = ImGui::GetFontSize() * 6.f;
-		const f32 step = cell + ImGui::GetStyle().ItemSpacing.x;
-		const usize columnCount = static_cast<usize>(ImMax(1, static_cast<i32>(ImGui::GetContentRegionAvail().x / step)));
-		const ImVec2 startPos = ImGui::GetCursorScreenPos();
-
-		ImGuiMultiSelectFlags msFlags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_SelectOnClickRelease;
-
-		if (!ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
-			msFlags |= ImGuiMultiSelectFlags_BoxSelect2d | ImGuiMultiSelectFlags_ClearOnClickVoid;
-
-		ImGuiMultiSelectIO* pMultiIO = ImGui::BeginMultiSelect(msFlags, m_selection.Size, static_cast<i32>(m_entries.GetCount()));
-
-		m_selection.UserData = this;
-		m_selection.AdapterIndexToStorageId = [](ImGuiSelectionBasicStorage* pSelf, int index)
-			{
-				AssetContentView* pView = static_cast<AssetContentView*>(pSelf->UserData);
-				return pView->m_entries[static_cast<usize>(index)].id;
-			};
-
-		m_selection.ApplyRequests(pMultiIO);
-
-		DomainFolder* pEnterFolder = nullptr;
-		DomainFile* pOpenFile = nullptr;
-		ImDrawList* pDrawList = ImGui::GetWindowDrawList();
-
-		for (usize i = 0; i < m_entries.GetCount(); i++)
-		{
-			const BrowserEntry& entry = m_entries[i];
-			const ImVec2 cellMin = ImVec2(startPos.x + (i % columnCount) * step, startPos.y + (i / columnCount) * step);
-
-			ImGui::SetCursorScreenPos(cellMin);
-			ImGui::PushID(static_cast<i32>(entry.id));
-
-			ImGui::SetNextItemSelectionUserData(static_cast<ImGuiSelectionUserData>(i));
-			ImGui::SetNextItemAllowOverlap();
-			ImGui::Selectable("", m_selection.Contains(entry.id), ImGuiSelectableFlags_None, ImVec2(cell, cell));
-
-			if (entry.IsFolder() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-				pEnterFolder = entry.pFolder;
-
-			if (!entry.IsFolder() && ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-				pOpenFile = entry.pFile;
-
-			if (!entry.IsFolder() && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover))
-			{
-				ImGui::SetDragDropPayload("HZ_ASSET_FILE", &entry.pFile, sizeof(DomainFile*));
-
-				ImGui::TextUnformatted(ICON_FA_FILE);
-				ImGui::SameLine();
-				ImGui::TextUnformatted(entry.GetName().c_str());
-
-				ImGui::EndDragDropSource();
-			}
-
-			DrawCell(pDrawList, entry, cellMin, cell);
-
-			ImGui::PopID();
-		}
-
-		pMultiIO = ImGui::EndMultiSelect();
-		m_selection.ApplyRequests(pMultiIO);
-
-		const usize lineCount = (m_entries.GetCount() + columnCount - 1) / columnCount;
-		ImGui::SetCursorScreenPos(startPos);
-		ImGui::Dummy(ImVec2(columnCount * step, lineCount * step));
-
-		if (pEnterFolder != nullptr)
-			Navigate(pEnterFolder);
-
-		if (pOpenFile != nullptr)
-		{
-			auto it = m_actionNameLookup.find(pOpenFile->GetAssetType()->GetName());
-			if (it == m_actionNameLookup.end())
-			{
-				Terminal::Warn(StringHelper::GetTypeName(this), "{} is {} and there is no action for this asset.", pOpenFile->GetName(), pOpenFile->GetAssetType()->GetName());
-				return;
-			}
-
-			it->second->OnTrigger(GetContext(), pOpenFile);
-		}
-	}
-
-	void AssetContentView::DrawCell(ImDrawList* pDrawList, const BrowserEntry& entry, const ImVec2& cellMin, f32 cell)
-	{
-		std::string fileIcon = ICON_FA_FOLDER;
-
-		if (!entry.IsFolder())
-			fileIcon = DomainToAssetIcon(entry.pFile->GetAssetType());
-
-		const ImU32 textColor = ImGui::GetColorU32(ImGuiCol_Text);
-
-		ImGui::PushFont(ImGui::GetFont(), cell * 0.5f);
-
-		const ImVec2 iconSize = ImGui::CalcTextSize(fileIcon.c_str());
-		const ImVec2 iconPos = ImVec2(cellMin.x + (cell - iconSize.x) * 0.5f, cellMin.y + cell * 0.14f);
-
-		pDrawList->AddText(iconPos, textColor, fileIcon.c_str());
-		ImGui::PopFont();
-
-		const std::string label = TruncateToWidth(entry.GetName(), cell - 6.f);
-		const ImVec2 nameSize = ImGui::CalcTextSize(label.c_str());
-		const ImVec2 namePos = ImVec2(cellMin.x + (cell - nameSize.x) * 0.5f, cellMin.y + cell - nameSize.y - 4.f);
-
-		pDrawList->AddText(namePos, textColor, label.c_str());
-
-		if (label != entry.GetName() && ImGui::IsItemHovered())
-			ImGui::SetTooltip("%s", entry.GetName().c_str());
 	}
 
 	void AssetContentView::CollectSelected(AssetBrowserContext& context)
