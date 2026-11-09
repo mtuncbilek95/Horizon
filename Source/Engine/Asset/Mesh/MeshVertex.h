@@ -3,7 +3,7 @@
 #include <Runtime/Math/Vec4f.h>
 #include <Runtime/Math/Vec2f.h>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
 	struct MeshVertex
 	{

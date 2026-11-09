@@ -3,14 +3,14 @@
 #include <Editor/ImportPipeline/AssetImporter.h>
 #include <Editor/ImportPipeline/AssetImporterTypeAttribute.h>
 #include <Editor/ImportPipeline/AssetImportResult.h>
-#include <Engine/Asset/Texture/TextureAsset.h>
-#include <Engine/Asset/Texture/TextureAssetProperties.h>
+#include <Engine/Asset/Texture/Texture.h>
+#include <Engine/Asset/Texture/TextureProperties.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor
 {
-	HCLASS(AssetImporterType[Reflect::TypeOf<Engine::TextureAsset>(), { ".png", ".jpg", ".jpeg" }]);
+	HCLASS(AssetImporterType[Reflect::TypeOf<Asset::Texture>(), { ".png", ".jpg", ".jpeg" }]);
 	class PngTextureAssetImporter final : public AssetImporter
 	{
 		HORIZON_TYPE_REFLECT(PngTextureAssetImporter);
@@ -33,8 +33,8 @@ namespace Horizon::Editor
 		u32 m_sourceWidth = 0;
 		u32 m_sourceHeight = 0;
 
-		Engine::TextureAssetProperties m_properties;
-		List<Engine::TextureAssetMip> m_mips;
+		Asset::TextureProperties m_properties;
+		List<Asset::TextureMip> m_mips;
 		List<u8> m_payload;
 		b8 m_hasBuilt = false;
 	};

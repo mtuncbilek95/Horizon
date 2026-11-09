@@ -1,4 +1,4 @@
-#include "SceneAssetStreamer.h"
+#include "SceneStreamer.h"
 
 #include <Engine/Asset/AssetHeader.h>
 #include <Engine/Asset/Scene/SceneSerializer.h>
@@ -10,61 +10,61 @@
 #include <Runtime/PAL/File/File.h>
 #include <Runtime/Serialization/BinaryArchive.h>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
-	void SceneAssetStreamer::OnInitialize()
+	void SceneStreamer::OnInitialize()
 	{
 		m_jobSystem = GetEngine()->GetJobSystem();
 	}
 
-	void SceneAssetStreamer::OnRegisteredAsset(const AssetEntry& entry)
+	void SceneStreamer::OnRegisteredAsset(const Engine::AssetEntry& entry)
 	{
-		auto* pSceneAsset = static_cast<SceneAsset*>(entry.pAssetObject);
+		auto* pSceneAsset = static_cast<Scene*>(entry.pAssetObject);
 
 		pSceneAsset->m_id = entry.assetId;
 		pSceneAsset->m_cookPath = entry.cookPath;
 	}
 
-	void SceneAssetStreamer::OnUnregisteredAsset(const AssetEntry& entry)
+	void SceneStreamer::OnUnregisteredAsset(const Engine::AssetEntry& entry)
 	{
-		auto* pSceneAsset = static_cast<SceneAsset*>(entry.pAssetObject);
+		auto* pSceneAsset = static_cast<Scene*>(entry.pAssetObject);
 
-		if (pSceneAsset->m_ticket != InvalidSubmitTicket)
+		if (pSceneAsset->m_ticket != Engine::InvalidSubmitTicket)
 			m_jobSystem->WaitTicket(pSceneAsset->m_ticket);
 	}
 
-	void SceneAssetStreamer::OnRefreshAsset(const AssetEntry& entry)
+	void SceneStreamer::OnRefreshAsset(const Engine::AssetEntry& entry)
 	{
-		auto* pSceneAsset = static_cast<SceneAsset*>(entry.pAssetObject);
+		auto* pSceneAsset = static_cast<Scene*>(entry.pAssetObject);
 
-		pSceneAsset->m_residency.CompareExchange(AssetResidency::Failed, AssetResidency::Unloaded);
+		pSceneAsset->m_residency.CompareExchange(Engine::AssetResidency::Failed, Engine::AssetResidency::Unloaded);
 	}
 
-	void SceneAssetStreamer::LoadAsync(SceneAsset* pAsset)
+	void SceneStreamer::LoadAsync(Scene* pAsset)
 	{
 		if (!pAsset->m_scene)
-			pAsset->m_scene = MakeUnique<Scene>(GetEngine()->GetReflectionSystem());
+			pAsset->m_scene = MakeUnique<Engine::Scene>(GetEngine()->GetReflectionSystem());
 
-		pAsset->m_ticket = m_jobSystem->SubmitJob(JobLane::Background, Job([this, pAsset]()
+		pAsset->m_ticket = m_jobSystem->SubmitJob(Engine::JobLane::Background, Engine::Job([this, pAsset]()
 			{
 				RunLoadWorld(pAsset);
 			}));
 
 		// Nearly impossible but sure
-		if (pAsset->m_ticket == InvalidSubmitTicket)
+		if (pAsset->m_ticket == Engine::InvalidSubmitTicket)
 		{
-			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Job could not be submitted", pAsset->m_id.ToString());
-			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Engine::Job could not be submitted", pAsset->m_id.ToString());
+			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
 		}
 	}
 
-	void SceneAssetStreamer::UnloadAsync(SceneAsset* pAsset)
+	void SceneStreamer::UnloadAsync(Scene* pAsset)
 	{
 	}
 
-	void SceneAssetStreamer::RunLoadWorld(SceneAsset* pAsset)
+	void SceneStreamer::RunLoadWorld(Scene* pAsset)
 	{
-		pAsset->m_residency.Store(AssetResidency::Reading, PAL::MemoryOrder::Relaxed);
+		pAsset->m_residency.Store(Engine::AssetResidency::Reading, PAL::MemoryOrder::Relaxed);
 
 		List<u8> headerBytes;
 		List<u8> propertyBytes;
@@ -75,35 +75,35 @@ namespace Horizon::Engine
 		if (!fileHandl.IsValid())
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Access request to file has failed!", pAsset->m_id.ToString());
-			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
 			return;
 		}
 
-		if (!PAL::File::ReadMemory(fileHandl, headerBytes, 0, sizeof(AssetHeader)) || headerBytes.GetCount() < sizeof(AssetHeader))
+		if (!PAL::File::ReadMemory(fileHandl, headerBytes, 0, sizeof(Engine::AssetHeader)) || headerBytes.GetCount() < sizeof(Engine::AssetHeader))
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Failed to read the AssetHeader", pAsset->m_id.ToString());
-			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::ReleaseAccess(fileHandl);
 			return;
 		}
 
-		AssetHeader header;
-		std::memcpy(&header, headerBytes.GetData(), sizeof(AssetHeader));
+		Engine::AssetHeader header;
+		std::memcpy(&header, headerBytes.GetData(), sizeof(Engine::AssetHeader));
 
 		// Fail checks (Doesn't happen but safe)
-		if (header.magic != AssetHeader::Magic)
+		if (header.magic != Engine::AssetHeader::Magic)
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Magic number doesn't match up!", pAsset->m_id.ToString());
-			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::ReleaseAccess(fileHandl);
 			return;
 		}
 
 		// Fail checks (Doesn't happen but safe)
-		if (header.version != AssetHeader::Version)
+		if (header.version != Engine::AssetHeader::Version)
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Versions are not matching!", pAsset->m_id.ToString());
-			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::ReleaseAccess(fileHandl);
 			return;
 		}
@@ -111,14 +111,14 @@ namespace Horizon::Engine
 		if (!PAL::File::ReadMemory(fileHandl, propertyBytes, header.propertyOffset, header.propertyOffset + header.propertySize))
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Failed to read memory file for SceneProperties", pAsset->m_id.ToString());
-			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
 
 			PAL::File::ReleaseAccess(fileHandl);
 			return;
 		}
 
 		// Decode before reading the dataPayload
-		pAsset->m_residency.Store(AssetResidency::Decoding, PAL::MemoryOrder::Relaxed);
+		pAsset->m_residency.Store(Engine::AssetResidency::Decoding, PAL::MemoryOrder::Relaxed);
 		SceneProperties props;
 		std::memcpy(&props, propertyBytes.GetData(), sizeof(SceneProperties));
 
@@ -127,21 +127,21 @@ namespace Horizon::Engine
 		{
 			Terminal::Info(StringHelper::GetTypeName(this), "Entity count is 0. Moving on to reduce the errors");
 			PAL::File::ReleaseAccess(fileHandl);
-			pAsset->m_residency.Store(AssetResidency::Resident, PAL::MemoryOrder::Release);
+			pAsset->m_residency.Store(Engine::AssetResidency::Resident, PAL::MemoryOrder::Release);
 			return;
 		}
 
 		if (!PAL::File::ReadMemory(fileHandl, dataPayload, header.payloadOffset, header.payloadOffset + header.payloadSize))
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Failed to read memory file for BinaryData", pAsset->m_id.ToString());
-			pAsset->m_residency.Store(AssetResidency::Failed, PAL::MemoryOrder::Release);
+			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
 			PAL::File::ReleaseAccess(fileHandl);
 			return;
 		}
 
 		PAL::File::ReleaseAccess(fileHandl);
 
-		pAsset->m_residency.Store(AssetResidency::Uploading, PAL::MemoryOrder::Relaxed);
+		pAsset->m_residency.Store(Engine::AssetResidency::Uploading, PAL::MemoryOrder::Relaxed);
 
 		{
 			ScopedLock lockArena(m_sceneLocker);
@@ -150,18 +150,18 @@ namespace Horizon::Engine
 			SceneSerializer::Deserialize(*pAsset->m_scene, GetEngine()->GetReflectionSystem(), reader);
 		}
 
-		pAsset->m_residency.Store(AssetResidency::Resident, PAL::MemoryOrder::Release);
+		pAsset->m_residency.Store(Engine::AssetResidency::Resident, PAL::MemoryOrder::Release);
 	}
 
-	void SceneAssetStreamer::LoadSync(SceneAsset* pAsset)
+	void SceneStreamer::LoadSync(Scene* pAsset)
 	{
 		if (!pAsset->m_scene)
-			pAsset->m_scene = MakeUnique<Scene>(GetEngine()->GetReflectionSystem());
+			pAsset->m_scene = MakeUnique<Engine::Scene>(GetEngine()->GetReflectionSystem());
 
 		RunLoadWorld(pAsset);
 	}
 
-	void SceneAssetStreamer::UnloadSync(SceneAsset* pAsset)
+	void SceneStreamer::UnloadSync(Scene* pAsset)
 	{
 	}
 }

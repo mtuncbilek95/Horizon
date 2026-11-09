@@ -710,7 +710,7 @@ namespace Horizon::Editor
 		writer.WriteString(pFile->GetID().ToString());
 
 		writer.Key("assetType");
-		writer.WriteString(pFile->GetAssetType()->GetName());
+		writer.WriteString(pFile->GetAssetType()->GetFullName());
 
 		writer.Key("settings");
 		serializer.Serialize(pFile->GetSettings(), *pSettingsType, writer);

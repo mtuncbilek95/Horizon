@@ -10,22 +10,22 @@
 
 #include <string>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
-	HCLASS(AssetType[AssetKind::Streamable]);
-	class TextureAsset : public AssetObject
+	HCLASS(Engine::AssetType[Engine::AssetKind::Streamable]);
+	class Texture : public Engine::AssetObject
 	{
-		HORIZON_TYPE_REFLECT(TextureAsset);
-		friend class TextureAssetStreamer;
+		HORIZON_TYPE_REFLECT(Texture);
+		friend class TextureStreamer;
 	public:
-		TextureAsset();
-		~TextureAsset();
+		Texture();
+		~Texture();
 
 		void LoadAsync();
 		void UnloadAsync();
 
 		const Guid& GetId() const { return m_id; }
-		AssetResidency GetResidency() const { return m_residency.Load(PAL::MemoryOrder::Acquire); }
+		Engine::AssetResidency GetResidency() const { return m_residency.Load(PAL::MemoryOrder::Acquire); }
 
 	protected:
 		void OnPropertiesChanged(ReadOnlyList<u8> propertyBytes) {}
@@ -33,8 +33,7 @@ namespace Horizon::Engine
 	private:
 		Guid m_id;
 		std::string m_cookPath;
-		PAL::Atomic<AssetResidency> m_residency = AssetResidency::Unloaded;
-		SubmitTicket m_ticket = InvalidSubmitTicket;
-		
+		PAL::Atomic<Engine::AssetResidency> m_residency = Engine::AssetResidency::Unloaded;
+		Engine::SubmitTicket m_ticket = Engine::InvalidSubmitTicket;
 	};
 }

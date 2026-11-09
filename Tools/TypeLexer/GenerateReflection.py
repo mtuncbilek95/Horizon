@@ -479,7 +479,9 @@ def EmitAccessor(reflected):
     if reflected.namespaceName:
         lines.append(f'\t\t\t\tusing namespace {reflected.namespaceName};\n')
 
-    lines.append(f'\t\t\t\treturn TypeBuilder<{reflected.typeName}>::ForType("{reflected.typeName}")')
+    space = re.sub(r'^Horizon(?:::|$)', '', reflected.namespaceName)
+
+    lines.append(f'\t\t\t\treturn TypeBuilder<{reflected.typeName}>::ForType("{space}", "{reflected.typeName}")')
     lines.extend(f'\t\t\t\t\t{step}' for step in reflected.BuildChain())
     lines.append('\t\t\t\t\t.Build();')
 

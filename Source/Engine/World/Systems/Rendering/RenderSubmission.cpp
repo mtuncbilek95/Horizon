@@ -55,9 +55,9 @@ namespace Horizon::World::System
 			[&](Engine::EntityHandle, Component::WorldTransform& world, Component::MeshSelection& selection)
 			{
 				if (selection.m_meshHandle.GetAsset() == nullptr)
-					selection.m_meshHandle.SetAsset(m_assets->FindAsset<Engine::MeshAsset>(selection.m_meshHandle.GetId()));
+					selection.m_meshHandle.SetAsset(m_assets->FindAsset<Asset::Mesh>(selection.m_meshHandle.GetId()));
 
-				Engine::MeshAsset* pMesh = selection.m_meshHandle.GetAsset();
+				Asset::Mesh* pMesh = selection.m_meshHandle.GetAsset();
 				if (!pMesh || (!selection.m_visible && !selection.m_castShadow))
 					return;
 
@@ -67,7 +67,7 @@ namespace Horizon::World::System
 					return;
 				}
 
-				Engine::MeshAssetUsePermit permit = pMesh->BeginUse();
+				Asset::MeshUsePermit permit = pMesh->BeginUse();
 				if (!permit.IsValid())
 					return;
 

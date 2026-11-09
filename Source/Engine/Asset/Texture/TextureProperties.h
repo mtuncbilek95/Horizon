@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Engine/Asset/Texture/TextureAssetUsage.h>
+#include <Engine/Asset/Texture/TextureUsage.h>
 #include <Runtime/RHI/Texture/TextureFormat.h>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
-	struct TextureAssetMip
+	struct TextureMip
 	{
 		u64 offset = 0;
 		u64 size = 0;
@@ -14,10 +14,10 @@ namespace Horizon::Engine
 		u32 rowPitch = 0;
 	};
 
-	struct TextureAssetProperties
+	struct TextureProperties
 	{
 		RHI::TextureFormat format = RHI::TextureFormat::Undefined;
-		TextureAssetUsage usage = TextureAssetUsage::Color;
+		TextureUsage usage = TextureUsage::Color;
 		u32 width = 0;
 		u32 height = 0;
 		u32 mipCount = 0;

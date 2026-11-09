@@ -5,15 +5,15 @@
 #include <Editor/ImportPipeline/AssetImportResult.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
 #include <Editor/ImportPipeline/Mesh/GltfDefinitions.h>
-#include <Engine/Asset/Mesh/MeshAsset.h>
-#include <Engine/Asset/Mesh/MeshAssetProperties.h>
+#include <Engine/Asset/Mesh/Mesh.h>
+#include <Engine/Asset/Mesh/MeshProperties.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor
 {
-	HCLASS(AssetImporterType[Reflect::TypeOf<Engine::MeshAsset>(), { ".gltf", ".glb" }]);
+	HCLASS(AssetImporterType[Reflect::TypeOf<Asset::Mesh>(), { ".gltf", ".glb" }]);
 	class GltfMeshAssetImporter final : public AssetImporter
 	{
 		HORIZON_TYPE_REFLECT(GltfMeshAssetImporter);
@@ -36,9 +36,9 @@ namespace Horizon::Editor
 		gltfParserPtr m_parser;
 		gltfAssetPtr m_asset;
 
-		List<Engine::MeshVertex> m_vertices;
+		List<Asset::MeshVertex> m_vertices;
 		List<u32> m_indices;
-		List<Engine::MeshAssetSubmesh> m_subMeshes;
+		List<Asset::MeshSubmesh> m_subMeshes;
 		b8 m_hasBuilt = false;
 	};
 }

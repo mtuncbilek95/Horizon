@@ -2,7 +2,7 @@
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
 	struct SceneProperties
 	{

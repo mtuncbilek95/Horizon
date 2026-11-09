@@ -10,22 +10,22 @@
 
 #include <string>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
-	HCLASS(AssetType[AssetKind::Data]);
-	class InputActionMapAsset : public AssetObject
+	HCLASS(Engine::AssetType[Engine::AssetKind::Data]);
+	class InputActionMap : public Engine::AssetObject
 	{
-		HORIZON_TYPE_REFLECT(InputActionMapAsset);
-		friend class InputActionMapAssetLoader;
+		HORIZON_TYPE_REFLECT(InputActionMap);
+		friend class InputActionMapLoader;
 	public:
-		InputActionMapAsset();
-		~InputActionMapAsset();
+		InputActionMap();
+		~InputActionMap();
 
 		void LoadSync();
 		void UnloadSync();
 
 		const Guid& GetId() const { return m_id; }
-		AssetResidency GetResidency() const { return m_residency.Load(PAL::MemoryOrder::Acquire); }
+		Engine::AssetResidency GetResidency() const { return m_residency.Load(PAL::MemoryOrder::Acquire); }
 
 	protected:
 		void OnPropertiesChanged(ReadOnlyList<u8> propertyBytes) {}
@@ -33,7 +33,7 @@ namespace Horizon::Engine
 	private:
 		Guid m_id;
 		std::string m_cookPath;
-		PAL::Atomic<AssetResidency> m_residency = AssetResidency::Unloaded;
-		SubmitTicket m_ticket = InvalidSubmitTicket;
+		PAL::Atomic<Engine::AssetResidency> m_residency = Engine::AssetResidency::Unloaded;
+		Engine::SubmitTicket m_ticket = Engine::InvalidSubmitTicket;
 	};
 }

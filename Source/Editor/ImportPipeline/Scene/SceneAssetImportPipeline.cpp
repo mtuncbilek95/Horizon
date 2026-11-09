@@ -12,11 +12,11 @@ namespace Horizon::Editor
 {
 	void SceneAssetImportPipeline::PostProcess(const ImportPipelineContext& ctx, ImportProductBytes& bytes)
 	{
-		if (bytes.properties.GetCount() != sizeof(Engine::SceneProperties))
+		if (bytes.properties.GetCount() != sizeof(Asset::SceneProperties))
 			return;
 
-		Engine::SceneProperties props;
-		std::memcpy(&props, bytes.properties.GetData(), sizeof(Engine::SceneProperties));
+		Asset::SceneProperties props;
+		std::memcpy(&props, bytes.properties.GetData(), sizeof(Asset::SceneProperties));
 
 		props.entityCount = 0;
 
@@ -34,12 +34,12 @@ namespace Horizon::Editor
 			reader.EndObject();
 		}
 
-		std::memcpy(bytes.properties.GetData(), &props, sizeof(Engine::SceneProperties));
+		std::memcpy(bytes.properties.GetData(), &props, sizeof(Asset::SceneProperties));
 	}
 
 	AssetImportResult SceneAssetImportPipeline::Validate(const ImportPipelineContext& ctx, const ImportProductBytes& bytes)
 	{
-		if (bytes.properties.GetCount() != sizeof(Engine::SceneProperties))
+		if (bytes.properties.GetCount() != sizeof(Asset::SceneProperties))
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} properties block has a wrong size", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
@@ -51,8 +51,8 @@ namespace Horizon::Editor
 			return AssetImportResult::InvalidData;
 		}
 
-		Engine::SceneProperties props;
-		std::memcpy(&props, bytes.properties.GetData(), sizeof(Engine::SceneProperties));
+		Asset::SceneProperties props;
+		std::memcpy(&props, bytes.properties.GetData(), sizeof(Asset::SceneProperties));
 
 		if (bytes.binary.GetCount() == 0)
 		{
@@ -70,9 +70,9 @@ namespace Horizon::Editor
 
 		reader.BeginObject();
 
-		if (!reader.Key("version") || reader.ReadU64() > Engine::SceneSerializer::Version)
+		if (!reader.Key("version") || reader.ReadU64() > Asset::SceneSerializer::Version)
 		{
-			Terminal::Error(StringHelper::GetTypeName(this), "{} scene version is missing or newer than {}", ctx.sourcePath, Engine::SceneSerializer::Version);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} scene version is missing or newer than {}", ctx.sourcePath, Asset::SceneSerializer::Version);
 			return AssetImportResult::UnsupportedVersion;
 		}
 

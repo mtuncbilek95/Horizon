@@ -4,8 +4,8 @@
 #include <Engine/Asset/AssetObject.h>
 #include <Engine/Asset/AssetResidency.h>
 #include <Engine/Asset/AssetTypeAttribute.h>
-#include <Engine/Asset/Mesh/MeshAssetUsePermit.h>
-#include <Engine/Asset/Mesh/MeshAssetProperties.h>
+#include <Engine/Asset/Mesh/MeshUsePermit.h>
+#include <Engine/Asset/Mesh/MeshProperties.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
 #include <Engine/Job/JobSystem.h>
 
@@ -16,27 +16,27 @@
 
 #include <string>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
-	HCLASS(AssetType[AssetKind::Streamable]);
-	class MeshAsset : public AssetObject
+	HCLASS(Engine::AssetType[Engine::AssetKind::Streamable]);
+	class Mesh : public Engine::AssetObject
 	{
-		HORIZON_TYPE_REFLECT(MeshAsset);
-		friend class MeshAssetStreamer;
+		HORIZON_TYPE_REFLECT(Mesh);
+		friend class MeshStreamer;
 	public:
-		MeshAsset() = default;
-		~MeshAsset() = default;
+		Mesh() = default;
+		~Mesh() = default;
 
 		void LoadAsync();
 		void UnloadAsync();
 
-		MeshAssetUsePermit BeginUse();
-		void EndUse(MeshAssetUsePermit& permit);
+		MeshUsePermit BeginUse();
+		void EndUse(MeshUsePermit& permit);
 
 		const Guid& GetId() const { return m_id; }
-		AssetResidency GetResidency() const { return m_residency.Load(PAL::MemoryOrder::Acquire); }
+		Engine::AssetResidency GetResidency() const { return m_residency.Load(PAL::MemoryOrder::Acquire); }
 
-		const List<MeshAssetSubmesh>& GetSubmeshes() const { return m_submeshes; }
+		const List<MeshSubmesh>& GetSubmeshes() const { return m_submeshes; }
 
 		u32 GetFirstVertex() const { return m_vertexRange.offset / sizeof(MeshVertex); }
 		u32 GetFirstIndex() const { return m_indexRange.offset / sizeof(u32); }
@@ -50,12 +50,12 @@ namespace Horizon::Engine
 	private:
 		Guid m_id;
 		std::string m_cookPath;
-		PAL::Atomic<AssetResidency> m_residency = AssetResidency::Unloaded;
-		SubmitTicket m_ticket = InvalidSubmitTicket;
+		PAL::Atomic<Engine::AssetResidency> m_residency = Engine::AssetResidency::Unloaded;
+		Engine::SubmitTicket m_ticket = Engine::InvalidSubmitTicket;
 
-		List<MeshAssetSubmesh> m_submeshes;
+		List<MeshSubmesh> m_submeshes;
 
-		MeshAssetProperties m_properties;
+		MeshProperties m_properties;
 		Range m_vertexRange;
 		Range m_indexRange;
 

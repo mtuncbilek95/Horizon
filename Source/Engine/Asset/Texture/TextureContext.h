@@ -1,18 +1,18 @@
 #pragma once
 
-#include <Engine/Asset/Texture/TextureAsset.h>
+#include <Engine/Asset/Texture/Texture.h>
 #include <Runtime/RHI/Texture/Texture.h>
 #include <Runtime/RHI/Texture/TextureView.h>
 #include <Runtime/Containers/Memory/UniquePtr.h>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
-	class TextureAssetContext
+	class TextureContext
 	{
 	public:
 
 	private:
-		TextureAsset* m_pointedAsset = nullptr;
+		Texture* m_pointedAsset = nullptr;
 
 		UniquePtr<RHI::Texture> m_texture = nullptr;
 		UniquePtr<RHI::TextureView> m_view = nullptr;

@@ -1,8 +1,8 @@
 #pragma once
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
-	enum class TextureAssetMipLevel
+	enum class TextureMipLevel
 	{
 		Level0,
 		Level1,

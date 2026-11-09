@@ -109,15 +109,15 @@ namespace Horizon::Editor
 		if (result != AssetImportResult::Success)
 			return result;
 
-		Engine::MeshAssetProperties props = {};
+		Asset::MeshProperties props = {};
 		props.vertexCount = (u32)m_vertices.GetCount();
 		props.indexCount = (u32)m_indices.GetCount();
-		props.vertexStride = sizeof(Engine::MeshVertex);
+		props.vertexStride = sizeof(Asset::MeshVertex);
 		props.indexStride = sizeof(u32);
 		props.subMeshCount = (u32)m_subMeshes.GetCount();
 
-		outBytes.Resize(sizeof(Engine::MeshAssetProperties));
-		std::memcpy(outBytes.GetData(), &props, sizeof(Engine::MeshAssetProperties));
+		outBytes.Resize(sizeof(Asset::MeshProperties));
+		std::memcpy(outBytes.GetData(), &props, sizeof(Asset::MeshProperties));
 		return AssetImportResult::Success;
 	}
 
@@ -127,7 +127,7 @@ namespace Horizon::Editor
 		if (result != AssetImportResult::Success)
 			return result;
 
-		const usize tableSize = m_subMeshes.GetCount() * sizeof(Engine::MeshAssetSubmesh);
+		const usize tableSize = m_subMeshes.GetCount() * sizeof(Asset::MeshSubmesh);
 		outBytes.Resize(tableSize);
 		std::memcpy(outBytes.GetData(), m_subMeshes.GetData(), tableSize);
 		return AssetImportResult::Success;
@@ -139,7 +139,7 @@ namespace Horizon::Editor
 		if (result != AssetImportResult::Success)
 			return result;
 
-		const usize vertexBlock = m_vertices.GetCount() * sizeof(Engine::MeshVertex);
+		const usize vertexBlock = m_vertices.GetCount() * sizeof(Asset::MeshVertex);
 		const usize indexBlock = m_indices.GetCount() * sizeof(u32);
 
 		outBytes.Resize(vertexBlock + indexBlock);
@@ -236,7 +236,7 @@ namespace Horizon::Editor
 				const usize base = m_vertices.GetCount();
 				m_vertices.Resize(base + positions.count);
 
-				Engine::MeshAssetSubmesh subMesh = {};
+				Asset::MeshSubmesh subMesh = {};
 				subMesh.vertexOffset = (u32)base;
 				subMesh.vertexCount = (u32)positions.count;
 				subMesh.indexOffset = (u32)m_indices.GetCount();
@@ -245,7 +245,7 @@ namespace Horizon::Editor
 
 				for (usize v = base; v < m_vertices.GetCount(); ++v)
 				{
-					Engine::MeshVertex& vertex = m_vertices[v];
+					Asset::MeshVertex& vertex = m_vertices[v];
 					vertex.normal = Math::Vec3f(0.0f, 1.0f, 0.0f);
 					vertex.tangent = Math::Vec4f(1.0f, 0.0f, 0.0f, 1.0f);
 					vertex.color = Math::Vec4f::One();
@@ -256,7 +256,7 @@ namespace Horizon::Editor
 					{
 						const fastgltf::math::fvec4 world = transform * fastgltf::math::fvec4(value.x(), value.y(), value.z(), 1.0f);
 
-						Engine::MeshVertex& vertex = m_vertices[base + index];
+						Asset::MeshVertex& vertex = m_vertices[base + index];
 						vertex.position = Math::Vec3f(world.x() * scale, world.y() * scale, world.z() * scale);
 						subMesh.boundingBox.Expand(vertex.position);
 					});

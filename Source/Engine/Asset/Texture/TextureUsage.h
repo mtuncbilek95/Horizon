@@ -3,10 +3,10 @@
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/RTTR/Reflection.h>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
 	HENUM();
-	enum class TextureAssetUsage : u8
+	enum class TextureUsage : u8
 	{
 		Color,
 		Normal,

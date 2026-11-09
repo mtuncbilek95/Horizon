@@ -17,11 +17,12 @@ namespace Horizon::Reflect
 	class TypeBuilder
 	{
 	public:
-		static TypeBuilder ForType(std::string name)
+		static TypeBuilder ForType(std::string space, std::string name)
 		{
 			TypeBuilder builder = {};
 			builder.m_type.m_typeId = TypeOf<TType>();
 			builder.m_type.m_name = std::move(name);
+			builder.m_type.m_namespace = std::move(space);
 			builder.m_type.m_size = sizeof(TType);
 			builder.m_type.m_align = alignof(TType);
 			builder.m_type.m_kind = KindOf<TType>();

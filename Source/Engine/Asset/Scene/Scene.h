@@ -12,16 +12,16 @@
 
 #include <string>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
-	HCLASS(AssetType[AssetKind::Streamable]);
-	class SceneAsset : public AssetObject
+	HCLASS(Engine::AssetType[Engine::AssetKind::Streamable]);
+	class Scene : public Engine::AssetObject
 	{
-		HORIZON_TYPE_REFLECT(SceneAsset);
-		friend class SceneAssetStreamer;
+		HORIZON_TYPE_REFLECT(Scene);
+		friend class SceneStreamer;
 	public:
-		SceneAsset();
-		~SceneAsset();
+		Scene();
+		~Scene();
 
 		void LoadAsync();
 		void UnloadAsync();
@@ -30,8 +30,8 @@ namespace Horizon::Engine
 		void UnloadSync();
 
 		const Guid& GetId() const { return m_id; }
-		AssetResidency GetResidency() const { return m_residency.Load(PAL::MemoryOrder::Acquire); }
-		Scene* GetScene() const { return m_scene.Get(); }
+		Engine::AssetResidency GetResidency() const { return m_residency.Load(PAL::MemoryOrder::Acquire); }
+		Engine::Scene* GetScene() const { return m_scene.Get(); }
 
 	protected:
 		void OnPropertiesChanged(ReadOnlyList<u8> propertyBytes) {}
@@ -39,8 +39,8 @@ namespace Horizon::Engine
 	private:
 		Guid m_id;
 		std::string m_cookPath;
-		PAL::Atomic<AssetResidency> m_residency = AssetResidency::Unloaded;
-		SubmitTicket m_ticket = InvalidSubmitTicket;
-		UniquePtr<Scene> m_scene = nullptr;
+		PAL::Atomic<Engine::AssetResidency> m_residency = Engine::AssetResidency::Unloaded;
+		Engine::SubmitTicket m_ticket = Engine::InvalidSubmitTicket;
+		UniquePtr<Engine::Scene> m_scene = nullptr;
 	};
 }

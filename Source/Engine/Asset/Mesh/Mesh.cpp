@@ -1,20 +1,20 @@
-#include "MeshAsset.h"
+#include "Mesh.h"
 
-#include <Engine/Asset/Mesh/MeshAssetStreamer.h>
+#include <Engine/Asset/Mesh/MeshStreamer.h>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
-	void MeshAsset::LoadAsync()
+	void Mesh::LoadAsync()
 	{
-		if (m_residency.CompareExchange(AssetResidency::Unloaded, AssetResidency::Pending) != AssetResidency::Unloaded)
+		if (m_residency.CompareExchange(Engine::AssetResidency::Unloaded, Engine::AssetResidency::Pending) != Engine::AssetResidency::Unloaded)
 			return;
 
-		GetLoader<MeshAssetStreamer>()->LoadAsync(this);
+		GetLoader<MeshStreamer>()->LoadAsync(this);
 	}
 
-	void MeshAsset::UnloadAsync()
+	void Mesh::UnloadAsync()
 	{
-		if (m_residency.CompareExchange(AssetResidency::Resident, AssetResidency::Evicting) != AssetResidency::Resident)
+		if (m_residency.CompareExchange(Engine::AssetResidency::Resident, Engine::AssetResidency::Evicting) != Engine::AssetResidency::Resident)
 			return;
 
 		u32 current = m_useCount.Load(PAL::MemoryOrder::Acquire);
@@ -27,12 +27,12 @@ namespace Horizon::Engine
 		}
 
 		if (current == 0)
-			GetLoader<MeshAssetStreamer>()->UnloadAsync(this);
+			GetLoader<MeshStreamer>()->UnloadAsync(this);
 	}
 
-	MeshAssetUsePermit MeshAsset::BeginUse()
+	MeshUsePermit Mesh::BeginUse()
 	{
-		if (GetResidency() != AssetResidency::Resident)
+		if (GetResidency() != Engine::AssetResidency::Resident)
 			return {};
 
 		u32 current = m_useCount.Load(PAL::MemoryOrder::Acquire);
@@ -47,7 +47,7 @@ namespace Horizon::Engine
 			current = prev;
 		}
 
-		if (GetResidency() != AssetResidency::Resident)
+		if (GetResidency() != Engine::AssetResidency::Resident)
 		{
 			ReleaseUse();
 			return {};
@@ -56,7 +56,7 @@ namespace Horizon::Engine
 		return { this, m_submeshes, GetFirstVertex(), GetFirstIndex() };
 	}
 
-	void MeshAsset::EndUse(MeshAssetUsePermit& permit)
+	void Mesh::EndUse(MeshUsePermit& permit)
 	{
 		if (permit.pAsset != this)
 			return;
@@ -65,14 +65,14 @@ namespace Horizon::Engine
 		ReleaseUse();
 	}
 
-	void MeshAsset::ReleaseUse()
+	void Mesh::ReleaseUse()
 	{
 		const u32 prev = m_useCount.FetchSubtract(1, PAL::MemoryOrder::AcqRel);
 		if (prev == ((1u << 31u) | 1))
-			GetLoader<MeshAssetStreamer>()->UnloadAsync(this);
+			GetLoader<MeshStreamer>()->UnloadAsync(this);
 	}
 
-	void MeshAsset::OnPropertiesChanged(ReadOnlyList<u8> propertyBytes)
+	void Mesh::OnPropertiesChanged(ReadOnlyList<u8> propertyBytes)
 	{
 	}
 }

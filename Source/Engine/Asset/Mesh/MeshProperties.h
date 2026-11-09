@@ -3,9 +3,9 @@
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
 #include <Runtime/Math/BoundingBox.h>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
-	struct MeshAssetSubmesh
+	struct MeshSubmesh
 	{
 		u32 indexOffset = 0;
 		u32 indexCount = 0;
@@ -15,7 +15,7 @@ namespace Horizon::Engine
 		Math::BoundingBox boundingBox = Math::BoundingBox::Empty();
 	};
 
-	struct MeshAssetProperties
+	struct MeshProperties
 	{
 		u32 vertexCount = 0;
 		u32 indexCount = 0;

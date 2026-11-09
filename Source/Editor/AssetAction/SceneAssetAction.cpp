@@ -13,7 +13,7 @@ namespace Horizon::Editor
 		auto* pAssetService = pContext->pEngine->RequestService<Engine::AssetService>();
 		auto* pWorldService = pContext->pEngine->RequestService<Engine::WorldService>();
 
-		auto* pSceneAsset = pAssetService->FindAsset<Engine::SceneAsset>(pUsedAsset->GetID());
+		auto* pSceneAsset = pAssetService->FindAsset<Asset::Scene>(pUsedAsset->GetID());
 		if (!pSceneAsset)
 			return;
 

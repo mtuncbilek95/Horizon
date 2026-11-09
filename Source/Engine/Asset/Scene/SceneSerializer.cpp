@@ -7,14 +7,14 @@
 
 #include <string>
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
-	void SceneSerializer::Serialize(const Scene& scene, ReflectionSystem* pReflection, IArchiveWriter& writer)
+	void SceneSerializer::Serialize(const Engine::Scene& scene, Engine::ReflectionSystem* pReflection, IArchiveWriter& writer)
 	{
 		Serializer serializer(pReflection, ResolveType, ResolveTypeByName);
 
-		const EntityStorage& entities = scene.GetEntities();
-		const List<ComponentStorage*> storages = SortedStorages(scene);
+		const Engine::EntityStorage& entities = scene.GetEntities();
+		const List<Engine::ComponentStorage*> storages = SortedStorages(scene);
 
 		writer.BeginObject();
 
@@ -26,7 +26,7 @@ namespace Horizon::Engine
 
 		for (u32 index = 0; index < entities.GetLatestIndex(); index++)
 		{
-			const EntityHandle handle = entities.GetHandleAt(index);
+			const Engine::EntityHandle handle = entities.GetHandleAt(index);
 
 			if (!IsSerializable(scene, handle))
 				continue;
@@ -39,9 +39,9 @@ namespace Horizon::Engine
 			writer.Key("components");
 			writer.BeginArray(CountComponentsOf(storages, handle));
 
-			for (const ComponentStorage* pStorage : storages)
+			for (const Engine::ComponentStorage* pStorage : storages)
 			{
-				const ComponentObject* pComponent = pStorage->Find(handle);
+				const Engine::ComponentObject* pComponent = pStorage->Find(handle);
 
 				if (pComponent == nullptr)
 					continue;
@@ -67,7 +67,7 @@ namespace Horizon::Engine
 		writer.EndObject();
 	}
 
-	b8 SceneSerializer::Deserialize(Scene& scene, ReflectionSystem* pReflection, IArchiveReader& reader)
+	b8 SceneSerializer::Deserialize(Engine::Scene& scene, Engine::ReflectionSystem* pReflection, IArchiveReader& reader)
 	{
 		Serializer serializer(pReflection, ResolveType, ResolveTypeByName);
 		EntityRemap remap;
@@ -76,14 +76,14 @@ namespace Horizon::Engine
 
 		if (reader.Key("version") && reader.ReadU64() > Version)
 		{
-			Terminal::Error("SceneSerializer", "Scene archive is newer than the supported version {}", Version);
+			Terminal::Error("SceneSerializer", "Engine::Scene archive is newer than the supported version {}", Version);
 			reader.EndObject();
 			return false;
 		}
 
 		if (!reader.Key("entities"))
 		{
-			Terminal::Error("SceneSerializer", "Scene archive carries no entity list");
+			Terminal::Error("SceneSerializer", "Engine::Scene archive carries no entity list");
 			reader.EndObject();
 			return false;
 		}
@@ -99,7 +99,7 @@ namespace Horizon::Engine
 			if (reader.Key("id"))
 				fileId = static_cast<u32>(reader.ReadU64());
 
-			const EntityHandle handle = scene.AddEntity();
+			const Engine::EntityHandle handle = scene.AddEntity();
 			remap[fileId] = handle;
 
 			if (reader.Key("components"))
@@ -127,7 +127,7 @@ namespace Horizon::Engine
 						continue;
 					}
 
-					ComponentObject* pComponent = scene.AddComponent(handle, pType->GetTypeId());
+					Engine::ComponentObject* pComponent = scene.AddComponent(handle, pType->GetTypeId());
 
 					if (pComponent == nullptr)
 					{
@@ -158,15 +158,15 @@ namespace Horizon::Engine
 
 	const Reflect::Type* SceneSerializer::ResolveType(void* pUserData, Reflect::TypeHandle handle)
 	{
-		return static_cast<ReflectionSystem*>(pUserData)->GetType(handle);
+		return static_cast<Engine::ReflectionSystem*>(pUserData)->GetType(handle);
 	}
 
 	const Reflect::Type* SceneSerializer::ResolveTypeByName(void* pUserData, const std::string& name)
 	{
-		return static_cast<ReflectionSystem*>(pUserData)->GetTypeByName(name);
+		return static_cast<Engine::ReflectionSystem*>(pUserData)->GetTypeByName(name);
 	}
 
-	b8 SceneSerializer::IsSerializable(const Scene& scene, EntityHandle handle)
+	b8 SceneSerializer::IsSerializable(const Engine::Scene& scene, Engine::EntityHandle handle)
 	{
 		if (!scene.IsAlive(handle))
 			return false;
@@ -174,9 +174,9 @@ namespace Horizon::Engine
 		return true;
 	}
 
-	usize SceneSerializer::CountSerializableEntities(const Scene& scene)
+	usize SceneSerializer::CountSerializableEntities(const Engine::Scene& scene)
 	{
-		const EntityStorage& entities = scene.GetEntities();
+		const Engine::EntityStorage& entities = scene.GetEntities();
 		usize count = 0;
 
 		for (u32 index = 0; index < entities.GetLatestIndex(); index++)
@@ -188,11 +188,11 @@ namespace Horizon::Engine
 		return count;
 	}
 
-	List<ComponentStorage*> SceneSerializer::SortedStorages(const Scene& scene)
+	List<Engine::ComponentStorage*> SceneSerializer::SortedStorages(const Engine::Scene& scene)
 	{
-		List<ComponentStorage*> storages = scene.GetComponents().GetStorages();
+		List<Engine::ComponentStorage*> storages = scene.GetComponents().GetStorages();
 
-		storages.Sort([](const ComponentStorage* pLeft, const ComponentStorage* pRight)
+		storages.Sort([](const Engine::ComponentStorage* pLeft, const Engine::ComponentStorage* pRight)
 			{
 				return pLeft->GetType()->GetName() < pRight->GetType()->GetName();
 			});
@@ -200,11 +200,11 @@ namespace Horizon::Engine
 		return storages;
 	}
 
-	usize SceneSerializer::CountComponentsOf(const List<ComponentStorage*>& storages, EntityHandle handle)
+	usize SceneSerializer::CountComponentsOf(const List<Engine::ComponentStorage*>& storages, Engine::EntityHandle handle)
 	{
 		usize count = 0;
 
-		for (const ComponentStorage* pStorage : storages)
+		for (const Engine::ComponentStorage* pStorage : storages)
 		{
 			if (pStorage->Find(handle) != nullptr)
 				count++;
@@ -213,7 +213,7 @@ namespace Horizon::Engine
 		return count;
 	}
 
-	void SceneSerializer::RemapHandle(EntityHandle& handle, const EntityRemap& remap)
+	void SceneSerializer::RemapHandle(Engine::EntityHandle& handle, const EntityRemap& remap)
 	{
 		if (!handle.IsValid())
 			return;
@@ -223,14 +223,14 @@ namespace Horizon::Engine
 		if (it == remap.end())
 		{
 			Terminal::Warn("SceneSerializer", "Entity id {} does not exist in the archive, link dropped", handle.Index());
-			handle = EntityHandle();
+			handle = Engine::EntityHandle();
 			return;
 		}
 
 		handle = it->second;
 	}
 
-	void SceneSerializer::RemapObject(void* pObject, const Reflect::Type& type, ReflectionSystem* pReflection, const EntityRemap& remap)
+	void SceneSerializer::RemapObject(void* pObject, const Reflect::Type& type, Engine::ReflectionSystem* pReflection, const EntityRemap& remap)
 	{
 		for (const Reflect::Field& field : type.GetFields())
 		{
@@ -250,23 +250,23 @@ namespace Horizon::Engine
 				continue;
 			}
 
-			if (field.GetTypeId() != Reflect::TypeOf<EntityHandle>())
+			if (field.GetTypeId() != Reflect::TypeOf<Engine::EntityHandle>())
 				continue;
 
 			if (field.GetMode() != Reflect::TypeMode::Array)
 			{
-				RemapHandle(field.GetValueAs<EntityHandle>(pObject), remap);
+				RemapHandle(field.GetValueAs<Engine::EntityHandle>(pObject), remap);
 				continue;
 			}
 
-			for (EntityHandle& handle : field.GetValueAs<List<EntityHandle>>(pObject))
+			for (Engine::EntityHandle& handle : field.GetValueAs<List<Engine::EntityHandle>>(pObject))
 				RemapHandle(handle, remap);
 		}
 	}
 
-	void SceneSerializer::RemapEntityFields(Scene& scene, ReflectionSystem* pReflection, const EntityRemap& remap)
+	void SceneSerializer::RemapEntityFields(Engine::Scene& scene, Engine::ReflectionSystem* pReflection, const EntityRemap& remap)
 	{
-		for (ComponentStorage* pStorage : scene.GetComponents().GetStorages())
+		for (Engine::ComponentStorage* pStorage : scene.GetComponents().GetStorages())
 		{
 			for (usize i = 0; i < pStorage->GetCount(); i++)
 				RemapObject(pStorage->GetAt(i), *pStorage->GetType(), pReflection, remap);

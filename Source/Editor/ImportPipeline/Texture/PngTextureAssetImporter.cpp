@@ -132,8 +132,8 @@ namespace Horizon::Editor
 		if (result != AssetImportResult::Success)
 			return result;
 
-		outBytes.Resize(sizeof(Engine::TextureAssetProperties));
-		std::memcpy(outBytes.GetData(), &m_properties, sizeof(Engine::TextureAssetProperties));
+		outBytes.Resize(sizeof(Asset::TextureProperties));
+		std::memcpy(outBytes.GetData(), &m_properties, sizeof(Asset::TextureProperties));
 		return AssetImportResult::Success;
 	}
 
@@ -143,7 +143,7 @@ namespace Horizon::Editor
 		if (result != AssetImportResult::Success)
 			return result;
 
-		const usize tableSize = m_mips.GetCount() * sizeof(Engine::TextureAssetMip);
+		const usize tableSize = m_mips.GetCount() * sizeof(Asset::TextureMip);
 		outBytes.Resize(tableSize);
 		std::memcpy(outBytes.GetData(), m_mips.GetData(), tableSize);
 		return AssetImportResult::Success;
@@ -169,7 +169,7 @@ namespace Horizon::Editor
 		const auto* pSettings = static_cast<const TextureAssetImportSettings*>(ctx.pSettings);
 		const TextureAssetImportSettings& settings = pSettings ? *pSettings : defaults;
 
-		if (settings.m_usage == Engine::TextureAssetUsage::Hdr)
+		if (settings.m_usage == Asset::TextureUsage::Hdr)
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} is an LDR image, Hdr usage cannot be cooked from it", StringHelper::FindFileName(ctx.sourcePath));
 			return AssetImportResult::UnsupportedFeature;
@@ -178,14 +178,14 @@ namespace Horizon::Editor
 		if (settings.m_compression != TextureAssetCompression::None)
 			Terminal::Warn(StringHelper::GetTypeName(this), "{} requested compression but there is no BC encoder, cooking as RGBA8", StringHelper::FindFileName(ctx.sourcePath));
 
-		const b8 isSrgb = settings.m_usage == Engine::TextureAssetUsage::Color || settings.m_usage == Engine::TextureAssetUsage::UI;
-		const b8 hasMips = settings.m_generateMips && settings.m_usage != Engine::TextureAssetUsage::UI;
+		const b8 isSrgb = settings.m_usage == Asset::TextureUsage::Color || settings.m_usage == Asset::TextureUsage::UI;
+		const b8 hasMips = settings.m_generateMips && settings.m_usage != Asset::TextureUsage::UI;
 
 		List<u8> level = m_sourcePixels;
 		u32 width = m_sourceWidth;
 		u32 height = m_sourceHeight;
 
-		if (settings.m_usage == Engine::TextureAssetUsage::Normal && settings.m_flipGreenChannel)
+		if (settings.m_usage == Asset::TextureUsage::Normal && settings.m_flipGreenChannel)
 		{
 			for (usize i = 1; i < level.GetCount(); i += kChannels)
 				level[i] = 255 - level[i];
@@ -206,7 +206,7 @@ namespace Horizon::Editor
 
 		while (true)
 		{
-			Engine::TextureAssetMip mip = {};
+			Asset::TextureMip mip = {};
 			mip.offset = m_payload.GetCount();
 			mip.size = level.GetCount();
 			mip.width = width;

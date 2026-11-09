@@ -51,7 +51,7 @@ namespace Horizon::Editor
 		Engine::Scene scene(pReflection);
 		JsonArchiveWriter writer;
 
-		Engine::SceneSerializer::Serialize(scene, pReflection, writer);
+		Asset::SceneSerializer::Serialize(scene, pReflection, writer);
 
 		const std::string path = context.pCurrentFolder->GetAbsolutePath() + "/" + ResolveUniqueName(context.pCurrentFolder);
 

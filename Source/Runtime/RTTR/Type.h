@@ -40,6 +40,8 @@ namespace Horizon::Reflect
 		usize GetBaseOffset() const { return m_baseOffset; }
 
 		const std::string& GetName() const { return m_name; }
+		const std::string& GetNamespace() const { return m_namespace; }
+		std::string GetFullName() const { return m_namespace + "::" + m_name; }
 		TypeKind GetKind() const { return m_kind; }
 		usize GetSizeInBytes() const { return m_size; }
 		usize GetAlignment() const { return m_align; }
@@ -190,6 +192,7 @@ namespace Horizon::Reflect
 		usize m_baseOffset = 0;
 
 		std::string m_name;
+		std::string m_namespace;
 		usize m_size = 0;
 		usize m_align = 0;
 		TypeKind m_kind = TypeKind::Object;

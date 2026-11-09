@@ -2,7 +2,7 @@
 
 #include <Editor/ImportPipeline/AssetImportSettings.h>
 #include <Editor/ImportPipeline/Texture/TextureAssetCompression.h>
-#include <Engine/Asset/Texture/TextureAssetUsage.h>
+#include <Engine/Asset/Texture/TextureUsage.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor
@@ -16,7 +16,7 @@ namespace Horizon::Editor
 		~TextureAssetImportSettings() = default;
 
 		HFIELD();
-		Engine::TextureAssetUsage m_usage = Engine::TextureAssetUsage::Color;
+		Asset::TextureUsage m_usage = Asset::TextureUsage::Color;
 
 		HFIELD();
 		TextureAssetCompression m_compression = TextureAssetCompression::Default;

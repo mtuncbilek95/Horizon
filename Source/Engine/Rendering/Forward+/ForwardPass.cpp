@@ -1,6 +1,6 @@
 #include "ForwardPass.h"
 
-#include <Engine/Asset/Mesh/MeshAssetStreamer.h>
+#include <Engine/Asset/Mesh/MeshStreamer.h>
 #include <Engine/Core/Engine.h>
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Presentation/PresentationService.h>
@@ -148,14 +148,14 @@ namespace Horizon::Rendering::Pass
 			if (!renderable.visible)
 				continue;
 
-			Engine::MeshAssetStreamer* pStreamer = renderable.mesh.pAsset->GetLoader<Engine::MeshAssetStreamer>();
+			Asset::MeshStreamer* pStreamer = renderable.mesh.pAsset->GetLoader<Asset::MeshStreamer>();
 			pCmdList->BindIndexBuffer(pStreamer->GetIndexBuffer());
 
 			ForwardConstants constants = {};
 			constants.worldViewProj = context.camViewProjMatrix * renderable.worldMatrix;
 			constants.vertexBufferIndex = pStreamer->GetVertexBufferView();
 
-			for (const Engine::MeshAssetSubmesh& submesh : renderable.mesh.submeshes)
+			for (const Asset::MeshSubmesh& submesh : renderable.mesh.submeshes)
 			{
 				constants.firstVertex = renderable.mesh.firstVertex + submesh.vertexOffset;
 

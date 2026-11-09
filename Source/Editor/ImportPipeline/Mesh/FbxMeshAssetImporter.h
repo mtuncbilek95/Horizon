@@ -5,12 +5,12 @@
 #include <Editor/ImportPipeline/AssetImportResult.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
 #include <Editor/ImportPipeline/Mesh/FbxDefinitions.h>
-#include <Engine/Asset/Mesh/MeshAsset.h>
+#include <Engine/Asset/Mesh/Mesh.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor
 {
-	HCLASS(AssetImporterType[Reflect::TypeOf<Engine::MeshAsset>(), { ".fbx" }]);
+	HCLASS(AssetImporterType[Reflect::TypeOf<Asset::Mesh>(), { ".fbx" }]);
 	class FbxMeshAssetImporter final : public AssetImporter
 	{
 		HORIZON_TYPE_REFLECT(FbxMeshAssetImporter);

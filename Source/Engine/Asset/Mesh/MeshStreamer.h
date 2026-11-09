@@ -4,8 +4,8 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/Core/EngineFrame.h>
 #include <Engine/Asset/AssetLoadSystem.h>
-#include <Engine/Asset/Mesh/MeshAsset.h>
-#include <Engine/Asset/Mesh/MeshAssetProperties.h>
+#include <Engine/Asset/Mesh/Mesh.h>
+#include <Engine/Asset/Mesh/MeshProperties.h>
 
 #include <Runtime/Containers/Memory/RangeAllocator.h>
 #include <Runtime/Containers/Memory/UniquePtr.h>
@@ -21,20 +21,20 @@ namespace Horizon::RHI
 	class DescriptorHeap;
 }
 
-namespace Horizon::Engine
+namespace Horizon::Asset
 {
 	HCLASS();
-	class MeshAssetStreamer : public AssetLoadSystem
+	class MeshStreamer : public Engine::AssetLoadSystem
 	{
-		HORIZON_TYPE_REFLECT(MeshAssetStreamer);
+		HORIZON_TYPE_REFLECT(MeshStreamer);
 	public:
-		MeshAssetStreamer() = default;
-		~MeshAssetStreamer() = default;
+		MeshStreamer() = default;
+		~MeshStreamer() = default;
 
-		Reflect::TypeHandle GetWorkingAssetType() const final { return Reflect::TypeOf<MeshAsset>(); }
+		Reflect::TypeHandle GetWorkingAssetType() const final { return Reflect::TypeOf<Mesh>(); }
 
-		void LoadAsync(MeshAsset* pAsset);
-		void UnloadAsync(MeshAsset* pAsset);
+		void LoadAsync(Mesh* pAsset);
+		void UnloadAsync(Mesh* pAsset);
 
 		RHI::Buffer* GetVertexBuffer() const { return m_vertexBuffer.Get(); }
 		RHI::Buffer* GetIndexBuffer() const { return m_indexBuffer.Get(); }
@@ -44,13 +44,13 @@ namespace Horizon::Engine
 		void OnInitialize() final;
 		void OnFinalize() final;
 
-		void OnRegisteredAsset(const AssetEntry& entry) final;
-		void OnUnregisteredAsset(const AssetEntry& entry) final;
-		void OnRefreshAsset(const AssetEntry& entry) final;
+		void OnRegisteredAsset(const Engine::AssetEntry& entry) final;
+		void OnUnregisteredAsset(const Engine::AssetEntry& entry) final;
+		void OnRefreshAsset(const Engine::AssetEntry& entry) final;
 
 	private:
-		void RunLoadAsset(MeshAsset* pAsset);
-		void ReleaseAsset(MeshAsset* pAsset);
+		void RunLoadAsset(Mesh* pAsset);
+		void ReleaseAsset(Mesh* pAsset);
 		b8 UploadPayload(const u8* pVertexData, const Range& vertexRange, const u8* pIndexData, const Range& indexRange);
 
 	private:
@@ -68,6 +68,6 @@ namespace Horizon::Engine
 		UniquePtr<RHI::Fence> m_uploadFence;
 		PAL::CriticalSection m_uploadLock;
 
-		JobSystem* m_jobSystem = nullptr;
+		Engine::JobSystem* m_jobSystem = nullptr;
 	};
 }

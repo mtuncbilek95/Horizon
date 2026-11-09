@@ -49,22 +49,21 @@ namespace Horizon::Editor
 		{
 			static std::map<std::string, std::string> nameMap =
 			{
-				{ "ScriptAsset",	ICON_MDI_CODE_BRACES },
-				{ "TextureAsset",	ICON_MDI_CHECKERBOARD },
-				{ "MeshAsset",		ICON_FA_CUBES },
-				{ "SceneAsset",		ICON_FA_EARTH_AMERICAS },
-				{ "AudioAsset",		ICON_MDI_WAVEFORM },
-				{ "MaterialAsset",  ICON_MDI_SPHERE },
-				{ "ShaderAsset",    ICON_MDI_LAYERS_TRIPLE_OUTLINE },
-				{ "PrefabAsset",    ICON_MDI_CUBE_OUTLINE },
-				{ "AnimationAsset", ICON_MDI_RUN },
-				{ "FontAsset",      ICON_MDI_FORMAT_FONT },
+				{ "Asset::Texture",			ICON_MDI_CHECKERBOARD },
+				{ "Asset::Mesh",			ICON_FA_CUBES },
+				{ "Asset::Scene",			ICON_FA_EARTH_AMERICAS },
+				{ "Asset::Audio",			ICON_MDI_WAVEFORM },
+				{ "Asset::Material",		ICON_MDI_SPHERE },
+				{ "Asset::Shader",			ICON_MDI_LAYERS_TRIPLE_OUTLINE },
+				{ "Asset::Prefab",			ICON_MDI_CUBE_OUTLINE },
+				{ "Asset::Animation",		ICON_MDI_RUN },
+				{ "Asset::Font",			ICON_MDI_FORMAT_FONT },
 			};
 
 			if (!pAssetType)
 				return ICON_FA_FILE;
 
-			auto it = nameMap.find(pAssetType->GetName());
+			auto it = nameMap.find(pAssetType->GetFullName());
 			if (it == nameMap.end())
 				return ICON_FA_FILE;
 

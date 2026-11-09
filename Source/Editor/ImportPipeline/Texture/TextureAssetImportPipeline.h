@@ -3,12 +3,12 @@
 #include <Editor/ImportPipeline/ImportPipeline.h>
 #include <Editor/ImportPipeline/ImportPipelineInfoAttribute.h>
 #include <Editor/ImportPipeline/Texture/TextureAssetImportSettings.h>
-#include <Engine/Asset/Texture/TextureAsset.h>
+#include <Engine/Asset/Texture/Texture.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor
 {
-	HCLASS(ImportPipelineInfoAttribute[Reflect::TypeOf<Engine::TextureAsset>(), Reflect::TypeOf<TextureAssetImportSettings>(), { ".png", ".jpg", ".jpeg" }]);
+	HCLASS(ImportPipelineInfoAttribute[Reflect::TypeOf<Asset::Texture>(), Reflect::TypeOf<TextureAssetImportSettings>(), { ".png", ".jpg", ".jpeg" }]);
 	class TextureAssetImportPipeline : public ImportPipeline
 	{
 		HORIZON_TYPE_REFLECT(TextureAssetImportPipeline);

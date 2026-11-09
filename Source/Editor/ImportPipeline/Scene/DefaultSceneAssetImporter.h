@@ -4,14 +4,14 @@
 #include <Editor/ImportPipeline/AssetImporterTypeAttribute.h>
 #include <Editor/ImportPipeline/AssetImportResult.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
-#include <Engine/Asset/Scene/SceneAsset.h>
+#include <Engine/Asset/Scene/Scene.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor
 {
-	HCLASS(AssetImporterType[Reflect::TypeOf<Engine::SceneAsset>(), { ".hscene" }]);
+	HCLASS(AssetImporterType[Reflect::TypeOf<Asset::Scene>(), { ".hscene" }]);
 	class DefaultSceneAssetImporter final : public AssetImporter
 	{
 		HORIZON_TYPE_REFLECT(DefaultSceneAssetImporter);

@@ -1,6 +1,6 @@
 #include "TextureAssetImportPipeline.h"
 
-#include <Engine/Asset/Texture/TextureAssetProperties.h>
+#include <Engine/Asset/Texture/TextureProperties.h>
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
@@ -14,14 +14,14 @@ namespace Horizon::Editor
 
 	AssetImportResult TextureAssetImportPipeline::Validate(const ImportPipelineContext& ctx, const ImportProductBytes& bytes)
 	{
-		if (bytes.properties.GetCount() != sizeof(Engine::TextureAssetProperties))
+		if (bytes.properties.GetCount() != sizeof(Asset::TextureProperties))
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} properties block has a wrong size", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
-		Engine::TextureAssetProperties props;
-		std::memcpy(&props, bytes.properties.GetData(), sizeof(Engine::TextureAssetProperties));
+		Asset::TextureProperties props;
+		std::memcpy(&props, bytes.properties.GetData(), sizeof(Asset::TextureProperties));
 
 		if (props.format == RHI::TextureFormat::Undefined || props.width == 0 || props.height == 0 || props.mipCount == 0)
 		{
@@ -29,16 +29,16 @@ namespace Horizon::Editor
 			return AssetImportResult::InvalidData;
 		}
 
-		if (bytes.table.GetCount() != props.mipCount * sizeof(Engine::TextureAssetMip))
+		if (bytes.table.GetCount() != props.mipCount * sizeof(Asset::TextureMip))
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} table size does not match mipCount", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
-		auto* pMips = (Engine::TextureAssetMip*)(bytes.table.GetData());
+		auto* pMips = (Asset::TextureMip*)(bytes.table.GetData());
 		for (u32 i = 0; i < props.mipCount; ++i)
 		{
-			const Engine::TextureAssetMip& mip = pMips[i];
+			const Asset::TextureMip& mip = pMips[i];
 
 			if (mip.width == 0 || mip.height == 0 || mip.offset + mip.size > bytes.binary.GetCount())
 			{

@@ -35,7 +35,7 @@ namespace Horizon::Editor
 		const std::string_view text(reinterpret_cast<const c8*>(fileBytes.GetData()), fileBytes.GetCount());
 		JsonArchiveReader reader(text);
 
-		if (!Engine::SceneSerializer::Deserialize(*m_scene, ctx.pReflection, reader) || reader.HasError())
+		if (!Asset::SceneSerializer::Deserialize(*m_scene, ctx.pReflection, reader) || reader.HasError())
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} is not a valid scene archive", ctx.sourcePath);
 			Release();
@@ -55,11 +55,11 @@ namespace Horizon::Editor
 		if (!m_scene)
 			return AssetImportResult::InternalError;
 
-		Engine::SceneProperties props = {};
+		Asset::SceneProperties props = {};
 		props.entityCount = m_scene->GetEntityCount();
 
-		outBytes.Resize(sizeof(Engine::SceneProperties));
-		std::memcpy(outBytes.GetData(), &props, sizeof(Engine::SceneProperties));
+		outBytes.Resize(sizeof(Asset::SceneProperties));
+		std::memcpy(outBytes.GetData(), &props, sizeof(Asset::SceneProperties));
 		return AssetImportResult::Success;
 	}
 
@@ -75,7 +75,7 @@ namespace Horizon::Editor
 			return AssetImportResult::InternalError;
 
 		BinaryArchiveWriter writer;
-		Engine::SceneSerializer::Serialize(*m_scene, ctx.pReflection, writer);
+		Asset::SceneSerializer::Serialize(*m_scene, ctx.pReflection, writer);
 
 		if (!writer.IsComplete())
 		{

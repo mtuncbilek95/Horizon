@@ -1,6 +1,6 @@
 #include "MeshAssetImportPipeline.h"
 
-#include <Engine/Asset/Mesh/MeshAssetProperties.h>
+#include <Engine/Asset/Mesh/MeshProperties.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
@@ -10,40 +10,40 @@ namespace Horizon::Editor
 	void MeshAssetImportPipeline::PostProcess(const ImportPipelineContext& ctx, ImportProductBytes& bytes)
 	{
 		// Check the prop just in case
-		if (bytes.properties.GetCount() != sizeof(Engine::MeshAssetProperties))
+		if (bytes.properties.GetCount() != sizeof(Asset::MeshProperties))
 			return;
 
-		Engine::MeshAssetProperties props;
-		std::memcpy(&props, bytes.properties.GetData(), sizeof(Engine::MeshAssetProperties));
+		Asset::MeshProperties props;
+		std::memcpy(&props, bytes.properties.GetData(), sizeof(Asset::MeshProperties));
 
 		// Check if the table is matching with subMeshCount
-		if (bytes.table.GetCount() != props.subMeshCount * sizeof(Engine::MeshAssetSubmesh))
+		if (bytes.table.GetCount() != props.subMeshCount * sizeof(Asset::MeshSubmesh))
 			return;
 
-		auto* pSubMeshes = (Engine::MeshAssetSubmesh*)(bytes.table.GetData());
+		auto* pSubMeshes = (Asset::MeshSubmesh*)(bytes.table.GetData());
 
 		Math::BoundingBox mainBounds = Math::BoundingBox::Empty();
 		for (u32 i = 0; i < props.subMeshCount; ++i)
 			mainBounds.Expand(pSubMeshes[i].boundingBox);
 
 		props.mainBounds = mainBounds;
-		std::memcpy(bytes.properties.GetData(), &props, sizeof(Engine::MeshAssetProperties));
+		std::memcpy(bytes.properties.GetData(), &props, sizeof(Asset::MeshProperties));
 	}
 
 	AssetImportResult MeshAssetImportPipeline::Validate(const ImportPipelineContext& ctx, const ImportProductBytes& bytes)
 	{
 		// Check if the properties are matching
-		if (bytes.properties.GetCount() != sizeof(Engine::MeshAssetProperties))
+		if (bytes.properties.GetCount() != sizeof(Asset::MeshProperties))
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} properties block has a wrong size", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 
-		// Get MeshAssetProperties
-		Engine::MeshAssetProperties props;
-		std::memcpy(&props, bytes.properties.GetData(), sizeof(Engine::MeshAssetProperties));
+		// Get MeshProperties
+		Asset::MeshProperties props;
+		std::memcpy(&props, bytes.properties.GetData(), sizeof(Asset::MeshProperties));
 
-		if (props.vertexStride != sizeof(Engine::MeshVertex) || props.indexStride != sizeof(u32))
+		if (props.vertexStride != sizeof(Asset::MeshVertex) || props.indexStride != sizeof(u32))
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} has a wrong vertex or index stride", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
@@ -55,7 +55,7 @@ namespace Horizon::Editor
 			return AssetImportResult::InvalidData;
 		}
 
-		if (bytes.table.GetCount() != props.subMeshCount * sizeof(Engine::MeshAssetSubmesh))
+		if (bytes.table.GetCount() != props.subMeshCount * sizeof(Asset::MeshSubmesh))
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} table size does not match subMeshCount", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
@@ -71,10 +71,10 @@ namespace Horizon::Editor
 		}
 
 		// Here comes the data table
-		auto* pSubMeshes = (Engine::MeshAssetSubmesh*)(bytes.table.GetData());
+		auto* pSubMeshes = (Asset::MeshSubmesh*)(bytes.table.GetData());
 		for (u32 i = 0; i < props.subMeshCount; ++i)
 		{
-			const Engine::MeshAssetSubmesh& subMesh = pSubMeshes[i];
+			const Asset::MeshSubmesh& subMesh = pSubMeshes[i];
 
 			const b8 validIndices = subMesh.indexCount != 0 && (u64)subMesh.indexOffset + subMesh.indexCount <= props.indexCount;
 			const b8 validVertices = subMesh.vertexCount != 0 && (u64)subMesh.vertexOffset + subMesh.vertexCount <= props.vertexCount;
