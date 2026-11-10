@@ -106,6 +106,7 @@ namespace Horizon::Rendering::Pass
 		pipelineDesc.depthStencil.depthCompare = RHI::CompareOp::Greater;
 		pipelineDesc.colorTargets.PushBack(colorTarget);
 		pipelineDesc.depthFormat = RHI::TextureFormat::D32_FLOAT;
+		pipelineDesc.sampleCount = RHI::SampleCount::Count8;
 
 		m_pipeline = pDevice->CreateRHIPipeline(pipelineDesc);
 		if (!m_pipeline)
@@ -175,15 +176,24 @@ namespace Horizon::Rendering::Pass
 
 	void ForwardPass::Setup(const Engine::RenderSetupContext& setupContext, Engine::RenderDependency& graph)
 	{
+		RHI::TextureDesc colorDesc = {};
+		colorDesc.format = Engine::PresentationService::SceneFormat;
+		colorDesc.usage = RHI::TextureUsage::RenderTarget;
+		colorDesc.width = setupContext.colorImageDimension.X();
+		colorDesc.height = setupContext.colorImageDimension.Y();
+		colorDesc.sampleCount = RHI::SampleCount::Count8;
+
 		RHI::TextureDesc depthDesc = {};
 		depthDesc.format = RHI::TextureFormat::D32_FLOAT;
 		depthDesc.usage = RHI::TextureUsage::DepthStencil | RHI::TextureUsage::Sampled;
 		depthDesc.width = setupContext.colorImageDimension.X();
 		depthDesc.height = setupContext.colorImageDimension.Y();
+		depthDesc.sampleCount = RHI::SampleCount::Count8;
 
+		graph.Creates<Resource::SceneColorMS>(colorDesc);
 		graph.Creates<Resource::PreDepthOutput>(depthDesc);
 		graph.Writes<Resource::PreDepthOutput>(RHI::ResourceState::DepthWrite);
-		graph.Writes<Resource::SceneColor>(RHI::ResourceState::RenderTarget);
+		graph.Writes<Resource::SceneColorMS>(RHI::ResourceState::RenderTarget);
 	}
 
 	void ForwardPass::Render(const Engine::Blackboard& board)
@@ -197,7 +207,7 @@ namespace Horizon::Rendering::Pass
 		const Engine::RenderableDirectionalLight* pDirectional = board.TryGet<Engine::RenderableDirectionalLight>();
 
 		RHI::CommandList* pCmdList = GetCommandList();
-		RHI::Texture* pColor = GetTexture<Resource::SceneColor>();
+		RHI::Texture* pColor = GetTexture<Resource::SceneColorMS>();
 
 		GpuLightFrame lightFrame = {};
 
@@ -233,7 +243,7 @@ namespace Horizon::Rendering::Pass
 		*reinterpret_cast<GpuLightFrame*>(m_lightFrameBuffer->GetMappedData()) = lightFrame;
 
 		RHI::RenderingDesc desc = {};
-		desc.colorAttachments[0].pView = GetTextureView<Resource::SceneColor>();
+		desc.colorAttachments[0].pView = GetTextureView<Resource::SceneColorMS>();
 		desc.colorAttachments[0].loadOp = RHI::LoadOp::Clear;
 		desc.colorAttachments[0].storeOp = RHI::StoreOp::Store;
 		desc.colorAttachments[0].clearColor = { 0.0f, 0.0f, 0.0f, 1.f };

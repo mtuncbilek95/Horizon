@@ -613,6 +613,9 @@ namespace Horizon::RHI
 		if (HasFlag(state, ResourceState::CopySrc | ResourceState::CopyDst))
 			sync |= D3D12_BARRIER_SYNC_COPY;
 
+		if (HasFlag(state, ResourceState::ResolveSrc | ResourceState::ResolveDst))
+			sync |= D3D12_BARRIER_SYNC_RESOLVE;
+
 		return sync;
 	}
 
@@ -656,6 +659,12 @@ namespace Horizon::RHI
 		if (HasFlag(state, ResourceState::CopyDst))
 			access |= D3D12_BARRIER_ACCESS_COPY_DEST;
 
+		if (HasFlag(state, ResourceState::ResolveSrc))
+			access |= D3D12_BARRIER_ACCESS_RESOLVE_SOURCE;
+
+		if (HasFlag(state, ResourceState::ResolveDst))
+			access |= D3D12_BARRIER_ACCESS_RESOLVE_DEST;
+
 		return access;
 	}
 
@@ -687,6 +696,12 @@ namespace Horizon::RHI
 
 		if (HasFlag(state, ResourceState::ShaderResource))
 			return D3D12_BARRIER_LAYOUT_SHADER_RESOURCE;
+
+		if (HasFlag(state, ResourceState::ResolveDst))
+			return D3D12_BARRIER_LAYOUT_RESOLVE_DEST;
+
+		if (HasFlag(state, ResourceState::ResolveSrc))
+			return D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE;
 
 		return D3D12_BARRIER_LAYOUT_COMMON;
 	}

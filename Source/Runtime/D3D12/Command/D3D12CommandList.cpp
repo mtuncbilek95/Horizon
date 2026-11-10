@@ -470,6 +470,19 @@ namespace Horizon::RHI
 		m_list->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
 	}
 
+	void D3D12CommandList::ResolveTexture(Texture* pSrc, Texture* pDst, u32 mip, u32 layer)
+	{
+		D3D12Texture* pSrcTexture = static_cast<D3D12Texture*>(pSrc);
+		D3D12Texture* pDstTexture = static_cast<D3D12Texture*>(pDst);
+
+		u32 srcSubresource = layer * pSrcTexture->GetMipLevels();
+		u32 dstSubresource = mip + layer * pDstTexture->GetMipLevels();
+
+		DXGI_FORMAT format = pDstTexture->Handle()->GetDesc().Format;
+
+		m_list->ResolveSubresource(pDstTexture->Handle(), dstSubresource, pSrcTexture->Handle(), srcSubresource, format);
+	}
+
 	void D3D12CommandList::RenderImGui(ImDrawData* pDrawData)
 	{
 		ImGui_ImplDX12_RenderDrawData(pDrawData, m_list);

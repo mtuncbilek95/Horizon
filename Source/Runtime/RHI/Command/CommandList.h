@@ -62,6 +62,8 @@ namespace Horizon::RHI
 		virtual void CopyBufferToTexture(Buffer* pSrc, u64 srcOffset, Texture* pDst, u32 mip = 0, u32 layer = 0) = 0;
 		virtual void CopyTextureToBuffer(Texture* pSrc, u32 mip, u32 layer, Buffer* pDst, u64 dstOffset) = 0;
 
+		virtual void ResolveTexture(Texture* pSrc, Texture* pDst, u32 mip = 0, u32 layer = 0) = 0;
+
 		virtual void RenderImGui(ImDrawData* pDrawData) = 0;
 
 		CommandPool* GetPool() const { return m_pool; }

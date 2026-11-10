@@ -56,6 +56,8 @@ namespace Horizon::RHI
 		void CopyBufferToTexture(Buffer* pSrc, u64 srcOffset, Texture* pDst, u32 mip = 0, u32 layer = 0) final;
 		void CopyTextureToBuffer(Texture* pSrc, u32 mip, u32 layer, Buffer* pDst, u64 dstOffset) final;
 
+		void ResolveTexture(Texture* pSrc, Texture* pDst, u32 mip = 0, u32 layer = 0) final;
+
 		void RenderImGui(ImDrawData* pDrawData) final;
 
 		ID3D12GraphicsCommandList7* Handle() const { return m_list; }

@@ -20,6 +20,8 @@ namespace Horizon::RHI
 		DepthRead = 1 << 9,
 		CopySrc = 1 << 10,
 		CopyDst = 1 << 11,
-		Present = 1 << 12
+		Present = 1 << 12,
+		ResolveSrc = 1 << 13,
+		ResolveDst = 1 << 14
 	};
 }
