@@ -33,26 +33,29 @@ namespace Horizon::Engine
 
 		RHI::Device* pDevice = m_graphics->GetDevice();
 
-		// Create a general graphics pool
-		RHI::CommandPoolDesc poolDesc = {};
-		poolDesc.type = RHI::QueueType::Graphics;
-
-		m_pool = pDevice->CreateRHICommandPool(poolDesc);
-		if (!m_pool)
+		m_frames.Resize(GraphicsContext::MaxFramesInFlight);
+		for (u32 i = 0; i < GraphicsContext::MaxFramesInFlight; i++)
 		{
-			Terminal::Error(StringHelper::GetTypeName(this), "Command pool could not be created.");
-			return false;
-		}
+			// Create a general graphics pool
+			RHI::CommandPoolDesc poolDesc = {};
+			poolDesc.type = RHI::QueueType::Graphics;
 
-		// Create a single cmdList 
-		RHI::CommandListDesc listDesc = {};
-		listDesc.pPool = m_pool.Get();
+			m_frames[i].pPool = pDevice->CreateRHICommandPool(poolDesc);
+			if (!m_frames[i].pPool)
+			{
+				Terminal::Error(StringHelper::GetTypeName(this), "Command pool could not be created.");
+				return false;
+			}
 
-		m_list = pDevice->CreateRHICommandList(listDesc);
-		if (!m_list)
-		{
-			Terminal::Error(StringHelper::GetTypeName(this), "Command list could not be created.");
-			return false;
+			RHI::CommandListDesc listDesc = {};
+			listDesc.pPool = m_frames[i].pPool.Get();
+
+			m_frames[i].pCmdList = pDevice->CreateRHICommandList(listDesc);
+			if (!m_frames[i].pCmdList)
+			{
+				Terminal::Error(StringHelper::GetTypeName(this), "Command list could not be created.");
+				return false;
+			}
 		}
 
 		// Create a fence to prevent fuckery
@@ -685,32 +688,39 @@ namespace Horizon::Engine
 	{
 		auto* pDevice = m_graphics->GetDevice();
 
-		m_fence->WaitCPU(m_fenceValue);
-		m_pool->Reset();
+		FrameSlot& slot = m_frames[m_frameIndex];
+
+		m_fence->WaitCPU(slot.fenceValue);
+		slot.pPool->Reset();
+
+		RHI::CommandList* pCmdList = slot.pCmdList.Get();
 
 		// Start command-list 
-		m_list->Start();
-		m_list->BindDescriptorHeaps(m_graphics->GetResourceHeap(), m_graphics->GetSamplerHeap());
+		pCmdList->Start();
+		pCmdList->BindDescriptorHeaps(m_graphics->GetResourceHeap(), m_graphics->GetSamplerHeap());
 
 		for (usize node : m_order)
 		{
-			RecordBarriers(m_nodeBarriers[node]);
+			RecordBarriers(pCmdList, m_nodeBarriers[node]);
 
-			m_activeNodes[node]->m_cmdList = m_list.Get();
+			m_activeNodes[node]->m_cmdList = pCmdList;
 			m_activeNodes[node]->Render(board);
 			m_activeNodes[node]->m_cmdList = nullptr;
 		}
 
-		RecordBarriers(m_finalBarriers);
+		RecordBarriers(pCmdList, m_finalBarriers);
 
-		m_list->End();
-		m_fenceValue++;
+		pCmdList->End();
 
-		pDevice->Submit(RHI::QueueType::Graphics, { m_list.Get() });
-		m_fenceValue = pDevice->Signal(RHI::QueueType::Graphics, m_fence.Get());
+		pDevice->Submit(RHI::QueueType::Graphics, { pCmdList });
+
+		slot.fenceValue = pDevice->Signal(RHI::QueueType::Graphics, m_fence.Get());
+		m_fenceValue = slot.fenceValue;
+
+		m_frameIndex = (m_frameIndex + 1) % GraphicsContext::MaxFramesInFlight;
 	}
 
-	void RenderGraph::RecordBarriers(const List<RenderBarrier>& barriers)
+	void RenderGraph::RecordBarriers(RHI::CommandList* pCmdList, const List<RenderBarrier>& barriers)
 	{
 		for (const RenderBarrier& barrier : barriers)
 		{
@@ -722,7 +732,7 @@ namespace Horizon::Engine
 				texBarrier.before = barrier.before;
 				texBarrier.after = barrier.after;
 
-				m_list->Barrier({ texBarrier });
+				pCmdList->Barrier({ texBarrier });
 				continue;
 			}
 
@@ -735,7 +745,7 @@ namespace Horizon::Engine
 				texBarrier.before = barrier.before;
 				texBarrier.after = barrier.after;
 
-				m_list->Barrier({ texBarrier });
+				pCmdList->Barrier({ texBarrier });
 			}
 			else
 			{
@@ -744,7 +754,7 @@ namespace Horizon::Engine
 				bufBarrier.before = barrier.before;
 				bufBarrier.after = barrier.after;
 
-				m_list->Barrier({ bufBarrier });
+				pCmdList->Barrier({ bufBarrier });
 			}
 		}
 	}

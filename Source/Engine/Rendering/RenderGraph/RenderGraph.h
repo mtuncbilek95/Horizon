@@ -49,6 +49,13 @@ namespace Horizon::Engine
 			RHI::ResourceState finalState = RHI::ResourceState::Undefined;
 		};
 
+		struct FrameSlot
+		{
+			UniquePtr<RHI::CommandPool> pPool = nullptr;
+			UniquePtr<RHI::CommandList> pCmdList = nullptr;
+			u64 fenceValue = 0;
+		};
+
 	public:
 		RenderGraph(Engine* pEngine);
 		~RenderGraph();
@@ -86,7 +93,7 @@ namespace Horizon::Engine
 
 		b8 AcquireResources();
 		void RecordRendering(const Blackboard& board);
-		void RecordBarriers(const List<RenderBarrier>& barriers);
+		void RecordBarriers(RHI::CommandList* pCmdList, const List<RenderBarrier>& barriers);
 
 		RenderResource* LookupResource(Reflect::TypeHandle resource, RenderResourceType type);
 
@@ -111,8 +118,9 @@ namespace Horizon::Engine
 		std::unordered_map<Reflect::TypeHandle, RenderResource> m_resources; // My shitty pool
 		std::unordered_map<Reflect::TypeHandle, ImportedTexture> m_importedTextures;
 
-		UniquePtr<RHI::CommandPool> m_pool = nullptr;
-		UniquePtr<RHI::CommandList> m_list = nullptr;
+		List<FrameSlot> m_frames;
+		u32 m_frameIndex = 0;
+
 		UniquePtr<RHI::Fence> m_fence = nullptr;
 		u64 m_fenceValue = 0;
 	};
