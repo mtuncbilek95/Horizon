@@ -15,4 +15,7 @@ namespace Horizon::Rendering::Resource
 
 	HCLASS();
 	struct SkyOutput final { HORIZON_DATA_REFLECT(SkyOutput); };
+
+	HCLASS();
+	struct ClusterList final { HORIZON_DATA_REFLECT(ClusterList); };
 }

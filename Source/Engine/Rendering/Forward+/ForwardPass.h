@@ -26,7 +26,6 @@ namespace Horizon::Rendering::Pass
 		UniquePtr<RHI::ShaderModule> m_vertexShader = nullptr;
 		UniquePtr<RHI::ShaderModule> m_fragmentShader = nullptr;
 
-		UniquePtr<RHI::PipelineLayout> m_layout = nullptr;
 		UniquePtr<RHI::GraphicsPipeline> m_pipeline = nullptr;
 
 		UniquePtr<RHI::Buffer> m_pointLightBuffer = nullptr;

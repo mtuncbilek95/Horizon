@@ -4,5 +4,5 @@
 
 namespace Horizon::RHI
 {
-	constexpr u32 kGlobalPushConstantSize = 128;
+	constexpr u32 kGlobalPushConstantSize = 256;
 }

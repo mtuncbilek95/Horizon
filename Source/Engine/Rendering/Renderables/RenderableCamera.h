@@ -11,5 +11,7 @@ namespace Horizon::Engine
 		Math::Mat4f camProjMatrix;
 		Math::Mat4f camViewProjMatrix;
 		Math::Vec3f camWorldPosition;
+		f32 nearPlane;
+		f32 farPlane;
 	};
 }

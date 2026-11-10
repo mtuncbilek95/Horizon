@@ -31,7 +31,7 @@ namespace Horizon::Rendering::Pass
 		struct ForwardConstants
 		{
 			Math::Mat4f worldViewProj;
-			f32 worldRows[12];
+			Math::Mat4f worldMatrix;
 			u32 vertexBufferIndex;
 			u32 firstVertex;
 			u32 pointLightBufferIndex;
@@ -103,8 +103,8 @@ namespace Horizon::Rendering::Pass
 		pipelineDesc.pPixelShader = m_fragmentShader.Get();
 		pipelineDesc.rasterizer.cullMode = RHI::CullMode::None;
 		pipelineDesc.depthStencil.depthTest = true;
-		pipelineDesc.depthStencil.depthWrite = true;
-		pipelineDesc.depthStencil.depthCompare = RHI::CompareOp::Greater;
+		pipelineDesc.depthStencil.depthWrite = false;
+		pipelineDesc.depthStencil.depthCompare = RHI::CompareOp::GreaterEqual;
 		pipelineDesc.colorTargets.PushBack(colorTarget);
 		pipelineDesc.depthFormat = RHI::TextureFormat::D32_FLOAT;
 		pipelineDesc.sampleCount = RHI::SampleCount::Count8;
@@ -188,16 +188,8 @@ namespace Horizon::Rendering::Pass
 		colorDesc.height = pArea->colorImageSize.Y();
 		colorDesc.sampleCount = RHI::SampleCount::Count8;
 
-		RHI::TextureDesc depthDesc = {};
-		depthDesc.format = RHI::TextureFormat::D32_FLOAT;
-		depthDesc.usage = RHI::TextureUsage::DepthStencil | RHI::TextureUsage::Sampled;
-		depthDesc.width = pArea->colorImageSize.X();
-		depthDesc.height = pArea->colorImageSize.Y();
-		depthDesc.sampleCount = RHI::SampleCount::Count8;
-
 		graph.Creates<Resource::SceneColorMS>(colorDesc);
-		graph.Creates<Resource::PreDepthOutput>(depthDesc);
-		graph.Writes<Resource::PreDepthOutput>(RHI::ResourceState::DepthWrite);
+		graph.Reads<Resource::PreDepthOutput>(RHI::ResourceState::DepthRead);
 		graph.Writes<Resource::SceneColorMS>(RHI::ResourceState::RenderTarget);
 	}
 
@@ -255,10 +247,10 @@ namespace Horizon::Rendering::Pass
 		desc.colorAttachmentCount = 1;
 
 		desc.depthAttachment.pView = GetTextureView<Resource::PreDepthOutput>();
-		desc.depthAttachment.loadOp = RHI::LoadOp::Clear;
+		desc.depthAttachment.loadOp = RHI::LoadOp::Load;
 		desc.depthAttachment.storeOp = RHI::StoreOp::Store;
 		desc.depthAttachment.clearDepth = 0.0f;
-		desc.depthAttachment.readOnly = false;
+		desc.depthAttachment.readOnly = true;
 
 		pCmdList->StartRendering(desc);
 
@@ -287,12 +279,7 @@ namespace Horizon::Rendering::Pass
 			constants.vertexBufferIndex = pStreamer->GetVertexBufferView();
 			constants.pointLightBufferIndex = m_pointLightView;
 			constants.lightFrameBufferIndex = m_lightFrameView;
-
-			for (i32 row = 0; row < 3; row++)
-			{
-				for (i32 col = 0; col < 4; col++)
-					constants.worldRows[row * 4 + col] = renderable.worldMatrix(row, col);
-			}
+			constants.worldMatrix = renderable.worldMatrix;
 
 			for (const Asset::MeshSubmesh& submesh : renderable.mesh.submeshes)
 			{

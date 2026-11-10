@@ -5,6 +5,7 @@
 #include <Engine/Rendering/Renderables/RenderableMesh.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/World/Components/Camera/CameraWorld.h>
+#include <Engine/World/Components/Camera/PerspectiveCamera.h>
 #include <Engine/World/Components/Location/WorldTransform.h>
 #include <Engine/World/Components/Rendering/MeshSelection.h>
 #include <Engine/World/Systems/Location/LocalToWorld.h>
@@ -37,12 +38,14 @@ namespace Horizon::World::System
 		Engine::FrameMesh& frame = board.Add<Engine::FrameMesh>();
 
 		// Get camera
-		currentScene.ForEach<Component::CameraWorld>([&](Engine::EntityHandle, Component::CameraWorld& cam)
+		currentScene.ForEach<Component::CameraWorld, Component::PerspectiveCamera>([&](Engine::EntityHandle, Component::CameraWorld& cam, Component::PerspectiveCamera& perspective)
 			{
 				camera.camViewMatrix = cam.m_view;
 				camera.camProjMatrix = cam.m_projection;
 				camera.camViewProjMatrix = cam.m_viewProjection;
 				camera.camWorldPosition = cam.m_worldPosition;
+				camera.nearPlane = perspective.m_nearPlane;
+				camera.farPlane = perspective.m_farPlane;
 			});
 
 		// Resolve mesh
@@ -80,6 +83,7 @@ namespace Horizon::World::System
 		graph.Reads<Component::CameraWorld>();
 		graph.Reads<Component::WorldTransform>();
 		graph.Reads<Component::MeshSelection>();
+		graph.Reads<Component::PerspectiveCamera>();
 
 		graph.Writes<Engine::RenderableCamera>();
 		graph.Writes<Engine::FrameMesh>();

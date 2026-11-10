@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Runtime/Definitions/PrimitiveDefinitions.h>
+#include <Runtime/Math/Vec2u.h>
 
 namespace Horizon::Engine
 {

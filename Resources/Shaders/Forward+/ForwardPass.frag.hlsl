@@ -1,9 +1,7 @@
 struct ForwardConstants
 {
     float4x4 worldViewProj;
-    float4 worldRow0;
-    float4 worldRow1;
-    float4 worldRow2;
+    float4x4 worldMat;
     uint vertexBufferIndex;
     uint firstVertex;
     uint pointLightBufferIndex;
@@ -29,9 +27,9 @@ struct GpuLightFrame
 struct PixelData
 {
     float4 position : SV_Position;
-    float3 worldPosition : TEXCOORD0;
-    float3 normal : NORMAL0;
-    float4 color : COLOR0;
+    centroid float3 worldPosition : TEXCOORD0;
+    centroid float3 normal : NORMAL0;
+    centroid float4 color : COLOR0;
 };
 
 ConstantBuffer<ForwardConstants> pushConstant : register(b0, space999);

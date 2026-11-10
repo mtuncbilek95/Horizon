@@ -10,9 +10,7 @@ struct MeshVertex
 struct ForwardConstants
 {
     float4x4 worldViewProj;
-    float4 worldRow0;
-    float4 worldRow1;
-    float4 worldRow2;
+    float4x4 worldMat;
     uint vertexBufferIndex;
     uint firstVertex;
     uint pointLightBufferIndex;
@@ -27,9 +25,9 @@ struct VertexInput
 struct PixelData
 {
     float4 position : SV_Position;
-    float3 worldPosition : TEXCOORD0;
-    float3 normal : NORMAL0;
-    float4 color : COLOR0;
+    centroid float3 worldPosition : TEXCOORD0;
+    centroid float3 normal : NORMAL0;
+    centroid float4 color : COLOR0;
 };
 
 ConstantBuffer<ForwardConstants> pushConstant : register(b0, space999);
@@ -41,10 +39,12 @@ PixelData VSMain(VertexInput input)
     const MeshVertex vertex = vertices[pushConstant.firstVertex + input.vertexId];
     const float4 localPosition = float4(vertex.position, 1.0f);
 
+    precise float4 clipPosition = mul(pushConstant.worldViewProj, localPosition);
+
     PixelData output;
-    output.position = mul(pushConstant.worldViewProj, localPosition);
-    output.worldPosition = float3(dot(pushConstant.worldRow0, localPosition), dot(pushConstant.worldRow1, localPosition), dot(pushConstant.worldRow2, localPosition));
-    output.normal = float3(dot(pushConstant.worldRow0.xyz, vertex.normal), dot(pushConstant.worldRow1.xyz, vertex.normal), dot(pushConstant.worldRow2.xyz, vertex.normal));
+    output.position = clipPosition;
+    output.worldPosition = mul(pushConstant.worldMat, localPosition).xyz;
+    output.normal = normalize(mul((float3x3) pushConstant.worldMat, vertex.normal));
     output.color = vertex.color;
     return output;
 }
