@@ -64,7 +64,7 @@ namespace Horizon::Engine
 		RenderGraph& operator=(const RenderGraph&) = delete;
 
 		b8 OnInitialize();
-		void OnExecute(const RenderSetupContext& setupContext, const Blackboard& board);
+		void OnExecute(const Blackboard& board);
 		void OnFinalize();
 
 		template<typename T>

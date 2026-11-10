@@ -1,8 +1,8 @@
 #include "RenderExtraction.h"
 
 #include <Engine/Asset/AssetService.h>
-#include <Engine/Rendering/RenderableCamera.h>
-#include <Engine/Rendering/RenderableMesh.h>
+#include <Engine/Rendering/Renderables/RenderableCamera.h>
+#include <Engine/Rendering/Renderables/RenderableMesh.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/World/Components/Camera/CameraWorld.h>
 #include <Engine/World/Components/Location/WorldTransform.h>

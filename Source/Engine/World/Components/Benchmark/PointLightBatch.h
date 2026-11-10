@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Engine/Rendering/RenderablePointLight.h>
+#include <Engine/Rendering/Renderables/RenderablePointLight.h>
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Runtime/Containers/Vector/List.h>

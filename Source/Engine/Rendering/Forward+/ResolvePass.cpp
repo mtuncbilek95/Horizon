@@ -17,7 +17,7 @@ namespace Horizon::Rendering::Pass
 	{
 	}
 
-	void ResolvePass::Setup(const Engine::RenderSetupContext& setupContext, Engine::RenderDependency& graph)
+	void ResolvePass::Setup(const Engine::Blackboard& blackboard, Engine::RenderDependency& graph)
 	{
 		graph.Reads<Resource::SceneColorMS>(RHI::ResourceState::ResolveSrc);
 		graph.Writes<Resource::SceneColor>(RHI::ResourceState::ResolveDst);

@@ -109,7 +109,7 @@ namespace Horizon::Rendering::Pass
 		m_vertexShader.Reset();
 	}
 
-	void SkyCompositePass::Setup(const Engine::RenderSetupContext& setupContext, Engine::RenderDependency& graph)
+	void SkyCompositePass::Setup(const Engine::Blackboard& blackboard, Engine::RenderDependency& graph)
 	{
 		graph.Reads<Resource::SkyOutput>(RHI::ResourceState::ShaderResource);
 		graph.Reads<Resource::PreDepthOutput>(RHI::ResourceState::DepthRead);

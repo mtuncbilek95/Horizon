@@ -6,8 +6,9 @@
 #include <Engine/Rendering/RenderGraph/RenderDependency.h>
 #include <Engine/Rendering/Forward+/Resources.h>
 
-#include <Engine/Rendering/RenderableCamera.h>
-#include <Engine/Rendering/RenderableDirectionalLight.h>
+#include <Engine/Rendering/Renderables/RenderableArea.h>
+#include <Engine/Rendering/Renderables/RenderableCamera.h>
+#include <Engine/Rendering/Renderables/RenderableDirectionalLight.h>
 
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/RHI/Command/CommandList.h>
@@ -92,13 +93,17 @@ namespace Horizon::Rendering::Pass
 		m_computeShader.Reset();
 	}
 
-	void ProceduralSkyPass::Setup(const Engine::RenderSetupContext& setupContext, Engine::RenderDependency& graph)
+	void ProceduralSkyPass::Setup(const Engine::Blackboard& blackboard, Engine::RenderDependency& graph)
 	{
+		auto* pArea = blackboard.Get<Engine::RenderableArea>();
+		if (!pArea)
+			return;
+
 		RHI::TextureDesc skyDesc = {};
 		skyDesc.format = Engine::PresentationService::SceneFormat;
 		skyDesc.usage = RHI::TextureUsage::Storage | RHI::TextureUsage::Sampled;
-		skyDesc.width = setupContext.colorImageDimension.X();
-		skyDesc.height = setupContext.colorImageDimension.Y();
+		skyDesc.width = pArea->colorImageSize.X();
+		skyDesc.height = pArea->colorImageSize.Y();
 
 		graph.Creates<Resource::SkyOutput>(skyDesc);
 		graph.Writes<Resource::SkyOutput>(RHI::ResourceState::UnorderedAccess);

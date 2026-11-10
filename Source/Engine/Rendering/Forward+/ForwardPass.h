@@ -17,7 +17,7 @@ namespace Horizon::Rendering::Pass
 	public:
 		b8 OnInitialize() final;
 		void OnFinalize() final;
-		void Setup(const Engine::RenderSetupContext& setupContext, Engine::RenderDependency& graph) final;
+		void Setup(const Engine::Blackboard& blackboard, Engine::RenderDependency& graph) final;
 		void Render(const Engine::Blackboard& board) final;
 
 		RHI::QueueType GetRunType() const final { return RHI::QueueType::Graphics; }

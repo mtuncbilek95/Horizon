@@ -1,9 +1,9 @@
 #include "LightExtraction.h"
 
-#include <Engine/Rendering/RenderableAreaLight.h>
-#include <Engine/Rendering/RenderableDirectionalLight.h>
-#include <Engine/Rendering/RenderablePointLight.h>
-#include <Engine/Rendering/RenderableSpotLight.h>
+#include <Engine/Rendering/Renderables/RenderableAreaLight.h>
+#include <Engine/Rendering/Renderables/RenderableDirectionalLight.h>
+#include <Engine/Rendering/Renderables/RenderablePointLight.h>
+#include <Engine/Rendering/Renderables/RenderableSpotLight.h>
 #include <Engine/World/WorldService.h>
 #include <Engine/World/Components/Benchmark/PointLightBatch.h>
 #include <Engine/World/Components/Location/LocalTransform.h>

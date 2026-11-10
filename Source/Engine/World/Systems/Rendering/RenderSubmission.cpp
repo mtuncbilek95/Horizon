@@ -4,12 +4,13 @@
 #include <Engine/Presentation/PresentationService.h>
 #include <Engine/Rendering/Forward+/Resources.h>
 
-#include <Engine/Rendering/RenderableCamera.h>
-#include <Engine/Rendering/RenderableMesh.h>
-#include <Engine/Rendering/RenderablePointLight.h>
-#include <Engine/Rendering/RenderableSpotLight.h>
-#include <Engine/Rendering/RenderableAreaLight.h>
-#include <Engine/Rendering/RenderableDirectionalLight.h>
+#include <Engine/Rendering/Renderables/RenderableArea.h>
+#include <Engine/Rendering/Renderables/RenderableCamera.h>
+#include <Engine/Rendering/Renderables/RenderableMesh.h>
+#include <Engine/Rendering/Renderables/RenderablePointLight.h>
+#include <Engine/Rendering/Renderables/RenderableSpotLight.h>
+#include <Engine/Rendering/Renderables/RenderableAreaLight.h>
+#include <Engine/Rendering/Renderables/RenderableDirectionalLight.h>
 
 #include <Engine/World/WorldService.h>
 #include <Engine/World/Systems/Rendering/RenderExtraction.h>
@@ -46,17 +47,17 @@ namespace Horizon::World::System
 
 	void RenderSubmission::OnExecute(const Engine::EngineFrame& ctx, Engine::Scene& currentScene)
 	{
-		Engine::RenderSetupContext setupCtx =
-		{
-			.colorImageDimension = m_presentation->GetSceneExtent(),
-			.shadowMapDimension = { 2048, 2048 },
-		};
+		auto* pWorld = GetEngine()->RequestService<Engine::WorldService>();
+		Engine::Blackboard& board = pWorld->GetBlackboard();
+
+		Engine::RenderableArea& area = board.Add<Engine::RenderableArea>();
+		area.colorImageSize = m_presentation->GetSceneExtent();
+		area.shadowMapSize = { 2048, 2048 };
 
 		m_graph->ImportTexture<Rendering::Resource::SceneColor>(m_presentation->GetSceneTexture(), m_presentation->GetSceneView(),
 			RHI::ResourceState::Undefined, RHI::ResourceState::ShaderResource);
 
-		auto* pWorld = GetEngine()->RequestService<Engine::WorldService>();
-		m_graph->OnExecute(setupCtx, pWorld->GetBlackboard());
+		m_graph->OnExecute(board);
 	}
 
 	void RenderSubmission::OnFinalize()

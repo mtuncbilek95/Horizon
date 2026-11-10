@@ -7,10 +7,11 @@
 #include <Engine/Rendering/RenderGraph/RenderDependency.h>
 #include <Engine/Rendering/Forward+/Resources.h>
 
-#include <Engine/Rendering/RenderableCamera.h>
-#include <Engine/Rendering/RenderableDirectionalLight.h>
-#include <Engine/Rendering/RenderableMesh.h>
-#include <Engine/Rendering/RenderablePointLight.h>
+#include <Engine/Rendering/Renderables/RenderableArea.h>
+#include <Engine/Rendering/Renderables/RenderableCamera.h>
+#include <Engine/Rendering/Renderables/RenderableDirectionalLight.h>
+#include <Engine/Rendering/Renderables/RenderableMesh.h>
+#include <Engine/Rendering/Renderables/RenderablePointLight.h>
 
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/RHI/Command/RenderingDesc.h>
@@ -174,20 +175,24 @@ namespace Horizon::Rendering::Pass
 		m_vertexShader.Reset();
 	}
 
-	void ForwardPass::Setup(const Engine::RenderSetupContext& setupContext, Engine::RenderDependency& graph)
+	void ForwardPass::Setup(const Engine::Blackboard& blackboard, Engine::RenderDependency& graph)
 	{
+		auto* pArea = blackboard.Get<Engine::RenderableArea>();
+		if (!pArea)
+			return;
+
 		RHI::TextureDesc colorDesc = {};
 		colorDesc.format = Engine::PresentationService::SceneFormat;
 		colorDesc.usage = RHI::TextureUsage::RenderTarget;
-		colorDesc.width = setupContext.colorImageDimension.X();
-		colorDesc.height = setupContext.colorImageDimension.Y();
+		colorDesc.width = pArea->colorImageSize.X();
+		colorDesc.height = pArea->colorImageSize.Y();
 		colorDesc.sampleCount = RHI::SampleCount::Count8;
 
 		RHI::TextureDesc depthDesc = {};
 		depthDesc.format = RHI::TextureFormat::D32_FLOAT;
 		depthDesc.usage = RHI::TextureUsage::DepthStencil | RHI::TextureUsage::Sampled;
-		depthDesc.width = setupContext.colorImageDimension.X();
-		depthDesc.height = setupContext.colorImageDimension.Y();
+		depthDesc.width = pArea->colorImageSize.X();
+		depthDesc.height = pArea->colorImageSize.Y();
 		depthDesc.sampleCount = RHI::SampleCount::Count8;
 
 		graph.Creates<Resource::SceneColorMS>(colorDesc);

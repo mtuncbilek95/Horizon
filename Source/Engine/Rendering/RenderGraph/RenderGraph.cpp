@@ -95,12 +95,12 @@ namespace Horizon::Engine
 		return true;
 	}
 
-	void RenderGraph::OnExecute(const RenderSetupContext& setupContext, const Blackboard& board)
+	void RenderGraph::OnExecute(const Blackboard& board)
 	{
 		// Configure dependency list
 		List<RenderDependency> dependencyList(m_activeNodes.GetCount());
 		for (usize i = 0; i < m_activeNodes.GetCount(); i++)
-			m_activeNodes[i]->Setup(setupContext, dependencyList[i]);
+			m_activeNodes[i]->Setup(board, dependencyList[i]);
 
 		// Compile graph
 		if (!CompileGraph(dependencyList))
