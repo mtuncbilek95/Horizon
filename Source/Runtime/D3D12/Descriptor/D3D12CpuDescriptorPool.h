@@ -14,6 +14,7 @@ namespace Horizon::RHI
 		~D3D12CpuDescriptorPool();
 
 		HRESULT Initialize(ID3D12Device10* pDevice, D3D12_DESCRIPTOR_HEAP_TYPE type, u32 capacity);
+		void Shutdown();
 
 		D3D12_CPU_DESCRIPTOR_HANDLE Allocate();
 		void Free(D3D12_CPU_DESCRIPTOR_HANDLE handle);

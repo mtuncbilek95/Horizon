@@ -8,8 +8,16 @@ namespace Horizon::RHI
 {
 	D3D12CpuDescriptorPool::~D3D12CpuDescriptorPool()
 	{
+		Shutdown();
+	}
+
+	void D3D12CpuDescriptorPool::Shutdown()
+	{
 		if (m_heap)
+		{
 			m_heap->Release();
+			m_heap = nullptr;
+		}
 	}
 
 	HRESULT D3D12CpuDescriptorPool::Initialize(ID3D12Device10* pDevice, D3D12_DESCRIPTOR_HEAP_TYPE type, u32 capacity)

@@ -297,6 +297,9 @@ namespace Horizon::RHI
 			m_allocator = nullptr;
 		}
 
+		m_dsvPool.Shutdown();
+		m_rtvPool.Shutdown();
+
 		if (m_device && m_debug)
 		{
 			ID3D12DebugDevice* pDebugDevice = nullptr;
