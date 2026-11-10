@@ -3,7 +3,6 @@
 #include <Engine/Core/Engine.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Engine/World/SystemDependency.h>
-#include <Engine/World/WorldService.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Engine

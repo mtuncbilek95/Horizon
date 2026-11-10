@@ -1,6 +1,10 @@
 #pragma once
 
 #include <Editor/Renderer/EditorContext.h>
+#include <Editor/Renderer/EditorOverlay.h>
+#include <Editor/MainMenu/MenuRegistry.h>
+#include <Editor/Toolbar/ToolBarRegistry.h>
+#include <Editor/Views/ViewRegistry.h>
 #include <Engine/Core/Service.h>
 #include <Runtime/PAL/Window/Window.h>
 #include <Runtime/PAL/Window/Cursor.h>
@@ -19,16 +23,10 @@ namespace Horizon::Editor
 {
 	class EditorOverlay;
 	class EditorContext;
-	class ViewRegistry;
-	class MenuRegistry;
-	class ToolBarRegistry;
 
 	class EditorService final : public Engine::Service
 	{
 	public:
-		EditorService() = default;
-		~EditorService() = default;
-
 		Engine::ModuleReport OnInitialize() final;
 		void OnExecute(const Engine::EngineFrame& ctx) final;
 		void OnFinalize() final;

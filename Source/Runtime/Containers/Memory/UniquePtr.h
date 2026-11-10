@@ -82,7 +82,11 @@ namespace Horizon
 		b8 operator==(const UniquePtr<U>& other) const { return m_ptr == other.m_ptr; }
 
 	private:
-		static void Destroy(T* pPtr) { delete pPtr; }
+		static void Destroy(T* pPtr)
+		{
+			static_assert(sizeof(T) > 0, "UniquePtr<T> is destroyed where T is incomplete");
+			delete pPtr;
+		}
 
 	private:
 		T* m_ptr = nullptr;

@@ -2,6 +2,7 @@
 
 #include <Engine/Core/Service.h>
 #include <Engine/World/Blackboard.h>
+#include <Engine/World/SystemGraph.h>
 #include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/RTTR/Reflection.h>
@@ -10,7 +11,6 @@
 
 namespace Horizon::Engine
 {
-	class SystemGraph;
 	class Scene;
 	class System;
 

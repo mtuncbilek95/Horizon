@@ -10,6 +10,8 @@
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/Containers/Memory/RefPtr.h>
 #include <Runtime/Containers/Memory/UniquePtr.h>
+#include <Runtime/RHI/Command/CommandList.h>
+#include <Runtime/RHI/Command/CommandPool.h>
 #include <Runtime/RHI/Buffer/Buffer.h>
 #include <Runtime/RHI/Texture/Texture.h>
 #include <Runtime/RHI/Texture/TextureView.h>
@@ -18,8 +20,6 @@
 namespace Horizon::RHI
 {
 	class Fence;
-	class CommandPool;
-	class CommandList;
 }
 
 namespace Horizon::Engine

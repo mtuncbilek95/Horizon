@@ -19,7 +19,7 @@ namespace Horizon::World::Component
 		HFIELD();
 		Math::Color4f m_color;
 
-		HFIELD(Range[0.f, 1.f]);
+		HFIELD(Range[-1.f, 1.f]);
 		Math::Vec3f m_direction;
 
 		HFIELD(Range[0.f, f32_max]);

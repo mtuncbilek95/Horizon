@@ -12,4 +12,7 @@ namespace Horizon::Rendering::Resource
 
 	HCLASS();
 	struct SceneColorMS final { HORIZON_DATA_REFLECT(SceneColorMS); };
+
+	HCLASS();
+	struct SkyOutput final { HORIZON_DATA_REFLECT(SkyOutput); };
 }

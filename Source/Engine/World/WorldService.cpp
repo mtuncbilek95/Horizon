@@ -6,7 +6,6 @@
 #include <Engine/Graphics/GraphicsContext.h>
 #include <Engine/Reflection/ReflectionSystem.h>
 #include <Engine/World/System.h>
-#include <Engine/World/SystemGraph.h>
 #include <Engine/World/ECS/Scene.h>
 #include <Runtime/Serialization/BinaryArchive.h>
 

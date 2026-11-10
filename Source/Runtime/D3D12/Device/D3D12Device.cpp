@@ -297,6 +297,16 @@ namespace Horizon::RHI
 			m_allocator = nullptr;
 		}
 
+		if (m_device && m_debug)
+		{
+			ID3D12DebugDevice* pDebugDevice = nullptr;
+			if (SUCCEEDED(m_device->QueryInterface(IID_PPV_ARGS(&pDebugDevice))))
+			{
+				pDebugDevice->ReportLiveDeviceObjects(D3D12_RLDO_DETAIL | D3D12_RLDO_IGNORE_INTERNAL);
+				pDebugDevice->Release();
+			}
+		}
+
 		if (m_infoQueue)
 		{
 			m_infoQueue->UnregisterMessageCallback(m_callbackCookie);

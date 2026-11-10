@@ -4,6 +4,7 @@
 #include <Engine/Rendering/RenderableDirectionalLight.h>
 #include <Engine/Rendering/RenderablePointLight.h>
 #include <Engine/Rendering/RenderableSpotLight.h>
+#include <Engine/World/WorldService.h>
 #include <Engine/World/Components/Benchmark/PointLightBatch.h>
 #include <Engine/World/Components/Location/LocalTransform.h>
 #include <Engine/World/Components/Rendering/AreaLight.h>

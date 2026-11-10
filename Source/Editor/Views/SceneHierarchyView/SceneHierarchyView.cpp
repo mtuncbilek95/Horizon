@@ -113,6 +113,8 @@ namespace Horizon::Editor
 		PAL::FileAccessRequest request = PAL::File::RequestAccess(path, PAL::FileOperationAccessPolicy::Write,
 			PAL::FileOperationSharePolicy::Exclusive);
 
+		PAL::File::Truncate(request, 0);
+
 		const b8 wasWritten = PAL::File::WriteString(request, writer.ToString());
 
 		PAL::File::ReleaseAccess(request);

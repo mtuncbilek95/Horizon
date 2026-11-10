@@ -11,6 +11,7 @@
 #include <Engine/Rendering/RenderableAreaLight.h>
 #include <Engine/Rendering/RenderableDirectionalLight.h>
 
+#include <Engine/World/WorldService.h>
 #include <Engine/World/Systems/Rendering/RenderExtraction.h>
 #include <Engine/World/Systems/Rendering/LightExtraction.h>
 
