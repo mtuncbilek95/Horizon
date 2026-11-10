@@ -584,6 +584,12 @@ namespace Horizon::Engine
 			// Process buffer
 			if (resource.type == RenderResourceType::Buffer)
 			{
+				if (resource.buffer && resource.buffer->GetSize() != resource.bufDesc.size)
+				{
+					m_fence->WaitCPU(m_fenceValue);
+					resource.buffer.Reset();
+				}
+
 				if (resource.buffer)
 					continue;
 
@@ -597,8 +603,25 @@ namespace Horizon::Engine
 				continue;
 			}
 
+			// Check if desc is matching
 			if (resource.texture)
-				continue;
+			{
+				const RHI::TextureDesc& desc = resource.texDesc;
+				RHI::Texture* pTexture = resource.texture.Get();
+
+				b8 matches = pTexture->GetType() == desc.type && pTexture->GetFormat() == desc.format && pTexture->GetUsage() == desc.usage &&
+					pTexture->GetWidth() == desc.width && pTexture->GetHeight() == desc.height && pTexture->GetDepth() == desc.depth &&
+					pTexture->GetArrayLayers() == desc.arrayLayers && pTexture->GetMipLevels() == desc.mipLevels &&
+					pTexture->GetSampleCount() == desc.sampleCount;
+
+				// If matches, it continues but not reset it.
+				if (matches)
+					continue;
+
+				m_fence->WaitCPU(m_fenceValue);
+				resource.texView.Reset();
+				resource.texture.Reset();
+			}
 
 			// Continue processing texture
 			resource.texture = pDevice->CreateRHITexture(resource.texDesc);
