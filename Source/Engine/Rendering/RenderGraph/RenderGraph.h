@@ -6,6 +6,7 @@
 #include <Engine/Rendering/RenderGraph/RenderAccess.h>
 #include <Engine/Rendering/RenderGraph/RenderNode.h>
 #include <Engine/Rendering/RenderGraph/RenderResource.h>
+#include <Engine/World/Blackboard.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/Containers/Memory/RefPtr.h>
 #include <Runtime/Containers/Memory/UniquePtr.h>
@@ -56,7 +57,7 @@ namespace Horizon::Engine
 		RenderGraph& operator=(const RenderGraph&) = delete;
 
 		b8 OnInitialize();
-		void OnExecute(const RenderSetupContext& setupContext, const RenderDrawContext& drawContext);
+		void OnExecute(const RenderSetupContext& setupContext, const Blackboard& board);
 		void OnFinalize();
 
 		template<typename T>
@@ -64,8 +65,6 @@ namespace Horizon::Engine
 		{
 			m_importedTextures[Reflect::TypeOf<T>()] = { pTexture, pView, initialState, finalState };
 		}
-
-		void SetEnablePass(Reflect::TypeHandle handl, b8 enable);
 
 		RHI::Texture* FindTexture(Reflect::TypeHandle resource);
 		RHI::TextureView* FindTextureView(Reflect::TypeHandle resource);
@@ -86,7 +85,7 @@ namespace Horizon::Engine
 		b8 BuildBarriers(const List<usize>& order, List<RenderDependency>& dependencyList);
 
 		b8 AcquireResources();
-		void RecordRendering(const RenderDrawContext& drawContext);
+		void RecordRendering(const Blackboard& board);
 		void RecordBarriers(const List<RenderBarrier>& barriers);
 
 		RenderResource* LookupResource(Reflect::TypeHandle resource, RenderResourceType type);
@@ -116,7 +115,5 @@ namespace Horizon::Engine
 		UniquePtr<RHI::CommandList> m_list = nullptr;
 		UniquePtr<RHI::Fence> m_fence = nullptr;
 		u64 m_fenceValue = 0;
-
-		std::unordered_map<Reflect::TypeHandle, b8> m_status;
 	};
 }

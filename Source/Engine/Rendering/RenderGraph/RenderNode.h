@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Engine/Rendering/RenderGraph/RenderSetupContext.h>
-#include <Engine/Rendering/RenderDrawContext.h>
+#include <Engine/World/Blackboard.h>
 #include <Runtime/RHI/Queue/QueueType.h>
 #include <Runtime/RTTR/Reflection.h>
 
@@ -27,7 +27,7 @@ namespace Horizon::Engine
 		virtual b8 OnInitialize() = 0;
 		virtual void OnFinalize() = 0;
 		virtual void Setup(const RenderSetupContext& frameContext, RenderDependency& graph) = 0;
-		virtual void Render(const RenderDrawContext& context) = 0;
+		virtual void Render(const Blackboard& board) = 0;
 		virtual RHI::QueueType GetRunType() const = 0;
 
 		Engine* GetEngine() const { return m_engine; }

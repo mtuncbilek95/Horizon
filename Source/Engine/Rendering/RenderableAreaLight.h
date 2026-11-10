@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Runtime/Containers/Vector/List.h>
 #include <Runtime/Math/Color4f.h>
 #include <Runtime/Math/Vec3f.h>
 
@@ -15,5 +16,10 @@ namespace Horizon::Engine
 		f32 width;
 		f32 height;
 		b8 twoSided;
+	};
+
+	struct FrameAreaLight
+	{
+		List<RenderableAreaLight> areaLights;
 	};
 }

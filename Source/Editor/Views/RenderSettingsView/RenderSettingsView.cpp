@@ -16,13 +16,5 @@ namespace Horizon::Editor
 
 	void RenderSettingsView::OnRender(const Engine::EngineFrame& context)
 	{
-		auto* pWorld = GetContext()->pEngine->RequestService<Engine::WorldService>();
-
-		World::System::RenderSubmission* pSys = (World::System::RenderSubmission*)pWorld->FindSystem(Reflect::TypeOf<World::System::RenderSubmission>());
-
-		static b8 fPassClicked = true;
-		ImGui::Checkbox("ForwardPass", &fPassClicked);
-
-		pSys->GetGraph()->SetEnablePass(Reflect::TypeOf<Rendering::Pass::ForwardPass>(), fPassClicked);
 	}
 }

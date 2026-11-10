@@ -2,7 +2,6 @@
 
 #include <Engine/World/System.h>
 #include <Engine/Rendering/RenderGraph/RenderGraph.h>
-#include <Engine/Rendering/RenderDrawContext.h>
 #include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/RTTR/Reflection.h>
 
@@ -30,7 +29,5 @@ namespace Horizon::World::System
 		UniquePtr<Engine::RenderGraph> m_graph = nullptr;
 		Engine::PresentationService* m_presentation = nullptr;
 		Engine::AssetService* m_assets = nullptr;
-
-		Engine::RenderDrawContext m_drawList;
 	};
 }

@@ -1,10 +1,11 @@
 #pragma once
 
 #include <Engine/Asset/Mesh/MeshUsePermit.h>
+#include <Runtime/Containers/Vector/List.h>
 #include <Runtime/Math/Mat4f.h>
 #include <Runtime/Math/Vec3f.h>
 
-namespace Horizon::Engine 
+namespace Horizon::Engine
 {
 	struct RenderableMesh
 	{
@@ -13,5 +14,10 @@ namespace Horizon::Engine
 
 		b8 visible;
 		b8 castShadow;
+	};
+
+	struct FrameMesh
+	{
+		List<RenderableMesh> meshes;
 	};
 }

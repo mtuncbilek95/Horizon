@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Core/Service.h>
+#include <Engine/World/Blackboard.h>
 #include <Runtime/Containers/Memory/UniquePtr.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/RTTR/Reflection.h>
@@ -25,10 +26,14 @@ namespace Horizon::Engine
 		void SetCurrentWorld(Scene* pNewWorld) { m_activeWorld = pNewWorld; }
 
 		System* FindSystem(Reflect::TypeHandle handl);
+		
+		Blackboard& GetBlackboard() { return m_blackboard; }
+		const Blackboard& GetBlackboard() const { return m_blackboard; }
 
 	private:
 		UniquePtr<SystemGraph> m_graph;
 
+		Blackboard m_blackboard;
 		Scene* m_activeWorld = nullptr;
 	};
 }

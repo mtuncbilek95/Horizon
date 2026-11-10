@@ -25,6 +25,8 @@ namespace Horizon::Engine
 
 	void WorldService::OnExecute(const EngineFrame& ctx)
 	{
+		m_blackboard.Reset();
+
 		if (!m_activeWorld)
 			return;
 
@@ -38,8 +40,7 @@ namespace Horizon::Engine
 
 	void WorldService::DeclareDependencies(ModuleDependency& graph)
 	{
-		graph.InitAfter<AssetService, 
-			GraphicsContext>();
+		graph.InitAfter<AssetService, GraphicsContext>();
 	}
 
 	System* WorldService::FindSystem(Reflect::TypeHandle handl)

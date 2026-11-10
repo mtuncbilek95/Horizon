@@ -1,7 +1,6 @@
 #include "CameraExtraction.h"
 
 #include <Engine/World/SystemDependency.h>
-
 #include <Engine/World/Components/Camera/CameraWorld.h>
 #include <Engine/World/Components/Camera/PerspectiveCamera.h>
 #include <Engine/World/Components/Location/WorldTransform.h>

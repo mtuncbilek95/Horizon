@@ -7,8 +7,6 @@
 #include <Runtime/RHI/Command/CommandList.h>
 #include <Runtime/RHI/Command/CommandPool.h>
 #include <Runtime/RHI/Fence/Fence.h>
-#include <Runtime/RTTR/Attributes/DynamicUsageAttribute.h>
-#include <Runtime/RTTR/Attributes/IgnoreAttribute.h>
 
 #include <queue>
 #include <vector>
@@ -69,12 +67,6 @@ namespace Horizon::Engine
 		List<Reflect::Type*> nodeTypes = m_reflection->GetTypeByBase(Reflect::TypeOf<RenderNode>());
 		for (auto* pType : nodeTypes)
 		{
-			if (pType->GetCustomAttribute<Reflect::IgnoreAttribute>())
-				continue;
-
-			if (pType->GetCustomAttribute<Reflect::DynamicUsageAttribute>())
-				m_status[pType->GetTypeId()] = true;
-
 			RefPtr<RenderNode> pNode = MakeRef<RenderNode>(pType);
 			if (!pNode)
 			{
@@ -100,7 +92,7 @@ namespace Horizon::Engine
 		return true;
 	}
 
-	void RenderGraph::OnExecute(const RenderSetupContext& setupContext, const RenderDrawContext& drawContext)
+	void RenderGraph::OnExecute(const RenderSetupContext& setupContext, const Blackboard& board)
 	{
 		// Configure dependency list
 		List<RenderDependency> dependencyList(m_activeNodes.GetCount());
@@ -122,7 +114,7 @@ namespace Horizon::Engine
 		}
 
 		// Execute graph
-		RecordRendering(drawContext);
+		RecordRendering(board);
 
 		m_importedTextures.clear();
 	}
@@ -146,16 +138,6 @@ namespace Horizon::Engine
 
 		m_nodeLookup.clear();
 		m_activeNodes.Clear();
-	}
-
-
-	void RenderGraph::SetEnablePass(Reflect::TypeHandle handl, b8 enable)
-	{
-		auto it = m_status.find(handl);
-		if (it == m_status.end())
-			return;
-
-		it->second = enable;
 	}
 
 	RHI::Texture* RenderGraph::FindTexture(Reflect::TypeHandle resource)
@@ -676,7 +658,7 @@ namespace Horizon::Engine
 		return &it->second;
 	}
 
-	void RenderGraph::RecordRendering(const RenderDrawContext& drawContext)
+	void RenderGraph::RecordRendering(const Blackboard& board)
 	{
 		auto* pDevice = m_graphics->GetDevice();
 
@@ -692,9 +674,7 @@ namespace Horizon::Engine
 			RecordBarriers(m_nodeBarriers[node]);
 
 			m_activeNodes[node]->m_cmdList = m_list.Get();
-			if (!m_status[m_activeNodes[node]->GetTypeId()])
-				continue;
-			m_activeNodes[node]->Render(drawContext);
+			m_activeNodes[node]->Render(board);
 			m_activeNodes[node]->m_cmdList = nullptr;
 		}
 

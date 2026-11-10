@@ -6,6 +6,11 @@
 #include <Engine/Presentation/PresentationService.h>
 #include <Engine/Rendering/RenderGraph/RenderDependency.h>
 #include <Engine/Rendering/Forward+/Resources.h>
+
+#include <Engine/Rendering/RenderableCamera.h>
+#include <Engine/Rendering/RenderableMesh.h>
+#include <Engine/Rendering/RenderablePointLight.h>
+
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/RHI/Command/RenderingDesc.h>
 #include <Runtime/RHI/Command/CommandList.h>
@@ -14,7 +19,6 @@
 #include <Runtime/RHI/Shader/ShaderModuleDesc.h>
 #include <Runtime/RHI/Texture/Texture.h>
 
-#include <algorithm>
 
 namespace Horizon::Rendering::Pass
 {
@@ -149,23 +153,34 @@ namespace Horizon::Rendering::Pass
 		graph.Writes<Resource::SceneColor>(RHI::ResourceState::RenderTarget);
 	}
 
-	void ForwardPass::Render(const Engine::RenderDrawContext& context)
+	void ForwardPass::Render(const Engine::Blackboard& board)
 	{
+		const Engine::RenderableCamera* pCamera = board.Get<Engine::RenderableCamera>();
+		const Engine::FrameMesh* pMeshes = board.Get<Engine::FrameMesh>();
+		if (!pCamera || !pMeshes)
+			return;
+
+		const Engine::FramePointLight* pLights = board.TryGet<Engine::FramePointLight>();
+
 		RHI::CommandList* pCmdList = GetCommandList();
 		RHI::Texture* pColor = GetTexture<Resource::SceneColor>();
 
-		const u32 pointLightCount = static_cast<u32>(std::min<usize>(context.pointLights.GetCount(), kMaxPointLights));
-		GpuPointLight* pPointLights = reinterpret_cast<GpuPointLight*>(m_pointLightBuffer->GetMappedData());
-
-		for (u32 i = 0; i < pointLightCount; i++)
+		u32 pointLightCount = 0;
+		if (pLights)
 		{
-			const Engine::RenderablePointLight& light = context.pointLights[i];
+			pointLightCount = static_cast<u32>(std::min<usize>(pLights->pointLights.GetCount(), kMaxPointLights));
+			GpuPointLight* pPointLights = reinterpret_cast<GpuPointLight*>(m_pointLightBuffer->GetMappedData());
 
-			pPointLights[i] =
+			for (u32 i = 0; i < pointLightCount; i++)
 			{
-				{ light.color.R(), light.color.G(), light.color.B(), light.intensity },
-				{ light.position.X(), light.position.Y(), light.position.Z(), light.range },
-			};
+				const Engine::RenderablePointLight& light = pLights->pointLights[i];
+
+				pPointLights[i] =
+				{
+					{ light.color.R(), light.color.G(), light.color.B(), light.intensity },
+					{ light.position.X(), light.position.Y(), light.position.Z(), light.range },
+				};
+			}
 		}
 
 		RHI::RenderingDesc desc = {};
@@ -195,7 +210,7 @@ namespace Horizon::Rendering::Pass
 
 		pCmdList->BindPipeline(m_pipeline.Get());
 
-		for (const Engine::RenderableMesh& renderable : context.meshes)
+		for (const Engine::RenderableMesh& renderable : pMeshes->meshes)
 		{
 			if (!renderable.visible)
 				continue;
@@ -204,7 +219,7 @@ namespace Horizon::Rendering::Pass
 			pCmdList->BindIndexBuffer(pStreamer->GetIndexBuffer());
 
 			ForwardConstants constants = {};
-			constants.worldViewProj = context.camViewProjMatrix * renderable.worldMatrix;
+			constants.worldViewProj = pCamera->camViewProjMatrix * renderable.worldMatrix;
 			constants.vertexBufferIndex = pStreamer->GetVertexBufferView();
 			constants.pointLightBufferIndex = m_pointLightView;
 			constants.pointLightCount = pointLightCount;

@@ -22,7 +22,6 @@ namespace Horizon::Editor
 		const std::string& GetAssetPath() const { return m_assetPath; }
 		const std::string& GetCookPath() const { return m_cookPath; }
 		const std::string& GetSettingsPath() const { return m_settingsPath; }
-		const std::string& GetEngineResourcePath() const { return m_engineResourcePath; }
 
 	private:
 		std::string m_projectName;
@@ -30,6 +29,5 @@ namespace Horizon::Editor
 		std::string m_assetPath;
 		std::string m_cookPath;
 		std::string m_settingsPath;
-		std::string m_engineResourcePath;
 	};
 }

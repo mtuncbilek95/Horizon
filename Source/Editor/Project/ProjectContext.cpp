@@ -6,8 +6,7 @@
 
 namespace Horizon::Editor
 {
-	ProjectContext::ProjectContext(const std::string& projectPath, const std::string& engineResourcePath) : m_projectPath(projectPath),
-		m_engineResourcePath(engineResourcePath)
+	ProjectContext::ProjectContext(const std::string& projectPath, const std::string& engineResourcePath) : m_projectPath(projectPath)
 	{
 	}
 

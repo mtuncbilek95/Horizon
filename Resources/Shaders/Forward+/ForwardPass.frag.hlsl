@@ -33,7 +33,7 @@ float4 PSMain(PixelData input) : SV_Target0
     const float3 normal = normalize(input.normal);
     const float3 ambientDirection = normalize(float3(0.4f, 0.8f, 0.3f));
 
-    float3 lighting = (dot(normal, ambientDirection) * 0.5f + 0.5f) * 0.05f;
+    float3 lighting = (dot(normal, ambientDirection) * 0.5f + 0.5f) * 0.15f;
 
     for (uint i = 0; i < pushConstant.pointLightCount; i++)
     {

@@ -15,7 +15,7 @@ namespace Horizon::Rendering::Pass
 	{
 	}
 
-	void FXAAPass::Render(const Engine::RenderDrawContext& context)
+	void FXAAPass::Render(const Engine::Blackboard& board)
 	{
 	}
 }
