@@ -9,9 +9,11 @@
 
 #include <imgui.h>
 
-#include <map>
-#include <set>
-#include <string_view>
+namespace Horizon::Engine
+{
+	class Scene;
+	class WorldService;
+}
 
 namespace Horizon::Editor
 {
@@ -24,6 +26,14 @@ namespace Horizon::Editor
 		void OnRender(const Engine::EngineFrame& context) final;
 		b8 OnCommand(ViewCommand command) final;
 
-		b8 IsFullBleed() const final { return true; }
+		b8 IsFullBleed() const final { return false; }
+
+	private:
+		ContextMenuRegistry<SceneHierarchyContext> m_context;
+
+		Engine::Scene* m_scene = nullptr;
+		Engine::WorldService* m_world = nullptr;
+
+		ImGuiSelectionBasicStorage m_selection;
 	};
 }

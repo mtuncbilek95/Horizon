@@ -12,11 +12,7 @@ namespace Horizon::Editor
 		Engine::Scene* pCurrentScene = nullptr;
 
 		List<Engine::EntityHandle> selectedEntities;
-		List<std::string> selectedFolders;
 
 		Engine::EntityHandle renameEntity;
-		Engine::EntityHandle newIcon;
-		b8 createFolder = false;
-		b8 deleteFolder = false;
 	};
 }

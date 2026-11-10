@@ -1,11 +1,13 @@
 #include "LightExtraction.h"
 
 #include <Engine/Rendering/RenderableAreaLight.h>
+#include <Engine/Rendering/RenderableDirectionalLight.h>
 #include <Engine/Rendering/RenderablePointLight.h>
 #include <Engine/Rendering/RenderableSpotLight.h>
 #include <Engine/World/Components/Benchmark/PointLightBatch.h>
 #include <Engine/World/Components/Location/LocalTransform.h>
 #include <Engine/World/Components/Rendering/AreaLight.h>
+#include <Engine/World/Components/Rendering/DirectionalLight.h>
 #include <Engine/World/Components/Rendering/PointLight.h>
 #include <Engine/World/Components/Rendering/SpotLight.h>
 #include <Runtime/Math/Quat.h>
@@ -22,9 +24,17 @@ namespace Horizon::World::System
 		auto* pWorld = GetEngine()->RequestService<Engine::WorldService>();
 		Engine::Blackboard& board = pWorld->GetBlackboard();
 
+		Engine::RenderableDirectionalLight& directional = board.Add<Engine::RenderableDirectionalLight>();
 		Engine::FramePointLight& point = board.Add<Engine::FramePointLight>();
 		Engine::FrameSpotLight& spot = board.Add<Engine::FrameSpotLight>();
 		Engine::FrameAreaLight& area = board.Add<Engine::FrameAreaLight>();
+
+		directional = {};
+
+		currentScene.ForEach<Component::DirectionalLight>([&](Engine::EntityHandle, Component::DirectionalLight& light)
+			{
+				directional = { light.m_color, light.m_direction, light.m_intensity };
+			});
 
 		currentScene.ForEach<Component::LocalTransform, Component::PointLight>(
 			[&](Engine::EntityHandle, Component::LocalTransform& local, Component::PointLight& light)
@@ -67,11 +77,13 @@ namespace Horizon::World::System
 	void LightExtraction::DeclareDependencies(Engine::SystemDependency& graph)
 	{
 		graph.Reads<Component::LocalTransform>();
+		graph.Reads<Component::DirectionalLight>();
 		graph.Reads<Component::PointLight>();
 		graph.Reads<Component::PointLightBatch>();
 		graph.Reads<Component::SpotLight>();
 		graph.Reads<Component::AreaLight>();
 
+		graph.Writes<Engine::RenderableDirectionalLight>();
 		graph.Writes<Engine::FramePointLight>();
 		graph.Writes<Engine::FrameSpotLight>();
 		graph.Writes<Engine::FrameAreaLight>();

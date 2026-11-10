@@ -7,13 +7,23 @@ struct ForwardConstants
     uint vertexBufferIndex;
     uint firstVertex;
     uint pointLightBufferIndex;
-    uint pointLightCount;
+    uint lightFrameBufferIndex;
 };
 
 struct GpuPointLight
 {
     float4 colorIntensity;
     float4 positionRange;
+};
+
+struct GpuLightFrame
+{
+    uint pointLightCount;
+    uint padding0;
+    uint padding1;
+    uint padding2;
+    float4 directionalColorIntensity;
+    float4 directionalDirection;
 };
 
 struct PixelData
@@ -29,13 +39,22 @@ ConstantBuffer<ForwardConstants> pushConstant : register(b0, space999);
 float4 PSMain(PixelData input) : SV_Target0
 {
     StructuredBuffer<GpuPointLight> pointLights = ResourceDescriptorHeap[pushConstant.pointLightBufferIndex];
+    StructuredBuffer<GpuLightFrame> lightFrames = ResourceDescriptorHeap[pushConstant.lightFrameBufferIndex];
+
+    const GpuLightFrame lightFrame = lightFrames[0];
 
     const float3 normal = normalize(input.normal);
     const float3 ambientDirection = normalize(float3(0.4f, 0.8f, 0.3f));
 
     float3 lighting = (dot(normal, ambientDirection) * 0.5f + 0.5f) * 0.15f;
 
-    for (uint i = 0; i < pushConstant.pointLightCount; i++)
+    const float3 toSun = -lightFrame.directionalDirection.xyz;
+    const float sunLengthSq = dot(toSun, toSun);
+    const float sunDiffuse = saturate(dot(normal, toSun * rsqrt(max(sunLengthSq, 0.00000001f))));
+
+    lighting += lightFrame.directionalColorIntensity.rgb * lightFrame.directionalColorIntensity.a * sunDiffuse;
+
+    for (uint i = 0; i < lightFrame.pointLightCount; i++)
     {
         const GpuPointLight light = pointLights[i];
 

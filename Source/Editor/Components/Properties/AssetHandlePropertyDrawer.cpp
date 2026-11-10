@@ -4,6 +4,7 @@
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Reflection/ReflectionSystem.h>
+#include <Engine/Asset/AssetHandle.h>
 
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
@@ -33,6 +34,11 @@ namespace Horizon::Editor
 		}
 
 		auto* pDomain = ctx.pEngine->RequestService<DomainService>();
-		return m_picker.Draw(pId, pAssetType, pDomain);
+
+		if (!m_picker.Draw(pId, pAssetType, pDomain))
+			return false;
+
+		static_cast<Engine::AssetHandle<Engine::AssetObject>*>(pValue)->SetAsset(nullptr);
+		return true;
 	}
 }

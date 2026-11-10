@@ -8,6 +8,7 @@
 #include <Engine/Rendering/Forward+/Resources.h>
 
 #include <Engine/Rendering/RenderableCamera.h>
+#include <Engine/Rendering/RenderableDirectionalLight.h>
 #include <Engine/Rendering/RenderableMesh.h>
 #include <Engine/Rendering/RenderablePointLight.h>
 
@@ -33,13 +34,21 @@ namespace Horizon::Rendering::Pass
 			u32 vertexBufferIndex;
 			u32 firstVertex;
 			u32 pointLightBufferIndex;
-			u32 pointLightCount;
+			u32 lightFrameBufferIndex;
 		};
 
 		struct GpuPointLight
 		{
 			f32 colorIntensity[4];
 			f32 positionRange[4];
+		};
+
+		struct GpuLightFrame
+		{
+			u32 pointLightCount;
+			u32 padding[3];
+			f32 directionalColorIntensity[4];
+			f32 directionalDirection[4];
 		};
 	}
 
@@ -119,21 +128,45 @@ namespace Horizon::Rendering::Pass
 
 		m_pointLightBuffer->SetDebugName("ForwardPass_PointLightBuffer");
 
+		RHI::BufferDesc lightFrameDesc = {};
+		lightFrameDesc.size = sizeof(GpuLightFrame);
+		lightFrameDesc.usage = RHI::BufferUsage::Storage;
+		lightFrameDesc.memory = RHI::MemoryType::Upload;
+		m_lightFrameBuffer = pDevice->CreateRHIBuffer(lightFrameDesc);
+
+		if (!m_lightFrameBuffer || m_lightFrameBuffer->GetMappedData() == nullptr)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "ForwardPass light frame buffer could not be created");
+			return false;
+		}
+
+		m_lightFrameBuffer->SetDebugName("ForwardPass_LightFrameBuffer");
+
 		m_resourceHeap = pContext->GetResourceHeap();
 		m_pointLightView = m_resourceHeap->Allocate();
 		m_resourceHeap->Write(m_pointLightView, RHI::DescriptorType::Buffer, m_pointLightBuffer.Get(), 0, pointLightDesc.size, sizeof(GpuPointLight));
+
+		m_lightFrameView = m_resourceHeap->Allocate();
+		m_resourceHeap->Write(m_lightFrameView, RHI::DescriptorType::Buffer, m_lightFrameBuffer.Get(), 0, lightFrameDesc.size, sizeof(GpuLightFrame));
 
 		return true;
 	}
 
 	void ForwardPass::OnFinalize()
 	{
+		if (m_lightFrameView != kInvalid32)
+		{
+			m_resourceHeap->Free(m_lightFrameView);
+			m_lightFrameView = kInvalid32;
+		}
+
 		if (m_pointLightView != kInvalid32)
 		{
 			m_resourceHeap->Free(m_pointLightView);
 			m_pointLightView = kInvalid32;
 		}
 
+		m_lightFrameBuffer.Reset();
 		m_pointLightBuffer.Reset();
 		m_pipeline.Reset();
 		m_fragmentShader.Reset();
@@ -161,17 +194,19 @@ namespace Horizon::Rendering::Pass
 			return;
 
 		const Engine::FramePointLight* pLights = board.TryGet<Engine::FramePointLight>();
+		const Engine::RenderableDirectionalLight* pDirectional = board.TryGet<Engine::RenderableDirectionalLight>();
 
 		RHI::CommandList* pCmdList = GetCommandList();
 		RHI::Texture* pColor = GetTexture<Resource::SceneColor>();
 
-		u32 pointLightCount = 0;
+		GpuLightFrame lightFrame = {};
+
 		if (pLights)
 		{
-			pointLightCount = static_cast<u32>(std::min<usize>(pLights->pointLights.GetCount(), kMaxPointLights));
+			lightFrame.pointLightCount = static_cast<u32>(std::min<usize>(pLights->pointLights.GetCount(), kMaxPointLights));
 			GpuPointLight* pPointLights = reinterpret_cast<GpuPointLight*>(m_pointLightBuffer->GetMappedData());
 
-			for (u32 i = 0; i < pointLightCount; i++)
+			for (u32 i = 0; i < lightFrame.pointLightCount; i++)
 			{
 				const Engine::RenderablePointLight& light = pLights->pointLights[i];
 
@@ -182,6 +217,20 @@ namespace Horizon::Rendering::Pass
 				};
 			}
 		}
+
+		if (pDirectional)
+		{
+			lightFrame.directionalColorIntensity[0] = pDirectional->color.R();
+			lightFrame.directionalColorIntensity[1] = pDirectional->color.G();
+			lightFrame.directionalColorIntensity[2] = pDirectional->color.B();
+			lightFrame.directionalColorIntensity[3] = pDirectional->intensity;
+
+			lightFrame.directionalDirection[0] = pDirectional->direction.X();
+			lightFrame.directionalDirection[1] = pDirectional->direction.Y();
+			lightFrame.directionalDirection[2] = pDirectional->direction.Z();
+		}
+
+		*reinterpret_cast<GpuLightFrame*>(m_lightFrameBuffer->GetMappedData()) = lightFrame;
 
 		RHI::RenderingDesc desc = {};
 		desc.colorAttachments[0].pView = GetTextureView<Resource::SceneColor>();
@@ -222,7 +271,7 @@ namespace Horizon::Rendering::Pass
 			constants.worldViewProj = pCamera->camViewProjMatrix * renderable.worldMatrix;
 			constants.vertexBufferIndex = pStreamer->GetVertexBufferView();
 			constants.pointLightBufferIndex = m_pointLightView;
-			constants.pointLightCount = pointLightCount;
+			constants.lightFrameBufferIndex = m_lightFrameView;
 
 			for (i32 row = 0; row < 3; row++)
 			{

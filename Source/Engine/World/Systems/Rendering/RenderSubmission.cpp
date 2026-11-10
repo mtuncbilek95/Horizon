@@ -9,6 +9,7 @@
 #include <Engine/Rendering/RenderablePointLight.h>
 #include <Engine/Rendering/RenderableSpotLight.h>
 #include <Engine/Rendering/RenderableAreaLight.h>
+#include <Engine/Rendering/RenderableDirectionalLight.h>
 
 #include <Engine/World/Systems/Rendering/RenderExtraction.h>
 #include <Engine/World/Systems/Rendering/LightExtraction.h>
@@ -65,6 +66,7 @@ namespace Horizon::World::System
 	{
 		graph.Reads<Engine::RenderableCamera>();
 		graph.Reads<Engine::FrameMesh>();
+		graph.Reads<Engine::RenderableDirectionalLight>();
 		graph.Reads<Engine::FramePointLight>();
 		graph.Reads<Engine::FrameSpotLight>();
 		graph.Reads<Engine::FrameAreaLight>();

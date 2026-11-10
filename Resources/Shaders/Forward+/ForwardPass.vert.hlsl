@@ -16,7 +16,7 @@ struct ForwardConstants
     uint vertexBufferIndex;
     uint firstVertex;
     uint pointLightBufferIndex;
-    uint pointLightCount;
+    uint lightFrameBufferIndex;
 };
 
 struct VertexInput

@@ -3,6 +3,15 @@
 #include <Editor/Views/EditorViewAttribute.h>
 #include <Editor/Views/ViewObject.h>
 #include <Editor/Font/IconsFontAwesome6.h>
+#include <Editor/Components/PropertyRenderer.h>
+
+#include <string>
+
+namespace Horizon::Engine
+{
+	class ReflectionSystem;
+	class WorldService;
+}
 
 namespace Horizon::Editor
 {
@@ -15,5 +24,13 @@ namespace Horizon::Editor
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
+
+	private:
+		Engine::ReflectionSystem* m_reflection = nullptr;
+		Engine::WorldService* m_world = nullptr;
+
+		PropertyRenderer m_properties;
+
+		std::string m_search;
 	};
 }
