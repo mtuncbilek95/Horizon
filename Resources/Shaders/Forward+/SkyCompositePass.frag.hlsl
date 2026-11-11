@@ -9,7 +9,6 @@ struct PixelData
     float2 uv : TexCoord;
 };
 
-[[vk::push_constant]]
 ConstantBuffer<SkyCompositeConstants> pushConstant : register(b0, space999);
 
 float4 PSMain(PixelData input) : SV_Target0

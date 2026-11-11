@@ -178,15 +178,6 @@ namespace Horizon::RHI {
 		return deviceSupported;
 	}
 
-	UniquePtr<Device> CreateRHIDevice(DeviceDesc& desc)
-	{
-		UniquePtr<VulkanDevice> pDevice = MakeUnique<VulkanDevice>();
-		if (pDevice->Initialize(desc))
-			return pDevice;
-
-		return nullptr;
-	}
-
 	VulkanDevice::VulkanDevice()
 	{
 	}
@@ -547,9 +538,19 @@ namespace Horizon::RHI {
 		pNewLayout->m_pushConstantSize = desc.pushConstantSize;
 		pNewLayout->m_bindless = desc.bindless;
 
+		VkDescriptorSetAndBindingMappingEXT pushCnst{};
+		pushCnst.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT;
+		pushCnst.descriptorSet = 999;
+		pushCnst.firstBinding = 0;
+		pushCnst.bindingCount = 1;
+		pushCnst.resourceMask = VK_SPIRV_RESOURCE_TYPE_UNIFORM_BUFFER_BIT_EXT;
+		pushCnst.source = VK_DESCRIPTOR_MAPPING_SOURCE_PUSH_DATA_EXT;
+		pushCnst.sourceData.pushDataOffset = 0;
+		pNewLayout->m_mappings.PushBack(pushCnst);
+
 		if (pNewLayout->m_bindless)
 		{
-			VkDescriptorSetAndBindingMappingEXT resourceMapping{};
+			VkDescriptorSetAndBindingMappingEXT resourceMapping = {};
 			resourceMapping.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT;
 			resourceMapping.descriptorSet = 0;
 			resourceMapping.bindingCount = 1;
@@ -558,7 +559,7 @@ namespace Horizon::RHI {
 			resourceMapping.sourceData.constantOffset.heapOffset = 0;
 			resourceMapping.sourceData.constantOffset.heapArrayStride = m_resourceDescriptorSize;
 
-			VkDescriptorSetAndBindingMappingEXT samplerMapping{};
+			VkDescriptorSetAndBindingMappingEXT samplerMapping = {};
 			samplerMapping.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT;
 			samplerMapping.descriptorSet = 1;
 			samplerMapping.bindingCount = 1;

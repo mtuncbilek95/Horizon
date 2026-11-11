@@ -11,7 +11,6 @@ struct PixelData
     float2 uv : TexCoord;
 };
 
-[[vk::push_constant]]
 ConstantBuffer<FXAAConstants> pushConstant : register(b0, space999);
 
 static const float edgeThreshold = 1.0f / 8.0f;

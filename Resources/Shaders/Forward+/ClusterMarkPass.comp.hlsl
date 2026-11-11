@@ -12,7 +12,6 @@ struct MarkClusterConstant
     float fPlane;
 };
 
-[[vk::push_constant]]
 ConstantBuffer<MarkClusterConstant> pushConst : register(b0, space999);
 
 uint ClusterIndex(uint2 pixel, float viewZ)

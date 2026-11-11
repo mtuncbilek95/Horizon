@@ -14,6 +14,7 @@ namespace Horizon::Engine
 		// can be imported from some shit.
 
 		RHI::DeviceDesc deviceDesc = {};
+		deviceDesc.api = RHI::Backend::Vulkan;
 #if defined(HORIZON_DEBUG)
 		deviceDesc.enableDebug = true;
 		deviceDesc.enableGpuValidation = false;

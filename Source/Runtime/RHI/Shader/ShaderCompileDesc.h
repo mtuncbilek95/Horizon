@@ -13,7 +13,7 @@ namespace Horizon::RHI
 		std::string filePath;
 		std::string entryPoint = "main";
 		ShaderStage stage = ShaderStage::None;
-		ShaderTarget target = ShaderTarget::SPIRV;
+		ShaderTarget target = ShaderTarget::DX12;
 		List<std::string> includePaths;
 		List<std::string> defines;
 	};
