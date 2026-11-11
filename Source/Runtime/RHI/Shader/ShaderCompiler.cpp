@@ -98,7 +98,7 @@ namespace Horizon::RHI
 			arguments.PushBack(ToWide(define));
 		}
 
-		if (desc.target == ShaderTarget::SPIRV)
+		if (desc.target == ShaderTarget::Vulkan)
 		{
 			arguments.PushBack(L"-spirv");
 			arguments.PushBack(L"-fspv-target-env=vulkan1.3");
@@ -115,7 +115,7 @@ namespace Horizon::RHI
 		arguments.PushBack(L"-Od");
 		arguments.PushBack(L"-Zi");
 
-		if (desc.target == ShaderTarget::SPIRV)
+		if (desc.target == ShaderTarget::Vulkan)
 			arguments.PushBack(L"-fspv-debug=vulkan-with-source");
 		else
 			arguments.PushBack(L"-Qembed_debug");

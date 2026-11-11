@@ -19,6 +19,8 @@ namespace Horizon::RHI
 		b8 Initialize(const DeviceDesc& desc);
 		void CloseAll();
 
+		Backend GetBackend() const final { return Backend::DX12; }
+
 		UniquePtr<Buffer> CreateRHIBuffer(const BufferDesc& desc) final;
 		UniquePtr<Texture> CreateRHITexture(const TextureDesc& desc) final;
 		UniquePtr<TextureView> CreateRHITextureView(const TextureViewDesc& desc) final;

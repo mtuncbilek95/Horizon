@@ -48,6 +48,7 @@ namespace Horizon::Rendering::Pass
 		vertexCompile.filePath = HORIZON_RESOURCE_DIR "/Shaders/Forward+/DepthPrePass.vert.hlsl";
 		vertexCompile.entryPoint = "VSMain";
 		vertexCompile.stage = RHI::ShaderStage::Vertex;
+		vertexCompile.target = RHI::ShaderTarget(pDevice->GetBackend());
 		List<u8> vertexCode = RHI::ShaderCompiler::Compile(vertexCompile);
 
 		RHI::ShaderModuleDesc vertexModule = {};

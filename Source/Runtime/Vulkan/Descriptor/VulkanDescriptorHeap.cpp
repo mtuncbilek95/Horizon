@@ -13,9 +13,10 @@ namespace Horizon::RHI
 {
 	VulkanDescriptorHeap::~VulkanDescriptorHeap()
 	{
-		if (m_allocation)
+		if (m_heap)
 		{
-			vmaFreeMemory(static_cast<VulkanDevice*>(m_ownerDevice)->GetAllocator(), m_allocation);
+			vmaDestroyBuffer(static_cast<VulkanDevice*>(m_ownerDevice)->GetAllocator(), m_heap, m_allocation);
+			m_heap = VK_NULL_HANDLE;
 			m_allocation = nullptr;
 		}
 	}

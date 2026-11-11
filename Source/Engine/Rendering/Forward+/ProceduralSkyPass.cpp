@@ -50,6 +50,7 @@ namespace Horizon::Rendering::Pass
 		computeCompile.filePath = HORIZON_RESOURCE_DIR "/Shaders/Forward+/ProceduralSkyPass.comp.hlsl";
 		computeCompile.entryPoint = "CSMain";
 		computeCompile.stage = RHI::ShaderStage::Compute;
+		computeCompile.target = RHI::ShaderTarget(pDevice->GetBackend());
 		List<u8> computeCode = RHI::ShaderCompiler::Compile(computeCompile);
 
 		RHI::ShaderModuleDesc computeModule = {};

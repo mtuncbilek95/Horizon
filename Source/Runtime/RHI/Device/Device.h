@@ -55,6 +55,8 @@ namespace Horizon::RHI
 	public:
 		virtual ~Device() = default;
 
+		virtual Backend GetBackend() const = 0;
+
 		virtual UniquePtr<Buffer> CreateRHIBuffer(const BufferDesc& desc) = 0;
 		virtual UniquePtr<Texture> CreateRHITexture(const TextureDesc& desc) = 0;
 		virtual UniquePtr<TextureView> CreateRHITextureView(const TextureViewDesc& desc) = 0;

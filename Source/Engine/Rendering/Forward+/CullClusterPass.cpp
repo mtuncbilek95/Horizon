@@ -45,6 +45,7 @@ namespace Horizon::Rendering::Pass
 		cullCompile.filePath = HORIZON_RESOURCE_DIR "/Shaders/Forward+/CullClusterPass.comp.hlsl";
 		cullCompile.entryPoint = "CSMain";
 		cullCompile.stage = RHI::ShaderStage::Compute;
+		cullCompile.target = RHI::ShaderTarget(pDevice->GetBackend());
 		List<u8> cullCode = RHI::ShaderCompiler::Compile(cullCompile);
 
 		RHI::ShaderModuleDesc cullModule = {};
@@ -74,6 +75,7 @@ namespace Horizon::Rendering::Pass
 		markCompile.filePath = HORIZON_RESOURCE_DIR "/Shaders/Forward+/ClusterMarkPass.comp.hlsl";
 		markCompile.entryPoint = "CSMain";
 		markCompile.stage = RHI::ShaderStage::Compute;
+		markCompile.target = RHI::ShaderTarget(pDevice->GetBackend());
 		List<u8> markCode = RHI::ShaderCompiler::Compile(markCompile);
 
 		RHI::ShaderModuleDesc markModule = {};

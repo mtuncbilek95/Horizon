@@ -18,7 +18,6 @@ struct ClusterAABB
     float4 maxViewSpace;
 };
 
-[[vk::push_constant]]
 ConstantBuffer<ClusterConstants> pushConst : register(b0, space999);
 
 float3 ScreenToViewFar(float2 px)

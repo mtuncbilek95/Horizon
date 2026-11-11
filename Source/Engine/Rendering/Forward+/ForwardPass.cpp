@@ -69,12 +69,14 @@ namespace Horizon::Rendering::Pass
 		vertexCompile.filePath = HORIZON_RESOURCE_DIR "/Shaders/Forward+/ForwardPass.vert.hlsl";
 		vertexCompile.entryPoint = "VSMain";
 		vertexCompile.stage = RHI::ShaderStage::Vertex;
+		vertexCompile.target = RHI::ShaderTarget(pDevice->GetBackend());
 		List<u8> vertexCode = RHI::ShaderCompiler::Compile(vertexCompile);
 
 		RHI::ShaderCompileDesc fragmentCompile = {};
 		fragmentCompile.filePath = HORIZON_RESOURCE_DIR "/Shaders/Forward+/ForwardPass.frag.hlsl";
 		fragmentCompile.entryPoint = "PSMain";
 		fragmentCompile.stage = RHI::ShaderStage::Pixel;
+		fragmentCompile.target = RHI::ShaderTarget(pDevice->GetBackend());
 		List<u8> fragmentCode = RHI::ShaderCompiler::Compile(fragmentCompile);
 
 		RHI::ShaderModuleDesc vertexModule = {};
