@@ -1,5 +1,6 @@
 function(ConfigureWindowsDefinitions)
 	add_compile_definitions(HORIZON_WINDOWS)
+	add_compile_definitions(NOMINMAX)
 	add_compile_definitions(H_MANIFEST_EXPORT=__declspec\(dllexport\))
 endfunction()
 

@@ -9,6 +9,7 @@ struct ProceduralSkyConstants
     uint padding;
 };
 
+[[vk::push_constant]]
 ConstantBuffer<ProceduralSkyConstants> pushConstant : register(b0, space999);
 
 static const float3 kRayleigh = float3(0.116f, 0.270f, 0.662f);

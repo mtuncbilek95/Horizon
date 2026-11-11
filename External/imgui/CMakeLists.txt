@@ -62,6 +62,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(IMGUI_BACKEND_FILES
         "${imgui_SOURCE_DIR}/backends/imgui_impl_dx12.h"
         "${imgui_SOURCE_DIR}/backends/imgui_impl_dx12.cpp"
+        "${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.h"
+        "${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp"
         "${imgui_SOURCE_DIR}/backends/imgui_impl_win32.h"
         "${imgui_SOURCE_DIR}/backends/imgui_impl_win32.cpp"
     )
@@ -83,7 +85,7 @@ target_include_directories(Imgui PUBLIC
     "${imgui_SOURCE_DIR}"
     "${imgui_SOURCE_DIR}/backends"
 )
-target_compile_definitions(Imgui PUBLIC IMGUI_USE_WCHAR32)
+target_compile_definitions(Imgui PUBLIC IMGUI_USE_WCHAR32 IMGUI_IMPL_VULKAN_USE_VOLK)
 
 file(GLOB TARGET_IMNODE_FILES
     "${imnodes_SOURCE_DIR}/imnodes.h"
@@ -117,4 +119,7 @@ target_link_libraries(ImNodeEditor PUBLIC Imgui)
 if(WIN32)
     include(ConfigureWindows)
     ConfigureD3D12Library(Imgui)
+
+	include(ConfigureVulkan)
+	ConfigureVulkan(Imgui)
 endif()
