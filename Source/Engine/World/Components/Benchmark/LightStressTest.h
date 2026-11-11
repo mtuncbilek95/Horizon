@@ -7,7 +7,7 @@
 
 namespace Horizon::World::Component
 {
-	HCLASS(Engine::ComponentId["LightStressTest", "Rendering"]);
+	HCLASS(Engine::ComponentId["LightStressTest", "Benchmark"]);
 	class LightStressTest final : public Engine::ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(LightStressTest);

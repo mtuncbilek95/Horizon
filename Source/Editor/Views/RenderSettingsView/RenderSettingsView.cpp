@@ -16,5 +16,10 @@ namespace Horizon::Editor
 
 	void RenderSettingsView::OnRender(const Engine::EngineFrame& context)
 	{
+		if (!ImGui::CollapsingHeader("Editor Debug Features", ImGuiTreeNodeFlags_DefaultOpen))
+			return;
+
+		/*ImGui::Checkbox("Show Grid", &m_showGrid);
+		ImGui::Checkbox("Show Point Light Probes")*/
 	}
 }

@@ -16,6 +16,16 @@ namespace Horizon::World::Component
 		CameraRoller() = default;
 		~CameraRoller() = default;
 
+		HFIELD();
+		f32 m_azimuth = 0;
+		
+		HFIELD();
+		f32 m_elevation = 0;
 
+		HFIELD();
+		f32 m_distance = 0;
+
+		HFIELD();
+		f32 m_rotationSpeed = 0;
 	};
 }

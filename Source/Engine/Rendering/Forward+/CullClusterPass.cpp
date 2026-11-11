@@ -232,6 +232,7 @@ namespace Horizon::Rendering::Pass
 
 		u32 clusterCountX = (pArea->colorImageSize.X() + kClusterTileSize - 1) / kClusterTileSize;
 		u32 clusterCountY = (pArea->colorImageSize.Y() + kClusterTileSize - 1) / kClusterTileSize;
+		u32 clusterTotal = clusterCountX * clusterCountY * kClusterCountZ;
 
 		MarkClusterConstant markConstants = {};
 		markConstants.depthIndex = m_depthView;
@@ -265,7 +266,7 @@ namespace Horizon::Rendering::Pass
 
 		pCmdList->BindPipeline(m_cullPipeline.Get());
 		pCmdList->SetPushConstants(&cullConstants, sizeof(CullClusterConstant));
-		pCmdList->DispatchCompute(clusterCountX, clusterCountY, kClusterCountZ);
+		pCmdList->DispatchCompute((clusterTotal + 63) / kClusterTileSize, 1, 1);
 
 		// From ShaderResourceView to CopyDestination
 		{

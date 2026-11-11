@@ -15,5 +15,8 @@ namespace Horizon::Editor
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
+
+	private:
+		b8 m_showGrid = false;
 	};
 }

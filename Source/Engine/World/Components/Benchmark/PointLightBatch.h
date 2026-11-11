@@ -8,7 +8,7 @@
 
 namespace Horizon::World::Component
 {
-	HCLASS(Engine::ComponentId["PointLightBatch", "Rendering"]);
+	HCLASS(Engine::ComponentId["PointLightBatch", "Benchmark"]);
 	class PointLightBatch final : public Engine::ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(PointLightBatch);

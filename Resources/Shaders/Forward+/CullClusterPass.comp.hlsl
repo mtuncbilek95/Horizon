@@ -1,3 +1,5 @@
+#define GROUP_SIZE 64
+
 struct CullClusterConstant
 {
     float4x4 viewMatrix;
@@ -28,45 +30,76 @@ struct PointLight
 
 ConstantBuffer<CullClusterConstant> pushConst : register(b0, space999);
 
-[numthreads(1, 1, 1)]
-void CSMain(uint3 id : SV_DispatchThreadID)
-{
-    uint idx = id.x + id.y * pushConst.clusterCountX + id.z * pushConst.clusterCountX * pushConst.clusterCountY;
-    uint base = idx * (pushConst.maxLightsPerCluster + 1);
+groupshared float4 sLights[GROUP_SIZE];
+groupshared uint sAnyActive;
 
+[numthreads(GROUP_SIZE, 1, 1)]
+void CSMain(uint3 dtid : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID)
+{
     RWStructuredBuffer<uint> lightGrid = ResourceDescriptorHeap[pushConst.lightGridIndex];
     RWStructuredBuffer<uint> activeClusters = ResourceDescriptorHeap[pushConst.activeFlagsIndex];
-
-    if (activeClusters[idx] == 0)
-    {
-        lightGrid[base] = 0;
-        return;
-    }
-
-    activeClusters[idx] = 0;
-
     StructuredBuffer<ClusterAABB> clusters = ResourceDescriptorHeap[pushConst.clusterIndex];
     StructuredBuffer<PointLight> lights = ResourceDescriptorHeap[pushConst.pointLightIndex];
 
-    float3 aabbMin = clusters[idx].minViewSpace.xyz;
-    float3 aabbMax = clusters[idx].maxViewSpace.xyz;
+    uint totalClusters = pushConst.clusterCountX * pushConst.clusterCountY * pushConst.clusterCountZ;
+    uint idx = dtid.x;
+    bool valid = idx < totalClusters;
+    bool active = valid && activeClusters[idx] != 0;
 
+    if (gtid.x == 0)
+        sAnyActive = 0;
+    GroupMemoryBarrierWithGroupSync();
+
+    if (active)
+        InterlockedOr(sAnyActive, 1u);
+    GroupMemoryBarrierWithGroupSync();
+
+    uint base = idx * (pushConst.maxLightsPerCluster + 1);
     uint count = 0;
 
-    for (uint i = 0; i < pushConst.lightCount && count < pushConst.maxLightsPerCluster; i++)
+    if (sAnyActive != 0)
     {
-        PointLight light = lights[i];
-
-        float3 viewPos = mul(pushConst.viewMatrix, float4(light.position, 1.0)).xyz;
-        float3 closest = clamp(viewPos, aabbMin, aabbMax);
-        float3 delta = viewPos - closest;
-
-        if (dot(delta, delta) <= light.range * light.range)
+        float3 aabbMin = 0;
+        float3 aabbMax = 0;
+        if (active)
         {
-            lightGrid[base + 1 + count] = i;
-            count++;
+            aabbMin = clusters[idx].minViewSpace.xyz;
+            aabbMax = clusters[idx].maxViewSpace.xyz;
+        }
+
+        for (uint batch = 0; batch < pushConst.lightCount; batch += GROUP_SIZE)
+        {
+            uint li = batch + gtid.x;
+            if (li < pushConst.lightCount)
+            {
+                PointLight l = lights[li];
+                float3 vp = mul(pushConst.viewMatrix, float4(l.position, 1.0)).xyz;
+                sLights[gtid.x] = float4(vp, l.range * l.range);
+            }
+            GroupMemoryBarrierWithGroupSync();
+
+            if (active)
+            {
+                uint n = min(GROUP_SIZE, pushConst.lightCount - batch);
+                for (uint j = 0; j < n && count < pushConst.maxLightsPerCluster; j++)
+                {
+                    float4 L = sLights[j];
+                    float3 d = L.xyz - clamp(L.xyz, aabbMin, aabbMax);
+                    if (dot(d, d) <= L.w)
+                    {
+                        lightGrid[base + 1 + count] = batch + j;
+                        count++;
+                    }
+                }
+            }
+            GroupMemoryBarrierWithGroupSync();
         }
     }
 
-    lightGrid[base] = count;
+    if (valid)
+    {
+        lightGrid[base] = count;
+        if (active)
+            activeClusters[idx] = 0;
+    }
 }
