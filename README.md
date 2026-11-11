@@ -14,6 +14,7 @@ have any goal or target. It is a passion project to make a game from scratch wit
 
 #### NOTE 1: PS5 and XBOX support has been marked as W.I.P and it will be private due to confidentiality contract.
 #### NOTE 2: Don't go rogue. Check how to install section. Don't be so big-headed and read it.
+#### NOTE 3: Vulkan support has been added by [Yunus a.k.a Dnm](https://github.com/Ynsefkksl/). Huge kudos to him.
 
 ## INFORMATION ABOUT THE ENGINE
 Horizon has its own abstraction structures depending on the concept. Such as:
