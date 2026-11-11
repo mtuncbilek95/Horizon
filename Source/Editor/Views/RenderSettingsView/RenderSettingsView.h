@@ -4,6 +4,12 @@
 #include <Editor/Views/ViewObject.h>
 #include <Editor/Font/IconsFontAwesome6.h>
 
+namespace Horizon::Engine
+{
+	class JobSystem;
+	class RenderGraph;
+}
+
 namespace Horizon::Editor
 {
 	HCLASS(EditorView[ICON_FA_WRENCH, "Render Settings", DockZone::Right, EditorViewFlags::OpenOnStart]);
@@ -15,8 +21,5 @@ namespace Horizon::Editor
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
-
-	private:
-		b8 m_showGrid = false;
 	};
 }

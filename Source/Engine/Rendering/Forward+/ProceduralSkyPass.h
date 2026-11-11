@@ -19,7 +19,7 @@ namespace Horizon::Rendering::Pass
 		void Setup(const Engine::Blackboard& blackboard, Engine::RenderDependency& graph) final;
 		void Render(const Engine::Blackboard& board) final;
 
-		RHI::QueueType GetRunType() const final { return RHI::QueueType::Graphics; }
+		RHI::QueueType GetRunType() const final { return RHI::QueueType::Compute; }
 
 	private:
 		UniquePtr<RHI::ShaderModule> m_computeShader = nullptr;

@@ -682,6 +682,19 @@ namespace Horizon::RHI
 		if (HasFlag(state, ResourceState::DepthWrite))
 			return D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE;
 
+		u32 readCount = 0;
+		if (HasFlag(state, ResourceState::DepthRead))
+			readCount++;
+		if (HasFlag(state, ResourceState::ShaderResource))
+			readCount++;
+		if (HasFlag(state, ResourceState::CopySrc))
+			readCount++;
+		if (HasFlag(state, ResourceState::ResolveSrc))
+			readCount++;
+
+		if (readCount > 1)
+			return D3D12_BARRIER_LAYOUT_DIRECT_QUEUE_GENERIC_READ;
+
 		if (HasFlag(state, ResourceState::DepthRead))
 			return D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_READ;
 

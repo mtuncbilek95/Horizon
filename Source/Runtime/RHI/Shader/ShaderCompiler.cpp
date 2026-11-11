@@ -119,6 +119,19 @@ namespace Horizon::RHI
 			arguments.PushBack(L"-fspv-debug=vulkan-with-source");
 		else
 			arguments.PushBack(L"-Qembed_debug");
+#elif defined(HORIZON_RELEASE)
+		arguments.PushBack(L"-O3");
+
+		if (desc.target == ShaderTarget::Vulkan)
+		{
+			arguments.PushBack(L"-fspv-reduce-load-size");
+		}
+		else
+		{
+			arguments.PushBack(L"-all-resources-bound");
+			arguments.PushBack(L"-Qstrip_debug");
+			arguments.PushBack(L"-Qstrip_reflect");
+		}
 #else
 		arguments.PushBack(L"-O3");
 #endif
