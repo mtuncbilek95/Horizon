@@ -19,6 +19,7 @@ struct VertexInput
     uint vertexId : SV_VertexID;
 };
 
+[[vk::push_constant]]
 ConstantBuffer<ForwardConstants> pushConstant : register(b0, space999);
 
 float4 VSMain(VertexInput input) : SV_Position

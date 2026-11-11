@@ -28,6 +28,7 @@ struct PointLight
     float range;
 };
 
+[[vk::push_constant]]
 ConstantBuffer<CullClusterConstant> pushConst : register(b0, space999);
 
 groupshared float4 sLights[GROUP_SIZE];

@@ -16,5 +16,8 @@ if(WIN32)
 	ConfigureWindowsLibrary(Runtime)
 	ConfigureD3D12Library(Runtime)
 
+	include(ConfigureVulkan)
+	ConfigureVulkan(Runtime)
+
 	target_link_libraries(Runtime PUBLIC D3D12MemoryAllocator)
 endif()

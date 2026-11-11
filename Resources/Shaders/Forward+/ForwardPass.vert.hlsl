@@ -39,6 +39,7 @@ struct PixelData
     centroid float viewDepth : TEXCOORD1;
 };
 
+[[vk::push_constant]]
 ConstantBuffer<ForwardConstants> pushConstant : register(b0, space999);
 
 PixelData VSMain(VertexInput input)
