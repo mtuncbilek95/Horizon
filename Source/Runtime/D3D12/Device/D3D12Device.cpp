@@ -1217,6 +1217,42 @@ namespace Horizon::RHI
 			Terminal::Error(StringHelper::GetTypeName(this), "ImGui_ImplDX12_Init failed");
 	}
 
+	u64 D3D12Device::RegisterImGuiTexture(TextureView* pView, Sampler* pSampler)
+	{
+		void* pBackend = ImGui::GetCurrentContext() ? ImGui::GetIO().BackendRendererUserData : nullptr;
+		if (!pBackend || !pView)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "ImGui texture could not be registered, backend or view is missing");
+			return 0;
+		}
+
+		D3D12DescriptorHeap* pHeap = static_cast<D3D12DescriptorHeap*>(static_cast<ImGui_ImplDX12_InitInfo*>(pBackend)->UserData);
+
+		u32 index = pHeap->Allocate();
+		if (index == kInvalid32)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "ImGui texture could not be registered, resource heap is full");
+			return 0;
+		}
+
+		pHeap->Write(index, DescriptorType::Texture, pView);
+		return pHeap->GpuAt(index).ptr;
+	}
+
+	void D3D12Device::UnregisterImGuiTexture(u64 textureId)
+	{
+		void* pBackend = ImGui::GetCurrentContext() ? ImGui::GetIO().BackendRendererUserData : nullptr;
+		if (!pBackend || textureId == 0)
+		{
+			return;
+		}
+
+		D3D12DescriptorHeap* pHeap = static_cast<D3D12DescriptorHeap*>(static_cast<ImGui_ImplDX12_InitInfo*>(pBackend)->UserData);
+
+		u32 index = static_cast<u32>((textureId - pHeap->m_gpuStart.ptr) / pHeap->m_increment);
+		pHeap->Free(index);
+	}
+
 	void D3D12Device::NewFrameImGui()
 	{
 		ImGui_ImplDX12_NewFrame();
@@ -1257,5 +1293,4 @@ namespace Horizon::RHI
 
 		m_infoQueue->RegisterMessageCallback(cb, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &m_callbackCookie);
 	}
-
 }

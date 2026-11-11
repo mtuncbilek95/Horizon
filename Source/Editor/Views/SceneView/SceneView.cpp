@@ -1,3 +1,4 @@
+// SceneView.cpp
 #include "SceneView.h"
 
 #include <Editor/Renderer/EditorContext.h>
@@ -15,7 +16,7 @@
 #include <Runtime/Math/Scalar.h>
 #include <Runtime/Math/Vec2u.h>
 #include <Runtime/Math/Vec3f.h>
-#include <Runtime/RHI/Descriptor/DescriptorHeap.h>
+#include <Runtime/RHI/Device/Device.h>
 
 #include <imgui.h>
 #include <ImGuizmo.h>
@@ -25,8 +26,8 @@ namespace Horizon::Editor
 {
 	SceneView::~SceneView()
 	{
-		if (m_resourceHeap)
-			m_resourceHeap->Free(m_descriptorIndex);
+		if (m_device)
+			m_device->UnregisterImGuiTexture(m_textureId);
 	}
 
 	void SceneView::OnInvoke()
@@ -45,13 +46,12 @@ namespace Horizon::Editor
 			return;
 		}
 
-		m_resourceHeap = pGraphics->GetResourceHeap();
-		m_descriptorIndex = m_resourceHeap->Allocate();
+		m_device = pGraphics->GetDevice();
 	}
 
 	void SceneView::OnRender(const Engine::EngineFrame& context)
 	{
-		if (!m_presentation || m_descriptorIndex == kInvalid32)
+		if (!m_presentation || !m_device)
 			return;
 
 		const ImVec2 available = ImGui::GetContentRegionAvail();
@@ -63,10 +63,14 @@ namespace Horizon::Editor
 		RHI::TextureView* pView = m_presentation->GetSceneView();
 		if (pView != m_boundView)
 		{
-			m_resourceHeap->Write(m_descriptorIndex, RHI::DescriptorType::Texture, pView);
+			m_device->UnregisterImGuiTexture(m_textureId);
+			m_textureId = m_device->RegisterImGuiTexture(pView, nullptr);
 			m_boundView = pView;
 		}
 
-		ImGui::Image((ImTextureID)m_resourceHeap->GetGpuHandle(m_descriptorIndex), available);
+		if (m_textureId == 0)
+			return;
+
+		ImGui::Image((ImTextureID)m_textureId, available);
 	}
 }

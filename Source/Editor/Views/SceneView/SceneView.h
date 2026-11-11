@@ -11,7 +11,7 @@ namespace Horizon::Engine
 
 namespace Horizon::RHI
 {
-	class DescriptorHeap;
+	class Device;
 	class TextureView;
 }
 
@@ -32,8 +32,8 @@ namespace Horizon::Editor
 
 	private:
 		Engine::PresentationService* m_presentation = nullptr;
-		RHI::DescriptorHeap* m_resourceHeap = nullptr;
+		RHI::Device* m_device = nullptr;
 		RHI::TextureView* m_boundView = nullptr;
-		u32 m_descriptorIndex = kInvalid32;
+		u64 m_textureId = 0;
 	};
 }

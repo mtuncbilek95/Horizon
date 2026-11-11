@@ -42,6 +42,8 @@ namespace Horizon::RHI
 		u64 GetTimestampFrequency(QueueType type) final;
 
 		void InitializeImGui(u32 framesInFlight, DescriptorHeap* pResourceHeap, TextureFormat colorFormat) final;
+		u64 RegisterImGuiTexture(TextureView* pView, Sampler* pSampler) final;
+		void UnregisterImGuiTexture(u64 textureId) final;
 		void NewFrameImGui() final;
 		void ShutdownImGui() final;
 
