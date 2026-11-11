@@ -32,7 +32,6 @@ namespace Horizon::RHI
         List<VkSemaphore> m_presentSemaphores{};
         VkFence m_acquireFence = VK_NULL_HANDLE;
 
-		u32 m_frameIndex = 0;
 		b8 m_isAcquired;
 	};
 }

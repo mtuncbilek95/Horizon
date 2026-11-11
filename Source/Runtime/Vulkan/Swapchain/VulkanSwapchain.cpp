@@ -33,8 +33,6 @@ namespace Horizon::RHI
 	{
 		VkDevice device = static_cast<VulkanDevice*>(m_ownerDevice)->GetDevice();
 
-		m_frameIndex = (m_frameIndex + 1) % m_imageCount;
-
 		VkAcquireNextImageInfoKHR acquireInfo{};
 		acquireInfo.sType = VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR;
 		acquireInfo.fence = m_acquireFence;
@@ -46,7 +44,7 @@ namespace Horizon::RHI
 		if (result != VK_SUCCESS)
 		{
 			if (result == VK_SUBOPTIMAL_KHR)
-				Terminal::Warn(StringHelper::GetTypeName(this), "VK_SUBOPTIMAL_KHR, frame index: {}", m_frameIndex);
+				Terminal::Warn(StringHelper::GetTypeName(this), "VK_SUBOPTIMAL_KHR, image index: {}", m_imageIndex);
 				
 			Terminal::Error(StringHelper::GetTypeName(this), "vkAcquireNextImage2KHR failed: VkResult({})", (i32)result);
 			return false;
@@ -66,7 +64,7 @@ namespace Horizon::RHI
 
 		VkSemaphoreSubmitInfo signalInfo{};
 		signalInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-		signalInfo.semaphore = m_presentSemaphores[m_frameIndex];
+		signalInfo.semaphore = m_presentSemaphores[m_imageIndex];
 
 		VkSubmitInfo2 submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
@@ -88,7 +86,7 @@ namespace Horizon::RHI
 		if (result != VK_SUCCESS)
 		{
 			if (result == VK_SUBOPTIMAL_KHR)
-				Terminal::Warn(StringHelper::GetTypeName(this), "VK_SUBOPTIMAL_KHR, frame index: {}", m_frameIndex);
+				Terminal::Warn(StringHelper::GetTypeName(this), "VK_SUBOPTIMAL_KHR, image index: {}", m_imageIndex);
 				
 			Terminal::Error(StringHelper::GetTypeName(this), "vkAcquireNextImage2KHR failed: VkResult({})", (i32)result);
 		}
