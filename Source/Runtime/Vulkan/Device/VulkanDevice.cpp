@@ -634,7 +634,8 @@ namespace Horizon::RHI {
 
 		List<VkPipelineColorBlendAttachmentState> colorBlendAttachments{};
 		colorBlendAttachments.Reserve(desc.colorTargets.GetCount());
-		for (const ColorTarget& target : desc.colorTargets) {
+		for (const ColorTarget& target : desc.colorTargets)
+		{
 			colorBlendAttachments.EmplaceBack(
 				target.blend.enable,
 				Helpers::ToBlendFactor(target.blend.srcColor),
@@ -642,7 +643,8 @@ namespace Horizon::RHI {
 				Helpers::ToBlendOp(target.blend.colorOp),
 				Helpers::ToBlendFactor(target.blend.srcAlpha),
 				Helpers::ToBlendFactor(target.blend.dstAlpha),
-				Helpers::ToBlendOp(target.blend.alphaOp)
+				Helpers::ToBlendOp(target.blend.alphaOp),
+				static_cast<VkColorComponentFlags>(target.blend.writeMask)
 			);
 		}
 
