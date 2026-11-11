@@ -70,14 +70,14 @@ namespace Horizon::RHI
 		}
 	}
 
-	UniquePtr<Device> CreateRHIDevice(DeviceDesc& desc)
-	{
-		UniquePtr<D3D12Device> pDevice = MakeUnique<D3D12Device>();
-		if (pDevice->Initialize(desc))
-			return pDevice;
+	// UniquePtr<Device> CreateRHIDevice(DeviceDesc& desc)
+	// {
+	// 	UniquePtr<D3D12Device> pDevice = MakeUnique<D3D12Device>();
+	// 	if (pDevice->Initialize(desc))
+	// 		return pDevice;
 
-		return nullptr;
-	}
+	// 	return nullptr;
+	// }
 
 	D3D12Device::D3D12Device()
 	{

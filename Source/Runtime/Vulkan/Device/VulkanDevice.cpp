@@ -18,7 +18,6 @@
 #include <Runtime/Vulkan/Helpers/VulkanHelpers.h>
 #include <Runtime/Log/Terminal.h>
 #include "imgui_impl_vulkan.h"
-#include "vulkan/vulkan_core.h"
 #include <algorithm>
 #include <cmath>
 #include <string>
@@ -179,14 +178,14 @@ namespace Horizon::RHI {
 		return deviceSupported;
 	}
 
-	// UniquePtr<Device> CreateRHIDevice(DeviceDesc& desc)
-	// {
-	// 	UniquePtr<VulkanDevice> pDevice = MakeUnique<VulkanDevice>();
-	// 	if (pDevice->Initialize(desc))
-	// 		return pDevice;
+	UniquePtr<Device> CreateRHIDevice(DeviceDesc& desc)
+	{
+		UniquePtr<VulkanDevice> pDevice = MakeUnique<VulkanDevice>();
+		if (pDevice->Initialize(desc))
+			return pDevice;
 
-	// 	return nullptr;
-	// }
+		return nullptr;
+	}
 
 	VulkanDevice::VulkanDevice()
 	{
@@ -398,7 +397,6 @@ namespace Horizon::RHI {
 		imageCreateInfo.extent.depth = desc.depth;
 		imageCreateInfo.mipLevels = desc.mipLevels;
 		imageCreateInfo.arrayLayers = desc.arrayLayers;
-		// TODO: temp
 		imageCreateInfo.samples = static_cast<VkSampleCountFlagBits>(desc.sampleCount);
 		imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageCreateInfo.usage = usage;
@@ -1277,7 +1275,7 @@ namespace Horizon::RHI {
 
 			m_physicalDevice = device;
 
-			if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU)
+			if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
 				break;
 		}
 

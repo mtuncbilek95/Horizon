@@ -231,26 +231,30 @@ namespace Horizon::RHI
 		const VulkanDescriptorHeap* pVkSamplerHeap = static_cast<const VulkanDescriptorHeap*>(pSamplerHeap);
 
 		if (pResourceHeap) {
+			const u64 descriptorBytes = static_cast<u64>(pVkResourceHeap->GetCapacity()) * pVkResourceHeap->GetStride();
+
 			VkBindHeapInfoEXT heapBindInfo{};
 			heapBindInfo.sType = VK_STRUCTURE_TYPE_BIND_HEAP_INFO_EXT;
 			heapBindInfo.heapRange = {
 				pVkResourceHeap->GpuAddress(),
-				pVkResourceHeap->GetCapacity() + pVkResourceHeap->GetReservedForDriver()
+				descriptorBytes + pVkResourceHeap->GetReservedForDriver()
 			};
-			heapBindInfo.reservedRangeOffset = pVkResourceHeap->GetCapacity();
+			heapBindInfo.reservedRangeOffset = descriptorBytes;
 			heapBindInfo.reservedRangeSize = pVkResourceHeap->GetReservedForDriver();
 
 			vkCmdBindResourceHeapEXT(m_cmdBuffer, &heapBindInfo);
 		}
 
 		if (pSamplerHeap) {
+			const u64 descriptorBytes = static_cast<u64>(pVkSamplerHeap->GetCapacity()) * pVkSamplerHeap->GetStride();
+
 			VkBindHeapInfoEXT heapBindInfo{};
 			heapBindInfo.sType = VK_STRUCTURE_TYPE_BIND_HEAP_INFO_EXT;
 			heapBindInfo.heapRange = {
 				pVkSamplerHeap->GpuAddress(),
-				pVkSamplerHeap->GetCapacity() + pVkSamplerHeap->GetReservedForDriver()
+				descriptorBytes + pVkSamplerHeap->GetReservedForDriver()
 			};
-			heapBindInfo.reservedRangeOffset = pVkSamplerHeap->GetCapacity();
+			heapBindInfo.reservedRangeOffset = descriptorBytes;
 			heapBindInfo.reservedRangeSize = pVkSamplerHeap->GetReservedForDriver();
 
 			vkCmdBindSamplerHeapEXT(m_cmdBuffer, &heapBindInfo);
@@ -302,7 +306,7 @@ namespace Horizon::RHI
 		VkPushDataInfoEXT pushDataInfo{};
 		pushDataInfo.sType = VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT;
 		pushDataInfo.pNext = nullptr;
-		pushDataInfo.data = {&pData, size};
+		pushDataInfo.data = {pData, size};
 		pushDataInfo.offset = offset;
 
 		vkCmdPushDataEXT(m_cmdBuffer, &pushDataInfo);
