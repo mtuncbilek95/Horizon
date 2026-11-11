@@ -29,11 +29,18 @@ namespace Horizon::Editor
 		b8 IsFullBleed() const final { return false; }
 
 	private:
+		void BeginRename(Engine::EntityHandle entity);
+		void RenderRenameModal();
+
+	private:
 		ContextMenuRegistry<SceneHierarchyContext> m_context;
 
 		Engine::Scene* m_scene = nullptr;
 		Engine::WorldService* m_world = nullptr;
 
 		ImGuiSelectionBasicStorage m_selection;
+
+		Engine::EntityHandle m_renameEntity;
+		c8 m_renameBuffer[256] = {};
 	};
 }

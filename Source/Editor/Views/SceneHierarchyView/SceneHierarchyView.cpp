@@ -52,7 +52,11 @@ namespace Horizon::Editor
 				return ImGuiID((*list)[idx].handle.Index());
 			};
 
-		ImGuiMultiSelectFlags flags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_ClearOnClickVoid | ImGuiMultiSelectFlags_BoxSelect1d;
+		ImGuiMultiSelectFlags flags = ImGuiMultiSelectFlags_ClearOnEscape;
+
+		if (!ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
+			flags |= ImGuiMultiSelectFlags_BoxSelect1d | ImGuiMultiSelectFlags_ClearOnClickVoid;
+
 		ImGuiMultiSelectIO* io = ImGui::BeginMultiSelect(flags, m_selection.Size, itemCount);
 		m_selection.ApplyRequests(io);
 
@@ -91,6 +95,11 @@ namespace Horizon::Editor
 
 		m_context.RenderGUI("SceneHierarchyContextMenu", menuContext);
 
+		if (menuContext.renameEntity.IsValid())
+			BeginRename(menuContext.renameEntity);
+
+		RenderRenameModal();
+
 		if (menuContext.selectedEntities.GetCount() == 1)
 			GetContext()->pSelection->Set(menuContext.selectedEntities[0]);
 		else if (GetContext()->pSelection->Is<Engine::EntityTag>())
@@ -126,5 +135,53 @@ namespace Horizon::Editor
 		}
 
 		return true;
+	}
+
+	void SceneHierarchyView::BeginRename(Engine::EntityHandle entity)
+	{
+		if (m_renameEntity.IsValid())
+			return;
+
+		const auto* pName = m_scene->FindComponent<World::Component::EntityName>(entity);
+
+		if (pName == nullptr)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "Entity {} has no EntityName component", entity.Index());
+			return;
+		}
+
+		m_renameEntity = entity;
+
+		std::snprintf(m_renameBuffer, sizeof(m_renameBuffer), "%s", pName->m_name.c_str());
+		ImGui::OpenPopup("Rename - Scene Hierarchy");
+	}
+
+	void SceneHierarchyView::RenderRenameModal()
+	{
+		if (!ImGui::BeginPopupModal("Rename - Scene Hierarchy", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			return;
+
+		b8 accepted = ImGui::InputText("##name", m_renameBuffer, sizeof(m_renameBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
+
+		if (ImGui::Button("OK") || accepted)
+		{
+			auto* pName = m_scene->FindComponent<World::Component::EntityName>(m_renameEntity);
+
+			if (pName != nullptr)
+				pName->m_name = m_renameBuffer;
+
+			m_renameEntity = {};
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Cancel") || ImGui::IsKeyPressed(ImGuiKey_Escape))
+		{
+			m_renameEntity = {};
+			ImGui::CloseCurrentPopup();
+		}
+
+		ImGui::EndPopup();
 	}
 }

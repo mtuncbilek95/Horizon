@@ -15,6 +15,14 @@ struct ForwardConstants
     uint firstVertex;
     uint pointLightBufferIndex;
     uint lightFrameBufferIndex;
+    uint lightGridIndex;
+    uint tileSize;
+    uint clusterCountX;
+    uint clusterCountY;
+    uint clusterCountZ;
+    uint maxLightsPerCluster;
+    float nearPlane;
+    float farPlane;
 };
 
 struct VertexInput
@@ -28,6 +36,7 @@ struct PixelData
     centroid float3 worldPosition : TEXCOORD0;
     centroid float3 normal : NORMAL0;
     centroid float4 color : COLOR0;
+    centroid float viewDepth : TEXCOORD1;
 };
 
 ConstantBuffer<ForwardConstants> pushConstant : register(b0, space999);
@@ -46,5 +55,6 @@ PixelData VSMain(VertexInput input)
     output.worldPosition = mul(pushConstant.worldMat, localPosition).xyz;
     output.normal = normalize(mul((float3x3) pushConstant.worldMat, vertex.normal));
     output.color = vertex.color;
+    output.viewDepth = clipPosition.w;
     return output;
 }

@@ -6,6 +6,7 @@
 #include <Engine/Rendering/Renderables/RenderableArea.h>
 #include <Engine/Rendering/Renderables/RenderableCamera.h>
 #include <Engine/Rendering/Forward+/Resources.h>
+#include <Engine/Rendering/Forward+/ClusterInformations.h>
 
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/RHI/Command/RenderingDesc.h>
@@ -13,39 +14,9 @@
 #include <Runtime/RHI/Pipeline/GraphicsPipelineDesc.h>
 #include <Runtime/RHI/Shader/ShaderCompiler.h>
 #include <Runtime/RHI/Shader/ShaderModuleDesc.h>
-#include <Runtime/RHI/Texture/Texture.h>
-#include <Runtime/Math/Mat4f.h>
-#include <Runtime/Math/Vec4f.h>
-#include <Runtime/Math/Vec2f.h>
 
 namespace Horizon::Rendering::Pass
 {
-	namespace
-	{
-		constexpr u32 kClusterTileSize = 64;
-		constexpr u32 kClusterCountZ = 24;
-
-		struct ClusterAABB
-		{
-			Math::Vec4f minViewSpace;
-			Math::Vec4f maxViewSpace;
-		};
-
-		struct ClusterConstant
-		{
-			Math::Mat4f inverseProj;
-			u32 clusterIndex;
-			u32 width;
-			u32 height;
-			u32 tileSize;
-			u32 clusterCountX;
-			u32 clusterCountY;
-			u32 clusterCountZ;
-			f32 nearPlane;
-			f32 farPlane;
-		};
-	}
-
 	b8 ClusterBuildPass::OnInitialize()
 	{
 		Engine::GraphicsContext* pContext = GetEngine()->RequestContext<Engine::GraphicsContext>();
@@ -141,7 +112,7 @@ namespace Horizon::Rendering::Pass
 		u32 clusterCountX = (pArea->colorImageSize.X() + kClusterTileSize - 1) / kClusterTileSize;
 		u32 clusterCountY = (pArea->colorImageSize.Y() + kClusterTileSize - 1) / kClusterTileSize;
 
-		ClusterConstant constants = {};
+		ClusterBuildConstant constants = {};
 		constants.inverseProj = pCamera->camProjMatrix.Inverse();
 		constants.clusterIndex = m_clusterView;
 		constants.width = pArea->colorImageSize.X();
@@ -155,7 +126,7 @@ namespace Horizon::Rendering::Pass
 		constants.farPlane = pCamera->farPlane;
 
 		pCmdList->BindPipeline(m_pipeline.Get());
-		pCmdList->SetPushConstants(&constants, sizeof(ClusterConstant));
+		pCmdList->SetPushConstants(&constants, sizeof(ClusterBuildConstant));
 		pCmdList->DispatchCompute(clusterCountX, clusterCountY, kClusterCountZ);
 	}
 }

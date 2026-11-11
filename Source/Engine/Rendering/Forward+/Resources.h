@@ -18,4 +18,13 @@ namespace Horizon::Rendering::Resource
 
 	HCLASS();
 	struct ClusterList final { HORIZON_DATA_REFLECT(ClusterList); };
+
+	HCLASS();
+	struct PointLightList final { HORIZON_DATA_REFLECT(PointLightList); };
+
+	HCLASS();
+	struct ClusteredLightGrid final { HORIZON_DATA_REFLECT(ClusteredLightGrid); };
+
+	HCLASS();
+	struct ActiveCluster final { HORIZON_DATA_REFLECT(ActiveCluster); };
 }

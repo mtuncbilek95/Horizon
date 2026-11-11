@@ -28,10 +28,10 @@ namespace Horizon::Rendering::Pass
 
 		UniquePtr<RHI::GraphicsPipeline> m_pipeline = nullptr;
 
-		UniquePtr<RHI::Buffer> m_pointLightBuffer = nullptr;
 		UniquePtr<RHI::Buffer> m_lightFrameBuffer = nullptr;
 		RHI::DescriptorHeap* m_resourceHeap = nullptr;
 		u32 m_pointLightView = kInvalid32;
+		u32 m_lightGridView = kInvalid32;
 		u32 m_lightFrameView = kInvalid32;
 	};
 }

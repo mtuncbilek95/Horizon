@@ -53,6 +53,22 @@ namespace Horizon::Engine
 			return *pValue;
 		}
 
+		template<typename T, typename... Args>
+		T& GetOrAdd(Args&&... args)
+		{
+			Reflect::TypeHandle handl = Reflect::TypeOf<T>();
+
+			void* pExisting = Find(handl, false);
+			if (pExisting)
+				return *static_cast<T*>(pExisting);
+
+			UniquePtr<TypedEntry<T>> entry = MakeUnique<TypedEntry<T>>(std::forward<Args>(args)...);
+			T* pValue = &entry->m_value;
+
+			Insert(handl, std::move(entry));
+			return *pValue;
+		}
+
 		template<typename T>
 		const T* Get() const
 		{

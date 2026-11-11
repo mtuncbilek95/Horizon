@@ -6,6 +6,7 @@
 #include <Engine/Presentation/PresentationService.h>
 #include <Engine/Rendering/RenderGraph/RenderDependency.h>
 #include <Engine/Rendering/Forward+/Resources.h>
+#include <Engine/Rendering/Forward+/ClusterInformations.h>
 
 #include <Engine/Rendering/Renderables/RenderableArea.h>
 #include <Engine/Rendering/Renderables/RenderableCamera.h>
@@ -26,8 +27,6 @@ namespace Horizon::Rendering::Pass
 {
 	namespace
 	{
-		constexpr u32 kMaxPointLights = 4096;
-
 		struct ForwardConstants
 		{
 			Math::Mat4f worldViewProj;
@@ -36,20 +35,22 @@ namespace Horizon::Rendering::Pass
 			u32 firstVertex;
 			u32 pointLightBufferIndex;
 			u32 lightFrameBufferIndex;
-		};
-
-		struct GpuPointLight
-		{
-			f32 colorIntensity[4];
-			f32 positionRange[4];
+			u32 lightGridIndex;
+			u32 tileSize;
+			u32 clusterCountX;
+			u32 clusterCountY;
+			u32 clusterCountZ;
+			u32 maxLightsPerCluster;
+			f32 nearPlane;
+			f32 farPlane;
 		};
 
 		struct GpuLightFrame
 		{
+			Math::Vec3f sunColor;
+			f32 intensity;
+			Math::Vec3f direction;
 			u32 pointLightCount;
-			u32 padding[3];
-			f32 directionalColorIntensity[4];
-			f32 directionalDirection[4];
 		};
 	}
 
@@ -116,20 +117,6 @@ namespace Horizon::Rendering::Pass
 			return false;
 		}
 
-		RHI::BufferDesc pointLightDesc = {};
-		pointLightDesc.size = sizeof(GpuPointLight) * kMaxPointLights;
-		pointLightDesc.usage = RHI::BufferUsage::Storage;
-		pointLightDesc.memory = RHI::MemoryType::Upload;
-		m_pointLightBuffer = pDevice->CreateRHIBuffer(pointLightDesc);
-
-		if (!m_pointLightBuffer || m_pointLightBuffer->GetMappedData() == nullptr)
-		{
-			Terminal::Error(StringHelper::GetTypeName(this), "ForwardPass point light buffer could not be created");
-			return false;
-		}
-
-		m_pointLightBuffer->SetDebugName("ForwardPass_PointLightBuffer");
-
 		RHI::BufferDesc lightFrameDesc = {};
 		lightFrameDesc.size = sizeof(GpuLightFrame);
 		lightFrameDesc.usage = RHI::BufferUsage::Storage;
@@ -146,7 +133,7 @@ namespace Horizon::Rendering::Pass
 
 		m_resourceHeap = pContext->GetResourceHeap();
 		m_pointLightView = m_resourceHeap->Allocate();
-		m_resourceHeap->Write(m_pointLightView, RHI::DescriptorType::Buffer, m_pointLightBuffer.Get(), 0, pointLightDesc.size, sizeof(GpuPointLight));
+		m_lightGridView = m_resourceHeap->Allocate();
 
 		m_lightFrameView = m_resourceHeap->Allocate();
 		m_resourceHeap->Write(m_lightFrameView, RHI::DescriptorType::Buffer, m_lightFrameBuffer.Get(), 0, lightFrameDesc.size, sizeof(GpuLightFrame));
@@ -162,6 +149,12 @@ namespace Horizon::Rendering::Pass
 			m_lightFrameView = kInvalid32;
 		}
 
+		if (m_lightGridView != kInvalid32)
+		{
+			m_resourceHeap->Free(m_lightGridView);
+			m_lightGridView = kInvalid32;
+		}
+
 		if (m_pointLightView != kInvalid32)
 		{
 			m_resourceHeap->Free(m_pointLightView);
@@ -169,7 +162,6 @@ namespace Horizon::Rendering::Pass
 		}
 
 		m_lightFrameBuffer.Reset();
-		m_pointLightBuffer.Reset();
 		m_pipeline.Reset();
 		m_fragmentShader.Reset();
 		m_vertexShader.Reset();
@@ -190,6 +182,8 @@ namespace Horizon::Rendering::Pass
 
 		graph.Creates<Resource::SceneColorMS>(colorDesc);
 		graph.Reads<Resource::PreDepthOutput>(RHI::ResourceState::DepthRead);
+		graph.Reads<Resource::PointLightList>(RHI::ResourceState::ShaderResource);
+		graph.Reads<Resource::ClusteredLightGrid>(RHI::ResourceState::ShaderResource);
 		graph.Writes<Resource::SceneColorMS>(RHI::ResourceState::RenderTarget);
 	}
 
@@ -200,41 +194,23 @@ namespace Horizon::Rendering::Pass
 		if (!pCamera || !pMeshes)
 			return;
 
-		const Engine::FramePointLight* pLights = board.TryGet<Engine::FramePointLight>();
 		const Engine::RenderableDirectionalLight* pDirectional = board.TryGet<Engine::RenderableDirectionalLight>();
 
 		RHI::CommandList* pCmdList = GetCommandList();
 		RHI::Texture* pColor = GetTexture<Resource::SceneColorMS>();
+		RHI::Buffer* pPointLights = GetBuffer<Resource::PointLightList>();
+		RHI::Buffer* pLightGrid = GetBuffer<Resource::ClusteredLightGrid>();
+
+		m_resourceHeap->Write(m_pointLightView, RHI::DescriptorType::Buffer, pPointLights, 0, pPointLights->GetSize(), sizeof(Engine::RenderablePointLight));
+		m_resourceHeap->Write(m_lightGridView, RHI::DescriptorType::Buffer, pLightGrid, 0, pLightGrid->GetSize(), sizeof(u32));
 
 		GpuLightFrame lightFrame = {};
 
-		if (pLights)
-		{
-			lightFrame.pointLightCount = static_cast<u32>(std::min<usize>(pLights->pointLights.GetCount(), kMaxPointLights));
-			GpuPointLight* pPointLights = reinterpret_cast<GpuPointLight*>(m_pointLightBuffer->GetMappedData());
-
-			for (u32 i = 0; i < lightFrame.pointLightCount; i++)
-			{
-				const Engine::RenderablePointLight& light = pLights->pointLights[i];
-
-				pPointLights[i] =
-				{
-					{ light.color.R(), light.color.G(), light.color.B(), light.intensity },
-					{ light.position.X(), light.position.Y(), light.position.Z(), light.range },
-				};
-			}
-		}
-
 		if (pDirectional)
 		{
-			lightFrame.directionalColorIntensity[0] = pDirectional->color.R();
-			lightFrame.directionalColorIntensity[1] = pDirectional->color.G();
-			lightFrame.directionalColorIntensity[2] = pDirectional->color.B();
-			lightFrame.directionalColorIntensity[3] = pDirectional->intensity;
-
-			lightFrame.directionalDirection[0] = pDirectional->direction.X();
-			lightFrame.directionalDirection[1] = pDirectional->direction.Y();
-			lightFrame.directionalDirection[2] = pDirectional->direction.Z();
+			lightFrame.sunColor = Math::Vec3f(pDirectional->color.R(), pDirectional->color.G(), pDirectional->color.B());
+			lightFrame.intensity = pDirectional->intensity;
+			lightFrame.direction = pDirectional->direction;
 		}
 
 		*reinterpret_cast<GpuLightFrame*>(m_lightFrameBuffer->GetMappedData()) = lightFrame;
@@ -255,16 +231,19 @@ namespace Horizon::Rendering::Pass
 		pCmdList->StartRendering(desc);
 
 		RHI::Viewport viewport = {};
-		viewport.width = static_cast<f32>(pColor->GetWidth());
-		viewport.height = static_cast<f32>(pColor->GetHeight());
+		viewport.width = f32(pColor->GetWidth());
+		viewport.height = f32(pColor->GetHeight());
 		pCmdList->SetViewport(viewport);
 
 		RHI::Scissor scissor = {};
-		scissor.width = static_cast<i32>(pColor->GetWidth());
-		scissor.height = static_cast<i32>(pColor->GetHeight());
+		scissor.width = i32(pColor->GetWidth());
+		scissor.height = i32(pColor->GetHeight());
 		pCmdList->SetScissor(scissor);
 
 		pCmdList->BindPipeline(m_pipeline.Get());
+
+		const u32 clusterCountX = (pColor->GetWidth() + kClusterTileSize - 1) / kClusterTileSize;
+		const u32 clusterCountY = (pColor->GetHeight() + kClusterTileSize - 1) / kClusterTileSize;
 
 		for (const Engine::RenderableMesh& renderable : pMeshes->meshes)
 		{
@@ -279,6 +258,14 @@ namespace Horizon::Rendering::Pass
 			constants.vertexBufferIndex = pStreamer->GetVertexBufferView();
 			constants.pointLightBufferIndex = m_pointLightView;
 			constants.lightFrameBufferIndex = m_lightFrameView;
+			constants.lightGridIndex = m_lightGridView;
+			constants.tileSize = kClusterTileSize;
+			constants.clusterCountX = clusterCountX;
+			constants.clusterCountY = clusterCountY;
+			constants.clusterCountZ = kClusterCountZ;
+			constants.maxLightsPerCluster = kMaxLightsPerCluster;
+			constants.nearPlane = pCamera->nearPlane;
+			constants.farPlane = pCamera->farPlane;
 			constants.worldMatrix = renderable.worldMatrix;
 
 			for (const Asset::MeshSubmesh& submesh : renderable.mesh.submeshes)

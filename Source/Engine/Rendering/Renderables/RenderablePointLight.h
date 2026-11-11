@@ -6,6 +6,8 @@
 
 namespace Horizon::Engine
 {
+	static constexpr u32 kMaxPointLightCount = 8196;
+
 	struct RenderablePointLight
 	{
 		Math::Color4f color;
