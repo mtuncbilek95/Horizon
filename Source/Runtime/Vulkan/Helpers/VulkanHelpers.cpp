@@ -318,6 +318,9 @@ namespace Horizon::RHI
 		if (HasFlag(state, ResourceState::CopySrc | ResourceState::CopyDst))
 			sync |= VK_PIPELINE_STAGE_2_TRANSFER_BIT;
 
+		if (HasFlag(state, ResourceState::ResolveSrc | ResourceState::ResolveDst))
+			sync |= VK_PIPELINE_STAGE_2_RESOLVE_BIT;
+
 		return sync;
 	}
 
@@ -361,6 +364,12 @@ namespace Horizon::RHI
 		if (HasFlag(state, ResourceState::CopyDst))
 			access |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
 
+		if (HasFlag(state, ResourceState::ResolveSrc))
+			access |= VK_ACCESS_2_TRANSFER_READ_BIT;
+
+		if (HasFlag(state, ResourceState::ResolveDst))
+			access |= VK_ACCESS_2_TRANSFER_WRITE_BIT;
+
 		return access;
 	}
 
@@ -392,6 +401,12 @@ namespace Horizon::RHI
 
 		if (HasFlag(state, ResourceState::ShaderResource))
 			return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		if (HasFlag(state, ResourceState::ResolveSrc))
+			return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+		if (HasFlag(state, ResourceState::ResolveSrc))
+			return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
 		return VK_IMAGE_LAYOUT_GENERAL;
 	}

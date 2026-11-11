@@ -39,7 +39,7 @@ namespace Horizon::RHI
 
         const VkDebugUtilsObjectNameInfoEXT nameInfo {
             .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-            .objectType = VK_OBJECT_TYPE_COMMAND_POOL,
+            .objectType = VK_OBJECT_TYPE_COMMAND_BUFFER,
             .objectHandle = (u64)m_cmdBuffer,
             .pObjectName = pName
         };
@@ -52,7 +52,7 @@ namespace Horizon::RHI
 	{
 		const VkCommandBufferBeginInfo beginInfo = {
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-			// TODO:.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+			.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
 		};
 
 		vkBeginCommandBuffer(m_cmdBuffer, &beginInfo);
@@ -109,7 +109,6 @@ namespace Horizon::RHI
 			vkBarrier.subresourceRange.layerCount = barrier.layerCount == kInvalid32 ? VK_REMAINING_ARRAY_LAYERS : barrier.layerCount;
 
 			m_imageBarriers.PushBack(vkBarrier);
-
 		}
 
 		VkDependencyInfo dependencyInfo = {};
@@ -212,10 +211,7 @@ namespace Horizon::RHI
 		renderingInfo.pDepthAttachment = desc.depthAttachment.pView ? &depthAttachment : nullptr;
 		
 		const TextureView *pView = desc.colorAttachments[0].pView ? desc.colorAttachments[0].pView : desc.depthAttachment.pView;
-		renderingInfo.renderArea.extent = { 
-			pView->GetTexture()->GetWidth() >> pView->GetBaseMip(), 
-			pView->GetTexture()->GetHeight() >> pView->GetBaseMip()
-		};
+		renderingInfo.renderArea.extent = { pView->GetTexture()->GetWidth(), pView->GetTexture()->GetHeight() };
 		
 		vkCmdBeginRendering(m_cmdBuffer, &renderingInfo);
 	}
@@ -461,7 +457,7 @@ namespace Horizon::RHI
 		resolveRegion.dstOffset = { 0, 0, 0 };
 		resolveRegion.extent = { static_cast<u32>(static_cast<VulkanTexture*>(pDst)->GetWidth()), static_cast<u32>(static_cast<VulkanTexture*>(pDst)->GetHeight()), static_cast<u32>(static_cast<VulkanTexture*>(pDst)->GetDepth()) };
 
-		vkCmdResolveImage(m_cmdBuffer, static_cast<VulkanTexture*>(pSrc)->Handle(), VK_IMAGE_LAYOUT_GENERAL, static_cast<VulkanTexture*>(pDst)->Handle(), VK_IMAGE_LAYOUT_GENERAL, 1, &resolveRegion);
+		vkCmdResolveImage(m_cmdBuffer, static_cast<VulkanTexture*>(pSrc)->Handle(), Helpers::ToImageLayout(ResourceState::ResolveSrc), static_cast<VulkanTexture*>(pDst)->Handle(), Helpers::ToImageLayout(ResourceState::ResolveDst), 1, &resolveRegion);
 	}
 
 	void VulkanCommandList::RenderImGui(ImDrawData* pDrawData)
