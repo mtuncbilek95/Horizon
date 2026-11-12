@@ -1,5 +1,3 @@
-#define GROUP_SIZE 64
-
 struct CullClusterConstant
 {
     float4x4 viewMatrix;
@@ -30,10 +28,12 @@ struct PointLight
 
 ConstantBuffer<CullClusterConstant> pushConst : register(b0, space999);
 
-groupshared float4 sLights[GROUP_SIZE];
+static const uint GroupSize = 64;
+
+groupshared float4 sLights[GroupSize];
 groupshared uint sAnyActive;
 
-[numthreads(GROUP_SIZE, 1, 1)]
+[numthreads(GroupSize, 1, 1)]
 void CSMain(uint3 dtid : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID)
 {
     RWStructuredBuffer<uint> lightGrid = ResourceDescriptorHeap[pushConst.lightGridIndex];
@@ -67,7 +67,7 @@ void CSMain(uint3 dtid : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID)
             aabbMax = clusters[idx].maxViewSpace.xyz;
         }
 
-        for (uint batch = 0; batch < pushConst.lightCount; batch += GROUP_SIZE)
+        for (uint batch = 0; batch < pushConst.lightCount; batch += 64)
         {
             uint li = batch + gtid.x;
             if (li < pushConst.lightCount)
@@ -80,7 +80,7 @@ void CSMain(uint3 dtid : SV_DispatchThreadID, uint3 gtid : SV_GroupThreadID)
 
             if (active)
             {
-                uint n = min(GROUP_SIZE, pushConst.lightCount - batch);
+                uint n = min(64, pushConst.lightCount - batch);
                 for (uint j = 0; j < n && count < pushConst.maxLightsPerCluster; j++)
                 {
                     float4 L = sLights[j];
