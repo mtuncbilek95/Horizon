@@ -4,10 +4,16 @@
 #include <Editor/Renderer/EditorContext.h>
 #include <Editor/Domain/DomainService.h>
 #include <Editor/Font/IconsMaterialDesignIcons.h>
+#include <Engine/Asset/AssetService.h>
+#include <Engine/Asset/Texture/Texture.h>
 #include <Engine/Core/Engine.h>
+#include <Engine/Graphics/GraphicsContext.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
 #include <Runtime/PAL/File/File.h>
+#include <Runtime/RHI/Device/Device.h>
+#include <Runtime/RHI/Texture/Texture.h>
+#include <Runtime/RHI/Texture/TextureView.h>
 
 #include <imgui_internal.h>
 #include <map>
@@ -84,6 +90,12 @@ namespace Horizon::Editor
 		return pFile->GetName();
 	}
 
+	AssetContentView::~AssetContentView()
+	{
+		if (m_assetService && m_device)
+			ReleaseThumbnails();
+	}
+
 	void AssetContentView::OnInvoke()
 	{
 		auto* pDomain = GetContext()->pEngine->RequestService<DomainService>();
@@ -95,6 +107,19 @@ namespace Horizon::Editor
 			AddAction(pType);
 
 		m_contextMenu.BootstrapContext(GetContext()->pEngine, "ContentBrowserView");
+
+		m_assetService = GetContext()->pEngine->RequestService<Engine::AssetService>();
+		if (!m_assetService)
+			Terminal::Error(StringHelper::GetTypeName(this), "AssetService is missing, texture thumbnails will not be displayed");
+
+		auto* pGraphics = GetContext()->pEngine->RequestContext<Engine::GraphicsContext>();
+		if (!pGraphics)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "GraphicsContext is missing, texture thumbnails will not be displayed");
+			return;
+		}
+
+		m_device = pGraphics->GetDevice();
 	}
 
 	b8 AssetContentView::AddAction(const Reflect::Type* pType)
@@ -144,6 +169,12 @@ namespace Horizon::Editor
 
 	void AssetContentView::OnRender(const Engine::EngineFrame& context)
 	{
+		if (m_releaseThumbnails)
+		{
+			ReleaseThumbnails();
+			m_releaseThumbnails = false;
+		}
+
 		if (m_currentFolder == nullptr)
 		{
 			ImGui::TextDisabled("Root folder is unavailable");
@@ -214,20 +245,36 @@ namespace Horizon::Editor
 				ImGui::EndDragDropSource();
 			}
 
-			std::string fileIcon = ICON_FA_FOLDER;
-
-			if (!entry.IsFolder())
-				fileIcon = DomainToAssetIcon(entry.pFile->GetAssetType());
-
 			const ImU32 textColor = ImGui::GetColorU32(ImGuiCol_Text);
+			const ThumbnailEntry* pThumbnail = nullptr;
 
-			ImGui::PushFont(ImGui::GetFont(), cell * 0.5f);
+			if (!entry.IsFolder() && ImGui::IsRectVisible(cellMin, ImVec2(cellMin.x + cell, cellMin.y + cell)))
+				pThumbnail = RequestThumbnail(entry.pFile);
 
-			const ImVec2 iconSize = ImGui::CalcTextSize(fileIcon.c_str());
-			const ImVec2 iconPos = ImVec2(cellMin.x + (cell - iconSize.x) * 0.5f, cellMin.y + cell * 0.14f);
+			if (pThumbnail)
+			{
+				const f32 box = cell * 0.62f;
+				const f32 scale = ImMin(box / pThumbnail->width, box / pThumbnail->height);
+				const ImVec2 imageSize = ImVec2(pThumbnail->width * scale, pThumbnail->height * scale);
+				const ImVec2 imageMin = ImVec2(cellMin.x + (cell - imageSize.x) * 0.5f, cellMin.y + cell * 0.08f + (box - imageSize.y) * 0.5f);
 
-			pDrawList->AddText(iconPos, textColor, fileIcon.c_str());
-			ImGui::PopFont();
+				pDrawList->AddImage((ImTextureID)pThumbnail->textureId, imageMin, ImVec2(imageMin.x + imageSize.x, imageMin.y + imageSize.y));
+			}
+			else
+			{
+				std::string fileIcon = ICON_FA_FOLDER;
+
+				if (!entry.IsFolder())
+					fileIcon = DomainToAssetIcon(entry.pFile->GetAssetType());
+
+				ImGui::PushFont(ImGui::GetFont(), cell * 0.5f);
+
+				const ImVec2 iconSize = ImGui::CalcTextSize(fileIcon.c_str());
+				const ImVec2 iconPos = ImVec2(cellMin.x + (cell - iconSize.x) * 0.5f, cellMin.y + cell * 0.14f);
+
+				pDrawList->AddText(iconPos, textColor, fileIcon.c_str());
+				ImGui::PopFont();
+			}
 
 			const std::string label = TruncateToWidth(entry.GetName(), cell - 6.f);
 			const ImVec2 nameSize = ImGui::CalcTextSize(label.c_str());
@@ -349,6 +396,7 @@ namespace Horizon::Editor
 
 		m_currentFolder = pTarget;
 		m_selection.Clear();
+		m_releaseThumbnails = true;
 	}
 
 	void AssetContentView::BeginRename(const std::string& sourcePath)
@@ -414,5 +462,65 @@ namespace Horizon::Editor
 
 	void AssetContentView::RenderDialog()
 	{
+	}
+
+	const AssetContentView::ThumbnailEntry* AssetContentView::RequestThumbnail(DomainFile* pFile)
+	{
+		if (!m_assetService || !m_device)
+			return nullptr;
+
+		Reflect::Type* pAssetType = pFile->GetAssetType();
+		if (!pAssetType || pAssetType->GetFullName() != "Asset::Texture")
+			return nullptr;
+
+		auto* pAsset = m_assetService->FindAsset<Asset::Texture>(pFile->GetID());
+		if (!pAsset)
+			return nullptr;
+
+		ThumbnailEntry& thumbnail = m_thumbnails[pFile];
+		thumbnail.assetId = pFile->GetID();
+
+		if (pAsset->GetResidency() == Engine::AssetResidency::Unloaded)
+		{
+			pAsset->LoadAsync();
+			thumbnail.ownsLoad = true;
+		}
+
+		Asset::TextureUsePermit permit = pAsset->BeginUse();
+		if (!permit.IsValid())
+			return nullptr;
+
+		if (permit.pView != thumbnail.pView)
+		{
+			m_device->UnregisterImGuiTexture(thumbnail.textureId);
+			thumbnail.textureId = m_device->RegisterImGuiTexture(permit.pView, nullptr);
+			thumbnail.pView = permit.pView;
+			thumbnail.width = static_cast<f32>(permit.pView->GetTexture()->GetWidth());
+			thumbnail.height = static_cast<f32>(permit.pView->GetTexture()->GetHeight());
+		}
+
+		pAsset->EndUse(permit);
+
+		if (thumbnail.textureId == 0)
+			return nullptr;
+
+		return &thumbnail;
+	}
+
+	void AssetContentView::ReleaseThumbnails()
+	{
+		for (auto& [pFile, thumbnail] : m_thumbnails)
+		{
+			m_device->UnregisterImGuiTexture(thumbnail.textureId);
+
+			if (!thumbnail.ownsLoad)
+				continue;
+
+			auto* pAsset = m_assetService->FindAsset<Asset::Texture>(thumbnail.assetId);
+			if (pAsset)
+				pAsset->UnloadAsync();
+		}
+
+		m_thumbnails.clear();
 	}
 }

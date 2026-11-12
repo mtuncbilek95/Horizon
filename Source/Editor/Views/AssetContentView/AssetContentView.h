@@ -10,12 +10,24 @@
 #include <Editor/ContextMenu/AssetBrowserMenu/AssetBrowserContext.h>
 #include <Editor/Components/PropertyRenderer.h>
 #include <Editor/ImportPipeline/AssetImportSettings.h>
+#include <Runtime/Containers/Guid.h>
 #include <Runtime/Containers/Memory/RefPtr.h>
 #include <Runtime/Containers/Vector/List.h>
 
 #include <imgui.h>
 #include <string>
 #include <unordered_map>
+
+namespace Horizon::Engine
+{
+	class AssetService;
+}
+
+namespace Horizon::RHI
+{
+	class Device;
+	class TextureView;
+}
 
 namespace Horizon::Editor
 {
@@ -42,9 +54,19 @@ namespace Horizon::Editor
 			RefPtr<AssetAction> pAction;
 		};
 
+		struct ThumbnailEntry
+		{
+			Guid assetId;
+			RHI::TextureView* pView = nullptr;
+			u64 textureId = 0;
+			f32 width = 0.f;
+			f32 height = 0.f;
+			b8 ownsLoad = false;
+		};
+
 	public:
 		AssetContentView() = default;
-		~AssetContentView() final = default;
+		~AssetContentView() final;
 
 		void OnInvoke() final;
 		void OnRender(const Engine::EngineFrame& context) final;
@@ -64,6 +86,9 @@ namespace Horizon::Editor
 		void ImportFiles(const List<std::string>& files);
 		void RenderDialog();
 
+		const ThumbnailEntry* RequestThumbnail(DomainFile* pFile);
+		void ReleaseThumbnails();
+
 	private:
 		List<ActionEntry> m_openActions;
 		std::unordered_map<std::string, RefPtr<AssetAction>> m_actionNameLookup;
@@ -77,5 +102,10 @@ namespace Horizon::Editor
 		std::string m_renamePath;
 		b8 m_renameIsFolder = false;
 		c8 m_renameBuffer[256] = {};
+
+		Engine::AssetService* m_assetService = nullptr;
+		RHI::Device* m_device = nullptr;
+		std::unordered_map<DomainFile*, ThumbnailEntry> m_thumbnails;
+		b8 m_releaseThumbnails = false;
 	};
 }
