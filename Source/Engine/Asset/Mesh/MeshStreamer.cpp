@@ -158,8 +158,6 @@ namespace Horizon::Asset
 		pAsset->m_residency.Store(Engine::AssetResidency::Unloaded, PAL::MemoryOrder::Release);
 	}
 
-	// MeshStreamer.cpp
-
 	void MeshStreamer::RunLoadAsset(Mesh* pAsset)
 	{
 		pAsset->m_residency.Store(Engine::AssetResidency::Reading, PAL::MemoryOrder::Relaxed);

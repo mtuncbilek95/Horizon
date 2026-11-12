@@ -22,6 +22,7 @@ namespace Horizon::Asset
 		u32 vertexStride = 0;
 		u32 indexStride = 0;
 		u32 subMeshCount = 0;
+		u32 materialSlotCount = 0;
 		Math::BoundingBox mainBounds;
 	};
 }

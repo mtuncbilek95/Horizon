@@ -2,11 +2,13 @@
 
 #include <Engine/Asset/AssetKind.h>
 #include <Engine/Asset/AssetObject.h>
+#include <Engine/Asset/AssetHandle.h>
 #include <Engine/Asset/AssetResidency.h>
 #include <Engine/Asset/AssetTypeAttribute.h>
 #include <Engine/Asset/Mesh/MeshUsePermit.h>
 #include <Engine/Asset/Mesh/MeshProperties.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
+#include <Engine/Asset/Material/Material.h>
 #include <Engine/Job/JobSystem.h>
 
 #include <Runtime/Containers/Guid.h>
@@ -37,6 +39,7 @@ namespace Horizon::Asset
 		Engine::AssetResidency GetResidency() const { return m_residency.Load(PAL::MemoryOrder::Acquire); }
 
 		const List<MeshSubmesh>& GetSubmeshes() const { return m_submeshes; }
+		List<Engine::AssetHandle<Material>>& GetMaterialSlots() { return m_materialSlots; }
 
 		u32 GetFirstVertex() const { return m_vertexRange.offset / sizeof(MeshVertex); }
 		u32 GetFirstIndex() const { return m_indexRange.offset / sizeof(u32); }
@@ -54,6 +57,7 @@ namespace Horizon::Asset
 		Engine::SubmitTicket m_ticket = Engine::InvalidSubmitTicket;
 
 		List<MeshSubmesh> m_submeshes;
+		List<Engine::AssetHandle<Material>> m_materialSlots;
 
 		MeshProperties m_properties;
 		Range m_vertexRange;

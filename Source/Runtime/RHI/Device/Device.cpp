@@ -1,12 +1,9 @@
 #include "Device.h"
 
-
-
 #include <Runtime/RHI/Pipeline/GlobalPipelineLayout.h>
 #include <Runtime/RHI/Pipeline/PipelineLayout.h>
 
 #include <Runtime/D3D12/Device/D3D12Device.h>
-#include <Runtime/Vulkan/Device/VulkanDevice.h>
 
 namespace Horizon::RHI
 {
@@ -24,9 +21,9 @@ namespace Horizon::RHI
 		}
 		case Backend::Vulkan:
 		{
-			UniquePtr<VulkanDevice> pDevice = MakeUnique<VulkanDevice>();
+			/*UniquePtr<VulkanDevice> pDevice = MakeUnique<VulkanDevice>();
 			if (pDevice->Initialize(desc))
-				return pDevice;
+				return pDevice;*/
 
 			return nullptr;
 		}
