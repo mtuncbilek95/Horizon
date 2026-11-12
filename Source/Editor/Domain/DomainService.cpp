@@ -429,6 +429,8 @@ namespace Horizon::Editor
 		task.pAssetType = pFile->GetAssetType();
 		task.cookedPath = pFile->GetCookedPath();
 
+		ResolveDependencies(pFile, task);
+
 		// Start cooking
 		task.phase = ImportPhase::Cooking;
 		task.ticket = m_jobSystem->SubmitJob(Engine::JobLane::Background, Engine::Job([this, &task]()
@@ -443,6 +445,41 @@ namespace Horizon::Editor
 			delete task.pImporter; // Don't forget to delete this mf
 			delete task.pSettings; // Don't forget to delete this mf
 			task = DomainFileImportContext();
+		}
+	}
+
+	void DomainService::ResolveDependencies(DomainFile* pFile, DomainFileImportContext& task)
+	{
+		List<std::string> paths;
+		task.pImporter->CollectDependencies(task.context, paths);
+
+		const std::string folderPath = pFile->GetParent()->GetRelativePath();
+
+		for (const std::string& path : paths)
+		{
+			const std::string fullPath = folderPath.empty() ? path : folderPath + "/" + path;
+
+			DomainFile* pDependency = FindDomainFile(fullPath);
+
+			if (!pDependency)
+			{
+				const usize separator = fullPath.rfind('/');
+				const std::string parentPath = separator == std::string::npos ? std::string() : fullPath.substr(0, separator);
+				const std::string name = separator == std::string::npos ? fullPath : fullPath.substr(separator + 1);
+
+				if (name.rfind('.') != std::string::npos)
+					pDependency = ProcessSourceFile(m_root->ConfirmAndFindFolder(parentPath), name);
+			}
+
+			ImportDependency dependency;
+			dependency.path = path;
+
+			if (pDependency)
+				dependency.id = pDependency->GetID();
+			else
+				Terminal::Warn(StringHelper::GetTypeName(this), "{} is referenced by {} but is not tracked", fullPath, task.relativePath);
+
+			task.context.dependencies.PushBack(dependency);
 		}
 	}
 
@@ -929,6 +966,7 @@ namespace Horizon::Editor
 		task.context.reason = reason;
 		task.context.pSettings = pSnapshot;
 		task.context.pReflection = GetEngine()->GetReflectionSystem();
+		task.context.pImporter = pImporter;
 
 		m_pendingImports.PushBack(std::move(task));
 	}

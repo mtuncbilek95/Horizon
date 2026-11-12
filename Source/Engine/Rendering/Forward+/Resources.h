@@ -27,4 +27,16 @@ namespace Horizon::Rendering::Resource
 
 	HCLASS();
 	struct ActiveCluster final { HORIZON_DATA_REFLECT(ActiveCluster); };
+
+	HCLASS();
+	struct ShadowDepth final { HORIZON_DATA_REFLECT(ShadowDepth); };
+
+	HCLASS();
+	struct ShadowMaskRaw final { HORIZON_DATA_REFLECT(ShadowMaskRaw); };
+
+	HCLASS();
+	struct ShadowBlurTemp final { HORIZON_DATA_REFLECT(ShadowBlurTemp); };
+
+	HCLASS();
+	struct ShadowMask final { HORIZON_DATA_REFLECT(ShadowMask); };
 }

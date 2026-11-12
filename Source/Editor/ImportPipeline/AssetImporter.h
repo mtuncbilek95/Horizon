@@ -2,10 +2,13 @@
 
 #include <Editor/ImportPipeline/AssetImporterTypeAttribute.h>
 #include <Editor/ImportPipeline/AssetImportResult.h>
+#include <Editor/ImportPipeline/ImportedMaterial.h>
 #include <Editor/ImportPipeline/ImportPipelineContext.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/Containers/Vector/ReadOnlyList.h>
 #include <Runtime/RTTR/Reflection.h>
+
+#include <string>
 
 namespace Horizon::Editor
 {
@@ -18,5 +21,8 @@ namespace Horizon::Editor
 		virtual AssetImportResult GenerateProperties(const ImportPipelineContext& ctx, List<u8>& outBytes) = 0;
 		virtual AssetImportResult GenerateTable(const ImportPipelineContext& ctx, List<u8>& outBytes) = 0;
 		virtual AssetImportResult GenerateBinary(const ImportPipelineContext& ctx, List<u8>& outBytes) = 0;
+
+		virtual void CollectDependencies(const ImportPipelineContext& ctx, List<std::string>& outPaths) {}
+		virtual void CollectMaterials(const ImportPipelineContext& ctx, List<ImportedMaterial>& outMaterials) {}
 	};
 }

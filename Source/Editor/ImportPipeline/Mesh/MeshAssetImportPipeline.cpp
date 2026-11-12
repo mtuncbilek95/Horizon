@@ -1,14 +1,70 @@
 #include "MeshAssetImportPipeline.h"
 
+#include <Editor/ImportPipeline/AssetImporter.h>
 #include <Editor/ImportPipeline/Mesh/MeshAssetImportSettings.h>
+#include <Engine/Asset/Material/MaterialSerializer.h>
 #include <Engine/Asset/Mesh/MeshProperties.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
 #include <Runtime/Containers/Guid.h>
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
+#include <Runtime/PAL/File/File.h>
+#include <Runtime/Serialization/JsonArchive.h>
 
 namespace Horizon::Editor
 {
+	namespace
+	{
+		std::string GetFileStem(const std::string& path)
+		{
+			const usize separator = path.find_last_of("/\\");
+			const std::string name = separator == std::string::npos ? path : path.substr(separator + 1);
+
+			return name.substr(0, name.rfind('.'));
+		}
+
+		std::string SanitizeFileStem(const std::string& name)
+		{
+			std::string result = name;
+
+			for (char& character : result)
+			{
+				const b8 isInvalid = character == '.' || character == '/' || character == '\\' || character == ':' || character == '*'
+					|| character == '?' || character == '"' || character == '<' || character == '>' || character == '|';
+
+				if (isInvalid)
+					character = '_';
+			}
+
+			return result;
+		}
+
+		b8 IsStemTaken(const ImportPipelineContext& ctx, const std::string& stem)
+		{
+			if (StringHelper::CheckIfEquals(GetFileStem(ctx.sourcePath), stem))
+				return true;
+
+			for (const ImportDependency& dependency : ctx.dependencies)
+			{
+				if (StringHelper::CheckIfEquals(GetFileStem(dependency.path), stem))
+					return true;
+			}
+
+			return false;
+		}
+
+		Guid FindDependencyId(const ImportPipelineContext& ctx, const std::string& path)
+		{
+			for (const ImportDependency& dependency : ctx.dependencies)
+			{
+				if (dependency.path == path)
+					return dependency.id;
+			}
+
+			return Guid();
+		}
+	}
+
 	void MeshAssetImportPipeline::PostProcess(const ImportPipelineContext& ctx, ImportProductBytes& bytes)
 	{
 		// Check the prop just in case
@@ -41,6 +97,11 @@ namespace Horizon::Editor
 		const auto* pSettings = static_cast<const MeshAssetImportSettings*>(ctx.pSettings);
 		const usize subMeshTable = bytes.table.GetCount();
 
+		List<Guid> importedMaterials;
+
+		if (pSettings && pSettings->m_importMaterials && ctx.pImporter)
+			GenerateMaterials(ctx, importedMaterials);
+
 		bytes.table.Resize(subMeshTable + slotCount * sizeof(Guid));
 
 		for (u32 i = 0; i < slotCount; ++i)
@@ -49,6 +110,9 @@ namespace Horizon::Editor
 
 			if (pSettings && i < pSettings->m_materialSlots.GetCount())
 				id = pSettings->m_materialSlots[i].GetId();
+
+			if (!id.IsValid() && i < importedMaterials.GetCount())
+				id = importedMaterials[i];
 
 			std::memcpy(bytes.table.GetData() + subMeshTable + i * sizeof(Guid), &id, sizeof(Guid));
 		}
@@ -117,5 +181,127 @@ namespace Horizon::Editor
 		}
 
 		return AssetImportResult::Success;
+	}
+
+	void MeshAssetImportPipeline::GenerateMaterials(const ImportPipelineContext& ctx, List<Guid>& outIds)
+	{
+		List<ImportedMaterial> materials;
+		ctx.pImporter->CollectMaterials(ctx, materials);
+
+		for (ImportedMaterial& material : materials)
+		{
+			material.parameters.m_baseColorTexture.SetId(FindDependencyId(ctx, material.baseColorPath));
+			material.parameters.m_normalTexture.SetId(FindDependencyId(ctx, material.normalPath));
+			material.parameters.m_occlusionTexture.SetId(FindDependencyId(ctx, material.occlusionPath));
+			material.parameters.m_roughnessTexture.SetId(FindDependencyId(ctx, material.roughnessPath));
+			material.parameters.m_metallicTexture.SetId(FindDependencyId(ctx, material.metallicPath));
+			material.parameters.m_emissiveTexture.SetId(FindDependencyId(ctx, material.emissivePath));
+
+			std::string stem = SanitizeFileStem(material.name);
+
+			if (IsStemTaken(ctx, stem))
+				stem += "_Material";
+
+			const std::string path = ctx.sourceFolder + "/" + stem + ".hmaterial";
+			const std::string metaPath = path + ".hmeta";
+
+			Guid id;
+
+			if (PAL::File::Exists(metaPath))
+				id = ReadMaterialId(metaPath);
+			else if (PAL::File::Exists(path))
+				Terminal::Warn(StringHelper::GetTypeName(this), "{} exists without a meta, its slot is left empty", path);
+			else
+				id = CreateMaterial(ctx, path, metaPath, material);
+
+			outIds.PushBack(id);
+		}
+	}
+
+	Guid MeshAssetImportPipeline::ReadMaterialId(const std::string& metaPath)
+	{
+		PAL::FileAccessRequest request = PAL::File::RequestAccess(metaPath, PAL::FileOperationAccessPolicy::Read, PAL::FileOperationSharePolicy::SharedRead);
+		if (!request.IsValid())
+		{
+			Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be opened for reading", metaPath);
+			return Guid();
+		}
+
+		std::string text;
+		PAL::File::ReadString(request, text);
+		PAL::File::ReleaseAccess(request);
+
+		JsonArchiveReader reader(text);
+		reader.BeginObject();
+
+		Guid id;
+		if (reader.Key("id"))
+			id = Guid(reader.ReadString());
+
+		return id;
+	}
+
+	Guid MeshAssetImportPipeline::CreateMaterial(const ImportPipelineContext& ctx, const std::string& path, const std::string& metaPath, const ImportedMaterial& material)
+	{
+		JsonArchiveWriter writer;
+
+		if (!Asset::MaterialSerializer::Serialize(material.properties, material.parameters, ctx.pReflection, writer))
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be serialized", path);
+			return Guid();
+		}
+
+		const Guid id = Guid::Generate();
+
+		JsonArchiveWriter metaWriter;
+		metaWriter.BeginObject();
+		metaWriter.Key("id");
+		metaWriter.WriteString(id.ToString());
+		metaWriter.Key("settings");
+		metaWriter.BeginObject();
+		metaWriter.EndObject();
+		metaWriter.EndObject();
+
+		if (!PAL::File::Create(metaPath))
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be created", metaPath);
+			return Guid();
+		}
+
+		PAL::FileAccessRequest metaRequest = PAL::File::RequestAccess(metaPath, PAL::FileOperationAccessPolicy::Write,
+			PAL::FileOperationSharePolicy::Exclusive);
+
+		const b8 wasMetaWritten = PAL::File::WriteString(metaRequest, metaWriter.ToString());
+
+		PAL::File::ReleaseAccess(metaRequest);
+
+		if (!wasMetaWritten)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be written", metaPath);
+			return Guid();
+		}
+
+		if (!PAL::File::Create(path))
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be created", path);
+			PAL::File::Delete(metaPath);
+			return Guid();
+		}
+
+		PAL::FileAccessRequest request = PAL::File::RequestAccess(path, PAL::FileOperationAccessPolicy::Write,
+			PAL::FileOperationSharePolicy::Exclusive);
+
+		const b8 wasWritten = PAL::File::WriteString(request, writer.ToString());
+
+		PAL::File::ReleaseAccess(request);
+
+		if (!wasWritten)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be written", path);
+			PAL::File::Delete(metaPath);
+			return Guid();
+		}
+
+		return id;
 	}
 }

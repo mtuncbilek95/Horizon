@@ -12,6 +12,7 @@
 
 #include <cstring>
 #include <filesystem>
+#include <format>
 #include <utility>
 #include <variant>
 
@@ -54,6 +55,26 @@ namespace Horizon::Editor
 				});
 
 			return instances;
+		}
+
+		std::string ResolveTexturePath(const fastgltf::Asset& asset, usize textureIndex)
+		{
+			if (textureIndex >= asset.textures.size())
+				return std::string();
+
+			const fastgltf::Texture& texture = asset.textures[textureIndex];
+			if (!texture.imageIndex.has_value())
+				return std::string();
+
+			const fastgltf::Image& image = asset.images[texture.imageIndex.value()];
+			const auto* pUri = std::get_if<fastgltf::sources::URI>(&image.data);
+			if (!pUri)
+			{
+				Terminal::Warn("GltfMeshAssetImporter", "Image {} is embedded, its material slot is left empty", texture.imageIndex.value());
+				return std::string();
+			}
+
+			return std::string(pUri->uri.path());
 		}
 	}
 
@@ -357,5 +378,83 @@ namespace Horizon::Editor
 
 		m_hasBuilt = true;
 		return AssetImportResult::Success;
+	}
+
+	void GltfMeshAssetImporter::CollectDependencies(const ImportPipelineContext& ctx, List<std::string>& outPaths)
+	{
+		for (const fastgltf::Image& image : m_asset->images)
+		{
+			const auto* pUri = std::get_if<fastgltf::sources::URI>(&image.data);
+			if (!pUri)
+				continue;
+
+			outPaths.PushBack(std::string(pUri->uri.path()));
+		}
+	}
+
+	void GltfMeshAssetImporter::CollectMaterials(const ImportPipelineContext& ctx, List<ImportedMaterial>& outMaterials)
+	{
+		const fastgltf::Asset& asset = *m_asset;
+
+		for (usize i = 0; i < asset.materials.size(); ++i)
+		{
+			const fastgltf::Material& source = asset.materials[i];
+
+			ImportedMaterial material;
+			material.name = std::string(source.name);
+
+			b8 isNameTaken = material.name.empty();
+			for (const ImportedMaterial& other : outMaterials)
+			{
+				if (other.name == material.name)
+					isNameTaken = true;
+			}
+
+			if (isNameTaken)
+				material.name = std::format("{}_{}", material.name.empty() ? std::string("Material") : material.name, i);
+
+			material.properties.twoSided = source.doubleSided;
+
+			if (source.alphaMode == fastgltf::AlphaMode::Mask)
+				material.properties.domain = Asset::MaterialDomain::Masked;
+			else if (source.alphaMode == fastgltf::AlphaMode::Blend)
+				material.properties.domain = Asset::MaterialDomain::Transparent;
+
+			const fastgltf::math::nvec4& baseColor = source.pbrData.baseColorFactor;
+			const fastgltf::math::nvec3& emissive = source.emissiveFactor;
+
+			Asset::MaterialParameters& parameters = material.parameters;
+			parameters.m_baseColorFactor = Math::Vec4f(baseColor.x(), baseColor.y(), baseColor.z(), baseColor.w());
+			parameters.m_emissiveFactor = Math::Vec4f(emissive.x(), emissive.y(), emissive.z(), 1.0f);
+			parameters.m_metallic = source.pbrData.metallicFactor;
+			parameters.m_roughness = source.pbrData.roughnessFactor;
+			parameters.m_alphaCutoff = source.alphaCutoff;
+			parameters.m_occlusionChannel = 0;
+			parameters.m_roughnessChannel = 1;
+			parameters.m_metallicChannel = 2;
+
+			if (source.pbrData.baseColorTexture.has_value())
+				material.baseColorPath = ResolveTexturePath(asset, source.pbrData.baseColorTexture->textureIndex);
+
+			if (source.pbrData.metallicRoughnessTexture.has_value())
+			{
+				material.roughnessPath = ResolveTexturePath(asset, source.pbrData.metallicRoughnessTexture->textureIndex);
+				material.metallicPath = material.roughnessPath;
+			}
+
+			if (source.normalTexture.has_value())
+			{
+				parameters.m_normalScale = source.normalTexture->scale;
+				material.normalPath = ResolveTexturePath(asset, source.normalTexture->textureIndex);
+			}
+
+			if (source.occlusionTexture.has_value())
+				material.occlusionPath = ResolveTexturePath(asset, source.occlusionTexture->textureIndex);
+
+			if (source.emissiveTexture.has_value())
+				material.emissivePath = ResolveTexturePath(asset, source.emissiveTexture->textureIndex);
+
+			outMaterials.PushBack(material);
+		}
 	}
 }

@@ -4,6 +4,7 @@
 #include <Editor/ImportPipeline/ImportReason.h>
 #include <Engine/Core/Engine.h>
 #include <Runtime/Containers/Guid.h>
+#include <Runtime/Containers/Vector/List.h>
 #include <Runtime/RTTR/Reflection.h>
 
 #include <string>
@@ -11,6 +12,14 @@
 
 namespace Horizon::Editor
 {
+	class AssetImporter;
+
+	struct ImportDependency
+	{
+		std::string path;
+		Guid id;
+	};
+
 	struct ImportPipelineContext
 	{
 		std::string sourcePath;
@@ -19,5 +28,7 @@ namespace Horizon::Editor
 		ImportReason reason = ImportReason::Fresh;
 		const AssetImportSettings* pSettings = nullptr;
 		Engine::ReflectionSystem* pReflection = nullptr;
+		AssetImporter* pImporter = nullptr;
+		List<ImportDependency> dependencies;
 	};
 }

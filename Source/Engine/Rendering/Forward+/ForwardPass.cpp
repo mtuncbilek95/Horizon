@@ -46,6 +46,7 @@ namespace Horizon::Rendering::Pass
 			u32 materialBufferIndex;
 			u32 materialIndex;
 			u32 samplerIndex;
+			u32 shadowMaskIndex;
 		};
 
 		struct GpuLightFrame
@@ -54,6 +55,7 @@ namespace Horizon::Rendering::Pass
 			f32 intensity;
 			Math::Vec3f direction;
 			u32 pointLightCount;
+			Math::Vec3f cameraPosition;
 		};
 	}
 
@@ -139,6 +141,7 @@ namespace Horizon::Rendering::Pass
 		m_resourceHeap = pContext->GetResourceHeap();
 		m_pointLightView = m_resourceHeap->Allocate();
 		m_lightGridView = m_resourceHeap->Allocate();
+		m_shadowMaskView = m_resourceHeap->Allocate();
 
 		m_lightFrameView = m_resourceHeap->Allocate();
 		m_resourceHeap->Write(m_lightFrameView, RHI::DescriptorType::Buffer, m_lightFrameBuffer.Get(), 0, lightFrameDesc.size, sizeof(GpuLightFrame));
@@ -152,6 +155,12 @@ namespace Horizon::Rendering::Pass
 		{
 			m_resourceHeap->Free(m_lightFrameView);
 			m_lightFrameView = kInvalid32;
+		}
+
+		if (m_shadowMaskView != kInvalid32)
+		{
+			m_resourceHeap->Free(m_shadowMaskView);
+			m_shadowMaskView = kInvalid32;
 		}
 
 		if (m_lightGridView != kInvalid32)
@@ -189,6 +198,7 @@ namespace Horizon::Rendering::Pass
 		graph.Reads<Resource::PreDepthOutput>(RHI::ResourceState::DepthRead);
 		graph.Reads<Resource::PointLightList>(RHI::ResourceState::ShaderResource);
 		graph.Reads<Resource::ClusteredLightGrid>(RHI::ResourceState::ShaderResource);
+		graph.Reads<Resource::ShadowMask>(RHI::ResourceState::ShaderResource);
 		graph.Writes<Resource::SceneColorMS>(RHI::ResourceState::RenderTarget);
 	}
 
@@ -208,8 +218,10 @@ namespace Horizon::Rendering::Pass
 
 		m_resourceHeap->Write(m_pointLightView, RHI::DescriptorType::Buffer, pPointLights, 0, pPointLights->GetSize(), sizeof(Engine::RenderablePointLight));
 		m_resourceHeap->Write(m_lightGridView, RHI::DescriptorType::Buffer, pLightGrid, 0, pLightGrid->GetSize(), sizeof(u32));
+		m_resourceHeap->Write(m_shadowMaskView, RHI::DescriptorType::Texture, GetTextureView<Resource::ShadowMask>());
 
 		GpuLightFrame lightFrame = {};
+		lightFrame.cameraPosition = pCamera->camWorldPosition;
 
 		if (pDirectional)
 		{
@@ -274,6 +286,7 @@ namespace Horizon::Rendering::Pass
 			constants.worldMatrix = renderable.worldMatrix;
 			constants.materialBufferIndex = pMeshes->materialBufferView;
 			constants.samplerIndex = pMeshes->samplerView;
+			constants.shadowMaskIndex = m_shadowMaskView;
 
 			for (const Asset::MeshSubmesh& submesh : renderable.mesh.submeshes)
 			{

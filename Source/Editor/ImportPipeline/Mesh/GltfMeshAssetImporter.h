@@ -28,6 +28,9 @@ namespace Horizon::Editor
 		AssetImportResult GenerateTable(const ImportPipelineContext& ctx, List<u8>& outBytes) final;
 		AssetImportResult GenerateBinary(const ImportPipelineContext& ctx, List<u8>& outBytes) final;
 
+		void CollectDependencies(const ImportPipelineContext& ctx, List<std::string>& outPaths) final;
+		void CollectMaterials(const ImportPipelineContext& ctx, List<ImportedMaterial>& outMaterials) final;
+
 	private:
 		b8 LoadExternalBuffers(const ImportPipelineContext& ctx);
 		AssetImportResult BuildMesh(const ImportPipelineContext& ctx);

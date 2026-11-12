@@ -6,6 +6,7 @@
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/Directory.h>
 #include <Runtime/PAL/File/File.h>
+#include <Runtime/PAL/Sync/Thread.h>
 
 namespace Horizon::Editor
 {
@@ -65,10 +66,23 @@ namespace Horizon::Editor
 			return false;
 		}
 
-		PAL::FileAccessRequest request = PAL::File::RequestAccess(cookedPath, PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::Exclusive);
+		static constexpr u32 kWriteAttempts = 8;
+		static constexpr u32 kWriteRetryDelayMs = 25;
+
+		PAL::FileAccessRequest request;
+
+		for (u32 attempt = 0; attempt < kWriteAttempts; ++attempt)
+		{
+			request = PAL::File::RequestAccess(cookedPath, PAL::FileOperationAccessPolicy::Write, PAL::FileOperationSharePolicy::Exclusive);
+			if (request.IsValid())
+				break;
+
+			PAL::Thread::SleepMs(kWriteRetryDelayMs);
+		}
+
 		if (!request.IsValid())
 		{
-			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be opened for writing", cookedPath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} could not be opened for writing after {} attempts", cookedPath, kWriteAttempts);
 			return false;
 		}
 

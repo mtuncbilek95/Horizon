@@ -58,6 +58,7 @@ namespace Horizon::Editor
 
 		void RunParseAsset(DomainFileImportContext& task);
 		void OnParseAssetFinished(usize slot);
+		void ResolveDependencies(DomainFile* pFile, DomainFileImportContext& task);
 
 		void RunCookAsset(DomainFileImportContext& task);
 		void OnCookAssetFinished(usize slot);
