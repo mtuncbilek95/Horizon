@@ -241,7 +241,9 @@ namespace Horizon::Asset
 		const usize vertBlock = props.vertexCount * props.vertexStride;
 		const usize indexBlock = props.indexCount * props.indexStride;
 
-		if (subMeshTable != header.tableSize)
+		const usize slotTable = props.materialSlotCount * sizeof(Guid);
+
+		if (subMeshTable + slotTable != header.tableSize)
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Table size does not match MeshProperties", pAsset->m_id.ToString());
 			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
@@ -274,6 +276,15 @@ namespace Horizon::Asset
 				PAL::File::CloseMap(view);
 				return;
 			}
+		}
+
+		List<Engine::AssetHandle<Material>> materialSlots(props.materialSlotCount);
+
+		for (u32 i = 0; i < props.materialSlotCount; ++i)
+		{
+			Guid id;
+			std::memcpy(&id, view.GetData() + header.tableOffset + subMeshTable + i * sizeof(Guid), sizeof(Guid));
+			materialSlots[i].SetId(id);
 		}
 
 		const u8* pVertexData = view.GetData() + header.payloadOffset;
@@ -325,6 +336,7 @@ namespace Horizon::Asset
 		pAsset->m_vertexRange = vRange;
 		pAsset->m_indexRange = iRange;
 		pAsset->m_submeshes = subMeshes;
+		pAsset->m_materialSlots = materialSlots;
 		pAsset->m_properties = props;
 		pAsset->m_residency.Store(Engine::AssetResidency::Resident, PAL::MemoryOrder::Release);
 	}

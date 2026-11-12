@@ -1,6 +1,7 @@
 #include "CreateMaterialItem.h"
 
 #include <Engine/Reflection/ReflectionSystem.h>
+#include <Engine/Asset/Material/MaterialSerializer.h>
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 #include <Runtime/PAL/File/File.h>
@@ -46,14 +47,25 @@ namespace Horizon::Editor
 	{
 		Engine::ReflectionSystem* pReflection = context.pEngine->GetReflectionSystem();
 
+		Asset::MaterialProperties properties;
+		Asset::MaterialParameters parameters;
+		JsonArchiveWriter writer;
+
+		if (!Asset::MaterialSerializer::Serialize(properties, parameters, pReflection, writer))
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "Default material could not be serialized");
+			return;
+		}
+
 		const std::string path = context.pCurrentFolder->GetAbsolutePath() + "/" + ResolveUniqueName(context.pCurrentFolder);
+
 		if (!PAL::File::Create(path))
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be created", path);
 			return;
 		}
 
-		/*PAL::FileAccessRequest request = PAL::File::RequestAccess(path, PAL::FileOperationAccessPolicy::Write,
+		PAL::FileAccessRequest request = PAL::File::RequestAccess(path, PAL::FileOperationAccessPolicy::Write,
 			PAL::FileOperationSharePolicy::Exclusive);
 
 		const b8 wasWritten = PAL::File::WriteString(request, writer.ToString());
@@ -61,7 +73,7 @@ namespace Horizon::Editor
 		PAL::File::ReleaseAccess(request);
 
 		if (!wasWritten)
-			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be written", path);*/
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be written", path);
 	}
 
 	b8 CreateMaterialItem::IsEnabled(const AssetBrowserContext& context)

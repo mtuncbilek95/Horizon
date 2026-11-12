@@ -12,6 +12,9 @@ namespace Horizon::Engine
 		Math::Mat4f worldMatrix;
 		Asset::MeshUsePermit mesh;
 
+		u32 firstMaterial;
+		u32 materialCount;
+
 		b8 visible;
 		b8 castShadow;
 	};
@@ -19,5 +22,9 @@ namespace Horizon::Engine
 	struct FrameMesh
 	{
 		List<RenderableMesh> meshes;
+		List<u32> materialIndices;
+
+		u32 materialBufferView = kInvalid32;
+		u32 samplerView = kInvalid32;
 	};
 }

@@ -1,5 +1,6 @@
 #include "ViewRegistry.h"
 
+#include <Editor/Domain/DomainFile.h>
 #include <Editor/Renderer/Utils/ChromeBar.h>
 #include <Editor/Views/EditorViewAttribute.h>
 #include <Editor/Views/ViewCommandBinding.h>
@@ -95,7 +96,17 @@ namespace Horizon::Editor
 				pView->m_focusRequested = false;
 			}
 
-			const b8 visible = ImGui::Begin(pView->m_windowTitle.c_str(), closable ? &pView->m_open : nullptr, windowFlags);
+			b8 visible = false;
+			const b8 multiInstance = HasFlag(pView->m_flags, EditorViewFlags::MultiInstance);
+			if (closable && multiInstance && pView->GetConnectedFile())
+			{
+				std::string newName = pView->m_windowTitle + " - " + pView->GetConnectedFile()->GetName();
+				visible = ImGui::Begin(newName.c_str(), closable ? &pView->m_open : nullptr, windowFlags);
+			}
+			else
+			{
+				visible = ImGui::Begin(pView->m_windowTitle.c_str(), closable ? &pView->m_open : nullptr, windowFlags);
+			}
 
 			if (pView->IsFullBleed())
 				ImGui::PopStyleVar(2);

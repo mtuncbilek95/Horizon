@@ -6,7 +6,7 @@
 
 namespace Horizon::Editor
 {
-	HCLASS(ActionType[Reflect::TypeOf<Asset::Scene>()])
+	HCLASS(ActionType[Reflect::TypeOf<Asset::Scene>()]);
 	class SceneAssetAction : public AssetAction
 	{
 		HORIZON_TYPE_REFLECT(SceneAssetAction);

@@ -853,6 +853,28 @@ namespace Horizon::Editor
 		QueueImport(pFile, ImportReason::SettingsChanged);
 	}
 
+	b8 DomainService::SaveSettings(DomainFile* pFile)
+	{
+		if (!pFile || !pFile->GetSettings())
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "Settings save requested for a file without settings");
+			return false;
+		}
+
+		ImportPipelineEntry* pEntry = m_importPipelineRegistry.GetImportPipelineEntry(pFile->GetExtension());
+		if (!pEntry)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "{} has no registered import pipeline", pFile->GetName());
+			return false;
+		}
+
+		if (!WriteMetaFile(pFile, pEntry->pSettingsType))
+			return false;
+
+		QueueImport(pFile, ImportReason::SettingsChanged);
+		return true;
+	}
+
 	void DomainService::QueueImport(DomainFile* pFile, ImportReason reason)
 	{
 		// Check if file is a valid one

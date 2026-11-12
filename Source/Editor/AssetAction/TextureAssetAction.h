@@ -6,7 +6,7 @@
 
 namespace Horizon::Editor
 {
-	HCLASS(ActionType[Reflect::TypeOf<Asset::Texture>()])
+	HCLASS(ActionType[Reflect::TypeOf<Asset::Texture>()]);
 		class TextureAssetAction : public AssetAction
 	{
 		HORIZON_TYPE_REFLECT(TextureAssetAction);

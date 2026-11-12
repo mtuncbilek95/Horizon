@@ -23,6 +23,9 @@ struct ForwardConstants
     uint maxLightsPerCluster;
     float nearPlane;
     float farPlane;
+    uint materialBufferIndex;
+    uint materialIndex;
+    uint samplerIndex;
 };
 
 struct VertexInput
@@ -37,6 +40,7 @@ struct PixelData
     centroid float3 normal : NORMAL0;
     centroid float4 color : COLOR0;
     centroid float viewDepth : TEXCOORD1;
+    centroid float2 uv : TEXCOORD2;
 };
 
 ConstantBuffer<ForwardConstants> pushConstant : register(b0, space999);
@@ -56,5 +60,6 @@ PixelData VSMain(VertexInput input)
     output.normal = normalize(mul((float3x3) pushConstant.worldMat, vertex.normal));
     output.color = vertex.color;
     output.viewDepth = clipPosition.w;
+    output.uv = vertex.uv;
     return output;
 }

@@ -14,6 +14,9 @@ struct ForwardConstants
     uint maxLightsPerCluster;
     float nearPlane;
     float farPlane;
+    uint materialBufferIndex;
+    uint materialIndex;
+    uint samplerIndex;
 };
 
 struct PointLight
@@ -32,6 +35,26 @@ struct GpuLightFrame
     uint pointLightCount;
 };
 
+struct MaterialData
+{
+    float4 baseColorFactor;
+    float4 emissiveFactor;
+    float metallic;
+    float roughness;
+    float normalScale;
+    float alphaCutoff;
+    uint baseColorIndex;
+    uint normalIndex;
+    uint emissiveIndex;
+    uint occlusionIndex;
+    uint roughnessIndex;
+    uint metallicIndex;
+    uint occlusionChannel;
+    uint roughnessChannel;
+    uint metallicChannel;
+    uint reserved;
+};
+
 struct PixelData
 {
     float4 position : SV_Position;
@@ -39,6 +62,7 @@ struct PixelData
     centroid float3 normal : NORMAL0;
     centroid float4 color : COLOR0;
     centroid float viewDepth : TEXCOORD1;
+    centroid float2 uv : TEXCOORD2;
 };
 
 ConstantBuffer<ForwardConstants> pushConstant : register(b0, space999);
@@ -93,5 +117,17 @@ float4 PSMain(PixelData input) : SV_Target0
         lighting += light.color.rgb * light.intensity * diffuse * falloff * falloff;
     }
 
-    return float4(input.color.rgb * lighting, 1.0f);
+    StructuredBuffer<MaterialData> materials = ResourceDescriptorHeap[pushConstant.materialBufferIndex];
+    const MaterialData material = materials[pushConstant.materialIndex];
+
+    float4 baseColor = material.baseColorFactor * input.color;
+
+    if (material.baseColorIndex != 0xFFFFFFFF)
+    {
+        Texture2D<float4> baseColorTexture = ResourceDescriptorHeap[material.baseColorIndex];
+        SamplerState materialSampler = SamplerDescriptorHeap[pushConstant.samplerIndex];
+        baseColor *= baseColorTexture.Sample(materialSampler, input.uv);
+    }
+
+    return float4(baseColor.rgb * lighting, 1.0f);
 }

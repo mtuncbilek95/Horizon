@@ -1,6 +1,7 @@
 #include "RenderExtraction.h"
 
 #include <Engine/Asset/AssetService.h>
+#include <Engine/Asset/Material/MaterialStreamer.h>
 #include <Engine/Rendering/Renderables/RenderableCamera.h>
 #include <Engine/Rendering/Renderables/RenderableMesh.h>
 #include <Engine/World/WorldService.h>
@@ -21,6 +22,13 @@ namespace Horizon::World::System
 			return false;
 		}
 
+		m_materials = m_assets->FindLoader<Asset::MaterialStreamer>(Reflect::TypeOf<Asset::Material>());
+		if (!m_materials)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "MaterialStreamer is missing, scene has no material buffer to render");
+			return false;
+		}
+
 		return true;
 	}
 
@@ -31,11 +39,19 @@ namespace Horizon::World::System
 
 		m_permits.Clear();
 
+		for (Asset::MaterialUsePermit& permit : m_materialPermits)
+			permit.pAsset->EndUse(permit);
+
+		m_materialPermits.Clear();
+
 		auto* pWorld = GetEngine()->RequestService<Engine::WorldService>();
 		Engine::Blackboard& board = pWorld->GetBlackboard();
 
 		Engine::RenderableCamera& camera = board.Add<Engine::RenderableCamera>();
 		Engine::FrameMesh& frame = board.Add<Engine::FrameMesh>();
+
+		frame.materialBufferView = m_materials->GetMaterialBufferView();
+		frame.samplerView = m_materials->GetDefaultSamplerView();
 
 		// Get camera
 		currentScene.ForEach<Component::CameraWorld, Component::PerspectiveCamera>([&](Engine::EntityHandle, Component::CameraWorld& cam, Component::PerspectiveCamera& perspective)
@@ -67,7 +83,15 @@ namespace Horizon::World::System
 					return;
 
 				m_permits.PushBack(permit);
-				frame.meshes.PushBack({ world.m_worldMatrix, permit, selection.m_visible, selection.m_castShadow });
+
+				List<Engine::AssetHandle<Asset::Material>>& slots = pMesh->GetMaterialSlots();
+				const u32 firstMaterial = static_cast<u32>(frame.materialIndices.GetCount());
+				const u32 materialCount = static_cast<u32>(slots.GetCount());
+
+				for (u32 i = 0; i < materialCount; ++i)
+					frame.materialIndices.PushBack(ResolveMaterial(slots[i]));
+
+				frame.meshes.PushBack({ world.m_worldMatrix, permit, firstMaterial, materialCount, selection.m_visible, selection.m_castShadow });
 			});
 	}
 
@@ -86,5 +110,28 @@ namespace Horizon::World::System
 		graph.Writes<Engine::FrameMesh>();
 
 		graph.RunsAfter<LocalToWorld>();
+	}
+
+	u32 RenderExtraction::ResolveMaterial(Engine::AssetHandle<Asset::Material>& handle)
+	{
+		if (handle.GetId() == Guid())
+			return 0;
+
+		Asset::Material* pMaterial = m_assets->Resolve(handle);
+		if (!pMaterial)
+			return 0;
+
+		if (pMaterial->GetResidency() == Engine::AssetResidency::Unloaded)
+		{
+			pMaterial->LoadAsync();
+			return 0;
+		}
+
+		Asset::MaterialUsePermit permit = pMaterial->BeginUse();
+		if (!permit.IsValid())
+			return 0;
+
+		m_materialPermits.PushBack(permit);
+		return permit.materialIndex;
 	}
 }

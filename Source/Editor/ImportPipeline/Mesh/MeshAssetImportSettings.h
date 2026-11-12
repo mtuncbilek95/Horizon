@@ -1,6 +1,10 @@
 #pragma once
 
 #include <Editor/ImportPipeline/AssetImportSettings.h>
+#include <Engine/Asset/AssetHandle.h>
+#include <Engine/Asset/Material/Material.h>
+#include <Runtime/Containers/Vector/List.h>
+#include <Runtime/RTTR/Attributes/AssetRefAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor
@@ -27,5 +31,8 @@ namespace Horizon::Editor
 
 		HFIELD();
 		b8 m_applyTransform = true;
+
+		HFIELD(AssetRef[Reflect::TypeOf<Asset::Material>()]);
+		List<Engine::AssetHandle<Asset::Material>> m_materialSlots;
 	};
 }

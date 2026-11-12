@@ -1,7 +1,9 @@
 #include "MeshAssetImportPipeline.h"
 
+#include <Editor/ImportPipeline/Mesh/MeshAssetImportSettings.h>
 #include <Engine/Asset/Mesh/MeshProperties.h>
 #include <Engine/Asset/Mesh/MeshVertex.h>
+#include <Runtime/Containers/Guid.h>
 #include <Runtime/Containers/StringHelper.h>
 #include <Runtime/Log/Terminal.h>
 
@@ -23,11 +25,33 @@ namespace Horizon::Editor
 		auto* pSubMeshes = (Asset::MeshSubmesh*)(bytes.table.GetData());
 
 		Math::BoundingBox mainBounds = Math::BoundingBox::Empty();
+		u32 slotCount = 0;
 		for (u32 i = 0; i < props.subMeshCount; ++i)
+		{
 			mainBounds.Expand(pSubMeshes[i].boundingBox);
 
+			if (pSubMeshes[i].materialSlotIndex + 1 > slotCount)
+				slotCount = pSubMeshes[i].materialSlotIndex + 1;
+		}
+
 		props.mainBounds = mainBounds;
+		props.materialSlotCount = slotCount;
 		std::memcpy(bytes.properties.GetData(), &props, sizeof(Asset::MeshProperties));
+
+		const auto* pSettings = static_cast<const MeshAssetImportSettings*>(ctx.pSettings);
+		const usize subMeshTable = bytes.table.GetCount();
+
+		bytes.table.Resize(subMeshTable + slotCount * sizeof(Guid));
+
+		for (u32 i = 0; i < slotCount; ++i)
+		{
+			Guid id;
+
+			if (pSettings && i < pSettings->m_materialSlots.GetCount())
+				id = pSettings->m_materialSlots[i].GetId();
+
+			std::memcpy(bytes.table.GetData() + subMeshTable + i * sizeof(Guid), &id, sizeof(Guid));
+		}
 	}
 
 	AssetImportResult MeshAssetImportPipeline::Validate(const ImportPipelineContext& ctx, const ImportProductBytes& bytes)
@@ -55,9 +79,9 @@ namespace Horizon::Editor
 			return AssetImportResult::InvalidData;
 		}
 
-		if (bytes.table.GetCount() != props.subMeshCount * sizeof(Asset::MeshSubmesh))
+		if (bytes.table.GetCount() != props.subMeshCount * sizeof(Asset::MeshSubmesh) + props.materialSlotCount * sizeof(Guid))
 		{
-			Terminal::Error(StringHelper::GetTypeName(this), "{} table size does not match subMeshCount", ctx.sourcePath);
+			Terminal::Error(StringHelper::GetTypeName(this), "{} table size does not match subMeshCount and materialSlotCount", ctx.sourcePath);
 			return AssetImportResult::InvalidData;
 		}
 

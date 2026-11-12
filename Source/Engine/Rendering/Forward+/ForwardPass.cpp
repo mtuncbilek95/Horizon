@@ -43,6 +43,9 @@ namespace Horizon::Rendering::Pass
 			u32 maxLightsPerCluster;
 			f32 nearPlane;
 			f32 farPlane;
+			u32 materialBufferIndex;
+			u32 materialIndex;
+			u32 samplerIndex;
 		};
 
 		struct GpuLightFrame
@@ -269,10 +272,16 @@ namespace Horizon::Rendering::Pass
 			constants.nearPlane = pCamera->nearPlane;
 			constants.farPlane = pCamera->farPlane;
 			constants.worldMatrix = renderable.worldMatrix;
+			constants.materialBufferIndex = pMeshes->materialBufferView;
+			constants.samplerIndex = pMeshes->samplerView;
 
 			for (const Asset::MeshSubmesh& submesh : renderable.mesh.submeshes)
 			{
 				constants.firstVertex = renderable.mesh.firstVertex + submesh.vertexOffset;
+				constants.materialIndex = 0;
+
+				if (submesh.materialSlotIndex < renderable.materialCount)
+					constants.materialIndex = pMeshes->materialIndices[renderable.firstMaterial + submesh.materialSlotIndex];
 
 				pCmdList->SetPushConstants(&constants, sizeof(ForwardConstants));
 				pCmdList->DrawIndexed(submesh.indexCount, 1, renderable.mesh.firstIndex + submesh.indexOffset);
