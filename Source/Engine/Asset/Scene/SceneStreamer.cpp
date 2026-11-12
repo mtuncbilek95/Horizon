@@ -12,6 +12,28 @@
 
 namespace Horizon::Asset
 {
+	void SceneStreamer::LoadAsync(Scene* pAsset)
+	{
+		if (!pAsset->m_scene)
+			pAsset->m_scene = MakeUnique<Engine::Scene>(GetEngine()->GetReflectionSystem());
+
+		pAsset->m_ticket = m_jobSystem->SubmitJob(Engine::JobLane::Background, Engine::Job([this, pAsset]()
+			{
+				RunLoadWorld(pAsset);
+			}));
+
+		// Nearly impossible but sure
+		if (pAsset->m_ticket == Engine::InvalidSubmitTicket)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Engine::Job could not be submitted", pAsset->m_id.ToString());
+			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
+		}
+	}
+
+	void SceneStreamer::UnloadAsync(Scene* pAsset)
+	{
+	}
+
 	void SceneStreamer::OnInitialize()
 	{
 		m_jobSystem = GetEngine()->GetJobSystem();
@@ -38,28 +60,6 @@ namespace Horizon::Asset
 		auto* pSceneAsset = static_cast<Scene*>(entry.pAssetObject);
 
 		pSceneAsset->m_residency.CompareExchange(Engine::AssetResidency::Failed, Engine::AssetResidency::Unloaded);
-	}
-
-	void SceneStreamer::LoadAsync(Scene* pAsset)
-	{
-		if (!pAsset->m_scene)
-			pAsset->m_scene = MakeUnique<Engine::Scene>(GetEngine()->GetReflectionSystem());
-
-		pAsset->m_ticket = m_jobSystem->SubmitJob(Engine::JobLane::Background, Engine::Job([this, pAsset]()
-			{
-				RunLoadWorld(pAsset);
-			}));
-
-		// Nearly impossible but sure
-		if (pAsset->m_ticket == Engine::InvalidSubmitTicket)
-		{
-			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Engine::Job could not be submitted", pAsset->m_id.ToString());
-			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
-		}
-	}
-
-	void SceneStreamer::UnloadAsync(Scene* pAsset)
-	{
 	}
 
 	void SceneStreamer::RunLoadWorld(Scene* pAsset)

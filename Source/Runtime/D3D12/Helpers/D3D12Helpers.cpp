@@ -673,6 +673,9 @@ namespace Horizon::RHI
 		if (state == ResourceState::Undefined)
 			return D3D12_BARRIER_LAYOUT_UNDEFINED;
 
+		if (HasFlag(state, ResourceState::Common))
+			return D3D12_BARRIER_LAYOUT_COMMON;
+
 		if (HasFlag(state, ResourceState::Present))
 			return D3D12_BARRIER_LAYOUT_PRESENT;
 

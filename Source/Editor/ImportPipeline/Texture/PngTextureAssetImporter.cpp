@@ -15,6 +15,9 @@ namespace Horizon::Editor
 	namespace
 	{
 		constexpr u32 kChannels = 4;
+		constexpr u32 kRowPitchAlignment = 256;
+		constexpr usize kMipOffsetAlignment = 512;
+		constexpr u32 kMinMipSize = 16;
 
 		class RgbaDecodeCallbacks final : public wuffs_aux::DecodeImageCallbacks
 		{
@@ -206,23 +209,31 @@ namespace Horizon::Editor
 
 		while (true)
 		{
+			const u32 rowBytes = width * kChannels;
+			const u32 rowPitch = (rowBytes + kRowPitchAlignment - 1) & ~(kRowPitchAlignment - 1);
+			const usize payloadEnd = m_payload.GetCount();
+			const usize mipOffset = (payloadEnd + kMipOffsetAlignment - 1) & ~(kMipOffsetAlignment - 1);
+			const usize mipSize = static_cast<usize>(rowPitch) * height;
+
 			Asset::TextureMip mip = {};
-			mip.offset = m_payload.GetCount();
-			mip.size = level.GetCount();
+			mip.offset = mipOffset;
+			mip.size = mipSize;
 			mip.width = width;
 			mip.height = height;
-			mip.rowPitch = width * kChannels;
+			mip.rowPitch = rowPitch;
 			m_mips.PushBack(mip);
 
-			const usize writeOffset = m_payload.GetCount();
-			m_payload.Resize(writeOffset + level.GetCount());
-			std::memcpy(m_payload.GetData() + writeOffset, level.GetData(), level.GetCount());
+			m_payload.Resize(mipOffset + mipSize);
+			std::memset(m_payload.GetData() + payloadEnd, 0, mipOffset + mipSize - payloadEnd);
 
-			if (!hasMips || (width == 1 && height == 1))
+			for (u32 y = 0; y < height; ++y)
+				std::memcpy(m_payload.GetData() + mipOffset + static_cast<usize>(y) * rowPitch, level.GetData() + static_cast<usize>(y) * rowBytes, rowBytes);
+
+			const u32 nextWidth = width / 2;
+			const u32 nextHeight = height / 2;
+
+			if (!hasMips || nextWidth < kMinMipSize || nextHeight < kMinMipSize)
 				break;
-
-			const u32 nextWidth = std::max(1u, width / 2);
-			const u32 nextHeight = std::max(1u, height / 2);
 
 			level = Downsample(level, width, height, nextWidth, nextHeight, isSrgb);
 			width = nextWidth;

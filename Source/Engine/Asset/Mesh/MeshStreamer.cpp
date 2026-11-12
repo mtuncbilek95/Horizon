@@ -18,10 +18,53 @@
 #include <Runtime/RHI/Device/Device.h>
 #include <Runtime/RHI/Fence/FenceDesc.h>
 
-#include <cstring>
-
 namespace Horizon::Asset
 {
+	void MeshStreamer::LoadAsync(Mesh* pAsset)
+	{
+		if (m_device == nullptr || !m_vertexBuffer || !m_indexBuffer)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "No device! No Vertex Buffer! No Index Buffer!", pAsset->m_id.ToString());
+			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
+			return;
+		}
+
+		pAsset->m_ticket = m_jobSystem->SubmitJob(Engine::JobLane::Critical, Engine::Job([this, pAsset]()
+			{
+				RunLoadAsset(pAsset);
+			}));
+
+		if (pAsset->m_ticket == Engine::InvalidSubmitTicket)
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Engine::Job could not be submitted", pAsset->m_id.ToString());
+			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
+		}
+	}
+
+	void MeshStreamer::UnloadAsync(Mesh* pAsset)
+	{
+		ReleaseAsset(pAsset);
+	}
+
+	void MeshStreamer::ReleaseAsset(Mesh* pAsset)
+	{
+		{
+			ScopedLock lockArena(m_arenaLock);
+
+			if (pAsset->m_vertexRange.IsValid())
+				m_vertexRanges.Free(pAsset->m_vertexRange);
+
+			if (pAsset->m_indexRange.IsValid())
+				m_indexRanges.Free(pAsset->m_indexRange);
+		}
+
+		pAsset->m_vertexRange = {};
+		pAsset->m_indexRange = {};
+		pAsset->m_submeshes.Clear();
+		pAsset->m_properties = {};
+		pAsset->m_residency.Store(Engine::AssetResidency::Unloaded, PAL::MemoryOrder::Release);
+	}
+
 	void MeshStreamer::OnInitialize()
 	{
 		m_jobSystem = GetEngine()->GetJobSystem();
@@ -111,51 +154,6 @@ namespace Horizon::Asset
 			m_jobSystem->WaitTicket(pMeshAsset->m_ticket);
 
 		ReleaseAsset(pMeshAsset);
-	}
-
-	void MeshStreamer::LoadAsync(Mesh* pAsset)
-	{
-		if (m_device == nullptr || !m_vertexBuffer || !m_indexBuffer)
-		{
-			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "No device! No Vertex Buffer! No Index Buffer!", pAsset->m_id.ToString());
-			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
-			return;
-		}
-
-		pAsset->m_ticket = m_jobSystem->SubmitJob(Engine::JobLane::Critical, Engine::Job([this, pAsset]()
-			{
-				RunLoadAsset(pAsset);
-			}));
-
-		if (pAsset->m_ticket == Engine::InvalidSubmitTicket)
-		{
-			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "Engine::Job could not be submitted", pAsset->m_id.ToString());
-			pAsset->m_residency.Store(Engine::AssetResidency::Failed, PAL::MemoryOrder::Release);
-		}
-	}
-
-	void MeshStreamer::UnloadAsync(Mesh* pAsset)
-	{
-		ReleaseAsset(pAsset);
-	}
-
-	void MeshStreamer::ReleaseAsset(Mesh* pAsset)
-	{
-		{
-			ScopedLock lockArena(m_arenaLock);
-
-			if (pAsset->m_vertexRange.IsValid())
-				m_vertexRanges.Free(pAsset->m_vertexRange);
-
-			if (pAsset->m_indexRange.IsValid())
-				m_indexRanges.Free(pAsset->m_indexRange);
-		}
-
-		pAsset->m_vertexRange = {};
-		pAsset->m_indexRange = {};
-		pAsset->m_submeshes.Clear();
-		pAsset->m_properties = {};
-		pAsset->m_residency.Store(Engine::AssetResidency::Unloaded, PAL::MemoryOrder::Release);
 	}
 
 	void MeshStreamer::RunLoadAsset(Mesh* pAsset)

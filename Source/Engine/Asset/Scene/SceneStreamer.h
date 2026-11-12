@@ -18,6 +18,9 @@ namespace Horizon::Asset
 		SceneStreamer() = default;
 		~SceneStreamer() = default;
 
+		SceneStreamer(const SceneStreamer&) = delete;
+		SceneStreamer& operator=(const SceneStreamer&) = delete;
+
 		Reflect::TypeHandle GetWorkingAssetType() const final { return Reflect::TypeOf<Scene>(); }
 
 		void LoadAsync(Scene* pAsset);

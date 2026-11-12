@@ -11,6 +11,12 @@ namespace Horizon::Asset
 	{
 		HORIZON_TYPE_REFLECT(InputActionMapLoader);
 	public:
+		InputActionMapLoader() = default;
+		~InputActionMapLoader() = default;
+
+		InputActionMapLoader(const InputActionMapLoader&) = delete;
+		InputActionMapLoader& operator=(const InputActionMapLoader&) = delete;
+
 		Reflect::TypeHandle GetWorkingAssetType() const { return Reflect::TypeOf<InputActionMap>(); }
 
 		void LoadSync(InputActionMap* pAsset);

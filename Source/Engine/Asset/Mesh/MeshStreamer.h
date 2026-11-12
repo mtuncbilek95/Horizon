@@ -31,6 +31,9 @@ namespace Horizon::Asset
 		MeshStreamer() = default;
 		~MeshStreamer() = default;
 
+		MeshStreamer(const MeshStreamer&) = delete;
+		MeshStreamer& operator=(const MeshStreamer&) = delete;
+
 		Reflect::TypeHandle GetWorkingAssetType() const final { return Reflect::TypeOf<Mesh>(); }
 
 		void LoadAsync(Mesh* pAsset);

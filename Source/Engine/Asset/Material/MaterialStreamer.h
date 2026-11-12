@@ -18,6 +18,9 @@ namespace Horizon::Asset
 		MaterialStreamer() = default;
 		~MaterialStreamer() = default;
 
+		MaterialStreamer(const MaterialStreamer&) = delete;
+		MaterialStreamer& operator=(const MaterialStreamer&) = delete;
+
 		Reflect::TypeHandle GetWorkingAssetType() const final { return Reflect::TypeOf<Material>(); }
 
 		void LoadAsync(Material* pAsset);

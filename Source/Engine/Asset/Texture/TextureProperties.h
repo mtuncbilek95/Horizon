@@ -12,6 +12,7 @@ namespace Horizon::Asset
 		u32 width = 0;
 		u32 height = 0;
 		u32 rowPitch = 0;
+		u32 reserved = 0;
 	};
 
 	struct TextureProperties

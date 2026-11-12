@@ -1,4 +1,3 @@
-// SceneView.cpp
 #include "SceneView.h"
 
 #include <Editor/Renderer/EditorContext.h>
@@ -20,7 +19,6 @@
 
 #include <imgui.h>
 #include <ImGuizmo.h>
-#include <string_view>
 
 namespace Horizon::Editor
 {
