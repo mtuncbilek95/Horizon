@@ -22,6 +22,15 @@ namespace Horizon::Asset
 	class TextureStreamer : public Engine::AssetLoadSystem
 	{
 		HORIZON_TYPE_REFLECT(TextureStreamer);
+
+		struct RetiredContext
+		{
+			UniquePtr<TextureContext> context;
+			u64 retiredTick = 0;
+		};
+
+		static constexpr u64 kRetireTicks = 3;
+
 	public:
 		TextureStreamer() = default;
 		~TextureStreamer() = default;
@@ -36,6 +45,7 @@ namespace Horizon::Asset
 
 	protected:
 		void OnInitialize() final;
+		void OnExecute(const Engine::EngineFrame& frame) final;
 		void OnFinalize() final;
 
 		void OnRegisteredAsset(const Engine::AssetEntry& entry) final;
@@ -53,6 +63,8 @@ namespace Horizon::Asset
 		UniquePtr<RHI::Fence> m_uploadFence = nullptr;
 		PAL::CriticalSection m_lock;
 		List<UniquePtr<TextureContext>> m_availableContexts;
+		List<RetiredContext> m_retiredContexts;
+		u64 m_tick = 0;
 
 		RHI::DescriptorHeap* m_resourceHeap = nullptr;
 	};

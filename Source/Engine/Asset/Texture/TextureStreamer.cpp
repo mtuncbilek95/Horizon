@@ -65,6 +65,39 @@ namespace Horizon::Asset
 		m_uploadFence->SetDebugName("TextureStreamer_UploadFence");
 	}
 
+	void TextureStreamer::OnExecute(const Engine::EngineFrame& frame)
+	{
+		List<UniquePtr<TextureContext>> expired;
+
+		{
+			ScopedLock lockContext(m_lock);
+
+			++m_tick;
+
+			for (usize i = m_retiredContexts.GetCount(); i > 0; --i)
+			{
+				RetiredContext& retired = m_retiredContexts[i - 1];
+
+				if (m_tick - retired.retiredTick < kRetireTicks)
+					continue;
+
+				expired.PushBack(std::move(retired.context));
+
+				if (i - 1 != m_retiredContexts.GetCount() - 1)
+					m_retiredContexts[i - 1] = std::move(m_retiredContexts.Back());
+
+				m_retiredContexts.PopBack();
+			}
+		}
+
+		for (usize i = 0; i < expired.GetCount(); ++i)
+		{
+			if (expired[i]->m_viewIndex != kInvalid32)
+				m_resourceHeap->Free(expired[i]->m_viewIndex);
+		}
+	}
+
+
 	void TextureStreamer::OnFinalize()
 	{
 		{
@@ -76,7 +109,14 @@ namespace Horizon::Asset
 					m_resourceHeap->Free(m_availableContexts[i]->m_viewIndex);
 			}
 
+			for (usize i = 0; i < m_retiredContexts.GetCount(); ++i)
+			{
+				if (m_retiredContexts[i].context->m_viewIndex != kInvalid32)
+					m_resourceHeap->Free(m_retiredContexts[i].context->m_viewIndex);
+			}
+
 			m_availableContexts.Clear();
+			m_retiredContexts.Clear();
 		}
 
 		m_uploadFence.Reset();
@@ -186,7 +226,7 @@ namespace Horizon::Asset
 
 		TextureProperties props;
 		std::memcpy(&props, view.GetData() + header.propertyOffset, sizeof(TextureProperties));
-		
+
 		if (props.format == RHI::TextureFormat::Undefined || props.width == 0 || props.height == 0 || props.mipCount == 0)
 		{
 			Terminal::Error(StringHelper::GetTypeName(this), "{} Path: {}", "TextureProperties has no valid pixel description", pAsset->m_id.ToString());
@@ -264,8 +304,6 @@ namespace Horizon::Asset
 
 	void TextureStreamer::ReleaseAsset(Texture* pAsset)
 	{
-		UniquePtr<TextureContext> context;
-
 		{
 			ScopedLock lockContext(m_lock);
 
@@ -274,7 +312,7 @@ namespace Horizon::Asset
 				const usize index = pAsset->m_availableIndex;
 				const usize last = m_availableContexts.GetCount() - 1;
 
-				context = std::move(m_availableContexts[index]);
+				m_retiredContexts.EmplaceBack(std::move(m_availableContexts[index]), m_tick);
 
 				if (index != last)
 				{
@@ -285,9 +323,6 @@ namespace Horizon::Asset
 				m_availableContexts.PopBack();
 			}
 		}
-
-		if (context && context->m_viewIndex != kInvalid32)
-			m_resourceHeap->Free(context->m_viewIndex);
 
 		pAsset->m_context = nullptr;
 		pAsset->m_availableIndex = 0;
