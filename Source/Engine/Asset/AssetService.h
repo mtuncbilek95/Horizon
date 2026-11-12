@@ -37,6 +37,15 @@ namespace Horizon::Engine
 		AssetLoadSystem* FindLoader(Reflect::TypeHandle assetType) const;
 
 		template<typename T>
+		T* Resolve(AssetHandle<T>& handle) const
+		{
+			if (handle.m_object == nullptr)
+				handle.m_object = FindAsset<T>(handle.m_id);
+
+			return handle.m_object;
+		}
+
+		template<typename T>
 		T* FindAsset(const Guid& id) const { return (T*)FindAsset(id, Reflect::TypeOf<T>()); }
 
 		template<typename T>

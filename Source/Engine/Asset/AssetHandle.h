@@ -11,9 +11,10 @@ namespace Horizon::Engine
 		requires std::is_base_of_v<AssetObject, T>
 	class AssetHandle
 	{
+		friend class AssetService;
 	public:
 		AssetHandle() = default;
-		AssetHandle(const Guid& id, T* pObject) : m_id(id), m_object(pObject)
+		explicit AssetHandle(const Guid& id) : m_id(id)
 		{
 		}
 		~AssetHandle() = default;
@@ -21,8 +22,13 @@ namespace Horizon::Engine
 		const Guid& GetId() const { return m_id; }
 		T* GetAsset() const { return m_object; }
 
-		void SetId(const Guid& id) { m_id = id; }
-		void SetAsset(AssetObject* pObj) { m_object = (T*)pObj; }
+		void SetId(const Guid& id)
+		{
+			m_id = id;
+			m_object = nullptr;
+		}
+
+		void Invalidate() { m_object = nullptr; }
 
 	private:
 		Guid m_id;

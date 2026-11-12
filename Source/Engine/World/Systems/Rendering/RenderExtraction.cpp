@@ -52,10 +52,7 @@ namespace Horizon::World::System
 		currentScene.ForEach<Component::WorldTransform, Component::MeshSelection>(
 			[&](Engine::EntityHandle, Component::WorldTransform& world, Component::MeshSelection& selection)
 			{
-				if (selection.m_meshHandle.GetAsset() == nullptr)
-					selection.m_meshHandle.SetAsset(m_assets->FindAsset<Asset::Mesh>(selection.m_meshHandle.GetId()));
-
-				Asset::Mesh* pMesh = selection.m_meshHandle.GetAsset();
+				Asset::Mesh* pMesh = m_assets->Resolve(selection.m_meshHandle);
 				if (!pMesh || (!selection.m_visible && !selection.m_castShadow))
 					return;
 

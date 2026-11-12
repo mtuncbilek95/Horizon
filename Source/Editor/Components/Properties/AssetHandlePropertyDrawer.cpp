@@ -38,7 +38,7 @@ namespace Horizon::Editor
 		if (!m_picker.Draw(pId, pAssetType, pDomain))
 			return false;
 
-		static_cast<Engine::AssetHandle<Engine::AssetObject>*>(pValue)->SetAsset(nullptr);
+		static_cast<Engine::AssetHandle<Engine::AssetObject>*>(pValue)->Invalidate();
 		return true;
 	}
 }
