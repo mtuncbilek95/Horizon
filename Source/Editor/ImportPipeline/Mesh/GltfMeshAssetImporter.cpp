@@ -10,9 +10,11 @@
 #include <fastgltf/tools.hpp>
 #include <fastgltf/types.hpp>
 
+#include <bit>
 #include <cstring>
 #include <filesystem>
 #include <format>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 
@@ -75,6 +77,35 @@ namespace Horizon::Editor
 			}
 
 			return std::string(pUri->uri.path());
+		}
+
+		struct PositionKey
+		{
+			u32 x;
+			u32 y;
+			u32 z;
+
+			b8 operator==(const PositionKey& other) const = default;
+		};
+
+		struct PositionKeyHash
+		{
+			usize operator()(const PositionKey& key) const
+			{
+				usize hash = key.x;
+				hash = hash * 0x9e3779b97f4a7c15ull + key.y;
+				hash = hash * 0x9e3779b97f4a7c15ull + key.z;
+				return hash;
+			}
+		};
+
+		PositionKey MakePositionKey(const Math::Vec3f& position)
+		{
+			PositionKey key = {};
+			key.x = std::bit_cast<u32>(position.X() + 0.0f);
+			key.y = std::bit_cast<u32>(position.Y() + 0.0f);
+			key.z = std::bit_cast<u32>(position.Z() + 0.0f);
+			return key;
 		}
 	}
 
@@ -366,6 +397,11 @@ namespace Horizon::Editor
 						std::swap(m_indices[i + 1], m_indices[i + 2]);
 				}
 
+				if (normalIt == primitive.attributes.end() || (pSettings && pSettings->m_smoothNormals))
+					GenerateSmoothNormals(subMesh);
+
+				GenerateTangents(subMesh, tangentIt != primitive.attributes.end());
+
 				m_subMeshes.PushBack(subMesh);
 			}
 		}
@@ -378,6 +414,119 @@ namespace Horizon::Editor
 
 		m_hasBuilt = true;
 		return AssetImportResult::Success;
+	}
+
+	void GltfMeshAssetImporter::GenerateSmoothNormals(const Asset::MeshSubmesh& subMesh)
+	{
+		std::unordered_map<PositionKey, Math::Vec3f, PositionKeyHash> sums;
+		sums.reserve(subMesh.vertexCount);
+
+		for (u32 i = 0; i + 2 < subMesh.indexCount; i += 3)
+		{
+			const Math::Vec3f& p0 = m_vertices[subMesh.vertexOffset + m_indices[subMesh.indexOffset + i]].position;
+			const Math::Vec3f& p1 = m_vertices[subMesh.vertexOffset + m_indices[subMesh.indexOffset + i + 1]].position;
+			const Math::Vec3f& p2 = m_vertices[subMesh.vertexOffset + m_indices[subMesh.indexOffset + i + 2]].position;
+
+			const Math::Vec3f faceNormal = (p1 - p0) ^ (p2 - p0);
+
+			sums.try_emplace(MakePositionKey(p0), Math::Vec3f(0.0f, 0.0f, 0.0f)).first->second += faceNormal;
+			sums.try_emplace(MakePositionKey(p1), Math::Vec3f(0.0f, 0.0f, 0.0f)).first->second += faceNormal;
+			sums.try_emplace(MakePositionKey(p2), Math::Vec3f(0.0f, 0.0f, 0.0f)).first->second += faceNormal;
+		}
+
+		for (u32 v = 0; v < subMesh.vertexCount; ++v)
+		{
+			Asset::MeshVertex& vertex = m_vertices[subMesh.vertexOffset + v];
+
+			auto it = sums.find(MakePositionKey(vertex.position));
+			if (it == sums.end())
+				continue;
+
+			const f32 lengthSquared = it->second | it->second;
+			if (lengthSquared <= 1e-20f)
+				continue;
+
+			vertex.normal = it->second / std::sqrt(lengthSquared);
+		}
+	}
+
+	void GltfMeshAssetImporter::GenerateTangents(const Asset::MeshSubmesh& subMesh, b8 hasSourceTangents)
+	{
+		List<Math::Vec3f> tangents(subMesh.vertexCount, Math::Vec3f(0.0f, 0.0f, 0.0f));
+		List<Math::Vec3f> bitangents(subMesh.vertexCount, Math::Vec3f(0.0f, 0.0f, 0.0f));
+
+		if (!hasSourceTangents)
+		{
+			for (u32 i = 0; i + 2 < subMesh.indexCount; i += 3)
+			{
+				const u32 i0 = m_indices[subMesh.indexOffset + i];
+				const u32 i1 = m_indices[subMesh.indexOffset + i + 1];
+				const u32 i2 = m_indices[subMesh.indexOffset + i + 2];
+
+				const Asset::MeshVertex& v0 = m_vertices[subMesh.vertexOffset + i0];
+				const Asset::MeshVertex& v1 = m_vertices[subMesh.vertexOffset + i1];
+				const Asset::MeshVertex& v2 = m_vertices[subMesh.vertexOffset + i2];
+
+				const Math::Vec3f edge1 = v1.position - v0.position;
+				const Math::Vec3f edge2 = v2.position - v0.position;
+
+				const f32 du1 = v1.uv.X() - v0.uv.X();
+				const f32 dv1 = v1.uv.Y() - v0.uv.Y();
+				const f32 du2 = v2.uv.X() - v0.uv.X();
+				const f32 dv2 = v2.uv.Y() - v0.uv.Y();
+
+				const f32 determinant = du1 * dv2 - du2 * dv1;
+				if (std::abs(determinant) <= 1e-12f)
+					continue;
+
+				const f32 inverse = 1.0f / determinant;
+				const Math::Vec3f tangent = (edge1 * dv2 - edge2 * dv1) * inverse;
+				const Math::Vec3f bitangent = (edge2 * du1 - edge1 * du2) * inverse;
+
+				tangents[i0] += tangent;
+				tangents[i1] += tangent;
+				tangents[i2] += tangent;
+
+				bitangents[i0] += bitangent;
+				bitangents[i1] += bitangent;
+				bitangents[i2] += bitangent;
+			}
+		}
+
+		for (u32 v = 0; v < subMesh.vertexCount; ++v)
+		{
+			Asset::MeshVertex& vertex = m_vertices[subMesh.vertexOffset + v];
+			const Math::Vec3f& normal = vertex.normal;
+
+			Math::Vec3f source = tangents[v];
+			if (hasSourceTangents)
+				source = Math::Vec3f(vertex.tangent.X(), vertex.tangent.Y(), vertex.tangent.Z());
+
+			Math::Vec3f tangent = source - normal * (normal | source);
+			f32 lengthSquared = tangent | tangent;
+
+			if (lengthSquared <= 1e-20f)
+			{
+				Math::Vec3f axis(1.0f, 0.0f, 0.0f);
+				if (std::abs(normal.X()) >= 0.9f)
+					axis = Math::Vec3f(0.0f, 1.0f, 0.0f);
+
+				tangent = axis - normal * (normal | axis);
+				lengthSquared = tangent | tangent;
+			}
+
+			tangent = tangent / std::sqrt(lengthSquared);
+
+			f32 handedness = vertex.tangent.W();
+			if (!hasSourceTangents)
+			{
+				handedness = 1.0f;
+				if (((normal ^ tangent) | bitangents[v]) > 0.0f)
+					handedness = -1.0f;
+			}
+
+			vertex.tangent = Math::Vec4f(tangent.X(), tangent.Y(), tangent.Z(), handedness);
+		}
 	}
 
 	void GltfMeshAssetImporter::CollectDependencies(const ImportPipelineContext& ctx, List<std::string>& outPaths)

@@ -1015,6 +1015,11 @@ namespace Horizon::Editor
 			Terminal::Warn(StringHelper::GetTypeName(this), "{} could not be deleted", metaPath);*/
 	}
 
+	void DomainService::ReimportAsset(DomainFile* pFile)
+	{
+		QueueImport(pFile, ImportReason::SettingsChanged);
+	}
+
 	void DomainService::StartImport()
 	{
 		// Here we go

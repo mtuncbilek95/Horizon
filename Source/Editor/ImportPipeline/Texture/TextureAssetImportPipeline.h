@@ -8,7 +8,7 @@
 
 namespace Horizon::Editor
 {
-	HCLASS(ImportPipelineInfoAttribute[Reflect::TypeOf<Asset::Texture>(), Reflect::TypeOf<TextureAssetImportSettings>(), { ".png", ".jpg", ".jpeg" }]);
+	HCLASS(ImportPipelineInfoAttribute[Reflect::TypeOf<Asset::Texture>(), Reflect::TypeOf<TextureAssetImportSettings>(), { ".png", ".jpg", ".jpeg", ".dds" }]);
 	class TextureAssetImportPipeline : public ImportPipeline
 	{
 		HORIZON_TYPE_REFLECT(TextureAssetImportPipeline);

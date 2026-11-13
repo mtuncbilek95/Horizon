@@ -5,6 +5,7 @@
 #include <Engine/Asset/Material/Material.h>
 #include <Runtime/Containers/Vector/List.h>
 #include <Runtime/RTTR/Attributes/AssetRefAttribute.h>
+#include <Runtime/RTTR/Attributes/HideInInspectorAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::Editor
@@ -21,7 +22,7 @@ namespace Horizon::Editor
 		b8 m_importMaterials = true;
 
 		HFIELD();
-		b8 m_importScale = 1.0f;
+		f32 m_importScale = 1.0f;
 
 		HFIELD();
 		b8 m_importBones = false;
@@ -32,7 +33,10 @@ namespace Horizon::Editor
 		HFIELD();
 		b8 m_applyTransform = true;
 
-		HFIELD(AssetRef[Reflect::TypeOf<Asset::Material>()]);
+		HFIELD();
+		b8 m_smoothNormals = true;
+
+		HFIELD(HideInInspector, AssetRef[Reflect::TypeOf<Asset::Material>()]);
 		List<Engine::AssetHandle<Asset::Material>> m_materialSlots;
 	};
 }

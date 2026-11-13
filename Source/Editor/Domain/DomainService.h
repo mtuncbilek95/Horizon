@@ -44,6 +44,7 @@ namespace Horizon::Editor
 
 		Reflect::Type* GetImportSettingsType(const std::string& extension);
 		void ImportFile(const std::string& targetFolder, const std::string& sourcePath, const AssetImportSettings* pSettings);
+		void ReimportAsset(DomainFile* pFile);
 		b8 SaveSettings(DomainFile* pFile);
 
 	private:

@@ -37,6 +37,12 @@ namespace Horizon::Editor
 		m_materialType = GetContext()->pEngine->GetReflectionSystem()->GetType(Reflect::TypeOf<Asset::Material>());
 		if (!m_materialType)
 			Terminal::Error(StringHelper::GetTypeName(this), "Asset::Material is not a reflected type, mesh slots will not be displayed");
+
+		m_settingsType = GetContext()->pEngine->GetReflectionSystem()->GetType(Reflect::TypeOf<MeshAssetImportSettings>());
+		if (!m_settingsType)
+			Terminal::Error(StringHelper::GetTypeName(this), "MeshAssetImportSettings is not a reflected type, import settings will not be displayed");
+
+		m_properties.Initialize(GetContext()->pEngine);
 	}
 
 	void MeshPreviewView::OnRender(const Engine::EngineFrame& context)
@@ -47,6 +53,8 @@ namespace Horizon::Editor
 		DomainFile* pFile = GetConnectedFile();
 		if (!pFile)
 			return;
+
+		DrawImportSettings(pFile);
 
 		auto* pAsset = m_assetService->FindAsset<Asset::Mesh>(pFile->GetID());
 		if (!pAsset)
@@ -116,6 +124,19 @@ namespace Horizon::Editor
 			return false;
 
 		return SaveSlots();
+	}
+
+	void MeshPreviewView::DrawImportSettings(DomainFile* pFile)
+	{
+		AssetImportSettings* pSettings = pFile->GetSettings();
+		if (!pSettings || !m_settingsType)
+			return;
+
+		ImGui::SeparatorText("Import Settings");
+		m_properties.DrawObject(*m_settingsType, pSettings);
+
+		if (ImGui::Button("Reimport Asset"))
+			m_domain->ReimportAsset(pFile);
 	}
 
 	b8 MeshPreviewView::SaveSlots()

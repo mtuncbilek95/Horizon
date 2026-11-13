@@ -11,5 +11,5 @@ target_link_libraries(Editor
 	PUBLIC
 		Engine Runtime Imgui ImGuizmo ImNodeEditor
 	PRIVATE
-		ufbx fastgltf::fastgltf wuffs
+		ufbx fastgltf::fastgltf wuffs tinyddsloader
 )

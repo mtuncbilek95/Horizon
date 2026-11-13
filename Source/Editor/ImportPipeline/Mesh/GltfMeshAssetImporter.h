@@ -34,6 +34,8 @@ namespace Horizon::Editor
 	private:
 		b8 LoadExternalBuffers(const ImportPipelineContext& ctx);
 		AssetImportResult BuildMesh(const ImportPipelineContext& ctx);
+		void GenerateSmoothNormals(const Asset::MeshSubmesh& subMesh);
+		void GenerateTangents(const Asset::MeshSubmesh& subMesh, b8 hasSourceTangents);
 
 	private:
 		gltfParserPtr m_parser;
