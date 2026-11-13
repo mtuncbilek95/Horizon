@@ -163,5 +163,13 @@ namespace Horizon::Asset
 
 	void SceneStreamer::UnloadSync(Scene* pAsset)
 	{
+		if (pAsset->m_ticket != Engine::InvalidSubmitTicket)
+		{
+			m_jobSystem->WaitTicket(pAsset->m_ticket);
+			pAsset->m_ticket = Engine::InvalidSubmitTicket;
+		}
+
+		pAsset->m_scene.Reset();
+		pAsset->m_residency.Store(Engine::AssetResidency::Unloaded, PAL::MemoryOrder::Release);
 	}
 }

@@ -17,6 +17,11 @@ namespace Horizon::Editor
 		if (!pSceneAsset)
 			return;
 
+		ViewObject* pViewer = pContext->pViews->GetViewObject(Reflect::TypeOf<SceneHierarchyView>());
+		DomainFile* pPrevFile = pViewer->GetConnectedFile();
+		if (pPrevFile == pUsedAsset)
+			return;
+
 		pSceneAsset->LoadSync();
 
 		if (pSceneAsset->GetResidency() != Engine::AssetResidency::Resident)
@@ -25,9 +30,14 @@ namespace Horizon::Editor
 			return;
 		}
 
-		ViewObject* pViewer = pContext->pViews->GetViewObject(Reflect::TypeOf<SceneHierarchyView>());
+		pWorldService->SetCurrentWorld(pSceneAsset->GetScene());
 		pViewer->SetConnectedFile(pUsedAsset);
 
-		pWorldService->SetCurrentWorld(pSceneAsset->GetScene());
+		if (pPrevFile)
+		{
+			auto* pPrevSceneAsset = pAssetService->FindAsset<Asset::Scene>(pPrevFile->GetID());
+			if (pPrevSceneAsset)
+				pPrevSceneAsset->UnloadSync();
+		}
 	}
 }

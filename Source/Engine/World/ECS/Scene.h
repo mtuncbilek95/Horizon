@@ -111,6 +111,7 @@ namespace Horizon::Engine
 		const ComponentRegistry& GetComponents() const { return m_components; }
 
 		u32 GetEntityCount() const { return m_entities.GetAliveCount(); }
+		u64 GetInstanceId() const { return m_instanceId; }
 
 	private:
 		ComponentStorage* ResolveStorage(ComponentTypeId typeId);
@@ -120,5 +121,6 @@ namespace Horizon::Engine
 		ReflectionSystem* m_reflection = nullptr;
 		EntityStorage m_entities;
 		ComponentRegistry m_components;
+		u64 m_instanceId = 0;
 	};
 }

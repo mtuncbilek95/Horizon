@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Engine/Core/Service.h>
+#include <Engine/Rendering/Renderables/RenderablePhysicsDebug.h>
 
 namespace JPH
 {
@@ -27,6 +28,8 @@ namespace Horizon::Engine
 		void OnExecute(const EngineFrame& ctx) final;
 		void OnFinalize() final;
 		void DeclareDependencies(ModuleDependency& graph) final;
+
+		void CollectDebugLines(const Math::Vec3f& cameraPosition, List<DebugLineVertex>& outLines);
 
 		JPH::PhysicsSystem* GetWorld() const;
 		JPH::TempAllocator* GetTempAllocator() const;

@@ -2,7 +2,8 @@
 
 #include <Engine/Core/Engine.h>
 #include <Engine/Job/JobSystem.h>
-#include <Engine/Physics/JoltThreadBridge.h>
+#include <Engine/Physics/Jolt/JoltThreadBridge.h>
+#include <Engine/Physics/Jolt/JoltDebugRenderer.h>
 #include <Engine/World/WorldService.h>
 
 #include <Runtime/Containers/StringHelper.h>
@@ -67,6 +68,8 @@ namespace Horizon::Engine
 		UniquePtr<JoltThreadBridge> pBridge;
 		UniquePtr<JPH::TempAllocatorImpl> pTemp;
 		JPH::PhysicsSystem world;
+
+		UniquePtr<JoltDebugRenderer> pDebugRenderer;
 	};
 
 	static void BindJoltHooks()
@@ -111,6 +114,8 @@ namespace Horizon::Engine
 
 		m_impl->world.Init(MaxBodies, 0, MaxBodyPairs, MaxContactConstraints, m_impl->broadPhaseMap, m_impl->objectVsBroadPhase, m_impl->objectPair);
 
+		m_impl->pDebugRenderer = MakeUnique<JoltDebugRenderer>();
+
 		Terminal::Debug(StringHelper::GetTypeName(this), "Jolt world initialized with {} worker lanes", m_impl->pBridge->GetMaxConcurrency());
 		return ModuleReport();
 	}
@@ -123,6 +128,7 @@ namespace Horizon::Engine
 	{
 		if (m_impl)
 		{
+			m_impl->pDebugRenderer = nullptr;
 			m_impl->pBridge = nullptr;
 			m_impl->pTemp = nullptr;
 			delete m_impl;
@@ -139,6 +145,26 @@ namespace Horizon::Engine
 	{
 		graph.InitBefore<WorldService>();
 		graph.RunBefore<WorldService>();
+	}
+
+	void PhysicsService::CollectDebugLines(const Math::Vec3f& cameraPosition, List<DebugLineVertex>& outLines)
+	{
+		if (!m_impl || !m_impl->pDebugRenderer)
+			return;
+
+		JPH::BodyManager::DrawSettings settings = {};
+		settings.mDrawShape = true;
+		settings.mDrawShapeWireframe = true;
+		settings.mDrawShapeColor = JPH::BodyManager::EShapeColor::MotionTypeColor;
+
+		JoltDebugRenderer* pRenderer = m_impl->pDebugRenderer.Get();
+		pRenderer->SetCameraPos(JPH::RVec3(cameraPosition.X(), cameraPosition.Y(), cameraPosition.Z()));
+		pRenderer->SetTarget(&outLines);
+
+		m_impl->world.DrawBodies(settings, pRenderer);
+
+		pRenderer->SetTarget(nullptr);
+		pRenderer->NextFrame();
 	}
 
 	JPH::PhysicsSystem* PhysicsService::GetWorld() const

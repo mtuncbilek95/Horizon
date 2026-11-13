@@ -6,6 +6,8 @@ namespace Horizon::Engine
 {
 	Scene::Scene(ReflectionSystem* pReflection) : m_reflection(pReflection)
 	{
+		static PAL::Atomic<u64> s_nextInstanceId(1);
+		m_instanceId = s_nextInstanceId.FetchAdd(1);
 	}
 
 	Scene::~Scene()

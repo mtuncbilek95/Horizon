@@ -41,6 +41,9 @@ namespace Horizon::Asset
 
 	void Scene::UnloadSync()
 	{
+		if (m_residency.CompareExchange(Engine::AssetResidency::Resident, Engine::AssetResidency::Pending) != Engine::AssetResidency::Resident)
+			return;
 
+		GetLoader<SceneStreamer>()->UnloadSync(this);
 	}
 }
