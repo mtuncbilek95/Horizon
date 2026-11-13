@@ -1,4 +1,3 @@
-// MaterialStreamer.h
 #pragma once
 
 #include <Engine/Asset/AssetEntry.h>

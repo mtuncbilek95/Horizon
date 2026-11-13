@@ -14,6 +14,7 @@ namespace Horizon::Engine
 		Math::Vec3f position;
 		f32 intensity;
 		f32 range;
+		u32 drawDebug = 0;
 	};
 
 	struct FramePointLight

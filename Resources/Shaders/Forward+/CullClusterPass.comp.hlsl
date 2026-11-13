@@ -24,6 +24,7 @@ struct PointLight
     float3 position;
     float intensity;
     float range;
+    uint drawDebug;
 };
 
 ConstantBuffer<CullClusterConstant> pushConst : register(b0, space999);

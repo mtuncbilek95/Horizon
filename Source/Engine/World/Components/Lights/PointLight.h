@@ -3,6 +3,7 @@
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Runtime/RTTR/Attributes/RangeAttribute.h>
+#include <Runtime/RTTR/Attributes/TransientAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/Math/Color4f.h>
 
@@ -24,5 +25,8 @@ namespace Horizon::World::Component
 
 		HFIELD(Range[0.f, f32_max]);
 		f32 m_range = 10.f;
+
+		HFIELD(Transient);
+		b8 m_drawDebugObject = false;
 	};
 }

@@ -28,6 +28,7 @@ struct PointLight
     float3 position;
     float intensity;
     float range;
+    uint drawDebug;
 };
 
 struct GpuLightFrame

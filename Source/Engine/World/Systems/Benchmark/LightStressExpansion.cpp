@@ -4,7 +4,7 @@
 #include <Engine/World/Components/Benchmark/PointLightBatch.h>
 #include <Engine/World/Components/Benchmark/LightStressTest.h>
 #include <Engine/World/Components/Location/LocalTransform.h>
-#include <Engine/World/Components/Rendering/PointLight.h>
+#include <Engine/World/Components/Lights/PointLight.h>
 #include <Engine/World/Systems/Rendering/RenderSubmission.h>
 
 #include <cmath>
@@ -56,7 +56,7 @@ namespace Horizon::World::System
 					const Math::Vec3f offset(std::cos(angle) * ring, height + bob, std::sin(angle) * ring);
 					const Math::Color4f color(0.5f + 0.5f * std::cos(hue), 0.5f + 0.5f * std::cos(hue + 2.094f), 0.5f + 0.5f * std::cos(hue + 4.188f), 1.f);
 
-					batch.m_lights.PushBack({ color, local.m_position + offset, light.m_intensity, light.m_range });
+					batch.m_lights.PushBack({ color, local.m_position + offset, light.m_intensity, light.m_range, light.m_drawDebugObject });
 				}
 			});
 	}

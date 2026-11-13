@@ -7,10 +7,10 @@
 #include <Engine/World/WorldService.h>
 #include <Engine/World/Components/Benchmark/PointLightBatch.h>
 #include <Engine/World/Components/Location/LocalTransform.h>
-#include <Engine/World/Components/Rendering/AreaLight.h>
-#include <Engine/World/Components/Rendering/DirectionalLight.h>
-#include <Engine/World/Components/Rendering/PointLight.h>
-#include <Engine/World/Components/Rendering/SpotLight.h>
+#include <Engine/World/Components/Lights/AreaLight.h>
+#include <Engine/World/Components/Lights/DirectionalLight.h>
+#include <Engine/World/Components/Lights/PointLight.h>
+#include <Engine/World/Components/Lights/SpotLight.h>
 #include <Runtime/Math/Quat.h>
 
 namespace Horizon::World::System
@@ -40,7 +40,7 @@ namespace Horizon::World::System
 		currentScene.ForEach<Component::LocalTransform, Component::PointLight>(
 			[&](Engine::EntityHandle, Component::LocalTransform& local, Component::PointLight& light)
 			{
-				point.pointLights.PushBack({ light.m_color, local.m_position, light.m_intensity, light.m_range });
+				point.pointLights.PushBack({ light.m_color, local.m_position, light.m_intensity, light.m_range, light.m_drawDebugObject ? 1u : 0u });
 			});
 
 		currentScene.ForEach<Component::PointLightBatch>([&](Engine::EntityHandle, Component::PointLightBatch& batch)
