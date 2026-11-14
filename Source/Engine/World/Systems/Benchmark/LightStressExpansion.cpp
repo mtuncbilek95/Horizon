@@ -56,7 +56,7 @@ namespace Horizon::World::System
 					const Math::Vec3f offset(std::cos(angle) * ring, height + bob, std::sin(angle) * ring);
 					const Math::Color4f color(0.5f + 0.5f * std::cos(hue), 0.5f + 0.5f * std::cos(hue + 2.094f), 0.5f + 0.5f * std::cos(hue + 4.188f), 1.f);
 
-					batch.m_lights.PushBack({ color, local.m_position + offset, light.m_intensity, light.m_range, light.m_drawDebugObject });
+					batch.m_lights.PushBack({ color, local.m_position + offset, light.m_luminousPower / (4.f * Math::Pi), light.m_range, light.m_drawDebugObject });
 				}
 			});
 	}

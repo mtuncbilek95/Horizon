@@ -12,7 +12,7 @@ namespace Horizon::Engine
 		Math::Vec3f position;
 		Math::Vec3f right;
 		Math::Vec3f up;
-		f32 intensity;
+		f32 luminance;
 		f32 width;
 		f32 height;
 		b8 twoSided;

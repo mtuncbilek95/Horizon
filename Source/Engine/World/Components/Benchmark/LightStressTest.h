@@ -2,8 +2,11 @@
 
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
+#include <Runtime/RTTR/Attributes/DegreesAttribute.h>
 #include <Runtime/RTTR/Attributes/RangeAttribute.h>
+#include <Runtime/RTTR/Attributes/UnitAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
+#include <Runtime/Math/Scalar.h>
 
 namespace Horizon::World::Component
 {
@@ -18,25 +21,25 @@ namespace Horizon::World::Component
 		HFIELD();
 		u32 m_lightInstanceCount = 100;
 
-		HFIELD(Range[0.f, f32_max]);
+		HFIELD(Unit["meter"], Range[0.f, f32_max]);
 		f32 m_innerRadius = 0.3f;
 
-		HFIELD(Range[0.f, f32_max]);
+		HFIELD(Unit["meter"], Range[0.f, f32_max]);
 		f32 m_outerRadius = 36.3f;
 
-		HFIELD(Range[0.f, f32_max]);
-		f32 m_minSpeed = 0.2f;
+		HFIELD(Unit["deg/s"], Degrees, Range[0.f, f32_max]);
+		f32 m_minSpeed = Math::DegToRad(11.5f);
 
-		HFIELD(Range[0.f, f32_max]);
-		f32 m_maxSpeed = 1.f;
+		HFIELD(Unit["deg/s"], Degrees, Range[0.f, f32_max]);
+		f32 m_maxSpeed = Math::DegToRad(57.5f);
 
-		HFIELD();
+		HFIELD(Unit["meter"]);
 		f32 m_minHeight = 0.5f;
 
-		HFIELD();
+		HFIELD(Unit["meter"]);
 		f32 m_maxHeight = 1.7f;
 
-		HFIELD(Range[0.f, f32_max]);
+		HFIELD(Unit["meter"], Range[0.f, f32_max]);
 		f32 m_bobAmplitude = 0.3f;
 	};
 }

@@ -12,7 +12,7 @@ namespace Horizon::Engine
 		Math::Color4f color;
 		Math::Vec3f position;
 		Math::Vec3f direction;
-		f32 intensity;
+		f32 luminousIntensity;
 		f32 range;
 		f32 innerConeAngle;
 		f32 outerConeAngle;

@@ -4,6 +4,8 @@
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Runtime/Containers/Vector/List.h>
+#include <Runtime/RTTR/Attributes/DegreesAttribute.h>
+#include <Runtime/RTTR/Attributes/UnitAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::World::Component
@@ -16,16 +18,16 @@ namespace Horizon::World::Component
 		CameraRoller() = default;
 		~CameraRoller() = default;
 
-		HFIELD();
+		HFIELD(Unit["deg"], Degrees);
 		f32 m_azimuth = 0;
 		
-		HFIELD();
+		HFIELD(Unit["deg"], Degrees);
 		f32 m_elevation = 0;
 
-		HFIELD();
+		HFIELD(Unit["meter"]);
 		f32 m_distance = 0;
 
-		HFIELD();
+		HFIELD(Unit["deg/s"], Degrees);
 		f32 m_rotationSpeed = 0;
 	};
 }

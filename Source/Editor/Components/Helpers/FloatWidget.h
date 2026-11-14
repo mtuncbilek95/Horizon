@@ -6,10 +6,12 @@
 #include <Runtime/RTTR/Attributes/RangeAttribute.h>
 #include <Runtime/RTTR/Attributes/SliderAttribute.h>
 #include <Runtime/RTTR/Attributes/StepAttribute.h>
+#include <Runtime/RTTR/Attributes/UnitAttribute.h>
 
 #include <imgui.h>
 
 #include <cmath>
+#include <string>
 
 namespace Horizon::Editor
 {
@@ -21,6 +23,7 @@ namespace Horizon::Editor
 			const Reflect::RangeAttribute* pRange = field.GetCustomAttribute<Reflect::RangeAttribute>();
 			const Reflect::StepAttribute* pStep = field.GetCustomAttribute<Reflect::StepAttribute>();
 			const b8 asSlider = pRange != nullptr && field.GetCustomAttribute<Reflect::SliderAttribute>() != nullptr;
+			const std::string format = BuildFormat(field, "%.3f");
 
 			if (asDegrees)
 			{
@@ -47,7 +50,7 @@ namespace Horizon::Editor
 			{
 				const f32 step = pStep->GetStep();
 
-				changed = ImGui::SliderScalarN("##value", ImGuiDataType_Float, pValues, count, &minimum, &maximum, "%.3f", flags);
+				changed = ImGui::SliderScalarN("##value", ImGuiDataType_Float, pValues, count, &minimum, &maximum, format.c_str(), flags);
 
 				if (changed)
 				{
@@ -62,7 +65,7 @@ namespace Horizon::Editor
 				f32 step = pStep->GetStep();
 				f32 fastStep = pStep->GetFastStep();
 
-				changed = ImGui::InputScalarN("##value", ImGuiDataType_Float, pValues, count, &step, &fastStep, "%.3f");
+				changed = ImGui::InputScalarN("##value", ImGuiDataType_Float, pValues, count, &step, &fastStep, format.c_str());
 
 				if (changed && pRange)
 				{
@@ -71,9 +74,9 @@ namespace Horizon::Editor
 				}
 			}
 			else if (asSlider)
-				changed = ImGui::SliderScalarN("##value", ImGuiDataType_Float, pValues, count, &minimum, &maximum, "%.3f", flags);
+				changed = ImGui::SliderScalarN("##value", ImGuiDataType_Float, pValues, count, &minimum, &maximum, format.c_str(), flags);
 			else
-				changed = ImGui::DragScalarN("##value", ImGuiDataType_Float, pValues, count, 0.1f, pRange ? &minimum : nullptr, pRange ? &maximum : nullptr, "%.3f", flags);
+				changed = ImGui::DragScalarN("##value", ImGuiDataType_Float, pValues, count, 0.1f, pRange ? &minimum : nullptr, pRange ? &maximum : nullptr, format.c_str(), flags);
 
 			if (asDegrees && changed)
 			{
@@ -82,6 +85,27 @@ namespace Horizon::Editor
 			}
 
 			return changed;
+		}
+
+		static std::string BuildFormat(const Reflect::Field& field, const char* baseFormat)
+		{
+			const Reflect::UnitAttribute* pUnit = field.GetCustomAttribute<Reflect::UnitAttribute>();
+
+			if (!pUnit)
+				return baseFormat;
+
+			std::string format = baseFormat;
+			format += ' ';
+
+			for (const char c : pUnit->GetUnit())
+			{
+				if (c == '%')
+					format += "%%";
+				else
+					format += c;
+			}
+
+			return format;
 		}
 
 		static void DrawTicks(i32 count, f32 minimum, f32 maximum, f32 step)

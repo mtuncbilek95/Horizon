@@ -3,6 +3,8 @@
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Runtime/RTTR/Attributes/RangeAttribute.h>
+#include <Runtime/RTTR/Attributes/TooltipAttribute.h>
+#include <Runtime/RTTR/Attributes/UnitAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/Math/Color4f.h>
 
@@ -22,7 +24,7 @@ namespace Horizon::World::Component
 		HFIELD(Range[-1.f, 1.f]);
 		Math::Vec3f m_direction;
 
-		HFIELD(Range[0.f, f32_max]);
-		f32 m_intensity = 1.0f;
+		HFIELD(Unit["lux"], Range[0.f, f32_max], Tooltip["Illuminance in lux (lx). Clear noon sun ~100000, overcast ~10000, sunset ~400"]);
+		f32 m_illuminance = 100000.f;
 	};
 }

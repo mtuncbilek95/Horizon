@@ -1,12 +1,11 @@
 #include "PhysicsDebugPass.h"
 
 #include <Engine/Core/Engine.h>
-#include <Engine/Presentation/PresentationService.h>
 #include <Engine/Rendering/RenderGraph/RenderDependency.h>
 #include <Engine/Rendering/Renderables/RenderableCamera.h>
 #include <Engine/Rendering/Renderables/RenderablePhysicsDebug.h>
-#include <Engine/Rendering/Debug/PointLightDebugPass.h>
-#include <Engine/Rendering/Forward+/ResolvePass.h>
+#include <Engine/Rendering/ColorGrading/TonemapPass.h>
+#include <Engine/Rendering/Forward+/FXAAPass.h>
 #include <Engine/Rendering/Forward+/Resources.h>
 
 #include <Runtime/Containers/StringHelper.h>
@@ -83,7 +82,7 @@ namespace Horizon::Rendering::Pass
 		}
 
 		RHI::ColorTarget colorTarget = {};
-		colorTarget.format = Engine::PresentationService::SceneFormat;
+		colorTarget.format = TonemapPass::DisplayFormat;
 
 		RHI::GraphicsPipelineDesc pipelineDesc = {};
 		pipelineDesc.pLayout = pContext->GetGlobalLayout();
@@ -96,7 +95,7 @@ namespace Horizon::Rendering::Pass
 		pipelineDesc.depthStencil.depthCompare = RHI::CompareOp::GreaterEqual;
 		pipelineDesc.colorTargets.PushBack(colorTarget);
 		pipelineDesc.depthFormat = RHI::TextureFormat::D32_FLOAT;
-		pipelineDesc.sampleCount = RHI::SampleCount::Count8;
+		pipelineDesc.sampleCount = RHI::SampleCount::Count1;
 
 		m_pipeline = pDevice->CreateRHIPipeline(pipelineDesc);
 		if (!m_pipeline)
@@ -148,11 +147,11 @@ namespace Horizon::Rendering::Pass
 
 	void PhysicsDebugPass::Setup(const Engine::Blackboard& blackboard, Engine::RenderDependency& graph)
 	{
-		graph.Reads<Resource::PreDepthOutput>(RHI::ResourceState::DepthRead);
-		graph.Writes<Resource::SceneColorMS>(RHI::ResourceState::RenderTarget);
+		graph.Reads<Resource::SceneDepthResolved>(RHI::ResourceState::DepthRead);
+		graph.Writes<Resource::SceneColorDisplay>(RHI::ResourceState::RenderTarget);
 
-		graph.RunsAfter<PointLightDebugPass>();
-		graph.RunsBefore<ResolvePass>();
+		graph.RunsAfter<TonemapPass>();
+		graph.RunsBefore<FXAAPass>();
 	}
 
 	void PhysicsDebugPass::Render(const Engine::Blackboard& board)
@@ -173,15 +172,15 @@ namespace Horizon::Rendering::Pass
 		std::memcpy(m_lineBuffers[slot]->GetMappedData(), pDebug->lines.GetData(), sizeof(Engine::DebugLineVertex) * vertexCount);
 
 		RHI::CommandList* pCmdList = GetCommandList();
-		RHI::Texture* pColor = GetTexture<Resource::SceneColorMS>();
+		RHI::Texture* pColor = GetTexture<Resource::SceneColorDisplay>();
 
 		RHI::RenderingDesc desc = {};
-		desc.colorAttachments[0].pView = GetTextureView<Resource::SceneColorMS>();
+		desc.colorAttachments[0].pView = GetTextureView<Resource::SceneColorDisplay>();
 		desc.colorAttachments[0].loadOp = RHI::LoadOp::Load;
 		desc.colorAttachments[0].storeOp = RHI::StoreOp::Store;
 		desc.colorAttachmentCount = 1;
 
-		desc.depthAttachment.pView = GetTextureView<Resource::PreDepthOutput>();
+		desc.depthAttachment.pView = GetTextureView<Resource::SceneDepthResolved>();
 		desc.depthAttachment.loadOp = RHI::LoadOp::Load;
 		desc.depthAttachment.storeOp = RHI::StoreOp::Store;
 		desc.depthAttachment.readOnly = true;

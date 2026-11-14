@@ -142,7 +142,7 @@ namespace Horizon::Rendering::Pass
 			const f32 dirZ = pDirectional->direction.Z();
 			const f32 lengthSq = dirX * dirX + dirY * dirY + dirZ * dirZ;
 
-			if (pDirectional->intensity > 0.0f && lengthSq > 0.0f)
+			if (pDirectional->illuminance > 0.0f && lengthSq > 0.0f)
 			{
 				constants.toSun[0] = -dirX;
 				constants.toSun[1] = -dirY;
@@ -151,7 +151,7 @@ namespace Horizon::Rendering::Pass
 				constants.sunColorIntensity[0] = pDirectional->color.R();
 				constants.sunColorIntensity[1] = pDirectional->color.G();
 				constants.sunColorIntensity[2] = pDirectional->color.B();
-				constants.sunColorIntensity[3] = pDirectional->intensity;
+				constants.sunColorIntensity[3] = pDirectional->illuminance;
 			}
 		}
 

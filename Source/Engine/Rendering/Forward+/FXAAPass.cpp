@@ -136,7 +136,7 @@ namespace Horizon::Rendering::Pass
 
 	void FXAAPass::Setup(const Engine::Blackboard& blackboard, Engine::RenderDependency& graph)
 	{
-		graph.Reads<Resource::SceneColorResolved>(RHI::ResourceState::ShaderResource);
+		graph.Reads<Resource::SceneColorDisplay>(RHI::ResourceState::ShaderResource);
 		graph.Writes<Resource::SceneColor>(RHI::ResourceState::RenderTarget);
 	}
 
@@ -145,7 +145,7 @@ namespace Horizon::Rendering::Pass
 		RHI::CommandList* pCmdList = GetCommandList();
 		RHI::Texture* pOutput = GetTexture<Resource::SceneColor>();
 
-		m_resourceHeap->Write(m_sourceView, RHI::DescriptorType::Texture, GetTextureView<Resource::SceneColorResolved>());
+		m_resourceHeap->Write(m_sourceView, RHI::DescriptorType::Texture, GetTextureView<Resource::SceneColorDisplay>());
 
 		RHI::RenderingDesc desc = {};
 		desc.colorAttachments[0].pView = GetTextureView<Resource::SceneColor>();

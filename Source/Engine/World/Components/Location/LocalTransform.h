@@ -5,6 +5,7 @@
 #include <Runtime/RTTR/Reflection.h>
 #include <Runtime/RTTR/Attributes/DegreesAttribute.h>
 #include <Runtime/RTTR/Attributes/TooltipAttribute.h>
+#include <Runtime/RTTR/Attributes/UnitAttribute.h>
 #include <Runtime/Math/Vec3f.h>
 
 namespace Horizon::World::Component
@@ -17,10 +18,10 @@ namespace Horizon::World::Component
 		LocalTransform() = default;
 		~LocalTransform() = default;
 
-		HFIELD();
+		HFIELD(Unit["meter"]);
 		Math::Vec3f m_position;
 
-		HFIELD(Degrees, Tooltip["Represents as degrees"]);
+		HFIELD(Unit["deg"], Degrees, Tooltip["Represents as degrees"]);
 		Math::Vec3f m_rotation;
 
 		HFIELD();

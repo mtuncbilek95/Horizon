@@ -4,6 +4,7 @@
 #include <Engine/World/ECS/ComponentIdAttribute.h>
 #include <Engine/World/ECS/ComponentObject.h>
 #include <Runtime/RTTR/Attributes/RangeAttribute.h>
+#include <Runtime/RTTR/Attributes/UnitAttribute.h>
 #include <Runtime/RTTR/Reflection.h>
 
 namespace Horizon::World::Component
@@ -19,7 +20,7 @@ namespace Horizon::World::Component
 		HFIELD();
 		Engine::PhysicsMotion m_motion = Engine::PhysicsMotion::Static;
 
-		HFIELD(Range[0.001f, f32_max]);
+		HFIELD(Unit["kg"], Range[0.001f, f32_max]);
 		f32 m_mass = 10.f;
 
 		HFIELD(Range[0.f, f32_max]);
@@ -28,10 +29,10 @@ namespace Horizon::World::Component
 		HFIELD(Range[0.f, 1.f]);
 		f32 m_restitution = 0.f;
 
-		HFIELD(Range[0.f, f32_max]);
+		HFIELD(Unit["1/s"], Range[0.f, f32_max]);
 		f32 m_linearDamping = 0.f;
 
-		HFIELD(Range[0.f, f32_max]);
+		HFIELD(Unit["1/s"], Range[0.f, f32_max]);
 		f32 m_angularDamping = 0.f;
 
 		HFIELD();

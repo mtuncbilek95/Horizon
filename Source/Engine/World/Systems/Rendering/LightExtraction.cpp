@@ -12,6 +12,7 @@
 #include <Engine/World/Components/Lights/PointLight.h>
 #include <Engine/World/Components/Lights/SpotLight.h>
 #include <Runtime/Math/Quat.h>
+#include <Runtime/Math/Scalar.h>
 
 namespace Horizon::World::System
 {
@@ -34,13 +35,15 @@ namespace Horizon::World::System
 
 		currentScene.ForEach<Component::DirectionalLight>([&](Engine::EntityHandle, Component::DirectionalLight& light)
 			{
-				directional = { light.m_color, light.m_direction, light.m_intensity };
+				directional = { light.m_color, light.m_direction, light.m_illuminance };
 			});
 
 		currentScene.ForEach<Component::LocalTransform, Component::PointLight>(
 			[&](Engine::EntityHandle, Component::LocalTransform& local, Component::PointLight& light)
 			{
-				point.pointLights.PushBack({ light.m_color, local.m_position, light.m_intensity, light.m_range, light.m_drawDebugObject ? 1u : 0u });
+				const f32 luminousIntensity = light.m_luminousPower / (4.f * Math::Pi);
+
+				point.pointLights.PushBack({ light.m_color, local.m_position, luminousIntensity, light.m_range, light.m_drawDebugObject ? 1u : 0u });
 			});
 
 		currentScene.ForEach<Component::PointLightBatch>([&](Engine::EntityHandle, Component::PointLightBatch& batch)
@@ -53,21 +56,24 @@ namespace Horizon::World::System
 			[&](Engine::EntityHandle, Component::LocalTransform& local, Component::SpotLight& light)
 			{
 				const Math::Quat rotation = Math::Quat::FromEuler(local.m_rotation);
+				const f32 luminousIntensity = light.m_luminousPower / Math::Pi;
 
 				spot.spotLights.PushBack({ light.m_color, local.m_position,
 					rotation.RotateVector(Math::Vec3f(0.f, 0.f, -1.f)),
-					light.m_intensity, light.m_range, light.m_innerConeAngle, light.m_outerConeAngle });
+					luminousIntensity, light.m_range, light.m_innerConeAngle, light.m_outerConeAngle });
 			});
 
 		currentScene.ForEach<Component::LocalTransform, Component::AreaLight>(
 			[&](Engine::EntityHandle, Component::LocalTransform& local, Component::AreaLight& light)
 			{
 				const Math::Quat rotation = Math::Quat::FromEuler(local.m_rotation);
+				const f32 emittingArea = light.m_width * light.m_height * (light.m_twoSided ? 2.f : 1.f);
+				const f32 luminance = emittingArea > 0.f ? light.m_luminousPower / (Math::Pi * emittingArea) : 0.f;
 
 				area.areaLights.PushBack({ light.m_color, local.m_position,
 					rotation.RotateVector(Math::Vec3f(1.f, 0.f, 0.f)),
 					rotation.RotateVector(Math::Vec3f(0.f, 1.f, 0.f)),
-					light.m_intensity, light.m_width, light.m_height, light.m_twoSided });
+					luminance, light.m_width, light.m_height, light.m_twoSided });
 			});
 	}
 

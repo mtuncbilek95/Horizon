@@ -36,7 +36,5 @@ namespace Horizon::Rendering::Pass
 		u32 m_lightFrameView = kInvalid32;
 
 		u32 m_shadowMaskView = kInvalid32;
-
-		u32 m_skyIrradianceView = kInvalid32;
 	};
 }

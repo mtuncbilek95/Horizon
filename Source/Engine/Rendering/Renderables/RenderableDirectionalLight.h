@@ -9,6 +9,6 @@ namespace Horizon::Engine
 	{
 		Math::Color4f color = Math::Color4f::White();
 		Math::Vec3f direction = { 0.f, 0.f, -1.f };
-		f32 intensity = 0.0f;
+		f32 illuminance = 0.0f;
 	};
 }

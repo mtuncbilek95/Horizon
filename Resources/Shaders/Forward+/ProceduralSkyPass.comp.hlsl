@@ -23,6 +23,7 @@ float OpticalDepth(float cosZenith)
 
 float3 ComputeSky(float3 direction, float3 toSun, float3 sunRadiance)
 {
+    const float invFourPi = 0.0795774715f;
     const float cosSun = dot(direction, toSun);
     const float3 extinction = kRayleigh + kMie;
 
@@ -33,7 +34,7 @@ float3 ComputeSky(float3 direction, float3 toSun, float3 sunRadiance)
     const float mieDenominator = 1.0f + kMieG * kMieG - 2.0f * kMieG * cosSun;
     const float miePhase = (1.0f - kMieG * kMieG) / (mieDenominator * sqrt(mieDenominator));
 
-    const float3 phase = (kRayleigh * rayleighPhase + kMie * miePhase) / extinction;
+    const float3 phase = (kRayleigh * rayleighPhase + kMie * miePhase) / extinction * invFourPi;
     const float sunFade = smoothstep(-0.15f, 0.05f, toSun.y);
 
     float3 color = sunRadiance * sunTransmittance * phase * viewScatter * sunFade;

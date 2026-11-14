@@ -20,14 +20,13 @@ struct ForwardConstants
     uint materialIndex;
     uint samplerIndex;
     uint shadowMaskIndex;
-    uint skyIrradianceIndex;
 };
 
 struct PointLight
 {
     float4 color;
     float3 position;
-    float intensity;
+    float luminousIntensity;
     float range;
     uint drawDebug;
 };
@@ -35,7 +34,7 @@ struct PointLight
 struct GpuLightFrame
 {
     float3 sunColor;
-    float intensity;
+    float illuminance;
     float3 direction;
     uint pointLightCount;
     float3 cameraPosition;
@@ -88,19 +87,7 @@ uint ClusterIndex(uint2 pixel, float viewZ)
     return tile.x + tile.y * pushConstant.clusterCountX + (uint) slice * pushConstant.clusterCountX * pushConstant.clusterCountY;
 }
 
-float3 EvaluateSkyIrradiance(StructuredBuffer<float4> sh, float3 n)
-{
-    float3 result = sh[0].rgb * 0.282095f;
-    result += sh[1].rgb * 0.488603f * n.y;
-    result += sh[2].rgb * 0.488603f * n.z;
-    result += sh[3].rgb * 0.488603f * n.x;
-    result += sh[4].rgb * 1.092548f * n.x * n.y;
-    result += sh[5].rgb * 1.092548f * n.y * n.z;
-    result += sh[6].rgb * 0.315392f * (3.0f * n.z * n.z - 1.0f);
-    result += sh[7].rgb * 1.092548f * n.x * n.z;
-    result += sh[8].rgb * 0.546274f * (n.x * n.x - n.y * n.y);
-    return max(result, 0.0f);
-}
+static const float3 kAmbient = float3(0.25f, 0.25f, 0.25f);
 
 static const float kSpecularAAVariance = 0.15f;
 static const float kSpecularAAThreshold = 0.2f;
@@ -112,6 +99,15 @@ float SpecularAntiAliasing(float3 N, float alpha)
     const float variance = kSpecularAAVariance * (dot(du, du) + dot(dv, dv));
     const float kernel = min(2.0f * variance, kSpecularAAThreshold);
     return sqrt(saturate(alpha * alpha + kernel));
+}
+
+static const float kMinLightDistance = 0.01f;
+
+float DistanceAttenuation(float distanceSq, float invRangeSq)
+{
+    const float factor = distanceSq * invRangeSq;
+    const float window = saturate(1.0f - factor * factor);
+    return window * window / max(distanceSq, kMinLightDistance * kMinLightDistance);
 }
 
 float Pow5(float x)
@@ -165,7 +161,7 @@ float3 EvaluateLight(float3 N, float3 V, float3 L, float3 diffuseColor, float3 f
     const float3 diffuse = DiffuseHammon(diffuseColor, NoV, NoL, NoH, LoV, alpha);
     const float3 specular = DistributionGGX(NoH, alpha) * VisibilityHammon(NoV, NoL, alpha) * FresnelSchlick(f0, LoH);
 
-    return (diffuse + specular) * NoL * PI;
+    return (diffuse + specular) * NoL;
 }
 
 float4 PSMain(PixelData input) : SV_Target0
@@ -174,7 +170,6 @@ float4 PSMain(PixelData input) : SV_Target0
     StructuredBuffer<GpuLightFrame> lightFrames = ResourceDescriptorHeap[pushConstant.lightFrameBufferIndex];
     StructuredBuffer<uint> lightGrid = ResourceDescriptorHeap[pushConstant.lightGridIndex];
     StructuredBuffer<MaterialData> materials = ResourceDescriptorHeap[pushConstant.materialBufferIndex];
-    StructuredBuffer<float4> skyIrradiance = ResourceDescriptorHeap[pushConstant.skyIrradianceIndex];
     Texture2D<float4> shadowMask = ResourceDescriptorHeap[pushConstant.shadowMaskIndex];
 
     const GpuLightFrame lightFrame = lightFrames[0];
@@ -222,14 +217,14 @@ float4 PSMain(PixelData input) : SV_Target0
     const float3 view = normalize(lightFrame.cameraPosition - input.worldPosition);
     const float3 normal = dot(shadingNormal, view) < 0.0f ? -shadingNormal : shadingNormal;
 
-    float3 color = diffuseColor * EvaluateSkyIrradiance(skyIrradiance, normal);
+    float3 color = baseColor.rgb * kAmbient * 0.15f;
 
     const float3 toSun = -lightFrame.direction;
     const float sunLengthSq = dot(toSun, toSun);
     const float3 sunDirection = toSun * rsqrt(max(sunLengthSq, 0.00000001f));
     const float shadow = shadowMask.Load(int3(input.position.xy, 0)).r;
 
-    color += lightFrame.sunColor * lightFrame.intensity * shadow * EvaluateLight(normal, view, sunDirection, diffuseColor, f0, alpha);
+    color += lightFrame.sunColor * lightFrame.illuminance * shadow * EvaluateLight(normal, view, sunDirection, diffuseColor, f0, alpha);
 
     const uint cluster = ClusterIndex(uint2(input.position.xy), input.viewDepth);
     const uint base = cluster * (pushConstant.maxLightsPerCluster + 1);
@@ -240,11 +235,11 @@ float4 PSMain(PixelData input) : SV_Target0
         const PointLight light = pointLights[lightGrid[base + 1 + i]];
 
         const float3 toLight = light.position - input.worldPosition;
-        const float distance = length(toLight);
-        const float falloff = saturate(1.0f - distance / light.range);
-        const float3 lightDirection = toLight / max(distance, 0.0001f);
+        const float distanceSq = dot(toLight, toLight);
+        const float3 lightDirection = toLight * rsqrt(max(distanceSq, 0.00000001f));
+        const float attenuation = DistanceAttenuation(distanceSq, 1.0f / max(light.range * light.range, 0.0001f));
 
-        color += light.color.rgb * light.intensity * falloff * falloff * EvaluateLight(normal, view, lightDirection, diffuseColor, f0, alpha);
+        color += light.color.rgb * light.luminousIntensity * attenuation * EvaluateLight(normal, view, lightDirection, diffuseColor, f0, alpha);
     }
     
     float3 emissive = material.emissiveFactor.rgb;

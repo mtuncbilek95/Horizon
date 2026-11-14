@@ -20,9 +20,6 @@ namespace Horizon::Rendering::Resource
 	struct SkyOutput final { HORIZON_DATA_REFLECT(SkyOutput); };
 
 	HCLASS();
-	struct SkyIrradiance final { HORIZON_DATA_REFLECT(SkyIrradiance); };
-
-	HCLASS();
 	struct ClusterList final { HORIZON_DATA_REFLECT(ClusterList); };
 
 	HCLASS();
@@ -45,4 +42,10 @@ namespace Horizon::Rendering::Resource
 
 	HCLASS();
 	struct ShadowMask final { HORIZON_DATA_REFLECT(ShadowMask); };
+
+	HCLASS();
+	struct SceneColorDisplay final { HORIZON_DATA_REFLECT(SceneColorDisplay); };
+
+	HCLASS();
+	struct SceneDepthResolved final { HORIZON_DATA_REFLECT(SceneDepthResolved); };
 }
