@@ -64,6 +64,7 @@ namespace Horizon::Editor
 				{ "Asset::Prefab",			ICON_MDI_CUBE_OUTLINE },
 				{ "Asset::Animation",		ICON_MDI_RUN },
 				{ "Asset::Font",			ICON_MDI_FORMAT_FONT },
+				{ "Asset::InputActionMap",  ICON_FA_GAMEPAD }
 			};
 
 			if (!pAssetType)

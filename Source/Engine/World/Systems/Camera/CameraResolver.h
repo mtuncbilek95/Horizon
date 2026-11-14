@@ -6,9 +6,9 @@
 namespace Horizon::World::System
 {
 	HCLASS();
-	class CameraShowcase : public Engine::System
+	class CameraResolver : public Engine::System
 	{
-		HORIZON_TYPE_REFLECT(CameraShowcase);
+		HORIZON_TYPE_REFLECT(CameraResolver);
 	public:
 		b8 OnInitialize() final;
 		void OnExecute(const Engine::EngineFrame& ctx, Engine::Scene& currentScene) final;

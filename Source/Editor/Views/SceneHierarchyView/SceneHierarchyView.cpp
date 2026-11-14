@@ -1,6 +1,7 @@
 #include "SceneHierarchyView.h"
 
 #include <Editor/Renderer/EditorContext.h>
+#include <Editor/Components/Helpers/EntityPickerWidget.h>
 #include <Editor/Domain/DomainFile.h>
 #include <Engine/Asset/Scene/SceneSerializer.h>
 #include <Engine/Core/Engine.h>
@@ -52,7 +53,7 @@ namespace Horizon::Editor
 				return ImGuiID((*list)[idx].handle.Index());
 			};
 
-		ImGuiMultiSelectFlags flags = ImGuiMultiSelectFlags_ClearOnEscape;
+		ImGuiMultiSelectFlags flags = ImGuiMultiSelectFlags_ClearOnEscape | ImGuiMultiSelectFlags_SelectOnClickRelease;
 
 		if (!ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel))
 			flags |= ImGuiMultiSelectFlags_BoxSelect1d | ImGuiMultiSelectFlags_ClearOnClickVoid;
@@ -76,6 +77,14 @@ namespace Horizon::Editor
 				ImGui::SetNextItemSelectionUserData(i);
 				std::string name = ICON_FA_CUBE " " + entry.name;
 				ImGui::Selectable(name.c_str(), m_selection.Contains(id));
+
+				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceNoDisableHover))
+				{
+					ImGui::SetDragDropPayload(EntityPickerWidget::PayloadName, &entry.handle, sizeof(Engine::EntityHandle));
+					ImGui::TextUnformatted(name.c_str());
+					ImGui::EndDragDropSource();
+				}
+
 				ImGui::PopID();
 			}
 		}

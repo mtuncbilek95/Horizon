@@ -1,0 +1,79 @@
+#include "CreateInputActionMapItem.h"
+
+#include <Engine/Asset/Input/InputActionMapSerializer.h>
+#include <Runtime/Containers/StringHelper.h>
+#include <Runtime/Log/Terminal.h>
+#include <Runtime/PAL/File/File.h>
+#include <Runtime/Serialization/JsonArchive.h>
+
+#include <format>
+
+namespace Horizon::Editor
+{
+	namespace
+	{
+		b8 HasFileNamed(const DomainFolder* pParent, const std::string& name)
+		{
+			for (const DomainFile* pFile : pParent->GetFiles())
+			{
+				if (StringHelper::CheckIfEquals(pFile->GetName(), name))
+					return true;
+			}
+
+			return PAL::File::Exists(pParent->GetAbsolutePath() + "/" + name);
+		}
+
+		std::string ResolveUniqueName(const DomainFolder* pParent)
+		{
+			std::string fileName = "NewInputActionMap.hinputmap";
+
+			if (!HasFileNamed(pParent, fileName))
+				return fileName;
+
+			i32 index = 1;
+
+			do
+			{
+				fileName = std::format("NewInputActionMap({}).hinputmap", index);
+				index++;
+			} while (HasFileNamed(pParent, fileName));
+
+			return fileName;
+		}
+	}
+
+	void CreateInputActionMapItem::OnExecute(AssetBrowserContext& context)
+	{
+		List<Asset::InputAction> actions;
+		JsonArchiveWriter writer;
+
+		if (!Asset::InputActionMapSerializer::Serialize(actions, writer))
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "Default input action map could not be serialized");
+			return;
+		}
+
+		const std::string path = context.pCurrentFolder->GetAbsolutePath() + "/" + ResolveUniqueName(context.pCurrentFolder);
+
+		if (!PAL::File::Create(path))
+		{
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be created", path);
+			return;
+		}
+
+		PAL::FileAccessRequest request = PAL::File::RequestAccess(path, PAL::FileOperationAccessPolicy::Write,
+			PAL::FileOperationSharePolicy::Exclusive);
+
+		const b8 wasWritten = PAL::File::WriteString(request, writer.ToString());
+
+		PAL::File::ReleaseAccess(request);
+
+		if (!wasWritten)
+			Terminal::Error(StringHelper::GetTypeName(this), "{} cannot be written", path);
+	}
+
+	b8 CreateInputActionMapItem::IsEnabled(const AssetBrowserContext& context)
+	{
+		return context.selectedFiles.GetCount() == 0 && context.selectedFolders.GetCount() == 0;
+	}
+}

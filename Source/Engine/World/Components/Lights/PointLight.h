@@ -9,7 +9,7 @@
 
 namespace Horizon::World::Component
 {
-	HCLASS(Engine::ComponentId["PointLight", "Rendering"]);
+	HCLASS(Engine::ComponentId["PointLight", "Lights"]);
 	class PointLight final : public Engine::ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(PointLight);

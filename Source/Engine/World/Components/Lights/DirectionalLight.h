@@ -8,7 +8,7 @@
 
 namespace Horizon::World::Component
 {
-	HCLASS(Engine::ComponentId["DirectionalLight", "Rendering"]);
+	HCLASS(Engine::ComponentId["DirectionalLight", "Lights"]);
 	class DirectionalLight final : public Engine::ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(DirectionalLight);

@@ -8,7 +8,7 @@
 
 namespace Horizon::World::Component
 {
-	HCLASS(Engine::ComponentId["AreaLight", "Rendering"]);
+	HCLASS(Engine::ComponentId["AreaLight", "Lights"]);
 	class AreaLight final : public Engine::ComponentObject
 	{
 		HORIZON_TYPE_REFLECT(AreaLight);

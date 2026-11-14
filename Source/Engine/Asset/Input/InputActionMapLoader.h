@@ -29,7 +29,5 @@ namespace Horizon::Asset
 		void OnRegisteredAsset(const Engine::AssetEntry& entry) final;
 		void OnUnregisteredAsset(const Engine::AssetEntry& entry) final;
 		void OnRefreshAsset(const Engine::AssetEntry& entry) final;
-
-	private:
 	};
 }
