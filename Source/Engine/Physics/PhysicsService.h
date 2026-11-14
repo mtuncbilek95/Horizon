@@ -2,7 +2,6 @@
 
 #include <Engine/Core/Service.h>
 #include <Engine/Rendering/Renderables/RenderablePhysicsDebug.h>
-
 namespace JPH
 {
 	class PhysicsSystem;
