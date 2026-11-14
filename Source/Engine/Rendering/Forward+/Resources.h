@@ -14,7 +14,13 @@ namespace Horizon::Rendering::Resource
 	struct SceneColorMS final { HORIZON_DATA_REFLECT(SceneColorMS); };
 
 	HCLASS();
+	struct SceneColorResolved final { HORIZON_DATA_REFLECT(SceneColorResolved); };
+
+	HCLASS();
 	struct SkyOutput final { HORIZON_DATA_REFLECT(SkyOutput); };
+
+	HCLASS();
+	struct SkyIrradiance final { HORIZON_DATA_REFLECT(SkyIrradiance); };
 
 	HCLASS();
 	struct ClusterList final { HORIZON_DATA_REFLECT(ClusterList); };

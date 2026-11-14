@@ -35,8 +35,8 @@ namespace Horizon::Rendering::Pass
 			Math::Vec2f shadowMapSize;
 			f32 shadowWorldSize = 0.0f;
 			f32 shadowDepthRange = 0.0f;
-			f32 lightSize = 0.0f;
-			f32 maxPenumbra = 0.05f;
+			f32 lightSize = 0.02f;
+			f32 maxPenumbra = 0.5f;
 			f32 depthBias = 0.05f;
 			f32 normalBias = 1.5f;
 			u32 width = 0;

@@ -17,6 +17,7 @@ namespace Horizon::Rendering::Pass
 	public:
 		static constexpr f32 ShadowHalfExtent = 40.0f;
 		static constexpr f32 ShadowHalfDepth = 250.0f;
+		static constexpr f32 ShadowForwardOffset = 30.0f;
 
 	public:
 		static Math::Vec3f ResolveLightDirection(const Engine::RenderableDirectionalLight* pLight);

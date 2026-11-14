@@ -45,7 +45,10 @@ namespace Horizon::Rendering::Pass
 	{
 		const Math::Vec3f up = std::abs(lightDirection.Y()) > 0.99f ? Math::Vec3f(0.f, 0.f, 1.f) : Math::Vec3f(0.f, 1.f, 0.f);
 		const Math::Mat4f view = Math::Mat4f::LookAt(Math::Vec3f::Zero(), lightDirection, up);
-		const Math::Vec3f center = view.TransformPoint(camera.camWorldPosition);
+
+		const Math::Vec3f cameraForward = Math::Vec3f(-camera.camViewMatrix(2, 0), -camera.camViewMatrix(2, 1), -camera.camViewMatrix(2, 2));
+		const Math::Vec3f focus = camera.camWorldPosition + cameraForward * ShadowForwardOffset;
+		const Math::Vec3f center = view.TransformPoint(focus);
 
 		const f32 texel = (ShadowHalfExtent * 2.0f) / static_cast<f32>(mapSize);
 		const f32 centerX = std::floor(center.X() / texel) * texel;

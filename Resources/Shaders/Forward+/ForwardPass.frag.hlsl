@@ -20,6 +20,7 @@ struct ForwardConstants
     uint materialIndex;
     uint samplerIndex;
     uint shadowMaskIndex;
+    uint skyIrradianceIndex;
 };
 
 struct PointLight
@@ -87,6 +88,32 @@ uint ClusterIndex(uint2 pixel, float viewZ)
     return tile.x + tile.y * pushConstant.clusterCountX + (uint) slice * pushConstant.clusterCountX * pushConstant.clusterCountY;
 }
 
+float3 EvaluateSkyIrradiance(StructuredBuffer<float4> sh, float3 n)
+{
+    float3 result = sh[0].rgb * 0.282095f;
+    result += sh[1].rgb * 0.488603f * n.y;
+    result += sh[2].rgb * 0.488603f * n.z;
+    result += sh[3].rgb * 0.488603f * n.x;
+    result += sh[4].rgb * 1.092548f * n.x * n.y;
+    result += sh[5].rgb * 1.092548f * n.y * n.z;
+    result += sh[6].rgb * 0.315392f * (3.0f * n.z * n.z - 1.0f);
+    result += sh[7].rgb * 1.092548f * n.x * n.z;
+    result += sh[8].rgb * 0.546274f * (n.x * n.x - n.y * n.y);
+    return max(result, 0.0f);
+}
+
+static const float kSpecularAAVariance = 0.15f;
+static const float kSpecularAAThreshold = 0.2f;
+
+float SpecularAntiAliasing(float3 N, float alpha)
+{
+    const float3 du = ddx(N);
+    const float3 dv = ddy(N);
+    const float variance = kSpecularAAVariance * (dot(du, du) + dot(dv, dv));
+    const float kernel = min(2.0f * variance, kSpecularAAThreshold);
+    return sqrt(saturate(alpha * alpha + kernel));
+}
+
 float Pow5(float x)
 {
     const float x2 = x * x;
@@ -125,9 +152,7 @@ float3 EvaluateLight(float3 N, float3 V, float3 L, float3 diffuseColor, float3 f
     const float NoL = saturate(dot(N, L));
 
     if (NoL <= 0.0f)
-    {
         return float3(0.0f, 0.0f, 0.0f);
-    }
 
     const float3 halfSum = V + L;
     const float3 H = halfSum * rsqrt(max(dot(halfSum, halfSum), 0.00000001f));
@@ -149,6 +174,7 @@ float4 PSMain(PixelData input) : SV_Target0
     StructuredBuffer<GpuLightFrame> lightFrames = ResourceDescriptorHeap[pushConstant.lightFrameBufferIndex];
     StructuredBuffer<uint> lightGrid = ResourceDescriptorHeap[pushConstant.lightGridIndex];
     StructuredBuffer<MaterialData> materials = ResourceDescriptorHeap[pushConstant.materialBufferIndex];
+    StructuredBuffer<float4> skyIrradiance = ResourceDescriptorHeap[pushConstant.skyIrradianceIndex];
     Texture2D<float4> shadowMask = ResourceDescriptorHeap[pushConstant.shadowMaskIndex];
 
     const GpuLightFrame lightFrame = lightFrames[0];
@@ -188,16 +214,15 @@ float4 PSMain(PixelData input) : SV_Target0
     roughness = clamp(roughness, 0.045f, 1.0f);
     metallic = saturate(metallic);
 
-    const float alpha = roughness * roughness;
+    const float3 shadingNormal = normalize(input.normal);
+    const float alpha = SpecularAntiAliasing(shadingNormal, roughness * roughness);
     const float3 diffuseColor = baseColor.rgb * (1.0f - metallic);
     const float3 f0 = lerp(float3(0.04f, 0.04f, 0.04f), baseColor.rgb, metallic);
 
-    const float3 shadingNormal = normalize(input.normal);
     const float3 view = normalize(lightFrame.cameraPosition - input.worldPosition);
     const float3 normal = dot(shadingNormal, view) < 0.0f ? -shadingNormal : shadingNormal;
-    const float3 ambientDirection = normalize(float3(0.4f, 0.8f, 0.3f));
 
-    float3 color = baseColor.rgb * (dot(normal, ambientDirection) * 0.5f + 0.5f) * 0.35f;
+    float3 color = diffuseColor * EvaluateSkyIrradiance(skyIrradiance, normal);
 
     const float3 toSun = -lightFrame.direction;
     const float sunLengthSq = dot(toSun, toSun);

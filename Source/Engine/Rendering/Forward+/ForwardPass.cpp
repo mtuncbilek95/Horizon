@@ -15,6 +15,7 @@
 #include <Engine/Rendering/Renderables/RenderablePointLight.h>
 
 #include <Runtime/Containers/StringHelper.h>
+#include <Runtime/Math/Vec4f.h>
 #include <Runtime/RHI/Command/RenderingDesc.h>
 #include <Runtime/RHI/Command/CommandList.h>
 #include <Runtime/RHI/Pipeline/GraphicsPipelineDesc.h>
@@ -47,6 +48,7 @@ namespace Horizon::Rendering::Pass
 			u32 materialIndex;
 			u32 samplerIndex;
 			u32 shadowMaskIndex;
+			u32 skyIrradianceIndex;
 		};
 
 		struct GpuLightFrame
@@ -142,6 +144,7 @@ namespace Horizon::Rendering::Pass
 		m_pointLightView = m_resourceHeap->Allocate();
 		m_lightGridView = m_resourceHeap->Allocate();
 		m_shadowMaskView = m_resourceHeap->Allocate();
+		m_skyIrradianceView = m_resourceHeap->Allocate();
 
 		m_lightFrameView = m_resourceHeap->Allocate();
 		m_resourceHeap->Write(m_lightFrameView, RHI::DescriptorType::Buffer, m_lightFrameBuffer.Get(), 0, lightFrameDesc.size, sizeof(GpuLightFrame));
@@ -155,6 +158,12 @@ namespace Horizon::Rendering::Pass
 		{
 			m_resourceHeap->Free(m_lightFrameView);
 			m_lightFrameView = kInvalid32;
+		}
+
+		if (m_skyIrradianceView != kInvalid32)
+		{
+			m_resourceHeap->Free(m_skyIrradianceView);
+			m_skyIrradianceView = kInvalid32;
 		}
 
 		if (m_shadowMaskView != kInvalid32)
@@ -199,6 +208,7 @@ namespace Horizon::Rendering::Pass
 		graph.Reads<Resource::PointLightList>(RHI::ResourceState::ShaderResource);
 		graph.Reads<Resource::ClusteredLightGrid>(RHI::ResourceState::ShaderResource);
 		graph.Reads<Resource::ShadowMask>(RHI::ResourceState::ShaderResource);
+		graph.Reads<Resource::SkyIrradiance>(RHI::ResourceState::ShaderResource);
 		graph.Writes<Resource::SceneColorMS>(RHI::ResourceState::RenderTarget);
 	}
 
@@ -215,10 +225,12 @@ namespace Horizon::Rendering::Pass
 		RHI::Texture* pColor = GetTexture<Resource::SceneColorMS>();
 		RHI::Buffer* pPointLights = GetBuffer<Resource::PointLightList>();
 		RHI::Buffer* pLightGrid = GetBuffer<Resource::ClusteredLightGrid>();
+		RHI::Buffer* pSkyIrradiance = GetBuffer<Resource::SkyIrradiance>();
 
 		m_resourceHeap->Write(m_pointLightView, RHI::DescriptorType::Buffer, pPointLights, 0, pPointLights->GetSize(), sizeof(Engine::RenderablePointLight));
 		m_resourceHeap->Write(m_lightGridView, RHI::DescriptorType::Buffer, pLightGrid, 0, pLightGrid->GetSize(), sizeof(u32));
 		m_resourceHeap->Write(m_shadowMaskView, RHI::DescriptorType::Texture, GetTextureView<Resource::ShadowMask>());
+		m_resourceHeap->Write(m_skyIrradianceView, RHI::DescriptorType::Buffer, pSkyIrradiance, 0, pSkyIrradiance->GetSize(), sizeof(Math::Vec4f));
 
 		GpuLightFrame lightFrame = {};
 		lightFrame.cameraPosition = pCamera->camWorldPosition;
@@ -287,6 +299,7 @@ namespace Horizon::Rendering::Pass
 			constants.materialBufferIndex = pMeshes->materialBufferView;
 			constants.samplerIndex = pMeshes->samplerView;
 			constants.shadowMaskIndex = m_shadowMaskView;
+			constants.skyIrradianceIndex = m_skyIrradianceView;
 
 			for (const Asset::MeshSubmesh& submesh : renderable.mesh.submeshes)
 			{
